@@ -39,6 +39,7 @@ add_custom_target(uninstall "${CMAKE_COMMAND}"
 enable_testing()
 
 add_subdirectory(src)
+add_subdirectory(qcontacts)
 #add_subdirectory(tests)
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

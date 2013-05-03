@@ -68,7 +68,7 @@ private:
     QDBusConnection m_connection;
 };
 
-}; // namespace
+} // namespace
 
 #endif
 

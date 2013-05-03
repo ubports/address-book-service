@@ -1,7 +1,7 @@
 #include "view.h"
 #include "view-adaptor.h"
 #include "contacts-map.h"
-#include "contacts-utils.h"
+#include "qindividual.h"
 
 namespace galera
 {
@@ -47,7 +47,7 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
 
     QStringList result;
     for(int i=startIndex; i < pageSize; i++) {
-        result << ContactsUtils::serializeIndividual(m_contacts[i]->individual());
+        result << QIndividual(m_contacts[i]->individual()).toString();
     }
 
     return result;
