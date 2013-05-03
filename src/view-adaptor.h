@@ -46,6 +46,7 @@ class ViewAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"s\" name=\"id\"/>\n"
 "      <arg direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
+"    <method name=\"close\"/>\n"
 "  </interface>\n"
         "")
 public:
@@ -57,6 +58,7 @@ public Q_SLOTS:
     QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize);
     int count();
     void sort(const QString &field);
+    void close();
 
 Q_SIGNALS:
     void contactsCreated(int pos, int lenght);

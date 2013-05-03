@@ -8,26 +8,26 @@ namespace galera
 GaleraEngineId::GaleraEngineId()
     : m_contactId(0)
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
 }
 
 GaleraEngineId::GaleraEngineId(quint32 contactId, const QString &managerUri)
     : m_contactId(contactId),
       m_managerUri(managerUri)
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
 }
 
 GaleraEngineId::~GaleraEngineId()
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
 }
 
 GaleraEngineId::GaleraEngineId(const GaleraEngineId &other)
     : m_contactId(other.m_contactId),
       m_managerUri(other.m_managerUri)
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
 }
 
 GaleraEngineId::GaleraEngineId(const QMap<QString, QString> &parameters, const QString &engineIdString)

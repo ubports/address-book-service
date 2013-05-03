@@ -39,8 +39,12 @@ public:
     ~RequestData()
     {
         m_request = 0;
-        m_watcher->deleteLater();
-        m_view->call("close");
+        if (m_watcher) {
+            m_watcher->deleteLater();
+        }
+        QDBusMessage ret = m_view->call("close");
+        qDebug() << "CLOSE:" << ret;
+
         m_view->deleteLater();
     }
 };
@@ -181,7 +185,6 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
                                                          QContactManager::NoError,
                                                          opState);
 
-        qDebug() << "CONTACTS SIZE:" << vcards.size();
         if (opState == QContactAbstractRequest::ActiveState) {
             request->m_offset += FETCH_PAGE_SIZE;
             request->m_watcher->deleteLater();

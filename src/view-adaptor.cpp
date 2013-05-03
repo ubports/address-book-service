@@ -36,4 +36,9 @@ void ViewAdaptor::sort(const QString &field)
     return m_view->sort(field);
 }
 
+void ViewAdaptor::close()
+{
+    return m_view->close();
+}
+
 } //namespace

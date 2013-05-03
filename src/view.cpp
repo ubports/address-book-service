@@ -25,9 +25,16 @@ View::~View()
 
 void View::close()
 {
-    Q_EMIT m_adaptor->contactsRemoved(0, m_contacts.count());
-    Q_EMIT closed();
-    m_contacts.clear();
+    if (m_adaptor) {
+        Q_EMIT m_adaptor->contactsRemoved(0, m_contacts.count());
+        Q_EMIT closed();
+        m_contacts.clear();
+
+        QDBusConnection conn = QDBusConnection::sessionBus();
+        unregisterObject(conn);
+        m_adaptor->deleteLater();
+        m_adaptor = 0;
+    }
 }
 
 QString View::contactDetails(const QStringList &fields, const QString &id)
@@ -87,6 +94,13 @@ bool View::registerObject(QDBusConnection &connection)
     }
 
     return (m_adaptor != 0);
+}
+
+void View::unregisterObject(QDBusConnection &connection)
+{
+    if (m_adaptor) {
+        connection.unregisterObject(dynamicObjectPath());
+    }
 }
 
 QObject *View::adaptor() const

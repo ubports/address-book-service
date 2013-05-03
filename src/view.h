@@ -22,6 +22,7 @@ public:
     QString dynamicObjectPath() const;
     QObject *adaptor() const;
     bool registerObject(QDBusConnection &connection);
+    void unregisterObject(QDBusConnection &connection);
 
     // contacts
     bool appendContact(ContactEntry *entry);
