@@ -41,12 +41,12 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
         startIndex = 0;
     }
 
-    if ((pageSize < 0) || (pageSize >= m_contacts.count())) {
-        pageSize = m_contacts.count() -1;
+    if ((pageSize < 0) || ((startIndex + pageSize) >= m_contacts.count())) {
+        pageSize = m_contacts.count() - startIndex;
     }
 
     QStringList result;
-    for(int i=startIndex; i < pageSize; i++) {
+    for(int i = startIndex, iMax = (startIndex + pageSize); i < iMax; i++) {
         result << QIndividual(m_contacts[i]->individual()).toString();
     }
 
