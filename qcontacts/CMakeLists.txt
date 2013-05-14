@@ -12,10 +12,22 @@ set(QCONTACTS_BACKEND_HDRS
     contacts-service.h
 )
 
-add_library(${QCONTACTS_BACKEND} MODULE ${QCONTACTS_BACKEND_SRCS} ${QCONTACTS_BACKEND_HDRS})
-qt5_use_modules(${QCONTACTS_BACKEND} Core Contacts DBus Versit)
-add_definitions(-std=gnu++11)
+add_library(${QCONTACTS_BACKEND} MODULE
+    ${QCONTACTS_BACKEND_SRCS}
+    ${QCONTACTS_BACKEND_HDRS}
+)
 
+include_directories(
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(${QCONTACTS_BACKEND}
+    vcard-utils
+)
+
+qt5_use_modules(${QCONTACTS_BACKEND} Core Contacts DBus Versit)
+
+add_definitions(-std=gnu++11)
 
 execute_process(
     COMMAND qmake -query QT_INSTALL_PLUGINS

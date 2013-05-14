@@ -3,6 +3,15 @@
 #include "contacts-map.h"
 #include "qindividual.h"
 
+#include "vcard/vcard-parser.h"
+
+#include <QtContacts/QContact>
+
+#include <QtVersit/QVersitDocument>
+
+using namespace QtContacts;
+using namespace QtVersit;
+
 namespace galera
 {
 
@@ -52,12 +61,14 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
         pageSize = m_contacts.count() - startIndex;
     }
 
-    QStringList result;
+    QList<QContact> contacts;
     for(int i = startIndex, iMax = (startIndex + pageSize); i < iMax; i++) {
-        result << QIndividual(m_contacts[i]->individual()).toString();
+        // TODO: filter fields
+        contacts << m_contacts[i]->individual()->contact();
     }
 
-    return result;
+    qDebug() << "Contacts details size:" << contacts.size();
+    return VCardParser::contactToVcard(contacts);
 }
 
 int View::count()

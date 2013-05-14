@@ -1,17 +1,18 @@
 #ifndef __GALERA_ADDRESSBOOK_H__
 #define __GALERA_ADDRESSBOOK_H__
 
+#include "source.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+
 #include <QtDBus/QtDBus>
 
 #include <folks/folks.h>
 #include <glib.h>
 #include <glib-object.h>
-
-#include "source.h"
 
 namespace galera
 {
@@ -19,7 +20,7 @@ class View;
 class ContactsMap;
 class AddressBookAdaptor;
 
-class AddressBook: public QObject
+class AddressBook: public QObject, protected QDBusContext
 {
     Q_OBJECT
 public:
@@ -31,13 +32,13 @@ public:
 
     // Adaptor
     SourceList availableSources();
-    QString createContact(const QString &contact, const QString &source);
+    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     QString linkContacts(const QStringList &contacts);
     View *query(const QString &clause, const QString &sort, const QStringList &sources);
     bool removeContacts(const QStringList &contactIds);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
-    bool updateContact(const QString &contact);
+    QStringList updateContacts(const QStringList &contacts);
 
 private Q_SLOTS:
     void viewClosed();
@@ -52,12 +53,15 @@ private:
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
 
-    static void individualsChangedCb(FolksIndividualAggregator *individual_aggregator,
+    static void individualsChangedCb(FolksIndividualAggregator *individualAggregator,
                                      GeeMultiMap *changes,
                                      AddressBook *self);
     static void aggregatorPrepareCb(GObject *source,
                                     GAsyncResult *res,
                                     AddressBook *self);
+    static void createContactDone(FolksIndividualAggregator *individualAggregator,
+                                  GAsyncResult *res,
+                                  QDBusMessage *msg);
 };
 
 } //namespace

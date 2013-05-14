@@ -27,6 +27,9 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    <signal name=\"contactsCreated\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"
+"    <signal name=\"asyncOperationResult\">\n"
+"      <arg direction=\"out\" type=\"a(ss)\" name=\"errorMap\"/>\n"
+"    </signal>\n"
 "    <method name=\"availableSources\">\n"
 "      <arg direction=\"out\" type=\"a(sb)\"/>\n"
 "      <annotation value=\"SourceList\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
@@ -53,9 +56,9 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"s\" name=\"source\"/>\n"
 "      <arg direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
-"    <method name=\"updateContact\">\n"
-"      <arg direction=\"in\" type=\"s\" name=\"contact\"/>\n"
-"      <arg direction=\"out\" type=\"b\"/>\n"
+"    <method name=\"updateContacts\">\n"
+"      <arg direction=\"out\" type=\"as\"/>\n"
+"      <arg direction=\"in\" type=\"as\" name=\"contacts\"/>\n"
 "    </method>\n"
 "    <method name=\"linkContacts\">\n"
 "      <arg direction=\"out\" type=\"s\"/>\n"
@@ -74,18 +77,19 @@ public:
 
 public Q_SLOTS:
     SourceList availableSources();
-    QString createContact(const QString &contact, const QString &source);
+    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     QString linkContacts(const QStringList &contacts);
     QDBusObjectPath query(const QString &clause, const QString &sort, const QStringList &sources);
     bool removeContacts(const QStringList &contactIds);
     QStringList sortFields();
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
-    bool updateContact(const QString &contact);
+    QStringList updateContacts(const QStringList &contacts);
 
 Q_SIGNALS:
     void contactsCreated(const QStringList &ids);
     void contactsRemoved(const QStringList &ids);
     void contactsUpdated(const QStringList &ids);
+    void asyncOperationResult(QMap<QString, QString> errors);
 
 private:
     AddressBook *m_addressBook;

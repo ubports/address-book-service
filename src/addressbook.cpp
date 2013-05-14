@@ -2,6 +2,15 @@
 #include "addressbook-adaptor.h"
 #include "view.h"
 #include "contacts-map.h"
+#include "qindividual.h"
+
+#include "vcard/vcard-parser.h"
+
+#include <QtCore/QPair>
+#include <QtCore/QUuid>
+#include <QtContacts/QContact>
+
+using namespace QtContacts;
 
 namespace galera
 {
@@ -63,9 +72,30 @@ SourceList AddressBook::availableSources()
     return sources;
 }
 
-QString AddressBook::createContact(const QString &contact, const QString &source)
+QString AddressBook::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
 {
-    //TODO
+    setDelayedReply(true);
+    ContactEntry *entry = m_contacts->valueFromVCard(contact);
+    if (entry) {
+        qWarning() << "Contact exists";
+        return "";
+    } else {
+        QContact qcontact = VCardParser::vcardToContact(contact);
+        if (!qcontact.isEmpty()) {
+            GHashTable *details = QIndividual::parseDetails(qcontact);
+            //TOOD: lookup for source and use the correct store
+            message.setDelayedReply(true);
+            QDBusMessage *cpy = new QDBusMessage(message);
+            folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
+                                                                 NULL, //parent
+                                                                 folks_individual_aggregator_get_primary_store(m_individualAggregator),
+                                                                 details,
+                                                                 (GAsyncReadyCallback) createContactDone,
+                                                                 (void*) cpy);
+            g_hash_table_destroy(details);
+            return "";
+        }
+    }
     return "";
 }
 
@@ -108,10 +138,17 @@ bool AddressBook::unlinkContacts(const QString &parent, const QStringList &conta
     return false;
 }
 
-bool AddressBook::updateContact(const QString &contact)
+QStringList AddressBook::updateContacts(const QStringList &contacts)
 {
-    //TODO
-    return false;
+    QList<QContact> updatedContacts;
+    Q_FOREACH(QString contact, contacts) {
+        ContactEntry *entry = m_contacts->valueFromVCard(contact);
+        if (entry) {
+            entry->individual()->update(contact);
+            updatedContacts << entry->individual()->contact();
+        }
+    }
+    return VCardParser::contactToVcard(updatedContacts);
 }
 
 
@@ -135,7 +172,7 @@ QString AddressBook::addContact(FolksIndividual *individual)
     return QString::fromUtf8(folks_individual_get_id(individual));
 }
 
-void AddressBook::individualsChangedCb(FolksIndividualAggregator *individual_aggregator,
+void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggregator,
                                        GeeMultiMap *changes,
                                        AddressBook *self)
 {
@@ -187,6 +224,33 @@ void AddressBook::aggregatorPrepareCb(GObject *source,
                                       GAsyncResult *res,
                                       AddressBook *self)
 {
+}
+
+void AddressBook::createContactDone(FolksIndividualAggregator *individualAggregator,
+                                    GAsyncResult *res,
+                                    QDBusMessage *msg)
+{
+    qDebug() << "Create Contact Done" << msg;
+    FolksPersona *persona;
+    GError *error = NULL;
+    QDBusMessage reply;
+    persona = folks_individual_aggregator_add_persona_from_details_finish(individualAggregator, res, &error);
+    if (error != NULL) {
+        qWarning() << "Failed to create individual from contact:" << error->message;
+        reply = msg->createErrorReply("Failed to create individual from contact", error->message);
+        g_clear_error(&error);
+    } else if (persona == NULL) {
+        qWarning() << "Failed to create individual from contact: Persona already exists";
+        reply = msg->createErrorReply("Failed to create individual from contact", "Contact already exists");
+    } else {
+        qDebug() << "Persona created:" << persona;
+        FolksIndividual *individual;
+        individual = folks_persona_get_individual(persona);
+        reply = msg->createReply(QString::fromUtf8(folks_individual_get_id(individual)));
+    }
+    //TODO: use dbus connection
+    QDBusConnection::sessionBus().send(reply);
+    delete msg;
 }
 
 } //namespace

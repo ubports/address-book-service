@@ -11,6 +11,7 @@ find_package(Qt5Core REQUIRED)
 add_definitions(-DQT_NO_KEYWORDS)
 
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.32)
+pkg_check_modules(GIO REQUIRED gio-2.0>=2.32)
 pkg_check_modules(FOLKS REQUIRED folks>=0.8.0)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -38,6 +39,7 @@ add_custom_target(uninstall "${CMAKE_COMMAND}"
 
 enable_testing()
 
+add_subdirectory(vcard)
 add_subdirectory(src)
 add_subdirectory(qcontacts)
 #add_subdirectory(tests)

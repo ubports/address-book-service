@@ -12,6 +12,8 @@
 namespace galera
 {
 
+class QIndividual;
+
 class ContactEntry
 {
 public:
@@ -19,19 +21,34 @@ public:
     ContactEntry(const ContactEntry &other);
     ~ContactEntry();
 
-    FolksIndividual *individual() const;
+    QIndividual *individual() const;
 
 private:
     ContactEntry();
-    FolksIndividual *m_individual;
+
+    QIndividual *m_individual;
 };
 
 
-class ContactsMap : public QHash<FolksIndividual *, ContactEntry*>
+class ContactsMap
 {
 public:
     ContactsMap();
     ~ContactsMap();
+
+    ContactEntry *valueFromVCard(const QString &vcard) const;
+
+    bool contains(FolksIndividual *individual) const;
+    ContactEntry *value(FolksIndividual *individual) const;
+    ContactEntry *take(FolksIndividual *individual);
+    void insert(FolksIndividual *individual, ContactEntry *entry);
+
+
+    QList<ContactEntry*> values() const;
+
+private:
+    QHash<FolksIndividual *, ContactEntry*> m_individualsToEntry;
+    QHash<QString, ContactEntry*> m_idToEntry;
 };
 
 } //namespace

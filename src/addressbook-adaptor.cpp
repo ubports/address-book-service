@@ -23,9 +23,9 @@ SourceList AddressBookAdaptor::availableSources()
     return m_addressBook->availableSources();
 }
 
-QString AddressBookAdaptor::createContact(const QString &contact, const QString &source)
+QString AddressBookAdaptor::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
 {
-    return m_addressBook->createContact(contact, source);
+    return m_addressBook->createContact(contact, source, message);
 }
 
 QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &sort, const QStringList &sources)
@@ -55,9 +55,10 @@ bool AddressBookAdaptor::unlinkContacts(const QString &parentId, const QStringLi
     return m_addressBook->unlinkContacts(parentId, contactsIds);
 }
 
-bool AddressBookAdaptor::updateContact(const QString &contact)
+QStringList AddressBookAdaptor::updateContacts(const QStringList &contacts)
 {
-    return m_addressBook->updateContact(contact);
+    qDebug() << Q_FUNC_INFO << contacts;
+    return m_addressBook->updateContacts(contacts);
 
 }
 

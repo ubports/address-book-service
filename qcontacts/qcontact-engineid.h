@@ -11,7 +11,7 @@ class GaleraEngineId : public QtContacts::QContactEngineId
 public:
     GaleraEngineId();
     ~GaleraEngineId();
-    GaleraEngineId(quint32 contactId, const QString &managerUri);
+    GaleraEngineId(const QString &contactId, const QString &managerUri);
     GaleraEngineId(const GaleraEngineId &other);
     GaleraEngineId(const QMap<QString, QString> &parameters, const QString &engineIdString);
 
@@ -30,7 +30,7 @@ public:
     uint hash() const;
 
 private:
-    quint32 m_contactId;
+    QString m_contactId;
     QString m_managerUri;
 };
 

@@ -6,12 +6,12 @@ namespace galera
 {
 
 GaleraEngineId::GaleraEngineId()
-    : m_contactId(0)
+    : m_contactId("")
 {
     //qDebug() << Q_FUNC_INFO;
 }
 
-GaleraEngineId::GaleraEngineId(quint32 contactId, const QString &managerUri)
+GaleraEngineId::GaleraEngineId(const QString &contactId, const QString &managerUri)
     : m_contactId(contactId),
       m_managerUri(managerUri)
 {
@@ -65,7 +65,7 @@ QString GaleraEngineId::managerUri() const
 QString GaleraEngineId::toString() const
 {
     //qDebug() << Q_FUNC_INFO;
-    return QString::number(m_contactId);
+    return m_contactId;
 }
 
 QtContacts::QContactEngineId* GaleraEngineId::clone() const
@@ -85,7 +85,7 @@ QDebug& GaleraEngineId::debugStreamOut(QDebug &dbg) const
 uint GaleraEngineId::hash() const
 {
     //qDebug() << Q_FUNC_INFO;
-    return m_contactId;
+    return qHash(m_contactId);
 }
 
 }

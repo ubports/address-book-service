@@ -27,13 +27,17 @@ add_executable(${CONTACTS_APP}
 )
 
 target_link_libraries(${CONTACTS_APP}
+    vcard-utils
     ${GLIB_LIBRARIES}
+    ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
 )
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
     ${GLIB_INCLUDE_DIRS}
+    ${GIO_INCLUDE_DIRS}
     ${FOLKS_INCLUDE_DIRS}
 )
 
