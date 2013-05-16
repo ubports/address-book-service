@@ -13,6 +13,7 @@
 
 namespace galera
 {
+typedef void (*UpdateDoneCB)(const QString&, void*);
 
 typedef QList<QtVersit::QVersitProperty> PropertyList;
 class QIndividual
@@ -40,14 +41,16 @@ public:
 
     QtContacts::QContact &contact();
     QtContacts::QContact copy(Fields fields = QIndividual::All);
-    bool update(const QString &vcard);
-    bool update(const QtContacts::QContact &contact);
+    bool update(const QString &vcard, UpdateDoneCB cb, void* data);
+    bool update(const QtContacts::QContact &contact, UpdateDoneCB cb, void* data);
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
 
 private:
     FolksIndividual *m_individual;
     QtContacts::QContact m_contact;
+    QMap<QString, QPair<QtContacts::QContactDetail, FolksAbstractFieldDetails*> > m_fieldsMap;
+    unsigned int m_fieldMapNextKey;
 
     bool fieldsContains(Fields fields, Field value) const;
     QList<QtVersit::QVersitProperty> parseFieldList(const QString &fieldName, GeeSet *values) const;
@@ -70,6 +73,24 @@ private:
     QtContacts::QContactDetail getTimeZone() const;
     QList<QtContacts::QContactDetail> getUrls() const;
 
+
+    // update
+    void updateName(const QtContacts::QContactDetail &name, void* data);
+    void updateNickname(const QtContacts::QContactDetail &detail, void* data);
+    void updateBirthday(const QtContacts::QContactDetail &detail, void* data);
+    void updatePhoto(const QtContacts::QContactDetail &detail, void* data);
+    void updateTimezone(const QtContacts::QContactDetail &detail, void* data);
+    void updateRoles(QList<QtContacts::QContactDetail> details, void* data);
+    void updatePhones(QList<QtContacts::QContactDetail> details, void* data);
+    void updateEmails(QList<QtContacts::QContactDetail> details, void* data);
+    void updateIms(QList<QtContacts::QContactDetail> details, void* data);
+    void updateUrls(QList<QtContacts::QContactDetail> details, void* data);
+    void updateNotes(QList<QtContacts::QContactDetail> details, void* data);
+    void updateAddresses(QList<QtContacts::QContactDetail> details, void* data);
+    static void updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata);
+    static bool compareDetails(QList<QtContacts::QContactDetail> original, QList<QtContacts::QContactDetail> details);
+
+    // parse context and parameters
     static void parseParameters(QtContacts::QContactDetail &detail, FolksAbstractFieldDetails *fd);
     static void parsePhoneParameters(QtContacts::QContactDetail &phone, const QStringList &parameters);
     static void parseAddressParameters(QtContacts::QContactDetail &address, const QStringList &parameters);
@@ -84,6 +105,7 @@ private:
     static QStringList listParameters(FolksAbstractFieldDetails *details);
     static QStringList listContext(const QtContacts::QContactDetail &detail);
     static QList<int> contextsFromParameters(QStringList &parameters);
+
 
     static int onlineAccountProtocolFromString(const QString &protocol);
     static QString onlineAccountProtocolFromEnum(int protocol);

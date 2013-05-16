@@ -28,8 +28,27 @@
 using namespace QtVersit;
 using namespace QtContacts;
 
+namespace
+{
+
+class UpdateContactData
+{
+public:
+    QContactDetail::DetailType m_currentDetailType;
+    QContact m_newContact;
+    galera::QIndividual *m_self;
+
+    QList<QContactDetail> m_detailsChanged;
+    galera::UpdateDoneCB m_doneCB;
+    void *m_doneData;
+};
+
+}
 namespace galera
 {
+
+// TODO: find a better way to link abstract field with details
+#define FOLKS_DATA_FIELD        10000
 
 #define SET_AFD_NEW() \
         GEE_SET(gee_hash_set_new( \
@@ -270,7 +289,7 @@ QList<QtContacts::QContactDetail> QIndividual::getRoles() const
         org.setTitle(QString::fromUtf8(folks_role_get_title(role)));
         parseParameters(org, fd);
 
-        g_object_unref(fd);
+        g_object_unref(fd);        
         details << org;
     }
 
@@ -538,32 +557,465 @@ void QIndividual::updateContact()
     }
 }
 
-bool QIndividual::update(const QtContacts::QContact &contact)
+void QIndividual::updateName(const QtContacts::QContactDetail &detail, void* data)
 {
-    if (contact != this->contact()) {
-        qDebug() << "Contact needs update";
+    QContactDetail originalName = m_contact.detail(QContactDetail::TypeName);
+    if (FOLKS_IS_NAME_DETAILS(m_individual) && (originalName != detail)) {
+        const QContactName *name = static_cast<const QContactName*>(&detail);
+        FolksStructuredName *sn = folks_name_details_get_structured_name(FOLKS_NAME_DETAILS(m_individual));
 
-        QList<QContactDetail> originalDetails = this->contact().details();
-        QList<QContactDetail> newDetails = contact.details();
-        qDebug() << "size of details" << originalDetails.size() << newDetails.size();
-        for(int i=0; i < originalDetails.size(); i++) {
-            //qDebug() << "\t" << originalDetails[i];
-            if (!originalDetails.contains(newDetails[i])) {
-                qDebug() << "orig details:" << originalDetails[i] << "/"  << originalDetails[i].contexts();
-                qDebug() << "new details:" << newDetails[i] << "/" << newDetails[i].contexts();
-                qDebug() << "-------------------------------------";
+        if (!sn) {
+            sn = folks_structured_name_new(name->lastName().toUtf8().data(),
+                                           name->firstName().toUtf8().data(),
+                                           name->middleName().toUtf8().data(),
+                                           name->prefix().toUtf8().data(),
+                                           name->suffix().toUtf8().data());
+        } else {
+            folks_structured_name_set_family_name(sn, name->lastName().toUtf8().data());
+            folks_structured_name_set_given_name(sn, name->firstName().toUtf8().data());
+            folks_structured_name_set_additional_names(sn, name->middleName().toUtf8().data());
+            folks_structured_name_set_prefixes(sn, name->prefix().toUtf8().data());
+            folks_structured_name_set_suffixes(sn, name->suffix().toUtf8().data());
+        }
+        folks_name_details_change_structured_name(FOLKS_NAME_DETAILS(m_individual),
+                                                  sn,
+                                                  (GAsyncReadyCallback) updateDetailsDone,
+                                                  data);
+        g_object_unref(sn);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
 
-                if (originalDetails[i].type() == QContactDetail::TypeOnlineAccount) {
-                    QContactOnlineAccount *acc = static_cast<QContactOnlineAccount*>(&originalDetails[i]);
-                    QContactOnlineAccount *acc2 = static_cast<QContactOnlineAccount*>(&newDetails[i]);
-                    qDebug() << "orig" << acc->subTypes();
-                    qDebug() << "new" << acc2->subTypes();
-                }
+void QIndividual::updateNickname(const QtContacts::QContactDetail &detail, void* data)
+{
+    QContactDetail originalNickname = m_contact.detail(QContactDetail::TypeNickname);
+    if (FOLKS_IS_NAME_DETAILS(m_individual) && (originalNickname != detail)) {
+        const QContactNickname *nickname = static_cast<const QContactNickname*>(&detail);
+        folks_name_details_change_nickname(FOLKS_NAME_DETAILS(m_individual),
+                                           nickname->nickname().toUtf8().data(),
+                                           (GAsyncReadyCallback) updateDetailsDone,
+                                           data);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+void QIndividual::updateBirthday(const QtContacts::QContactDetail &detail, void* data)
+{
+    QContactDetail originalBirthday = m_contact.detail(QContactDetail::TypeBirthday);
+    if (FOLKS_IS_BIRTHDAY_DETAILS(m_individual) && (originalBirthday != detail)) {
+        const QContactBirthday *birthday = static_cast<const QContactBirthday*>(&detail);
+        GDateTime *dateTime = NULL;
+        if (!birthday->isEmpty()) {
+            dateTime = g_date_time_new_from_unix_utc(birthday->dateTime().toMSecsSinceEpoch() / 1000);
+        }
+        folks_birthday_details_change_birthday(FOLKS_BIRTHDAY_DETAILS(m_individual),
+                                               dateTime,
+                                               (GAsyncReadyCallback) updateDetailsDone,
+                                               data);
+        g_date_time_unref(dateTime);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+void QIndividual::updatePhoto(const QtContacts::QContactDetail &detail, void* data)
+{
+    QContactDetail originalAvatar = m_contact.detail(QContactDetail::TypeAvatar);
+    if (FOLKS_IS_AVATAR_DETAILS(m_individual) && (detail != originalAvatar)) {
+        //TODO:
+        const QContactAvatar *avatar = static_cast<const QContactAvatar*>(&detail);
+        folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(m_individual),
+                                           0,
+                                           (GAsyncReadyCallback) updateDetailsDone,
+                                           data);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+void QIndividual::updateTimezone(const QtContacts::QContactDetail &detail, void* data)
+{
+    //TODO
+    updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+}
+
+void QIndividual::updateRoles(QList<QtContacts::QContactDetail> details, void* data)
+{
+    QList<QContactDetail> originalOrganizations = m_contact.details(QContactDetail::TypeOrganization);
+
+    if (FOLKS_IS_ROLE_DETAILS(m_individual) && compareDetails(originalOrganizations, details)) {
+        GeeSet *roleSet = SET_AFD_NEW();
+        Q_FOREACH(const QContactDetail& detail, details) {
+            const QContactOrganization *org = static_cast<const QContactOrganization*>(&detail);
+
+            // The role values can not be NULL
+            const gchar* title = org->title().toUtf8().data();
+            const gchar* name = org->name().toUtf8().data();
+            const gchar* roleName = org->role().toUtf8().data();
+
+            FolksRole *role = folks_role_new(title ? title : "", name ? name : "", "");
+            folks_role_set_role(role, roleName ? roleName : "");
+
+            FolksRoleFieldDetails *fieldDetails = folks_role_field_details_new(role, NULL);
+            parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(fieldDetails), detail);
+            gee_collection_add(GEE_COLLECTION(roleSet), fieldDetails);
+
+            g_object_unref(role);
+            g_object_unref(fieldDetails);
+        }
+
+        folks_role_details_change_roles(FOLKS_ROLE_DETAILS(m_individual),
+                                        roleSet,
+                                        (GAsyncReadyCallback) updateDetailsDone,
+                                        data);
+        g_object_unref(roleSet);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+void QIndividual::updateEmails(QList<QtContacts::QContactDetail> details, void* data)
+{
+    QList<QContactDetail> originalEmails = m_contact.details(QContactDetail::TypeEmailAddress);
+
+    if (FOLKS_IS_EMAIL_DETAILS(m_individual) && compareDetails(originalEmails, details)) {
+        GeeSet *emailSet = SET_AFD_NEW();
+        Q_FOREACH(const QContactDetail& detail, details) {
+            const QContactEmailAddress *email = static_cast<const QContactEmailAddress*>(&detail);
+
+            if(!email->isEmpty()) {
+                FolksEmailFieldDetails *emailDetails = folks_email_field_details_new(email->emailAddress().toUtf8().data(), NULL);
+                parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(emailDetails), detail);
+                gee_collection_add(GEE_COLLECTION(emailSet), emailDetails);
+                g_object_unref(emailDetails);
+            }
+        }
+        folks_email_details_change_email_addresses(FOLKS_EMAIL_DETAILS(m_individual),
+                                                   emailSet,
+                                                   (GAsyncReadyCallback) updateDetailsDone,
+                                                   data);
+        g_object_unref(emailSet);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+void QIndividual::updatePhones(QList<QtContacts::QContactDetail> details, void* data)
+{
+    QList<QContactDetail> originalPhones = m_contact.details(QContactDetail::TypePhoneNumber);
+
+    if (FOLKS_IS_PHONE_DETAILS(m_individual) && compareDetails(originalPhones, details)) {
+        GeeSet *phoneSet = SET_AFD_NEW();
+        Q_FOREACH(const QContactDetail& detail, details) {
+            const QContactPhoneNumber *phone = static_cast<const QContactPhoneNumber*>(&detail);
+
+            if(!phone->isEmpty()) {
+                FolksPhoneFieldDetails *phoneDetails = folks_phone_field_details_new(phone->number().toUtf8().data(), NULL);
+                parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(phoneDetails), detail);
+                gee_collection_add(GEE_COLLECTION(phoneSet), phoneDetails);
+                g_object_unref(phoneDetails);
+            }
+        }
+        folks_phone_details_change_phone_numbers(FOLKS_PHONE_DETAILS(m_individual),
+                                                 phoneSet,
+                                                 (GAsyncReadyCallback) updateDetailsDone,
+                                                 data);
+        g_object_unref(phoneSet);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+bool QIndividual::compareDetails(QList<QtContacts::QContactDetail> original, QList<QtContacts::QContactDetail> details)
+{
+    if (original.size() != details.size()) {
+        return false;
+    }
+
+    Q_FOREACH(const QContactDetail& detail, details) {
+        if (!original.contains(detail)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void QIndividual::updateAddresses(QList<QtContacts::QContactDetail> details, void* data)
+{
+    QList<QContactDetail> originalAddress = m_contact.details(QContactDetail::TypeAddress);
+
+    if (FOLKS_IS_POSTAL_ADDRESS_DETAILS(m_individual) && compareDetails(originalAddress, details)) {
+        qDebug() << "Address diff (original):" << originalAddress;
+        qDebug() << "Address diff (new):" << details;
+        GeeSet *addressSet = SET_AFD_NEW();
+        Q_FOREACH(const QContactDetail& detail, details) {
+            const QContactAddress *address = static_cast<const QContactAddress*>(&detail);
+            if (!address->isEmpty()) {
+                FolksPostalAddress *postalAddress = folks_postal_address_new(address->postOfficeBox().toUtf8().data(),
+                                                                             NULL,
+                                                                             address->street().toUtf8().data(),
+                                                                             address->locality().toUtf8().data(),
+                                                                             address->region().toUtf8().data(),
+                                                                             address->postcode().toUtf8().data(),
+                                                                             address->country().toUtf8().data(),
+                                                                             NULL,
+                                                                             NULL);
+                FolksPostalAddressFieldDetails *pafd = folks_postal_address_field_details_new(postalAddress, NULL);
+
+                parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(pafd), detail);
+                gee_collection_add(GEE_COLLECTION(addressSet), pafd);
+
+                g_object_unref(postalAddress);
+                g_object_unref(pafd);
             }
         }
 
+        folks_postal_address_details_change_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(m_individual),
+                                                             addressSet,
+                                                             (GAsyncReadyCallback) updateDetailsDone,
+                                                             data);
+        g_object_unref(addressSet);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+void QIndividual::updateIms(QList<QtContacts::QContactDetail> details, void* data)
+{
+    QList<QContactDetail> originalIms = m_contact.details(QContactDetail::TypeOnlineAccount);
+
+    if (FOLKS_IS_IM_DETAILS(m_individual) && compareDetails(originalIms, details)) {
+        GeeMultiMap *imAddressHash = GEE_MULTI_MAP(gee_hash_multi_map_new(G_TYPE_STRING,
+                                                                          (GBoxedCopyFunc) g_strdup,
+                                                                          g_free,
+                                                                          FOLKS_TYPE_IM_FIELD_DETAILS,
+                                                                          g_object_ref,
+                                                                          g_object_unref,
+                                                                          g_str_hash,
+                                                                          g_str_equal,
+                                                                          (GHashFunc) folks_abstract_field_details_hash,
+                                                                          (GEqualFunc) folks_abstract_field_details_equal));
 
 
+        Q_FOREACH(const QContactDetail& detail, details) {
+            const QContactOnlineAccount *im = static_cast<const QContactOnlineAccount*>(&detail);
+            if (!im->accountUri().isEmpty()) {
+                FolksImFieldDetails *imfd = folks_im_field_details_new(im->accountUri().toUtf8().data(), NULL);
+                parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(imfd), detail);
+                gee_multi_map_set(imAddressHash,
+                                  onlineAccountProtocolFromEnum(im->protocol()).toUtf8().data(), imfd);
+                g_object_unref(imfd);
+            }
+        }
+
+        folks_im_details_change_im_addresses(FOLKS_IM_DETAILS(m_individual),
+                                             imAddressHash,
+                                             (GAsyncReadyCallback) updateDetailsDone,
+                                             data);
+        g_object_unref(imAddressHash);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+void QIndividual::updateUrls(QList<QtContacts::QContactDetail> details, void* data)
+{
+    QList<QContactDetail> originalUrls = m_contact.details(QContactDetail::TypeUrl);
+
+    if (FOLKS_IS_URL_DETAILS(m_individual) && compareDetails(originalUrls, details)) {
+        GeeSet *urlSet = SET_AFD_NEW();
+        Q_FOREACH(const QContactDetail& detail, details) {
+            const QContactUrl *url = static_cast<const QContactUrl*>(&detail);
+
+            if(!url->isEmpty()) {
+                FolksUrlFieldDetails *urlDetails = folks_url_field_details_new(url->url().toUtf8().data(), NULL);
+
+                //TODO: set context
+                gee_collection_add(GEE_COLLECTION(urlSet), urlDetails);
+                g_object_unref(urlDetails);
+            }
+        }
+        folks_url_details_change_urls(FOLKS_URL_DETAILS(m_individual),
+                                      urlSet,
+                                      (GAsyncReadyCallback) updateDetailsDone,
+                                      data);
+        g_object_unref(urlSet);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+void QIndividual::updateNotes(QList<QtContacts::QContactDetail> details, void* data)
+{
+    QList<QContactDetail> originalNotes = m_contact.details(QContactDetail::TypeNote);
+
+    if (FOLKS_IS_NOTE_DETAILS(m_individual) && compareDetails(originalNotes, details)) {
+        GeeSet *noteSet = SET_AFD_NEW();
+        Q_FOREACH(const QContactDetail& detail, details) {
+            const QContactNote *note = static_cast<const QContactNote*>(&detail);
+
+            if(!note->isEmpty()) {
+                FolksNoteFieldDetails *noteDetails = folks_note_field_details_new(note->note().toUtf8().data(), NULL, 0);
+
+                //TODO: set context
+                gee_collection_add(GEE_COLLECTION(noteSet), noteDetails);
+                g_object_unref(noteDetails);
+            }
+        }
+        folks_note_details_change_notes(FOLKS_NOTE_DETAILS(m_individual),
+                                        noteSet,
+                                        (GAsyncReadyCallback) updateDetailsDone,
+                                        data);
+        g_object_unref(noteSet);
+    } else {
+        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    }
+}
+
+
+void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata)
+{
+    GError *error = 0;
+    UpdateContactData *data = static_cast<UpdateContactData*>(userdata);
+
+    switch(data->m_currentDetailType) {
+    case QContactDetail::TypeUndefined:
+
+    case QContactDetail::TypeAddress:
+        if (result) {
+            folks_postal_address_details_change_postal_addresses_finish(FOLKS_POSTAL_ADDRESS_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeAvatar;
+            data->m_self->updatePhoto(data->m_newContact.detail(QContactDetail::TypeAvatar), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeAvatar:
+        if (result) {
+            folks_avatar_details_change_avatar_finish(FOLKS_AVATAR_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeBirthday;
+            data->m_self->updateBirthday(data->m_newContact.detail(QContactDetail::TypeBirthday), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeBirthday:
+        if (result) {
+            folks_birthday_details_change_birthday_finish(FOLKS_BIRTHDAY_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeEmailAddress;
+            data->m_self->updateEmails(data->m_newContact.details(QContactDetail::TypeEmailAddress), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeEmailAddress:
+        if (result) {
+            folks_email_details_change_email_addresses_finish(FOLKS_EMAIL_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeName;
+            data->m_self->updateName(data->m_newContact.detail(QContactDetail::TypeName), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeName:
+        if (result) {
+            folks_name_details_change_structured_name_finish(FOLKS_NAME_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeNickname;
+            data->m_self->updateNickname(data->m_newContact.detail(QContactDetail::TypeNickname), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeNickname:
+        if (result) {
+            folks_name_details_change_nickname_finish(FOLKS_NAME_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeNote;
+            data->m_self->updateNotes(data->m_newContact.details(QContactDetail::TypeNote), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeNote:
+        if (result) {
+            folks_note_details_change_notes_finish(FOLKS_NOTE_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeOnlineAccount;
+            data->m_self->updateIms(data->m_newContact.details(QContactDetail::TypeOnlineAccount), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeOnlineAccount:
+        if (result) {
+            folks_im_details_change_im_addresses_finish(FOLKS_IM_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeOrganization;
+            data->m_self->updateRoles(data->m_newContact.details(QContactDetail::TypeOrganization), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeOrganization:
+        if (result) {
+            folks_role_details_change_roles_finish(FOLKS_ROLE_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypePhoneNumber;
+            data->m_self->updatePhones(data->m_newContact.details(QContactDetail::TypePhoneNumber), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypePhoneNumber:
+        if (result) {
+            folks_phone_details_change_phone_numbers_finish(FOLKS_PHONE_DETAILS(data->m_self->m_individual), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeUrl;
+            data->m_self->updateUrls(data->m_newContact.details(QContactDetail::TypeUrl), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeUrl:
+        if (result) {
+            folks_url_details_change_urls_finish(FOLKS_URL_DETAILS(data->m_self->m_individual), result, &error);
+        }
+    default:
+        break;
+    }
+
+    QString errorMessage;
+    if (error) {
+        errorMessage = QString::fromUtf8(error->message);
+        g_error_free(error);
+    }
+
+    data->m_doneCB(errorMessage, data->m_doneData);
+    delete data;
+}
+
+
+bool QIndividual::update(const QtContacts::QContact &newContact, UpdateDoneCB cb, void* userData)
+{
+    QContact &originalContact = contact();
+    if (newContact != originalContact) {
+
+        UpdateContactData *data = new UpdateContactData;
+        data->m_currentDetailType = QContactDetail::TypeAddress;
+        data->m_newContact = newContact;
+        data->m_self = this;
+        data->m_doneCB = cb;
+        data->m_doneData = userData;
+
+        updateAddresses(newContact.details(QContactDetail::TypeAddress), data);
         return true;
     } else {
         qDebug() << "Contact is equal";
@@ -571,10 +1023,10 @@ bool QIndividual::update(const QtContacts::QContact &contact)
     }
 }
 
-bool QIndividual::update(const QString &vcard)
+bool QIndividual::update(const QString &vcard, UpdateDoneCB cb, void* data)
 {
     QContact contact = VCardParser::vcardToContact(vcard);
-    return update(contact);
+    return update(contact, cb, data);
 }
 
 QStringList QIndividual::listParameters(FolksAbstractFieldDetails *details)
@@ -751,6 +1203,9 @@ void QIndividual::parseParameters(QtContacts::QContactDetail &detail, FolksAbstr
     if (!context.isEmpty()) {
         detail.setContexts(context);
     }
+    // TODO: find a better way to link fd with details
+//    detail.setValue(FOLKS_DATA_FIELD, QVariant::fromValue<void*>(fd));
+//    detail.setDetailUri(QString::number((long) fd));
 
     switch (detail.type()) {
         case QContactDetail::TypePhoneNumber:
@@ -768,8 +1223,6 @@ void QIndividual::parseParameters(QtContacts::QContactDetail &detail, FolksAbstr
         default:
             break;
     }
-
-
 }
 
 QList<int> QIndividual::contextsFromParameters(QStringList &parameters)

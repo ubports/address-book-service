@@ -40,6 +40,7 @@ public:
 
     bool contains(FolksIndividual *individual) const;
     ContactEntry *value(FolksIndividual *individual) const;
+    ContactEntry *value(const QString &id) const;
     ContactEntry *take(FolksIndividual *individual);
     void insert(FolksIndividual *individual, ContactEntry *entry);
 

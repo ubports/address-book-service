@@ -83,7 +83,7 @@ public Q_SLOTS:
     bool removeContacts(const QStringList &contactIds);
     QStringList sortFields();
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
-    QStringList updateContacts(const QStringList &contacts);
+    QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
 
 Q_SIGNALS:
     void contactsCreated(const QStringList &ids);

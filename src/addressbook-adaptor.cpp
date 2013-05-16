@@ -55,10 +55,10 @@ bool AddressBookAdaptor::unlinkContacts(const QString &parentId, const QStringLi
     return m_addressBook->unlinkContacts(parentId, contactsIds);
 }
 
-QStringList AddressBookAdaptor::updateContacts(const QStringList &contacts)
+QStringList AddressBookAdaptor::updateContacts(const QStringList &contacts, const QDBusMessage &message)
 {
     qDebug() << Q_FUNC_INFO << contacts;
-    return m_addressBook->updateContacts(contacts);
+    return m_addressBook->updateContacts(contacts, message);
 
 }
 

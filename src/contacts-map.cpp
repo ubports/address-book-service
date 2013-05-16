@@ -43,6 +43,11 @@ ContactEntry *ContactsMap::value(FolksIndividual *individual) const
     return m_individualsToEntry[individual];
 }
 
+ContactEntry *ContactsMap::value(const QString &id) const
+{
+    return m_idToEntry[id];
+}
+
 ContactEntry *ContactsMap::take(FolksIndividual *individual)
 {
     if (m_individualsToEntry.remove(individual)) {

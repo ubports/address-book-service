@@ -38,7 +38,7 @@ public:
     bool removeContacts(const QStringList &contactIds);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
-    QStringList updateContacts(const QStringList &contacts);
+    QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
 
 private Q_SLOTS:
     void viewClosed();
@@ -52,6 +52,9 @@ private:
     void prepareFolks();
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
+
+
+    static void updateContacts(const QString &error, void *userData);
 
     static void individualsChangedCb(FolksIndividualAggregator *individualAggregator,
                                      GeeMultiMap *changes,

@@ -47,7 +47,7 @@ class Contacts(object):
         return self.addr_iface.updateContacts([vcard])
 
     def create(self, vcard):
-        print "CREATE:", self.addr_iface.createContact(vcard, "")
+        return self.addr_iface.createContact(vcard, "")
 
 
 service = Contacts()
@@ -58,8 +58,11 @@ if "query" in sys.argv:
         print contact
 
 if "update" in sys.argv:
-    contacts = service.query()
-    service.update(contacts[0])
+    vcard = VCARD_JOE
+    contactId = service.create(vcard)
+    vcard = vcard.replace("VERSION:3.0", "VERSION:3.0\nUID:%s" % (contactId))
+    vcard = vcard.replace("N:Gump;Forrest", "N:Hanks;Tom")
+    print service.update(vcard)
 
 if "create" in sys.argv:
-    contacts = service.create(VCARD_JOE)
+    print "New UID:", service.create(VCARD_JOE)

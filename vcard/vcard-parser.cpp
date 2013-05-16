@@ -50,6 +50,14 @@ namespace
                     //TODO remove original property
                 }
             }
+
+            if (!detail.detailUri().isEmpty()) {
+                QVersitProperty prop = toBeAdded->takeLast();
+                QMultiHash<QString, QString> params = prop.parameters();
+                params.insert("PID", detail.detailUri());
+                prop.setParameters(params);
+                *toBeAdded << prop;
+            }
         }
 
         virtual void contactProcessed(const QContact& contact, QVersitDocument* document)
