@@ -62,6 +62,7 @@ if "update" in sys.argv:
     contactId = service.create(vcard)
     vcard = vcard.replace("VERSION:3.0", "VERSION:3.0\nUID:%s" % (contactId))
     vcard = vcard.replace("N:Gump;Forrest", "N:Hanks;Tom")
+    vcard = vcard.replace("FN:Forrest Gumpt", "N:Tom Hanks")
     print service.update(vcard)
 
 if "create" in sys.argv:

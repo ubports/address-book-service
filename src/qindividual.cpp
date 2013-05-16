@@ -28,6 +28,7 @@
 #include <QtVersit/QVersitContactExporter>
 
 #include <QtContacts/QContactName>
+#include <QtContacts/QContactDisplayLabel>
 #include <QtContacts/QContactBirthday>
 #include <QtContacts/QContactNickname>
 #include <QtContacts/QContactAvatar>
@@ -55,6 +56,7 @@ public:
     QContactDetail::DetailType m_currentDetailType;
     QContact m_newContact;
     galera::QIndividual *m_self;
+    FolksPersona *m_persona;
 
     QList<QContactDetail> m_detailsChanged;
     galera::UpdateDoneCB m_doneCB;
@@ -265,6 +267,16 @@ QtContacts::QContactDetail QIndividual::getName() const
     return detail;
 }
 
+QtContacts::QContactDetail QIndividual::getFullName() const
+{
+    QContactDisplayLabel detail;
+    const gchar *fullName = folks_name_details_get_full_name(FOLKS_NAME_DETAILS(m_individual));
+    if (fullName && strlen(fullName)) {
+        detail.setLabel(QString::fromUtf8(fullName));
+    }
+    return detail;
+}
+
 QtContacts::QContactDetail QIndividual::getNickname() const
 {
     QContactNickname detail;
@@ -374,12 +386,35 @@ QList<QtContacts::QContactDetail> QIndividual::getAddresses() const
         FolksPostalAddress *addr = FOLKS_POSTAL_ADDRESS(folks_abstract_field_details_get_value(fd));
 
         QContactAddress address;
-        address.setCountry(QString::fromUtf8(folks_postal_address_get_country(addr)));
-        address.setLocality(QString::fromUtf8(folks_postal_address_get_locality(addr)));
-        address.setPostOfficeBox(QString::fromUtf8(folks_postal_address_get_po_box(addr)));
-        address.setPostcode(QString::fromUtf8(folks_postal_address_get_postal_code(addr)));
-        address.setRegion(QString::fromUtf8(folks_postal_address_get_region(addr)));
-        address.setStreet(QString::fromUtf8(folks_postal_address_get_street(addr)));
+        const char *field = folks_postal_address_get_country(addr);
+        if (field && strlen(field)) {
+            address.setCountry(QString::fromUtf8(field));
+        }
+
+        field = folks_postal_address_get_locality(addr);
+        if (field && strlen(field)) {
+            address.setLocality(QString::fromUtf8(field));
+        }
+
+        field = folks_postal_address_get_po_box(addr);
+        if (field && strlen(field)) {
+            address.setPostOfficeBox(QString::fromUtf8(field));
+        }
+
+        field = folks_postal_address_get_postal_code(addr);
+        if (field && strlen(field)) {
+            address.setPostcode(QString::fromUtf8(field));
+        }
+
+        field = folks_postal_address_get_region(addr);
+        if (field && strlen(field)) {
+            address.setRegion(QString::fromUtf8(field));
+        }
+
+        field = folks_postal_address_get_street(addr);
+        if (field && strlen(field)) {
+            address.setStreet(QString::fromUtf8(field));
+        }
         parseParameters(address, fd);
 
         g_object_unref(fd);
@@ -549,6 +584,7 @@ void QIndividual::updateContact()
     m_contact = QContact();
     m_contact.appendDetail(getUid());
     m_contact.appendDetail(getName());
+    m_contact.appendDetail(getFullName());
     m_contact.appendDetail(getNickname());
     m_contact.appendDetail(getBirthday());
     m_contact.appendDetail(getPhoto());
@@ -576,13 +612,29 @@ void QIndividual::updateContact()
     }
 }
 
+void QIndividual::updateFullName(const QtContacts::QContactDetail &detail, void* data)
+{
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
+    QContactDetail originalLabel = m_contact.detail(QContactDetail::TypeDisplayLabel);
+    if (FOLKS_IS_NAME_DETAILS(udata->m_persona) && (originalLabel != detail)) {
+        const QContactDisplayLabel *label = static_cast<const QContactDisplayLabel*>(&detail);
+
+        folks_name_details_change_full_name(FOLKS_NAME_DETAILS(udata->m_persona),
+                                            label->label().toUtf8().data(),
+                                            (GAsyncReadyCallback) updateDetailsDone,
+                                            data);
+    } else {
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
+    }
+}
+
 void QIndividual::updateName(const QtContacts::QContactDetail &detail, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QContactDetail originalName = m_contact.detail(QContactDetail::TypeName);
-    if (FOLKS_IS_NAME_DETAILS(m_individual) && (originalName != detail)) {
+    if (FOLKS_IS_NAME_DETAILS(udata->m_persona) && (originalName != detail)) {
         const QContactName *name = static_cast<const QContactName*>(&detail);
         FolksStructuredName *sn = folks_name_details_get_structured_name(FOLKS_NAME_DETAILS(m_individual));
-
         if (!sn) {
             sn = folks_structured_name_new(name->lastName().toUtf8().data(),
                                            name->firstName().toUtf8().data(),
@@ -596,75 +648,81 @@ void QIndividual::updateName(const QtContacts::QContactDetail &detail, void* dat
             folks_structured_name_set_prefixes(sn, name->prefix().toUtf8().data());
             folks_structured_name_set_suffixes(sn, name->suffix().toUtf8().data());
         }
-        folks_name_details_change_structured_name(FOLKS_NAME_DETAILS(m_individual),
+
+        folks_name_details_change_structured_name(FOLKS_NAME_DETAILS(udata->m_persona),
                                                   sn,
                                                   (GAsyncReadyCallback) updateDetailsDone,
                                                   data);
         g_object_unref(sn);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
 void QIndividual::updateNickname(const QtContacts::QContactDetail &detail, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QContactDetail originalNickname = m_contact.detail(QContactDetail::TypeNickname);
-    if (FOLKS_IS_NAME_DETAILS(m_individual) && (originalNickname != detail)) {
+    if (FOLKS_IS_NAME_DETAILS(udata->m_persona) && (originalNickname != detail)) {
         const QContactNickname *nickname = static_cast<const QContactNickname*>(&detail);
-        folks_name_details_change_nickname(FOLKS_NAME_DETAILS(m_individual),
+        folks_name_details_change_nickname(FOLKS_NAME_DETAILS(udata->m_persona),
                                            nickname->nickname().toUtf8().data(),
                                            (GAsyncReadyCallback) updateDetailsDone,
                                            data);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
 void QIndividual::updateBirthday(const QtContacts::QContactDetail &detail, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QContactDetail originalBirthday = m_contact.detail(QContactDetail::TypeBirthday);
-    if (FOLKS_IS_BIRTHDAY_DETAILS(m_individual) && (originalBirthday != detail)) {
+    if (FOLKS_IS_BIRTHDAY_DETAILS(udata->m_persona) && (originalBirthday != detail)) {
         const QContactBirthday *birthday = static_cast<const QContactBirthday*>(&detail);
         GDateTime *dateTime = NULL;
         if (!birthday->isEmpty()) {
             dateTime = g_date_time_new_from_unix_utc(birthday->dateTime().toMSecsSinceEpoch() / 1000);
         }
-        folks_birthday_details_change_birthday(FOLKS_BIRTHDAY_DETAILS(m_individual),
+        folks_birthday_details_change_birthday(FOLKS_BIRTHDAY_DETAILS(udata->m_persona),
                                                dateTime,
                                                (GAsyncReadyCallback) updateDetailsDone,
                                                data);
         g_date_time_unref(dateTime);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
 void QIndividual::updatePhoto(const QtContacts::QContactDetail &detail, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QContactDetail originalAvatar = m_contact.detail(QContactDetail::TypeAvatar);
-    if (FOLKS_IS_AVATAR_DETAILS(m_individual) && (detail != originalAvatar)) {
+    if (FOLKS_IS_AVATAR_DETAILS(udata->m_persona) && (detail != originalAvatar)) {
         //TODO:
         const QContactAvatar *avatar = static_cast<const QContactAvatar*>(&detail);
-        folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(m_individual),
+        folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(udata->m_persona),
                                            0,
                                            (GAsyncReadyCallback) updateDetailsDone,
                                            data);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
 void QIndividual::updateTimezone(const QtContacts::QContactDetail &detail, void* data)
 {
     //TODO
-    updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
+    updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
 }
 
 void QIndividual::updateRoles(QList<QtContacts::QContactDetail> details, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QList<QContactDetail> originalOrganizations = m_contact.details(QContactDetail::TypeOrganization);
 
-    if (FOLKS_IS_ROLE_DETAILS(m_individual) && compareDetails(originalOrganizations, details)) {
+    if (FOLKS_IS_ROLE_DETAILS(udata->m_persona) && !detailListIsEqual(originalOrganizations, details)) {
         GeeSet *roleSet = SET_AFD_NEW();
         Q_FOREACH(const QContactDetail& detail, details) {
             const QContactOrganization *org = static_cast<const QContactOrganization*>(&detail);
@@ -685,21 +743,22 @@ void QIndividual::updateRoles(QList<QtContacts::QContactDetail> details, void* d
             g_object_unref(fieldDetails);
         }
 
-        folks_role_details_change_roles(FOLKS_ROLE_DETAILS(m_individual),
+        folks_role_details_change_roles(FOLKS_ROLE_DETAILS(udata->m_persona),
                                         roleSet,
                                         (GAsyncReadyCallback) updateDetailsDone,
                                         data);
         g_object_unref(roleSet);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
 void QIndividual::updateEmails(QList<QtContacts::QContactDetail> details, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QList<QContactDetail> originalEmails = m_contact.details(QContactDetail::TypeEmailAddress);
 
-    if (FOLKS_IS_EMAIL_DETAILS(m_individual) && compareDetails(originalEmails, details)) {
+    if (FOLKS_IS_EMAIL_DETAILS(udata->m_persona) && !detailListIsEqual(originalEmails, details)) {
         GeeSet *emailSet = SET_AFD_NEW();
         Q_FOREACH(const QContactDetail& detail, details) {
             const QContactEmailAddress *email = static_cast<const QContactEmailAddress*>(&detail);
@@ -711,21 +770,22 @@ void QIndividual::updateEmails(QList<QtContacts::QContactDetail> details, void* 
                 g_object_unref(emailDetails);
             }
         }
-        folks_email_details_change_email_addresses(FOLKS_EMAIL_DETAILS(m_individual),
+        folks_email_details_change_email_addresses(FOLKS_EMAIL_DETAILS(udata->m_persona),
                                                    emailSet,
                                                    (GAsyncReadyCallback) updateDetailsDone,
                                                    data);
         g_object_unref(emailSet);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
 void QIndividual::updatePhones(QList<QtContacts::QContactDetail> details, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QList<QContactDetail> originalPhones = m_contact.details(QContactDetail::TypePhoneNumber);
 
-    if (FOLKS_IS_PHONE_DETAILS(m_individual) && compareDetails(originalPhones, details)) {
+    if (FOLKS_IS_PHONE_DETAILS(udata->m_persona) && !detailListIsEqual(originalPhones, details)) {
         GeeSet *phoneSet = SET_AFD_NEW();
         Q_FOREACH(const QContactDetail& detail, details) {
             const QContactPhoneNumber *phone = static_cast<const QContactPhoneNumber*>(&detail);
@@ -737,17 +797,17 @@ void QIndividual::updatePhones(QList<QtContacts::QContactDetail> details, void* 
                 g_object_unref(phoneDetails);
             }
         }
-        folks_phone_details_change_phone_numbers(FOLKS_PHONE_DETAILS(m_individual),
+        folks_phone_details_change_phone_numbers(FOLKS_PHONE_DETAILS(udata->m_persona),
                                                  phoneSet,
                                                  (GAsyncReadyCallback) updateDetailsDone,
                                                  data);
         g_object_unref(phoneSet);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
-bool QIndividual::compareDetails(QList<QtContacts::QContactDetail> original, QList<QtContacts::QContactDetail> details)
+bool QIndividual::detailListIsEqual(QList<QtContacts::QContactDetail> original, QList<QtContacts::QContactDetail> details)
 {
     if (original.size() != details.size()) {
         return false;
@@ -764,11 +824,10 @@ bool QIndividual::compareDetails(QList<QtContacts::QContactDetail> original, QLi
 
 void QIndividual::updateAddresses(QList<QtContacts::QContactDetail> details, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QList<QContactDetail> originalAddress = m_contact.details(QContactDetail::TypeAddress);
 
-    if (FOLKS_IS_POSTAL_ADDRESS_DETAILS(m_individual) && compareDetails(originalAddress, details)) {
-        qDebug() << "Address diff (original):" << originalAddress;
-        qDebug() << "Address diff (new):" << details;
+    if (FOLKS_IS_POSTAL_ADDRESS_DETAILS(udata->m_persona) && !detailListIsEqual(originalAddress, details)) {
         GeeSet *addressSet = SET_AFD_NEW();
         Q_FOREACH(const QContactDetail& detail, details) {
             const QContactAddress *address = static_cast<const QContactAddress*>(&detail);
@@ -792,21 +851,22 @@ void QIndividual::updateAddresses(QList<QtContacts::QContactDetail> details, voi
             }
         }
 
-        folks_postal_address_details_change_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(m_individual),
+        folks_postal_address_details_change_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(udata->m_persona),
                                                              addressSet,
                                                              (GAsyncReadyCallback) updateDetailsDone,
                                                              data);
         g_object_unref(addressSet);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
 void QIndividual::updateIms(QList<QtContacts::QContactDetail> details, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QList<QContactDetail> originalIms = m_contact.details(QContactDetail::TypeOnlineAccount);
 
-    if (FOLKS_IS_IM_DETAILS(m_individual) && compareDetails(originalIms, details)) {
+    if (FOLKS_IS_IM_DETAILS(udata->m_persona) && !detailListIsEqual(originalIms, details)) {
         GeeMultiMap *imAddressHash = GEE_MULTI_MAP(gee_hash_multi_map_new(G_TYPE_STRING,
                                                                           (GBoxedCopyFunc) g_strdup,
                                                                           g_free,
@@ -830,34 +890,34 @@ void QIndividual::updateIms(QList<QtContacts::QContactDetail> details, void* dat
             }
         }
 
-        folks_im_details_change_im_addresses(FOLKS_IM_DETAILS(m_individual),
+        folks_im_details_change_im_addresses(FOLKS_IM_DETAILS(udata->m_persona),
                                              imAddressHash,
                                              (GAsyncReadyCallback) updateDetailsDone,
                                              data);
         g_object_unref(imAddressHash);
     } else {
-        updateDetailsDone(G_OBJECT(m_individual), NULL, data);
+        updateDetailsDone(G_OBJECT(udata->m_persona), NULL, data);
     }
 }
 
 void QIndividual::updateUrls(QList<QtContacts::QContactDetail> details, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QList<QContactDetail> originalUrls = m_contact.details(QContactDetail::TypeUrl);
 
-    if (FOLKS_IS_URL_DETAILS(m_individual) && compareDetails(originalUrls, details)) {
+    if (FOLKS_IS_URL_DETAILS(udata->m_persona) && !detailListIsEqual(originalUrls, details)) {
         GeeSet *urlSet = SET_AFD_NEW();
         Q_FOREACH(const QContactDetail& detail, details) {
             const QContactUrl *url = static_cast<const QContactUrl*>(&detail);
 
             if(!url->isEmpty()) {
                 FolksUrlFieldDetails *urlDetails = folks_url_field_details_new(url->url().toUtf8().data(), NULL);
-
-                //TODO: set context
+                parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(urlDetails), detail);
                 gee_collection_add(GEE_COLLECTION(urlSet), urlDetails);
                 g_object_unref(urlDetails);
             }
         }
-        folks_url_details_change_urls(FOLKS_URL_DETAILS(m_individual),
+        folks_url_details_change_urls(FOLKS_URL_DETAILS(udata->m_persona),
                                       urlSet,
                                       (GAsyncReadyCallback) updateDetailsDone,
                                       data);
@@ -869,9 +929,10 @@ void QIndividual::updateUrls(QList<QtContacts::QContactDetail> details, void* da
 
 void QIndividual::updateNotes(QList<QtContacts::QContactDetail> details, void* data)
 {
+    UpdateContactData *udata = static_cast<UpdateContactData*>(data);
     QList<QContactDetail> originalNotes = m_contact.details(QContactDetail::TypeNote);
 
-    if (FOLKS_IS_NOTE_DETAILS(m_individual) && compareDetails(originalNotes, details)) {
+    if (FOLKS_IS_NOTE_DETAILS(udata->m_persona) && !detailListIsEqual(originalNotes, details)) {
         GeeSet *noteSet = SET_AFD_NEW();
         Q_FOREACH(const QContactDetail& detail, details) {
             const QContactNote *note = static_cast<const QContactNote*>(&detail);
@@ -884,7 +945,7 @@ void QIndividual::updateNotes(QList<QtContacts::QContactDetail> details, void* d
                 g_object_unref(noteDetails);
             }
         }
-        folks_note_details_change_notes(FOLKS_NOTE_DETAILS(m_individual),
+        folks_note_details_change_notes(FOLKS_NOTE_DETAILS(udata->m_persona),
                                         noteSet,
                                         (GAsyncReadyCallback) updateDetailsDone,
                                         data);
@@ -901,11 +962,9 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
     UpdateContactData *data = static_cast<UpdateContactData*>(userdata);
 
     switch(data->m_currentDetailType) {
-    case QContactDetail::TypeUndefined:
-
     case QContactDetail::TypeAddress:
         if (result) {
-            folks_postal_address_details_change_postal_addresses_finish(FOLKS_POSTAL_ADDRESS_DETAILS(data->m_self->m_individual), result, &error);
+            folks_postal_address_details_change_postal_addresses_finish(FOLKS_POSTAL_ADDRESS_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeAvatar;
@@ -915,7 +974,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypeAvatar:
         if (result) {
-            folks_avatar_details_change_avatar_finish(FOLKS_AVATAR_DETAILS(data->m_self->m_individual), result, &error);
+            folks_avatar_details_change_avatar_finish(FOLKS_AVATAR_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeBirthday;
@@ -925,7 +984,17 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypeBirthday:
         if (result) {
-            folks_birthday_details_change_birthday_finish(FOLKS_BIRTHDAY_DETAILS(data->m_self->m_individual), result, &error);
+            folks_birthday_details_change_birthday_finish(FOLKS_BIRTHDAY_DETAILS(data->m_persona), result, &error);
+        }
+        if (!error) {
+            data->m_currentDetailType = QContactDetail::TypeDisplayLabel;
+            data->m_self->updateFullName(data->m_newContact.detail(QContactDetail::TypeDisplayLabel), data);
+            return;
+        }
+        break;
+    case QContactDetail::TypeDisplayLabel:
+        if (result) {
+            folks_name_details_change_full_name_finish(FOLKS_NAME_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeEmailAddress;
@@ -933,9 +1002,10 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
             return;
         }
         break;
+
     case QContactDetail::TypeEmailAddress:
         if (result) {
-            folks_email_details_change_email_addresses_finish(FOLKS_EMAIL_DETAILS(data->m_self->m_individual), result, &error);
+            folks_email_details_change_email_addresses_finish(FOLKS_EMAIL_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeName;
@@ -945,7 +1015,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypeName:
         if (result) {
-            folks_name_details_change_structured_name_finish(FOLKS_NAME_DETAILS(data->m_self->m_individual), result, &error);
+            folks_name_details_change_structured_name_finish(FOLKS_NAME_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeNickname;
@@ -955,7 +1025,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypeNickname:
         if (result) {
-            folks_name_details_change_nickname_finish(FOLKS_NAME_DETAILS(data->m_self->m_individual), result, &error);
+            folks_name_details_change_nickname_finish(FOLKS_NAME_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeNote;
@@ -965,7 +1035,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypeNote:
         if (result) {
-            folks_note_details_change_notes_finish(FOLKS_NOTE_DETAILS(data->m_self->m_individual), result, &error);
+            folks_note_details_change_notes_finish(FOLKS_NOTE_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeOnlineAccount;
@@ -975,7 +1045,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypeOnlineAccount:
         if (result) {
-            folks_im_details_change_im_addresses_finish(FOLKS_IM_DETAILS(data->m_self->m_individual), result, &error);
+            folks_im_details_change_im_addresses_finish(FOLKS_IM_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeOrganization;
@@ -985,7 +1055,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypeOrganization:
         if (result) {
-            folks_role_details_change_roles_finish(FOLKS_ROLE_DETAILS(data->m_self->m_individual), result, &error);
+            folks_role_details_change_roles_finish(FOLKS_ROLE_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypePhoneNumber;
@@ -995,7 +1065,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypePhoneNumber:
         if (result) {
-            folks_phone_details_change_phone_numbers_finish(FOLKS_PHONE_DETAILS(data->m_self->m_individual), result, &error);
+            folks_phone_details_change_phone_numbers_finish(FOLKS_PHONE_DETAILS(data->m_persona), result, &error);
         }
         if (!error) {
             data->m_currentDetailType = QContactDetail::TypeUrl;
@@ -1005,7 +1075,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     case QContactDetail::TypeUrl:
         if (result) {
-            folks_url_details_change_urls_finish(FOLKS_URL_DETAILS(data->m_self->m_individual), result, &error);
+            folks_url_details_change_urls_finish(FOLKS_URL_DETAILS(data->m_persona), result, &error);
         }
     default:
         break;
@@ -1017,6 +1087,7 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         g_error_free(error);
     }
 
+    qDebug() << "Update done" << errorMessage;
     data->m_doneCB(errorMessage, data->m_doneData);
     delete data;
 }
@@ -1033,6 +1104,7 @@ bool QIndividual::update(const QtContacts::QContact &newContact, UpdateDoneCB cb
         data->m_self = this;
         data->m_doneCB = cb;
         data->m_doneData = userData;
+        data->m_persona = primaryPersona();
 
         updateAddresses(newContact.details(QContactDetail::TypeAddress), data);
         return true;
@@ -1205,7 +1277,6 @@ QStringList QIndividual::parseOnlineAccountContext(const QtContacts::QContactDet
     }
 
     // Make compatible with contact importer
-
     if (acc->protocol() == QContactOnlineAccount::ProtocolJabber) {
         strings << map[QContactOnlineAccount::SubTypeImpp];
     } else if (acc->protocol() == QContactOnlineAccount::ProtocolJabber) {
@@ -1222,9 +1293,6 @@ void QIndividual::parseParameters(QtContacts::QContactDetail &detail, FolksAbstr
     if (!context.isEmpty()) {
         detail.setContexts(context);
     }
-    // TODO: find a better way to link fd with details
-//    detail.setValue(FOLKS_DATA_FIELD, QVariant::fromValue<void*>(fd));
-//    detail.setDetailUri(QString::number((long) fd));
 
     switch (detail.type()) {
         case QContactDetail::TypePhoneNumber:
@@ -1645,7 +1713,6 @@ void QIndividual::folksIndividualAggregatorAddPersonaFromDetailsDone(GObject *so
                                                                      GAsyncResult *res,
                                                                      QIndividual *individual)
 {
-
 }
 
 FolksPersona* QIndividual::primaryPersona() const

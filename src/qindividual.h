@@ -81,6 +81,7 @@ private:
     QtContacts::QContactDetail getUid() const;
     QList<QtContacts::QContactDetail> getClientPidMap() const;
     QtContacts::QContactDetail getName() const;
+    QtContacts::QContactDetail getFullName() const;
     QtContacts::QContactDetail getNickname() const;
     QtContacts::QContactDetail getBirthday() const;
     QtContacts::QContactDetail getPhoto() const;
@@ -94,6 +95,7 @@ private:
 
 
     // update
+    void updateFullName(const QtContacts::QContactDetail &name, void* data);
     void updateName(const QtContacts::QContactDetail &name, void* data);
     void updateNickname(const QtContacts::QContactDetail &detail, void* data);
     void updateBirthday(const QtContacts::QContactDetail &detail, void* data);
@@ -107,7 +109,7 @@ private:
     void updateNotes(QList<QtContacts::QContactDetail> details, void* data);
     void updateAddresses(QList<QtContacts::QContactDetail> details, void* data);
     static void updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata);
-    static bool compareDetails(QList<QtContacts::QContactDetail> original, QList<QtContacts::QContactDetail> details);
+    static bool detailListIsEqual(QList<QtContacts::QContactDetail> original, QList<QtContacts::QContactDetail> details);
 
     // parse context and parameters
     static void parseParameters(QtContacts::QContactDetail &detail, FolksAbstractFieldDetails *fd);
