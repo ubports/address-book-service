@@ -1,3 +1,21 @@
+/*
+ * Copyright 2013 Canonical Ltd.
+ *
+ * This file is part of contact-service-app.
+ *
+ * ontact-service-app is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 3.
+ *
+ * webbrowser-app is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "qindividual.h"
 
 #include "vcard/vcard-parser.h"
@@ -175,8 +193,9 @@ public:
 
 }; // class
 
-QIndividual::QIndividual(FolksIndividual *individual)
-    : m_individual(individual)
+QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator)
+    : m_individual(individual),
+      m_aggregator(aggregator)
 {
     g_object_ref(m_individual);
 }
@@ -1627,6 +1646,31 @@ void QIndividual::folksIndividualAggregatorAddPersonaFromDetailsDone(GObject *so
                                                                      QIndividual *individual)
 {
 
+}
+
+FolksPersona* QIndividual::primaryPersona() const
+{
+    if(m_individual == 0) {
+        return 0;
+    }
+
+    FolksPersona *retval = NULL;
+    GeeSet *personas = folks_individual_get_personas(m_individual);
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+
+    while(retval == NULL && gee_iterator_next(iter)) {
+        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+        FolksPersonaStore *primaryStore = folks_individual_aggregator_get_primary_store(m_aggregator);
+        if(folks_persona_get_store(persona) == primaryStore) {
+            retval = persona;
+            g_object_ref(retval);
+        }
+
+        g_object_unref(persona);
+    }
+    g_object_unref (iter);
+
+    return retval;
 }
 
 } //namespace

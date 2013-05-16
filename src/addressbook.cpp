@@ -1,3 +1,21 @@
+/*
+ * Copyright 2013 Canonical Ltd.
+ *
+ * This file is part of contact-service-app.
+ *
+ * ontact-service-app is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 3.
+ *
+ * webbrowser-app is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "addressbook.h"
 #include "addressbook-adaptor.h"
 #include "view.h"
@@ -220,7 +238,7 @@ QString AddressBook::addContact(FolksIndividual *individual)
 {
     qDebug() << "Add contact" << folks_individual_get_id(individual);
     Q_ASSERT(!m_contacts->contains(individual));
-    m_contacts->insert(individual, new ContactEntry(individual));
+    m_contacts->insert(individual, new ContactEntry(new QIndividual(individual, m_individualAggregator)));
     //TODO: Notify view
     return QString::fromUtf8(folks_individual_get_id(individual));
 }

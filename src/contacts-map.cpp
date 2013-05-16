@@ -1,3 +1,21 @@
+/*
+ * Copyright 2013 Canonical Ltd.
+ *
+ * This file is part of contact-service-app.
+ *
+ * ontact-service-app is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 3.
+ *
+ * webbrowser-app is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "contacts-map.h"
 #include "qindividual.h"
 
@@ -7,19 +25,14 @@ namespace galera
 {
 
 //ContactInfo
-ContactEntry::ContactEntry(FolksIndividual *individual)
-    : m_individual(new QIndividual(individual))
+ContactEntry::ContactEntry(QIndividual *individual)
+    : m_individual(individual)
 {
-}
-
-ContactEntry::ContactEntry(const ContactEntry &other)
-{
-    delete m_individual;
 }
 
 ContactEntry::~ContactEntry()
 {
-    g_object_unref(m_individual);
+     delete m_individual;
 }
 
 QIndividual *ContactEntry::individual() const

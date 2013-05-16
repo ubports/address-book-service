@@ -1,3 +1,21 @@
+/*
+ * Copyright 2013 Canonical Ltd.
+ *
+ * This file is part of contact-service-app.
+ *
+ * ontact-service-app is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 3.
+ *
+ * webbrowser-app is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef __GALERA_CONTACTS_MAP_PRIV_H__
 #define __GALERA_CONTACTS_MAP_PRIV_H__
 
@@ -17,14 +35,14 @@ class QIndividual;
 class ContactEntry
 {
 public:
-    ContactEntry(FolksIndividual *individual);
-    ContactEntry(const ContactEntry &other);
+    ContactEntry(QIndividual *individual);
     ~ContactEntry();
 
     QIndividual *individual() const;
 
 private:
     ContactEntry();
+    ContactEntry(const ContactEntry &other);
 
     QIndividual *m_individual;
 };
