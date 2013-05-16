@@ -61,6 +61,7 @@ public:
     QtContacts::QContact copy(Fields fields = QIndividual::All);
     bool update(const QString &vcard, UpdateDoneCB cb, void* data);
     bool update(const QtContacts::QContact &contact, UpdateDoneCB cb, void* data);
+    FolksIndividual *individual() const;
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
 

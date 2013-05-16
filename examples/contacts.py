@@ -49,6 +49,9 @@ class Contacts(object):
     def create(self, vcard):
         return self.addr_iface.createContact(vcard, "")
 
+    def delete(self, ids):
+        return self.addr_iface.removeContacts(ids)
+
 
 service = Contacts()
 service.connect()
@@ -67,3 +70,8 @@ if "update" in sys.argv:
 
 if "create" in sys.argv:
     print "New UID:", service.create(VCARD_JOE)
+
+if "delete" in sys.argv:
+    vcard = VCARD_JOE
+    contactId = service.create(vcard)
+    print service.delete([contactId])

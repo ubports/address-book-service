@@ -43,6 +43,15 @@ public:
     QDBusMessage m_message;
 };
 
+class RemoveContactsData
+{
+public:
+    QStringList m_request;
+    galera::AddressBook *m_addressbook;
+    QDBusMessage m_message;
+    int m_sucessCount;
+};
+
 }
 
 namespace galera
@@ -151,10 +160,54 @@ void AddressBook::viewClosed()
     m_views.remove(qobject_cast<View*>(QObject::sender()));
 }
 
-bool AddressBook::removeContacts(const QStringList &contactIds)
+int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
 {
-    //TODO
-    return false;
+    setDelayedReply(true);
+    message.setDelayedReply(true);
+
+    RemoveContactsData *data = new RemoveContactsData;
+    data->m_addressbook = this;
+    data->m_message = message;
+    data->m_request = contactIds;
+    data->m_sucessCount = 0;
+    removeContactContinue(0, 0, data);
+    return 0;
+}
+
+void AddressBook::removeContactContinue(FolksIndividualAggregator *individualAggregator,
+                                        GAsyncResult *result,
+                                        void *data)
+{
+    GError *error = 0;
+    RemoveContactsData *removeData = static_cast<RemoveContactsData*>(data);
+
+    if (result) {
+        folks_individual_aggregator_remove_individual_finish(individualAggregator, result, &error);
+        if (error) {
+            qWarning() << "Fail to remove contact:" << error->message;
+            g_error_free(error);
+        } else {
+            removeData->m_sucessCount++;
+        }
+    }
+
+
+    if (!removeData->m_request.isEmpty()) {
+        QString contactId = removeData->m_request.takeFirst();
+        ContactEntry *entry = removeData->m_addressbook->m_contacts->value(contactId);
+        if (entry) {
+            folks_individual_aggregator_remove_individual(individualAggregator,
+                                                          entry->individual()->individual(),
+                                                          (GAsyncReadyCallback) removeContactContinue,
+                                                          data);
+        } else {
+            removeContactContinue(individualAggregator, 0, data);
+        }
+    } else {
+        QDBusMessage reply = removeData->m_message.createReply(removeData->m_sucessCount);
+        QDBusConnection::sessionBus().send(reply);
+        delete removeData;
+    }
 }
 
 QStringList AddressBook::sortFields()

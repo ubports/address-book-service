@@ -66,7 +66,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"o\"/>\n"
 "    </method>\n"
 "    <method name=\"removeContacts\">\n"
-"      <arg direction=\"out\" type=\"b\"/>\n"
+"      <arg direction=\"out\" type=\"i\"/>\n"
 "      <arg direction=\"in\" type=\"as\" name=\"contactIds\"/>\n"
 "    </method>\n"
 "    <method name=\"createContact\">\n"
@@ -98,7 +98,7 @@ public Q_SLOTS:
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     QString linkContacts(const QStringList &contacts);
     QDBusObjectPath query(const QString &clause, const QString &sort, const QStringList &sources);
-    bool removeContacts(const QStringList &contactIds);
+    int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList sortFields();
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);

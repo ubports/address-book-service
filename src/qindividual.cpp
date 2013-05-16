@@ -1114,6 +1114,11 @@ bool QIndividual::update(const QtContacts::QContact &newContact, UpdateDoneCB cb
     }
 }
 
+FolksIndividual *QIndividual::individual() const
+{
+    return m_individual;
+}
+
 bool QIndividual::update(const QString &vcard, UpdateDoneCB cb, void* data)
 {
     QContact contact = VCardParser::vcardToContact(vcard);

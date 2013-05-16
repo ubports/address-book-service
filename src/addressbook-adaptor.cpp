@@ -53,9 +53,9 @@ QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &
     return QDBusObjectPath(v->dynamicObjectPath());
 }
 
-bool AddressBookAdaptor::removeContacts(const QStringList &contactIds)
+int AddressBookAdaptor::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
 {
-    return m_addressBook->removeContacts(contactIds);
+    return m_addressBook->removeContacts(contactIds, message);
 }
 
 QStringList AddressBookAdaptor::sortFields()

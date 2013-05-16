@@ -53,7 +53,7 @@ public:
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     QString linkContacts(const QStringList &contacts);
     View *query(const QString &clause, const QString &sort, const QStringList &sources);
-    bool removeContacts(const QStringList &contactIds);
+    int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
@@ -83,6 +83,9 @@ private:
     static void createContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *res,
                                   QDBusMessage *msg);
+    static void removeContactContinue(FolksIndividualAggregator *individualAggregator,
+                                      GAsyncResult *result,
+                                      void *data);
 };
 
 } //namespace
