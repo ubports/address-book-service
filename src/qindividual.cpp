@@ -3,11 +3,11 @@
  *
  * This file is part of contact-service-app.
  *
- * ontact-service-app is free software; you can redistribute it and/or modify
+ * contact-service-app is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webbrowser-app is distributed in the hope that it will be useful,
+ * contact-service-app is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -220,6 +220,7 @@ QList<QtContacts::QContactDetail> QIndividual::getClientPidMap() const
     QList<QtContacts::QContactDetail> details;
     int index = 1;
 
+    /*
     GeeSet *personas = folks_individual_get_personas(m_individual);
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
 
@@ -233,6 +234,7 @@ QList<QtContacts::QContactDetail> QIndividual::getClientPidMap() const
     }
 
     g_object_unref(iter);
+    */
     return details;
 }
 
@@ -513,8 +515,9 @@ QtContacts::QContact QIndividual::copy(Fields fields)
             details << fullContact.detail<QContactName>();
         }
 
+
         if (fieldsContains(fields, QIndividual::FullName)) {
-            //TODO
+            details << fullContact.detail<QContactDisplayLabel>();
         }
 
         if (fieldsContains(fields, QIndividual::NickName)) {
@@ -567,6 +570,7 @@ QtContacts::QContact QIndividual::copy(Fields fields)
             result.appendDetail(det);
         }
     }
+
 
     return result;
 }

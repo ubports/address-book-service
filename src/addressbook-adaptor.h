@@ -3,11 +3,11 @@
  *
  * This file is part of contact-service-app.
  *
- * ontact-service-app is free software; you can redistribute it and/or modify
+ * contact-service-app is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webbrowser-app is distributed in the hope that it will be useful,
+ * contact-service-app is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -42,7 +42,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    <signal name=\"contactsRemoved\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"
-"    <signal name=\"contactsCreated\">\n"
+"    <signal name=\"contactsAdded\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"
 "    <signal name=\"asyncOperationResult\">\n"
@@ -104,7 +104,7 @@ public Q_SLOTS:
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
 
 Q_SIGNALS:
-    void contactsCreated(const QStringList &ids);
+    void contactsAdded(const QStringList &ids);
     void contactsRemoved(const QStringList &ids);
     void contactsUpdated(const QStringList &ids);
     void asyncOperationResult(QMap<QString, QString> errors);

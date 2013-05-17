@@ -34,13 +34,15 @@
 #include <QtDBus/QDBusPendingCallWatcher>
 
 class QDBusInterface;
+using namespace QtContacts; // necessary for signal signatures
 
 namespace galera {
 
 class RequestData;
 
-class GaleraContactsService
+class GaleraContactsService : public QObject
 {
+    Q_OBJECT
 public:
     GaleraContactsService(const QString &managerUri);
     GaleraContactsService(const GaleraContactsService &other);
@@ -56,6 +58,14 @@ public:
     QList<QtContacts::QContactRelationship> relationships() const;
 
     void addRequest(QtContacts::QContactAbstractRequest *request);
+
+Q_SIGNALS:
+    void contactsAdded(QList<QContactId> ids);
+    void contactsRemoved(QList<QContactId> ids);
+
+private Q_SLOTS:
+    void onContactsAdded(QStringList ids);
+    void onContactsRemoved(QStringList ids);
 
 private:
     QString m_id;
@@ -80,8 +90,14 @@ private:
     void updateContactDone(RequestData *request, QDBusPendingCallWatcher *call);
     void createContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
 
+    void removeContact(QtContacts::QContactRemoveRequest *request);
+    void removeContactDone(RequestData *request, QDBusPendingCallWatcher *call);
+
     void destroyRequest(RequestData *request);
     void fetchContactsPage(RequestData *request);
+
+
+    QList<QContactId> parseIds(QStringList ids) const;
 };
 
 }

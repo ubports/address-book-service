@@ -3,11 +3,11 @@
  *
  * This file is part of contact-service-app.
  *
- * ontact-service-app is free software; you can redistribute it and/or modify
+ * contact-service-app is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webbrowser-app is distributed in the hope that it will be useful,
+ * contact-service-app is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -74,9 +74,11 @@ GaleraManagerEngine* GaleraManagerEngine::createEngine(const QMap<QString, QStri
  * other shared memory engines.
  */
 GaleraManagerEngine::GaleraManagerEngine()
-    : m_service(new GaleraContactsService("galera"))
+    : m_service(new GaleraContactsService(managerUri()))
 {
     qDebug() << Q_FUNC_INFO << this;
+    connect(m_service, SIGNAL(contactsAdded(QList<QContactId>)), this, SIGNAL(contactsAdded(QList<QContactId>)));
+    connect(m_service, SIGNAL(contactsRemoved(QList<QContactId>)), this, SIGNAL(contactsRemoved(QList<QContactId>)));
 }
 
 /*! Frees any memory used by this engine */
@@ -94,7 +96,9 @@ QString GaleraManagerEngine::managerName() const
 QMap<QString, QString> GaleraManagerEngine::managerParameters() const
 {
     qDebug() << Q_FUNC_INFO;
-    return QMap<QString, QString>();
+    QMap<QString, QString> parameters;
+    parameters.insert("id", "0000000000");
+    return parameters;
 }
 
 int GaleraManagerEngine::managerVersion() const

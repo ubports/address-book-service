@@ -3,11 +3,11 @@
  *
  * This file is part of contact-service-app.
  *
- * ontact-service-app is free software; you can redistribute it and/or modify
+ * contact-service-app is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webbrowser-app is distributed in the hope that it will be useful,
+ * contact-service-app is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -50,9 +50,9 @@ GaleraEngineId::GaleraEngineId(const GaleraEngineId &other)
 
 GaleraEngineId::GaleraEngineId(const QMap<QString, QString> &parameters, const QString &engineIdString)
 {
-    //qDebug() << Q_FUNC_INFO;
-    m_contactId = engineIdString.toInt();
-    m_managerUri = QContactManager::buildUri("galera", parameters);
+    qDebug() << Q_FUNC_INFO << engineIdString;
+    m_contactId = engineIdString;
+    m_managerUri = QContactManager::buildUri("memory", parameters);
 }
 
 bool GaleraEngineId::isEqualTo(const QtContacts::QContactEngineId *other) const

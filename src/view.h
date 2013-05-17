@@ -23,6 +23,8 @@
 #include <QtCore/QStringList>
 #include <QtDBus/QtDBus>
 
+#include <QtContacts/QContactFilter>
+
 namespace galera
 {
 class ContactEntry;
@@ -56,7 +58,7 @@ Q_SIGNALS:
     void closed();
 
 private:
-    QString m_clause;
+    QtContacts::QContactFilter m_filter;
     QString m_sort;
     QStringList m_sources;
     QList<ContactEntry*> m_contacts;

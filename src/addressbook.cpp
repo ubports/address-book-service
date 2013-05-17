@@ -165,6 +165,8 @@ int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessag
     setDelayedReply(true);
     message.setDelayedReply(true);
 
+    qDebug() <<  "Remove contacts request:  " << contactIds;
+
     RemoveContactsData *data = new RemoveContactsData;
     data->m_addressbook = this;
     data->m_message = message;
@@ -187,6 +189,7 @@ void AddressBook::removeContactContinue(FolksIndividualAggregator *individualAgg
             qWarning() << "Fail to remove contact:" << error->message;
             g_error_free(error);
         } else {
+            qDebug() << "contact removed";
             removeData->m_sucessCount++;
         }
     }
@@ -201,9 +204,11 @@ void AddressBook::removeContactContinue(FolksIndividualAggregator *individualAgg
                                                           (GAsyncReadyCallback) removeContactContinue,
                                                           data);
         } else {
+            qWarning() << "ContactId not found:" << contactId;
             removeContactContinue(individualAggregator, 0, data);
         }
     } else {
+        qDebug() << "notify client";
         QDBusMessage reply = removeData->m_message.createReply(removeData->m_sucessCount);
         QDBusConnection::sessionBus().send(reply);
         delete removeData;
@@ -281,8 +286,8 @@ QString AddressBook::removeContact(FolksIndividual *individual)
     ContactEntry *ci = m_contacts->take(individual);
     if (ci) {
         QString id = QString::fromUtf8(folks_individual_get_id(individual));
-        //TODO: Notify view
         delete ci;
+        return id;
     }
     return QString();
 }
@@ -300,6 +305,7 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
                                        GeeMultiMap *changes,
                                        AddressBook *self)
 {
+    qDebug() << Q_FUNC_INFO;
     QStringList removedIds;
     QStringList addedIds;
 
@@ -336,11 +342,13 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     //TODO: check for linked and unliked contacts
 
     if (!removedIds.isEmpty()) {
+        qDebug() << "emit adaptor signal REMOVED" << removedIds;
         Q_EMIT self->m_adaptor->contactsRemoved(removedIds);
     }
 
     if (!addedIds.isEmpty()) {
-        Q_EMIT self->m_adaptor->contactsCreated(addedIds);
+        qDebug() << "emit adaptor signal ADDED" << addedIds;
+        Q_EMIT self->m_adaptor->contactsAdded(addedIds);
     }
 }
 

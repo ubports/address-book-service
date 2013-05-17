@@ -35,12 +35,15 @@ namespace galera
 
 View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
-      m_clause(clause),
       m_sort(sort),
       m_sources(sources),
       m_adaptor(0),
       m_allContacts(allContacts)
 {
+    QByteArray data = clause.toUtf8().data();
+    QDataStream out(&data, QIODevice::ReadWrite);
+    out >> m_filter;
+
     //TODO: run this async
     applyFilter();
 }
@@ -86,7 +89,9 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     }
 
     qDebug() << "Contacts details size:" << contacts.size();
-    return VCardParser::contactToVcard(contacts);
+    QStringList ret =  VCardParser::contactToVcard(contacts);
+    qDebug() << "Parse result:" << contacts.size();
+    return ret;
 }
 
 int View::count()
@@ -140,7 +145,7 @@ QObject *View::adaptor() const
 bool View::checkContact(ContactEntry *entry)
 {
     //TODO: check query filter
-    return true;
+    return QContactManagerEngine::testFilter(m_filter, entry->individual()->contact());
 }
 
 bool View::appendContact(ContactEntry *entry)
