@@ -82,6 +82,7 @@ private:
     QSet<RequestData*> m_pendingRequests;
 
     void fetchContacts(QtContacts::QContactFetchRequest *request);
+    void fetchContactsPage(RequestData *request);
     void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
 
     void saveContact(QtContacts::QContactSaveRequest *request);
@@ -94,7 +95,7 @@ private:
     void removeContactDone(RequestData *request, QDBusPendingCallWatcher *call);
 
     void destroyRequest(RequestData *request);
-    void fetchContactsPage(RequestData *request);
+
 
 
     QList<QContactId> parseIds(QStringList ids) const;
