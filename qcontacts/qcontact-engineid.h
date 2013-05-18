@@ -45,6 +45,10 @@ public:
 #ifndef QT_NO_DEBUG_STREAM
     QDebug& debugStreamOut(QDebug &dbg) const;
 #endif
+#ifndef QT_NO_DATASTREAM
+    friend QDataStream& operator<<(QDataStream& out, const GaleraEngineId& filter);
+    friend QDataStream& operator>>(QDataStream& in, GaleraEngineId& filter);
+#endif
     uint hash() const;
 
 private:

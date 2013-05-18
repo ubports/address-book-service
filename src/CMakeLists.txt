@@ -27,7 +27,7 @@ add_executable(${CONTACTS_APP}
 )
 
 target_link_libraries(${CONTACTS_APP}
-    vcard-utils
+    galera-common
     ${GLIB_LIBRARIES}
     ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
@@ -41,7 +41,7 @@ include_directories(
     ${FOLKS_INCLUDE_DIRS}
 )
 
-qt5_use_modules(${CONTACTS_APP} Core DBus Versit)
+qt5_use_modules(${CONTACTS_APP} Core Contacts DBus Versit)
 
 install(TARGETS ${CONTACTS_APP}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

@@ -3,11 +3,11 @@
  *
  * This file is part of contact-service-app.
  *
- * ontact-service-app is free software; you can redistribute it and/or modify
+ * contact-service-app is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webbrowser-app is distributed in the hope that it will be useful,
+ * contact-service-app is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -18,6 +18,8 @@
 
 #ifndef __GALERA_VIEW_H__
 #define __GALERA_VIEW_H__
+
+#include <common/filter.h>
 
 #include <QtCore/QString>
 #include <QtCore/QStringList>
@@ -58,7 +60,7 @@ Q_SIGNALS:
     void closed();
 
 private:
-    QtContacts::QContactFilter m_filter;
+    Filter m_filter;
     QString m_sort;
     QStringList m_sources;
     QList<ContactEntry*> m_contacts;

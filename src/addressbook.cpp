@@ -3,11 +3,11 @@
  *
  * This file is part of contact-service-app.
  *
- * ontact-service-app is free software; you can redistribute it and/or modify
+ * contact-service-app is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webbrowser-app is distributed in the hope that it will be useful,
+ * contact-service-app is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -22,7 +22,7 @@
 #include "contacts-map.h"
 #include "qindividual.h"
 
-#include "vcard/vcard-parser.h"
+#include "common/vcard-parser.h"
 
 #include <QtCore/QPair>
 #include <QtCore/QUuid>
@@ -272,7 +272,6 @@ void AddressBook::updateContacts(const QString &error, void *userData)
         return;
     }
 
-    qDebug() << "Flush";
     folks_persona_store_flush(folks_individual_aggregator_get_primary_store(data->m_addressbook->m_individualAggregator), 0, 0);
     QDBusMessage reply = data->m_message.createReply(data->m_result);
     QDBusConnection::sessionBus().send(reply);

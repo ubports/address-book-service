@@ -3,11 +3,11 @@
  *
  * This file is part of contact-service-app.
  *
- * ontact-service-app is free software; you can redistribute it and/or modify
+ * contact-service-app is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webbrowser-app is distributed in the hope that it will be useful,
+ * contact-service-app is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -19,9 +19,8 @@
 #include "contacts-service.h"
 
 #include "qcontact-engineid.h"
-#include "vcard/vcard-parser.h"
-
-#include <QtCore/QTextStream>
+#include "common/vcard-parser.h"
+#include "common/filter.h"
 
 #include <QtDBus/QDBusInterface>
 #include <QtDBus/QDBusMessage>
@@ -112,13 +111,18 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     //QContactFetchHint fetchHint = r->fetchHint();
     //QContactManager::Error operationError = QContactManager::NoError;
 
-    QByteArray filterStr;
-    QDataStream out(&filterStr, QIODevice::ReadWrite);
+    /*
+    QByteArray filterData;
+    QDataStream out(&filterData, QIODevice::ReadWrite);
     out << request->filter();
 
-    qDebug() << "filter" << QString::fromLocal8Bit(filterStr.data());
+    QContactFilter filter;
+    QDataStream in(&filterData, QIODevice::ReadWrite);
+    in >> filter;
+    */
 
-    QDBusMessage result = m_iface->call("query", QString::fromUtf8(filterStr), "", QStringList());
+    QString filterStr = Filter(request->filter()).toString();
+    QDBusMessage result = m_iface->call("query", filterStr, "", QStringList());
     if (result.type() == QDBusMessage::ErrorMessage) {
         qWarning() << result.errorName() << result.errorMessage();
         QContactManagerEngine::updateContactFetchRequest(request, QList<QContact>(),

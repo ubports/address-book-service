@@ -3,11 +3,11 @@
  *
  * This file is part of contact-service-app.
  *
- * ontact-service-app is free software; you can redistribute it and/or modify
+ * contact-service-app is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webbrowser-app is distributed in the hope that it will be useful,
+ * contact-service-app is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -21,7 +21,8 @@
 #include "contacts-map.h"
 #include "qindividual.h"
 
-#include "vcard/vcard-parser.h"
+#include "common/vcard-parser.h"
+#include "common/filter.h"
 
 #include <QtContacts/QContact>
 
@@ -35,15 +36,12 @@ namespace galera
 
 View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
+      m_filter(clause),
       m_sort(sort),
       m_sources(sources),
       m_adaptor(0),
       m_allContacts(allContacts)
 {
-    QByteArray data = clause.toUtf8().data();
-    QDataStream out(&data, QIODevice::ReadWrite);
-    out >> m_filter;
-
     //TODO: run this async
     applyFilter();
 }
@@ -145,7 +143,7 @@ QObject *View::adaptor() const
 bool View::checkContact(ContactEntry *entry)
 {
     //TODO: check query filter
-    return QContactManagerEngine::testFilter(m_filter, entry->individual()->contact());
+    return m_filter.test(entry->individual()->contact());
 }
 
 bool View::appendContact(ContactEntry *entry)

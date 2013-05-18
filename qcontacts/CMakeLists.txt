@@ -22,7 +22,7 @@ include_directories(
 )
 
 target_link_libraries(${QCONTACTS_BACKEND}
-    vcard-utils
+    galera-common
 )
 
 qt5_use_modules(${QCONTACTS_BACKEND} Core Contacts DBus Versit)

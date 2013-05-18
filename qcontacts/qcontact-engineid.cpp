@@ -106,4 +106,29 @@ uint GaleraEngineId::hash() const
     return qHash(m_contactId);
 }
 
+#ifndef QT_NO_DATASTREAM
+QDataStream& operator<<(QDataStream& out, const GaleraEngineId& engineId)
+{
+    qDebug() << Q_FUNC_INFO;
+
+    out << engineId.m_managerUri << engineId.m_contactId;
+    return out;
+}
+
+QDataStream& operator>>(QDataStream& in, GaleraEngineId& engineId)
+{
+    qDebug() << Q_FUNC_INFO;
+
+    QString managerUri;
+    QString contactId;
+
+    in >> managerUri;
+    in >> contactId;
+
+    engineId.m_contactId = contactId;
+    engineId.m_managerUri = managerUri; //= GaleraEngineId(contactId, managerUri);
+    return in;
+}
+#endif
+
 }
