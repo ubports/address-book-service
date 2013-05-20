@@ -1,11 +1,3 @@
-#ifndef __GALERA_ADDRESSBOOK_H__
-#define __GALERA_ADDRESSBOOK_H__
-
-#include "source.h"
-
-#include <QtCore/QObject>
-#include <QtCore/QSet>
-#include <QtCore/QString>
 /*
  * Copyright 2013 Canonical Ltd.
  *
@@ -24,6 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __GALERA_ADDRESSBOOK_H__
+#define __GALERA_ADDRESSBOOK_H__
+
+#include "source.h"
+
+#include <QtCore/QObject>
+#include <QtCore/QSet>
+#include <QtCore/QString>
 #include <QtCore/QStringList>
 
 #include <QtDBus/QtDBus>

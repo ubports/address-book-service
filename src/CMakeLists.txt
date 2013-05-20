@@ -1,6 +1,6 @@
-set(CONTACTS_APP galera)
+set(CONTACTS_SERVICE galera-contact-service)
 
-set(CONTACTS_APP_SRC
+set(CONTACTS_SERVICE_SRC
     main.cpp
     addressbook.cpp
     addressbook-adaptor.cpp
@@ -11,7 +11,7 @@ set(CONTACTS_APP_SRC
     view-adaptor.cpp
 )
 
-set(CONTACTS_APP_HEADERS
+set(CONTACTS_SERVICE_HEADERS
     addressbook.h
     addressbook-adaptor.h
     contacts-map.h
@@ -21,12 +21,12 @@ set(CONTACTS_APP_HEADERS
     view-adaptor.h
 )
 
-add_executable(${CONTACTS_APP}
-    ${CONTACTS_APP_SRC}
-    ${CONTACTS_APP_HEADERS}
+add_executable(${CONTACTS_SERVICE}
+    ${CONTACTS_SERVICE_SRC}
+    ${CONTACTS_SERVICE_HEADERS}
 )
 
-target_link_libraries(${CONTACTS_APP}
+target_link_libraries(${CONTACTS_SERVICE}
     galera-common
     ${GLIB_LIBRARIES}
     ${GIO_LIBRARIES}
@@ -41,8 +41,8 @@ include_directories(
     ${FOLKS_INCLUDE_DIRS}
 )
 
-qt5_use_modules(${CONTACTS_APP} Core Contacts DBus Versit)
+qt5_use_modules(${CONTACTS_SERVICE} Core Contacts DBus Versit)
 
-install(TARGETS ${CONTACTS_APP}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS ${CONTACTS_SERVICE}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_FULL_LIBEXECDIR})
 

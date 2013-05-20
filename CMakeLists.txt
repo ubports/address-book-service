@@ -43,5 +43,6 @@ add_subdirectory(common)
 add_subdirectory(src)
 add_subdirectory(qcontacts)
 add_subdirectory(tests)
+add_subdirectory(data)
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

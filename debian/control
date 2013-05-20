@@ -1,0 +1,27 @@
+Source: galera-contact-service
+Section: utils
+Priority: optional
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Build-Depends: cmake (>= 2.8.9),
+               debhelper (>= 9),
+               qt5-default,
+               qt5-qmake,
+               qtbase5-dev,
+               qtpim5-dev,
+Standards-Version: 3.9.4
+Vcs-Bzr: lp:~phablet-team/address-book-service/trunk
+
+Package: galera-contact-service
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Description: Ubuntu contact service
+ A contact aggregator service, that export all contact information thought dbus.
+
+Package: qtcontact5-galera
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         galera-contact-service (= ${source:Version}),
+Description: QtContacts backend for galera contact service.
+ A QContactEngine implementation using galera contact service.
