@@ -19,7 +19,7 @@
 #ifndef __GALERA_SOURCE_H__
 #define __GALERA_SOURCE_H__
 
-#include <QString>
+#include <QtCore/QString>
 #include <QtDBus/QtDBus>
 
 namespace galera {

@@ -60,7 +60,8 @@ public:
     ContactEntry *value(FolksIndividual *individual) const;
     ContactEntry *value(const QString &id) const;
     ContactEntry *take(FolksIndividual *individual);
-    void insert(FolksIndividual *individual, ContactEntry *entry);
+    void insert(ContactEntry *entry);
+    int size() const;
 
 
     QList<ContactEntry*> values() const;

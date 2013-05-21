@@ -49,6 +49,12 @@ ContactsMap::ContactsMap()
 
 ContactsMap::~ContactsMap()
 {
+    QList<ContactEntry*> entries = m_idToEntry.values();
+    m_idToEntry.clear();
+
+    Q_FOREACH(ContactEntry *entry, entries) {
+        delete entry;
+    }
 }
 
 ContactEntry *ContactsMap::value(FolksIndividual *individual) const
@@ -74,10 +80,16 @@ bool ContactsMap::contains(FolksIndividual *individual) const
     return m_individualsToEntry.contains(individual);
 }
 
-void ContactsMap::insert(FolksIndividual *individual, ContactEntry *entry)
+void ContactsMap::insert(ContactEntry *entry)
 {
-    m_idToEntry.insert(folks_individual_get_id(individual), entry);
-    m_individualsToEntry.insert(individual, entry);
+    FolksIndividual *fIndividual = entry->individual()->individual();
+    m_idToEntry.insert(folks_individual_get_id(fIndividual), entry);
+    m_individualsToEntry.insert(fIndividual, entry);
+}
+
+int ContactsMap::size() const
+{
+    return m_idToEntry.size();
 }
 
 QList<ContactEntry*> ContactsMap::values() const

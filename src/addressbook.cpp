@@ -295,7 +295,7 @@ QString AddressBook::addContact(FolksIndividual *individual)
 {
     qDebug() << "Add contact" << folks_individual_get_id(individual);
     Q_ASSERT(!m_contacts->contains(individual));
-    m_contacts->insert(individual, new ContactEntry(new QIndividual(individual, m_individualAggregator)));
+    m_contacts->insert(new ContactEntry(new QIndividual(individual, m_individualAggregator)));
     //TODO: Notify view
     return QString::fromUtf8(folks_individual_get_id(individual));
 }
