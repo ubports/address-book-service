@@ -63,6 +63,7 @@ public:
     void *m_doneData;
 };
 
+#ifdef FOLKS_0_9_0
 static guint _folks_abstract_field_details_hash_data_func (gconstpointer v, gpointer self)
 {
     const FolksAbstractFieldDetails *constDetails = static_cast<const FolksAbstractFieldDetails*>(v);
@@ -75,6 +76,7 @@ static int _folks_abstract_field_details_equal_data_func (gconstpointer a, gcons
     const FolksAbstractFieldDetails *constDetailsB = static_cast<const FolksAbstractFieldDetails*>(b);
     return folks_abstract_field_details_equal_static (const_cast<FolksAbstractFieldDetails*>(constDetailsA), const_cast<FolksAbstractFieldDetails*>(constDetailsB));
 }
+#endif
 
 }
 namespace galera
@@ -83,36 +85,53 @@ namespace galera
 // TODO: find a better way to link abstract field with details
 #define FOLKS_DATA_FIELD        10000
 
-#define SET_AFD_NEW() \
-        GEE_SET(gee_hash_set_new( \
-                    FOLKS_TYPE_ABSTRACT_FIELD_DETAILS, \
-                    (GBoxedCopyFunc) g_object_ref, g_object_unref, \
-                    _folks_abstract_field_details_hash_data_func, \
-                    NULL, \
-                    NULL, \
-                    _folks_abstract_field_details_equal_data_func, \
-                    NULL, \
-                    NULL))
+#ifdef FOLKS_0_9_0
+    #define SET_AFD_NEW() \
+        GEE_SET(gee_hash_set_new(FOLKS_TYPE_ABSTRACT_FIELD_DETAILS, \
+                                 (GBoxedCopyFunc) g_object_ref, g_object_unref, \
+                                 _folks_abstract_field_details_hash_data_func, \
+                                 NULL, \
+                                 NULL, \
+                                 _folks_abstract_field_details_equal_data_func, \
+                                 NULL, \
+                                 NULL))
 
-#define GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE) \
-	GEE_MULTI_MAP(gee_hash_multi_map_new( \
-                        G_TYPE_STRING,\
-                        (GBoxedCopyFunc) g_strdup, g_free, \
-                        FOLKS_TYPE, \
-                        (GBoxedCopyFunc)g_object_ref, g_object_unref, \
-                        NULL, \
-                        NULL, \
-                        NULL, \
-                        NULL, \
-                        NULL, \
-                        NULL, \
-                        _folks_abstract_field_details_hash_data_func, \
-                        NULL, \
-                        NULL, \
-                        _folks_abstract_field_details_equal_data_func, \
-                        NULL, \
-                        NULL))
+    #define GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE) \
+        GEE_MULTI_MAP(gee_hash_multi_map_new(G_TYPE_STRING,\
+                                             (GBoxedCopyFunc) g_strdup, g_free, \
+                                             FOLKS_TYPE, \
+                                             (GBoxedCopyFunc)g_object_ref, g_object_unref, \
+                                             NULL, \
+                                             NULL, \
+                                             NULL, \
+                                             NULL, \
+                                             NULL, \
+                                             NULL, \
+                                             _folks_abstract_field_details_hash_data_func, \
+                                             NULL, \
+                                             NULL, \
+                                             _folks_abstract_field_details_equal_data_func, \
+                                             NULL, \
+                                             NULL))
+#else
+    #define SET_AFD_NEW() \
+        GEE_SET(gee_hash_set_new(FOLKS_TYPE_ABSTRACT_FIELD_DETAILS, \
+                                 (GBoxedCopyFunc) g_object_ref, g_object_unref, \
+                                 (GHashFunc) folks_abstract_field_details_hash, \
+                                 (GEqualFunc) folks_abstract_field_details_equal))
 
+    #define GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE) \
+        GEE_MULTI_MAP(gee_hash_multi_map_new(G_TYPE_STRING, \
+                                             (GBoxedCopyFunc) g_strdup, \
+                                              g_free, \
+                                              FOLKS_TYPE, \
+                                              g_object_ref, g_object_unref, \
+                                              g_str_hash, \
+                                              g_str_equal, \
+                                              (GHashFunc) folks_abstract_field_details_hash, \
+                                              (GEqualFunc) folks_abstract_field_details_equal));
+
+#endif
 
 
 #define PERSONA_DETAILS_INSERT_STRING_FIELD_DETAILS(\
@@ -352,7 +371,7 @@ QList<QtContacts::QContactDetail> QIndividual::getRoles() const
         org.setTitle(QString::fromUtf8(folks_role_get_title(role)));
         parseParameters(org, fd);
 
-        g_object_unref(fd);        
+        g_object_unref(fd);
         details << org;
     }
 
@@ -395,7 +414,7 @@ QList<QtContacts::QContactDetail> QIndividual::getPhones() const
         const gchar *phone = (const char*) folks_abstract_field_details_get_value(fd);
 
         QContactPhoneNumber number;
-        number.setNumber(QString::fromUtf8(phone));        
+        number.setNumber(QString::fromUtf8(phone));
         parseParameters(number, fd);
 
         g_object_unref(fd);
@@ -1718,7 +1737,7 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
      if (phones.size() > 0) {
          value = QIndividualUtils::gValueSliceNew(G_TYPE_OBJECT);
          Q_FOREACH(const QContactPhoneNumber &phone, phones) {
-             if(!phone.isEmpty()) {                 
+             if(!phone.isEmpty()) {
                  QIndividualUtils::gValueGeeSetAddStringFieldDetails(value,
                                                                      FOLKS_TYPE_PHONE_FIELD_DETAILS,
                                                                      phone.number().toUtf8().data(),

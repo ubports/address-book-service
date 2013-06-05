@@ -14,6 +14,15 @@ pkg_check_modules(GLIB REQUIRED glib-2.0>=2.32)
 pkg_check_modules(GIO REQUIRED gio-2.0>=2.32)
 pkg_check_modules(FOLKS REQUIRED folks>=0.8.0)
 
+if(FOLKS_VERSION VERSION_LESS "0.9.0")
+    add_definitions(-DFOLKS_0_8_0)
+    message(STATUS "Using folks OLD (<= 0.8.0) API")
+else()
+    add_definitions(-DFOLKS_0_9_0)
+    message(STATUS "Using folks NEW (>= 0.9.0) API")
+endif()
+
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
