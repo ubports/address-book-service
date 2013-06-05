@@ -63,6 +63,19 @@ public:
     void *m_doneData;
 };
 
+static guint _folks_abstract_field_details_hash_data_func (gconstpointer v, gpointer self)
+{
+    const FolksAbstractFieldDetails *constDetails = static_cast<const FolksAbstractFieldDetails*>(v);
+    return folks_abstract_field_details_hash_static (const_cast<FolksAbstractFieldDetails*>(constDetails));
+}
+
+static int _folks_abstract_field_details_equal_data_func (gconstpointer a, gconstpointer b, gpointer self)
+{
+    const FolksAbstractFieldDetails *constDetailsA = static_cast<const FolksAbstractFieldDetails*>(a);
+    const FolksAbstractFieldDetails *constDetailsB = static_cast<const FolksAbstractFieldDetails*>(b);
+    return folks_abstract_field_details_equal_static (const_cast<FolksAbstractFieldDetails*>(constDetailsA), const_cast<FolksAbstractFieldDetails*>(constDetailsB));
+}
+
 }
 namespace galera
 {
@@ -74,8 +87,33 @@ namespace galera
         GEE_SET(gee_hash_set_new( \
                     FOLKS_TYPE_ABSTRACT_FIELD_DETAILS, \
                     (GBoxedCopyFunc) g_object_ref, g_object_unref, \
-                    (GHashFunc) folks_abstract_field_details_hash, \
-                    (GEqualFunc) folks_abstract_field_details_equal))
+                    _folks_abstract_field_details_hash_data_func, \
+                    NULL, \
+                    NULL, \
+                    _folks_abstract_field_details_equal_data_func, \
+                    NULL, \
+                    NULL))
+
+#define GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE) \
+	GEE_MULTI_MAP(gee_hash_multi_map_new( \
+                        G_TYPE_STRING,\
+                        (GBoxedCopyFunc) g_strdup, g_free, \
+                        FOLKS_TYPE, \
+                        (GBoxedCopyFunc)g_object_ref, g_object_unref, \
+                        NULL, \
+                        NULL, \
+                        NULL, \
+                        NULL, \
+                        NULL, \
+                        NULL, \
+                        _folks_abstract_field_details_hash_data_func, \
+                        NULL, \
+                        NULL, \
+                        _folks_abstract_field_details_equal_data_func, \
+                        NULL, \
+                        NULL))
+
+
 
 #define PERSONA_DETAILS_INSERT_STRING_FIELD_DETAILS(\
         details, key, value, q_type, g_type, member) \
@@ -163,15 +201,7 @@ public:
 
     static GValue* asvSetStrNew(QMultiMap<QString, QString> providerUidMap)
     {
-        GeeMultiMap *hashSet = GEE_MULTI_MAP(
-                gee_hash_multi_map_new(G_TYPE_STRING, (GBoxedCopyFunc) g_strdup,
-                        g_free,
-                        FOLKS_TYPE_IM_FIELD_DETAILS,
-                        g_object_ref, g_object_unref,
-                        g_str_hash, g_str_equal,
-                        (GHashFunc) folks_abstract_field_details_hash,
-                        (GEqualFunc) folks_abstract_field_details_equal));
-
+        GeeMultiMap *hashSet = GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE_IM_FIELD_DETAILS);
         GValue *retval = gValueSliceNew (G_TYPE_OBJECT);
         g_value_take_object (retval, hashSet);
 
@@ -871,18 +901,7 @@ void QIndividual::updateIms(QList<QtContacts::QContactDetail> details, void* dat
     QList<QContactDetail> originalIms = m_contact.details(QContactDetail::TypeOnlineAccount);
 
     if (FOLKS_IS_IM_DETAILS(udata->m_persona) && !detailListIsEqual(originalIms, details)) {
-        GeeMultiMap *imAddressHash = GEE_MULTI_MAP(gee_hash_multi_map_new(G_TYPE_STRING,
-                                                                          (GBoxedCopyFunc) g_strdup,
-                                                                          g_free,
-                                                                          FOLKS_TYPE_IM_FIELD_DETAILS,
-                                                                          g_object_ref,
-                                                                          g_object_unref,
-                                                                          g_str_hash,
-                                                                          g_str_equal,
-                                                                          (GHashFunc) folks_abstract_field_details_hash,
-                                                                          (GEqualFunc) folks_abstract_field_details_equal));
-
-
+        GeeMultiMap *imAddressHash = GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE_IM_FIELD_DETAILS);
         Q_FOREACH(const QContactDetail& detail, details) {
             const QContactOnlineAccount *im = static_cast<const QContactOnlineAccount*>(&detail);
             if (!im->accountUri().isEmpty()) {
