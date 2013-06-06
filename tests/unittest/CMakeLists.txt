@@ -11,7 +11,7 @@ macro(declare_test TESTNAME)
     endif()
 
     target_link_libraries(${TESTNAME}
-                          galera-contact-service-lib
+                          address-book-service-lib
                           ${GLIB_LIBRARIES}
                           ${GIO_LIBRARIES}
                           ${FOLKS_LIBRARIES}

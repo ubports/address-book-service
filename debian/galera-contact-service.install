@@ -1,2 +1,2 @@
-usr/libexec/galera-contact-service
-usr/share/dbus-1/services/com.canonical.galera.service
+usr/libexec/address-book-service
+usr/share/dbus-1/services/com.canonical.address-book.service

@@ -1,4 +1,4 @@
-set(CONTACTS_SERVICE_LIB galera-contact-service-lib)
+set(CONTACTS_SERVICE_LIB address-book-service-lib)
 
 set(CONTACTS_SERVICE_LIB_SRC
     addressbook.cpp
@@ -34,7 +34,7 @@ target_link_libraries(${CONTACTS_SERVICE_LIB}
 
 qt5_use_modules(${CONTACTS_SERVICE_LIB} Core Contacts DBus Versit)
 
-set(CONTACTS_SERVICE galera-contact-service)
+set(CONTACTS_SERVICE address-book-service)
 
 add_executable(${CONTACTS_SERVICE}
     main.cpp
