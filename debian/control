@@ -1,16 +1,20 @@
-Source: galera-contact-service
+Source: address-book-service
 Section: utils
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake (>= 2.8.9),
                debhelper (>= 9),
+               libfolks-dev,
                qt5-default,
                qt5-qmake,
                qtbase5-dev,
                qtpim5-dev,
-               libfolks-dev,
 Standards-Version: 3.9.4
-Vcs-Bzr: lp:~phablet-team/address-book-service/trunk
+Homepage: https://launchpad.net/address-book-service
+# If you aren't a member of ~phablet-team but need to upload packaging changes,
+# just go ahead.  ~phablet-team will notice and sync up the code again.
+Vcs-Bzr: https://code.launchpad.net/~phablet-team/address-book-service/trunk
+Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/address-book-service/trunk/files
 
 Package: galera-contact-service
 Architecture: any
@@ -21,8 +25,8 @@ Description: Ubuntu contact service
 
 Package: qtcontact5-galera
 Architecture: any
-Depends: ${misc:Depends},
+Depends: galera-contact-service (= ${source:Version}),
+         ${misc:Depends},
          ${shlibs:Depends},
-         galera-contact-service (= ${source:Version}),
 Description: QtContacts backend for galera contact service.
  A QContactEngine implementation using galera contact service.
