@@ -38,7 +38,7 @@ class ContactMapTest : public QObject
 
 private:
     FolksIndividualAggregator *m_individualAggregator;
-    QMutex m_mutex;
+    QEventLoop *m_eventLoop;
     ContactsMap m_map;
     QList<FolksIndividual*> m_individuals;
 
@@ -71,7 +71,7 @@ private:
             }
         }
         g_object_unref (iter);
-        self->m_mutex.unlock();
+        self->m_eventLoop->quit();
     }
 
     int randomIndex() const
@@ -87,7 +87,7 @@ private:
 private Q_SLOTS:
     void initTestCase()
     {
-        m_mutex.lock();
+        m_eventLoop = new QEventLoop(this);
         m_individualAggregator = folks_individual_aggregator_new();
 
         g_signal_connect(m_individualAggregator,
@@ -98,14 +98,12 @@ private Q_SLOTS:
         folks_individual_aggregator_prepare(m_individualAggregator,
                                             (GAsyncReadyCallback) ContactMapTest::folksIndividualAggregatorPrepareDone,
                                             this);
-        while (!m_mutex.tryLock(100)) {
-            QCoreApplication::processEvents();
-        }
-        m_mutex.unlock();
+        m_eventLoop->exec();
     }
 
     void cleanupTestCase()
     {
+        delete m_eventLoop;
         g_object_unref(m_individualAggregator);
     }
 
