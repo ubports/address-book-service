@@ -1,5 +1,12 @@
-galera-contact-service (0.1.0) saucy; urgency=low
+address-book-service (0.1.0-0ubuntu1) UNRELEASED; urgency=low
 
+  [ Renato Araujo Oliveira Filho ]
   * Initial release.
 
- -- Renato Araujo Oliveira Filho <renato@canonical.com>  Wed, 05 Jun 2013 15:13:34 -0300
+  [ Łukasz 'sil2100' Zemczak ]
+  * debian/control:
+    - Modifications related to compliance with our packaging standards
+  * Change source package name to address-book-service
+  * Automatic snapshot from revision 23 (bootstrap)
+
+ -- Łukasz 'sil2100' Zemczak <lukasz.zemczak@canonical.com>  Thu, 06 Jun 2013 18:48:25 +0200
