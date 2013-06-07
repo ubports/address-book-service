@@ -25,6 +25,8 @@
 
 #include <QtDBus/QtDBus>
 
+#include "common/dbus-service-defs.h"
+
 namespace galera
 {
 
@@ -32,9 +34,9 @@ class View;
 class ViewAdaptor: public QDBusAbstractAdaptor
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "com.canonical.galera.View")
+    Q_CLASSINFO("D-Bus Interface", CPIM_ADDRESSBOOK_VIEW_IFACE_NAME)
     Q_CLASSINFO("D-Bus Introspection", ""
-"  <interface name=\"com.canonical.galera.View\">\n"
+"  <interface name=\"com.canonical.pim.AddressBookView\">\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"i\" name=\"pos\"/>\n"
 "      <arg direction=\"out\" type=\"i\" name=\"lenght\"/>\n"

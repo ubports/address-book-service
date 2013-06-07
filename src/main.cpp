@@ -19,8 +19,7 @@
 #include "addressbook.h"
 #include "view.h"
 #include "source.h"
-
-#define GALERA_SERVICE_NAME "com.canonical.galera"
+#include "common/dbus-service-defs.h"
 
 int main(int argc, char** argv)
 {
@@ -29,15 +28,15 @@ int main(int argc, char** argv)
 
     // Register service
     QDBusConnection connection = QDBusConnection::sessionBus();
-    if (connection.interface()->isServiceRegistered(GALERA_SERVICE_NAME)) {
+    if (connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
         return false;
     }
 
-    if (!connection.registerService(GALERA_SERVICE_NAME))
+    if (!connection.registerService(CPIM_SERVICE_NAME))
     {
-        qWarning() << "Could not register service!" << GALERA_SERVICE_NAME;
+        qWarning() << "Could not register service!" << CPIM_SERVICE_NAME;
     } else {
-        qDebug() << "Interface registered:" << GALERA_SERVICE_NAME;
+        qDebug() << "Interface registered:" << CPIM_SERVICE_NAME;
     }
 
     galera::AddressBook *book = new galera::AddressBook;

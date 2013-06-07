@@ -21,6 +21,7 @@
 #include "qcontact-engineid.h"
 #include "common/vcard-parser.h"
 #include "common/filter.h"
+#include "common/dbus-service-defs.h"
 
 #include <QtDBus/QDBusInterface>
 #include <QtDBus/QDBusMessage>
@@ -83,9 +84,9 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
       m_managerUri(managerUri)
 
 {
-    m_iface = QSharedPointer<QDBusInterface>(new QDBusInterface(GALERA_SERVICE_NAME,
-                                                                 GALERA_ADDRESSBOOK_OBJECT_PATH,
-                                                                 GALERA_ADDRESSBOOK_IFACE_NAME));
+    m_iface = QSharedPointer<QDBusInterface>(new QDBusInterface(CPIM_SERVICE_NAME,
+                                                                CPIM_ADDRESSBOOK_OBJECT_PATH,
+                                                                CPIM_ADDRESSBOOK_IFACE_NAME));
     connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
     connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
 }
@@ -122,9 +123,9 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     }
     RequestData *requestData = new RequestData;
     QDBusObjectPath viewObjectPath = result.arguments()[0].value<QDBusObjectPath>();
-    requestData->m_view = new QDBusInterface(GALERA_SERVICE_NAME,
-                                           viewObjectPath.path(),
-                                           GALERA_VIEW_IFACE_NAME);
+    requestData->m_view = new QDBusInterface(CPIM_SERVICE_NAME,
+                                             viewObjectPath.path(),
+                                             CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
 
     requestData->m_request = request;
     m_pendingRequests << requestData;
