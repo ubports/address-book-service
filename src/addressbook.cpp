@@ -19,9 +19,9 @@
 #include "addressbook.h"
 #include "addressbook-adaptor.h"
 #include "view.h"
-#include "contacts-map.h"
-#include "qindividual.h"
 
+#include "common/contacts-map.h"
+#include "common/qindividual.h"
 #include "common/vcard-parser.h"
 
 #include <QtCore/QPair>

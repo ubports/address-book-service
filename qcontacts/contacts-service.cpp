@@ -21,6 +21,7 @@
 #include "qcontact-engineid.h"
 #include "common/vcard-parser.h"
 #include "common/filter.h"
+#include "common/sort-clause.h"
 #include "common/dbus-service-defs.h"
 
 #include <QtDBus/QDBusInterface>
@@ -106,14 +107,12 @@ GaleraContactsService::~GaleraContactsService()
 void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *request)
 {
     qDebug() << Q_FUNC_INFO;
-    //QContactFetchRequest *r = static_cast<QContactFetchRequest*>(request);
-    //QContactFilter filter = r->filter();
-    //QList<QContactSortOrder> sorting = r->sorting();
+    QContactFetchRequest *r = static_cast<QContactFetchRequest*>(request);
     //QContactFetchHint fetchHint = r->fetchHint();
-    //QContactManager::Error operationError = QContactManager::NoError;
 
+    QString sortStr = SortClause(r->sorting()).toString();
     QString filterStr = Filter(request->filter()).toString();
-    QDBusMessage result = m_iface->call("query", filterStr, "", QStringList());
+    QDBusMessage result = m_iface->call("query", filterStr, sortStr, QStringList());
     if (result.type() == QDBusMessage::ErrorMessage) {
         qWarning() << result.errorName() << result.errorMessage();
         QContactManagerEngine::updateContactFetchRequest(request, QList<QContact>(),

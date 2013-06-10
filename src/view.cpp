@@ -18,9 +18,9 @@
 
 #include "view.h"
 #include "view-adaptor.h"
-#include "contacts-map.h"
-#include "qindividual.h"
 
+#include "common/contacts-map.h"
+#include "common/qindividual.h"
 #include "common/vcard-parser.h"
 #include "common/filter.h"
 #include "common/dbus-service-defs.h"
@@ -38,7 +38,7 @@ namespace galera
 View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
       m_filter(clause),
-      m_sort(sort),
+      m_sortClause(sort),
       m_sources(sources),
       m_adaptor(0),
       m_allContacts(allContacts)
@@ -162,6 +162,7 @@ void View::applyFilter()
     {
         appendContact(entry);
     }
+    qSort(m_contacts.begin(), m_contacts.end(), m_sortClause);
 }
 
 } //namespace
