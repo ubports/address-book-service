@@ -8,6 +8,7 @@ set(GALERA_COMMON_LIB_SRC
 set(GALERA_COMMON_LIB_HEADERS
     filter.h
     vcard-parser.h
+    dbus-service-defs.h
 )
 
 add_library(${GALERA_COMMON_LIB} STATIC
