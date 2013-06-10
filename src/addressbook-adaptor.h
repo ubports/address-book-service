@@ -26,6 +26,7 @@
 #include <QtCore/QStringList>
 
 #include "source.h"
+#include "common/dbus-service-defs.h"
 
 namespace galera
 {
@@ -33,9 +34,9 @@ class AddressBook;
 class AddressBookAdaptor: public QDBusAbstractAdaptor
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "com.canonical.galera.AddressBook")
+    Q_CLASSINFO("D-Bus Interface", CPIM_ADDRESSBOOK_IFACE_NAME)
     Q_CLASSINFO("D-Bus Introspection", ""
-"  <interface name=\"com.canonical.galera.AddressBook\">\n"
+"  <interface name=\"com.canonical.pim.AddressBook\">\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"

@@ -73,7 +73,7 @@ AddressBook::~AddressBook()
 
 QString AddressBook::objectPath()
 {
-    return "/com/canonical/galera/AddressBook";
+    return CPIM_ADDRESSBOOK_OBJECT_PATH;
 }
 
 bool AddressBook::registerObject(QDBusConnection &connection)

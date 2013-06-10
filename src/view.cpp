@@ -23,6 +23,7 @@
 
 #include "common/vcard-parser.h"
 #include "common/filter.h"
+#include "common/dbus-service-defs.h"
 
 #include <QtContacts/QContact>
 
@@ -103,7 +104,7 @@ void View::sort(const QString &field)
 
 QString View::objectPath()
 {
-    return "/com/canonical/galera/View";
+    return CPIM_ADDRESSBOOK_VIEW_OBJECT_PATH;
 }
 
 QString View::dynamicObjectPath() const
