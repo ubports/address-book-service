@@ -1,4 +1,7 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: address-book-service
+Upstream-Contact:  Renato Araujo Oliveira Filho <renato.filho@canonical.com>
+Source: https://code.launchpad.net/~phablet-team/address-book-service/trunk
 
 Files: *
 Copyright: 2013 Canonical Ltd.
