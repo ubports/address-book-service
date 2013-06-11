@@ -81,6 +81,7 @@ QtContacts::QContactSortOrder SortClause::fromString(const QString &clause) cons
 
         Qt::SortOrder order = (orderName == "DESC" ? Qt::DescendingOrder : Qt::AscendingOrder);
         sOrder.setDirection(order);
+        sOrder.setCaseSensitivity(Qt::CaseInsensitive);
         return sOrder;
     } else {
         qWarning() << "Invalid sort field:" << sort[0];
