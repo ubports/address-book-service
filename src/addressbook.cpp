@@ -116,7 +116,6 @@ SourceList AddressBook::availableSources()
 
 QString AddressBook::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
 {
-    setDelayedReply(true);
     ContactEntry *entry = m_contacts->valueFromVCard(contact);
     if (entry) {
         qWarning() << "Contact exists";
@@ -162,7 +161,6 @@ void AddressBook::viewClosed()
 
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
 {
-    setDelayedReply(true);
     message.setDelayedReply(true);
 
     qDebug() <<  "Remove contacts request:  " << contactIds;
@@ -232,7 +230,6 @@ bool AddressBook::unlinkContacts(const QString &parent, const QStringList &conta
 QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBusMessage &message)
 {
     if (!contacts.isEmpty()) {
-        setDelayedReply(true);
         message.setDelayedReply(true);
 
         UpdateContactsData *data = new UpdateContactsData;

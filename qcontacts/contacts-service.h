@@ -32,6 +32,7 @@
 #include <QtVersit/QVersitContactImporter>
 
 #include <QtDBus/QDBusPendingCallWatcher>
+#include <QtDBus/QDBusServiceWatcher>
 
 class QDBusInterface;
 using namespace QtContacts; // necessary for signal signatures
@@ -77,6 +78,7 @@ private:
     QList<QtContacts::QContactRelationship> m_relationships;    // list of contact relationships
     QMap<QtContacts::QContactId, QList<QtContacts::QContactRelationship> > m_orderedRelationships; // map of ordered lists of contact relationships
     QString m_managerUri;                                       // for faster lookup.
+    QDBusServiceWatcher *m_serviceWatcher;
 
     QSharedPointer<QDBusInterface> m_iface;
     QSet<RequestData*> m_pendingRequests;
@@ -98,8 +100,6 @@ private:
     void removeContactDone(RequestData *request, QDBusPendingCallWatcher *call);
 
     void destroyRequest(RequestData *request);
-
-
 
     QList<QContactId> parseIds(QStringList ids) const;
 };

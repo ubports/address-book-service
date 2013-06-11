@@ -80,7 +80,12 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
 
 {
     initialize();
-    connect(QDBusConnection::sessionBus().interface(), SIGNAL(serviceOwnerChanged(QString,QString,QString)),
+
+    m_serviceWatcher = new QDBusServiceWatcher(CPIM_SERVICE_NAME,
+                                               QDBusConnection::sessionBus(),
+                                               QDBusServiceWatcher::WatchForOwnerChange,
+                                               this);
+    connect(m_serviceWatcher, SIGNAL(serviceOwnerChanged(QString,QString,QString)),
             this, SLOT(serviceOwnerChanged(QString,QString,QString)));
 }
 
@@ -93,6 +98,8 @@ GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
 
 GaleraContactsService::~GaleraContactsService()
 {
+    Q_ASSERT(m_pendingRequests.size() > 0);
+    delete m_serviceWatcher;
 }
 
 void GaleraContactsService::serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner)

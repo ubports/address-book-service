@@ -38,7 +38,7 @@ class View;
 class ContactsMap;
 class AddressBookAdaptor;
 
-class AddressBook: public QObject, protected QDBusContext
+class AddressBook: public QObject
 {
     Q_OBJECT
 public:
