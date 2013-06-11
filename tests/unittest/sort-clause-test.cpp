@@ -41,6 +41,7 @@ private Q_SLOTS:
 
         QList<QContactSortOrder> cClauseList;
         QContactSortOrder cClause;
+        cClause.setCaseSensitivity(Qt::CaseInsensitive);
         cClause.setDetailType(QContactDetail::TypeName, QContactName::FieldFirstName);
         cClauseList << cClause;
 
@@ -61,21 +62,25 @@ private Q_SLOTS:
         QContactSortOrder sortFirstName;
         sortFirstName.setDetailType(QContactDetail::TypeName, QContactName::FieldFirstName);
         sortFirstName.setDirection(Qt::AscendingOrder);
+        sortFirstName.setCaseSensitivity(Qt::CaseInsensitive);
         cClauseList << sortFirstName;
 
         QContactSortOrder sortDepartment;
         sortDepartment.setDetailType(QContactDetail::TypeOrganization, QContactOrganization::FieldDepartment);
         sortDepartment.setDirection(Qt::AscendingOrder);
+        sortDepartment.setCaseSensitivity(Qt::CaseInsensitive);
         cClauseList << sortDepartment;
 
         QContactSortOrder sortStreet;
         sortStreet.setDetailType(QContactDetail::TypeAddress, QContactAddress::FieldStreet);
         sortStreet.setDirection(Qt::DescendingOrder);
+        sortStreet.setCaseSensitivity(Qt::CaseInsensitive);
         cClauseList << sortStreet;
 
         QContactSortOrder sortUrl;
         sortUrl.setDetailType(QContactDetail::TypeUrl, QContactUrl::FieldUrl);
         sortUrl.setDirection(Qt::AscendingOrder);
+        sortUrl.setCaseSensitivity(Qt::CaseInsensitive);
         cClauseList << sortUrl;
 
         QVERIFY(clause.toContactSortOrder() == cClauseList);
@@ -95,6 +100,7 @@ private Q_SLOTS:
         QContactSortOrder sortUrl;
         sortUrl.setDetailType(QContactDetail::TypeUrl, QContactUrl::FieldUrl);
         sortUrl.setDirection(Qt::AscendingOrder);
+        sortUrl.setCaseSensitivity(Qt::CaseInsensitive);
         cClauseList << sortUrl;
 
         QVERIFY(clause.toContactSortOrder() == cClauseList);
