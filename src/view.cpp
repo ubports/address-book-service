@@ -40,8 +40,8 @@ View::View(QString clause, QString sort, QStringList sources, ContactsMap *allCo
       m_filter(clause),
       m_sort(sort),
       m_sources(sources),
-      m_adaptor(0),
-      m_allContacts(allContacts)
+      m_allContacts(allContacts),
+      m_adaptor(0)
 {
     //TODO: run this async
     applyFilter();

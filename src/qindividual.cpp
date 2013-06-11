@@ -267,9 +267,8 @@ QtContacts::QContactDetail QIndividual::getUid() const
 QList<QtContacts::QContactDetail> QIndividual::getClientPidMap() const
 {
     QList<QtContacts::QContactDetail> details;
-    int index = 1;
-
     /*
+    int index = 1;
     GeeSet *personas = folks_individual_get_personas(m_individual);
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
 
@@ -753,7 +752,7 @@ void QIndividual::updatePhoto(const QtContacts::QContactDetail &detail, void* da
     QContactDetail originalAvatar = m_contact.detail(QContactDetail::TypeAvatar);
     if (FOLKS_IS_AVATAR_DETAILS(udata->m_persona) && (detail != originalAvatar)) {
         //TODO:
-        const QContactAvatar *avatar = static_cast<const QContactAvatar*>(&detail);
+        //const QContactAvatar *avatar = static_cast<const QContactAvatar*>(&detail);
         folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(udata->m_persona),
                                            0,
                                            (GAsyncReadyCallback) updateDetailsDone,

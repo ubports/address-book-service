@@ -94,8 +94,8 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
 GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
     : m_selfContactId(other.m_selfContactId),
       m_nextContactId(other.m_nextContactId),
-      m_iface(other.m_iface),
-      m_managerUri(other.m_managerUri)
+      m_managerUri(other.m_managerUri),
+      m_iface(other.m_iface)
 {
 }
 
