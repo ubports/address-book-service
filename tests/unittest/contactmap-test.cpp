@@ -26,8 +26,8 @@
 #include <glib.h>
 #include <gio/gio.h>
 
-#include "common/contacts-map.h"
-#include "common/qindividual.h"
+#include "src/contacts-map.h"
+#include "src/qindividual.h"
 
 using namespace QtContacts;
 using namespace galera;

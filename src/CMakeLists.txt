@@ -3,6 +3,8 @@ set(CONTACTS_SERVICE_LIB address-book-service-lib)
 set(CONTACTS_SERVICE_LIB_SRC
     addressbook.cpp
     addressbook-adaptor.cpp
+    contacts-map.cpp
+    qindividual.cpp
     source.cpp
     view.cpp
     view-adaptor.cpp
@@ -11,6 +13,8 @@ set(CONTACTS_SERVICE_LIB_SRC
 set(CONTACTS_SERVICE_LIB_HEADERS
     addressbook.h
     addressbook-adaptor.h
+    contacts-map.h
+    qindividual.h
     source.h
     view.h
     view-adaptor.h

@@ -17,7 +17,8 @@
  */
 
 #include "qindividual.h"
-#include "vcard-parser.h"
+
+#include "common/vcard-parser.h"
 
 #include <QtVersit/QVersitDocument>
 #include <QtVersit/QVersitProperty>

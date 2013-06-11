@@ -11,7 +11,7 @@ macro(declare_test TESTNAME)
     endif()
 
     target_link_libraries(${TESTNAME}
-                          galera-common
+                          address-book-service-lib
                           ${GLIB_LIBRARIES}
                           ${GIO_LIBRARIES}
                           ${FOLKS_LIBRARIES}
@@ -38,3 +38,4 @@ endif()
 
 declare_test(clause-test)
 declare_test(contactmap-test)
+declare_test(sort-clause-test)

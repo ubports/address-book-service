@@ -18,9 +18,9 @@
 
 #include "view.h"
 #include "view-adaptor.h"
+#include "contacts-map.h"
+#include "qindividual.h"
 
-#include "common/contacts-map.h"
-#include "common/qindividual.h"
 #include "common/vcard-parser.h"
 #include "common/filter.h"
 #include "common/dbus-service-defs.h"
@@ -34,6 +34,26 @@ using namespace QtVersit;
 
 namespace galera
 {
+
+class ContactLessThan
+{
+public:
+    ContactLessThan(const SortClause &sortClause)
+        : m_sortClause(sortClause)
+    {
+
+    }
+
+    bool operator()(galera::ContactEntry *entryA, galera::ContactEntry *entryB)
+    {
+        return QContactManagerEngine::compareContact(entryA->individual()->contact(),
+                                                     entryB->individual()->contact(),
+                                                     m_sortClause.toContactSortOrder()) < 0;
+    }
+
+private:
+    SortClause m_sortClause;
+};
 
 View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
@@ -162,7 +182,8 @@ void View::applyFilter()
     {
         appendContact(entry);
     }
-    qSort(m_contacts.begin(), m_contacts.end(), m_sortClause);
+    ContactLessThan lessThan(m_sortClause);
+    qSort(m_contacts.begin(), m_contacts.end(), lessThan);
 }
 
 } //namespace
