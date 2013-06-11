@@ -59,8 +59,8 @@ namespace galera
 
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
-      m_adaptor(0),
-      m_contacts(new ContactsMap)
+      m_contacts(new ContactsMap),
+      m_adaptor(0)
 
 {
     prepareFolks();
