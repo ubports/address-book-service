@@ -2,11 +2,13 @@ set(GALERA_COMMON_LIB galera-common)
 
 set(GALERA_COMMON_LIB_SRC
     filter.cpp
+    sort-clause.cpp
     vcard-parser.cpp
 )
 
 set(GALERA_COMMON_LIB_HEADERS
     filter.h
+    sort-clause.h
     vcard-parser.h
 )
 

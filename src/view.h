@@ -19,6 +19,7 @@
 #ifndef __GALERA_VIEW_H__
 #define __GALERA_VIEW_H__
 
+#include <common/sort-clause.h>
 #include <common/filter.h>
 
 #include <QtCore/QString>
@@ -32,6 +33,7 @@ namespace galera
 class ContactEntry;
 class ViewAdaptor;
 class ContactsMap;
+class SortContact;
 
 class View : public QObject
 {
@@ -61,7 +63,7 @@ Q_SIGNALS:
 
 private:
     Filter m_filter;
-    QString m_sort;
+    SortClause m_sortClause;
     QStringList m_sources;
     QList<ContactEntry*> m_contacts;
     ContactsMap *m_allContacts;

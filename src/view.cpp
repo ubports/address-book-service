@@ -35,10 +35,30 @@ using namespace QtVersit;
 namespace galera
 {
 
+class ContactLessThan
+{
+public:
+    ContactLessThan(const SortClause &sortClause)
+        : m_sortClause(sortClause)
+    {
+
+    }
+
+    bool operator()(galera::ContactEntry *entryA, galera::ContactEntry *entryB)
+    {
+        return QContactManagerEngine::compareContact(entryA->individual()->contact(),
+                                                     entryB->individual()->contact(),
+                                                     m_sortClause.toContactSortOrder()) < 0;
+    }
+
+private:
+    SortClause m_sortClause;
+};
+
 View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
       m_filter(clause),
-      m_sort(sort),
+      m_sortClause(sort),
       m_sources(sources),
       m_adaptor(0),
       m_allContacts(allContacts)
@@ -162,6 +182,8 @@ void View::applyFilter()
     {
         appendContact(entry);
     }
+    ContactLessThan lessThan(m_sortClause);
+    qSort(m_contacts.begin(), m_contacts.end(), lessThan);
 }
 
 } //namespace
