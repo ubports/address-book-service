@@ -298,11 +298,11 @@ QtContacts::QContactDetail QIndividual::getName() const
         if (name && strlen(name)) {
             detail.setFirstName(QString::fromUtf8(name));
         }
-        name = folks_structured_name_get_family_name(sn);
+        name = folks_structured_name_get_additional_names(sn);
         if (name && strlen(name)) {
             detail.setMiddleName(QString::fromUtf8(name));
         }
-        name = folks_structured_name_get_additional_names(sn);
+        name = folks_structured_name_get_family_name(sn);
         if (name && strlen(name)) {
             detail.setLastName(QString::fromUtf8(name));
         }
