@@ -1,2 +1,2 @@
-usr/lib/address-book-service/*
+usr/lib/*/address-book-service/*
 usr/share/dbus-1/services/com.canonical.pim.service
