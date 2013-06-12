@@ -35,16 +35,57 @@ using namespace QtVersit;
 namespace galera
 {
 
+class FilterThread: public QThread
+{
+public:
+    FilterThread(QString filter, QString sort, ContactsMap *allContacts)
+        : m_filter(filter),
+          m_sort(sort),
+          m_allContacts(allContacts)
+    {
+    }
+
+    QList<ContactEntry*> result() const
+    {
+        if (isRunning()) {
+            return QList<ContactEntry*>();
+        } else {
+            return m_contacts;
+        }
+    }
+
+protected:
+    void run()
+    {
+        Q_FOREACH(ContactEntry *entry, m_allContacts->values())
+        {
+            if (checkContact(entry)) {
+                m_contacts << entry;
+            }
+        }
+    }
+
+private:
+    ContactsMap *m_allContacts;
+    QList<ContactEntry*> m_contacts;
+    Filter m_filter;
+    QString m_sort;
+
+    bool checkContact(ContactEntry *entry)
+    {
+        //TODO: check query filter
+        return m_filter.test(entry->individual()->contact());
+    }
+};
+
 View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
-      m_filter(clause),
-      m_sort(sort),
       m_sources(sources),
       m_adaptor(0),
-      m_allContacts(allContacts)
+      m_filterThread(new FilterThread(clause, sort, allContacts))
 {
-    //TODO: run this async
-    applyFilter();
+    connect(m_filterThread, SIGNAL(finished()), this, SLOT(filterFinished()));
+    m_filterThread->start();
 }
 
 View::~View()
@@ -64,6 +105,9 @@ void View::close()
         m_adaptor->deleteLater();
         m_adaptor = 0;
     }
+
+    delete m_filterThread;
+    m_filterThread = 0;
 }
 
 QString View::contactDetails(const QStringList &fields, const QString &id)
@@ -73,6 +117,8 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize)
 {
+    m_filterThread->wait();
+
     if (startIndex < 0) {
         startIndex = 0;
     }
@@ -95,6 +141,8 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
 
 int View::count()
 {
+    m_filterThread->wait();
+
     return m_contacts.count();
 }
 
@@ -141,27 +189,9 @@ QObject *View::adaptor() const
     return m_adaptor;
 }
 
-bool View::checkContact(ContactEntry *entry)
+void View::filterFinished()
 {
-    //TODO: check query filter
-    return m_filter.test(entry->individual()->contact());
-}
-
-bool View::appendContact(ContactEntry *entry)
-{
-    if (checkContact(entry)) {
-        m_contacts << entry;
-        return true;
-    }
-    return false;
-}
-
-void View::applyFilter()
-{
-    Q_FOREACH(ContactEntry *entry, m_allContacts->values())
-    {
-        appendContact(entry);
-    }
+    m_contacts = m_filterThread->result();
 }
 
 } //namespace

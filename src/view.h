@@ -32,6 +32,7 @@ namespace galera
 class ContactEntry;
 class ViewAdaptor;
 class ContactsMap;
+class FilterThread;
 
 class View : public QObject
 {
@@ -59,13 +60,14 @@ public:
 Q_SIGNALS:
     void closed();
 
+public Q_SLOTS:
+    void filterFinished();
+
 private:
-    Filter m_filter;
-    QString m_sort;
     QStringList m_sources;
-    QList<ContactEntry*> m_contacts;
-    ContactsMap *m_allContacts;
     ViewAdaptor *m_adaptor;
+    QList<ContactEntry*> m_contacts;
+    FilterThread *m_filterThread;
 
     void applyFilter();
     bool checkContact(ContactEntry *entry);

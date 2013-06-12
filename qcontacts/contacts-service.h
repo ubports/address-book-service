@@ -23,7 +23,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QSet>
-#include <QtCore/QAtomicInt>
+#include <QtCore/QMutex>
 
 #include <QtContacts/QContact>
 #include <QtContacts/QContactManagerEngine>
@@ -38,7 +38,6 @@ class QDBusInterface;
 using namespace QtContacts; // necessary for signal signatures
 
 namespace galera {
-
 class RequestData;
 
 class GaleraContactsService : public QObject
@@ -83,11 +82,13 @@ private:
     QSharedPointer<QDBusInterface> m_iface;
     QSet<RequestData*> m_pendingRequests;
 
-    void initialize();
-    void deinitialize();
+    Q_INVOKABLE void initialize();
+    Q_INVOKABLE void deinitialize();
+
+    bool isOnline() const;
 
     void fetchContacts(QtContacts::QContactFetchRequest *request);
-    void fetchContactsPage(RequestData *request);
+    Q_INVOKABLE void fetchContactsPage(galera::RequestData *request);
     void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
 
     void saveContact(QtContacts::QContactSaveRequest *request);

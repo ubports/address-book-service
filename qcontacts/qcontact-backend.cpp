@@ -98,7 +98,6 @@ QMap<QString, QString> GaleraManagerEngine::managerParameters() const
 {
     qDebug() << Q_FUNC_INFO;
     QMap<QString, QString> parameters;
-    parameters.insert("id", "0000000000");
     return parameters;
 }
 

@@ -66,6 +66,7 @@ private:
     ContactsMap *m_contacts;
     AddressBookAdaptor *m_adaptor;
     QSet<View*> m_views;
+    bool m_initializing;
 
     void prepareFolks();
     QString removeContact(FolksIndividual *individual);

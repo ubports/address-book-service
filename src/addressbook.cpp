@@ -60,8 +60,8 @@ namespace galera
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
       m_adaptor(0),
-      m_contacts(new ContactsMap)
-
+      m_contacts(new ContactsMap),
+      m_initializing(true)
 {
     prepareFolks();
 }
@@ -148,6 +148,7 @@ QString AddressBook::linkContacts(const QStringList &contacts)
 
 View *AddressBook::query(const QString &clause, const QString &sort, const QStringList &sources)
 {
+    qDebug() << "QUERY INITIALIZING:" << m_initializing;
     View *view = new View(clause, sort, sources, m_contacts, this);
     m_views << view;
     connect(view, SIGNAL(closed()), this, SLOT(viewClosed()));
@@ -290,7 +291,6 @@ QString AddressBook::removeContact(FolksIndividual *individual)
 
 QString AddressBook::addContact(FolksIndividual *individual)
 {
-    qDebug() << "Add contact" << folks_individual_get_id(individual);
     Q_ASSERT(!m_contacts->contains(individual));
     m_contacts->insert(new ContactEntry(new QIndividual(individual, m_individualAggregator)));
     //TODO: Notify view
@@ -346,6 +346,7 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
         qDebug() << "emit adaptor signal ADDED" << addedIds;
         Q_EMIT self->m_adaptor->contactsAdded(addedIds);
     }
+    self->m_initializing = false;
 }
 
 void AddressBook::aggregatorPrepareCb(GObject *source,
