@@ -1,4 +1,4 @@
-address-book-service (0.1.0-0ubuntu1) UNRELEASED; urgency=low
+address-book-service (0.1.0daily13.06.13-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
   * Initial release.
@@ -9,4 +9,20 @@ address-book-service (0.1.0-0ubuntu1) UNRELEASED; urgency=low
   * Change source package name to address-book-service
   * Automatic snapshot from revision 23 (bootstrap)
 
- -- Łukasz 'sil2100' Zemczak <lukasz.zemczak@canonical.com>  Thu, 06 Jun 2013 18:48:25 +0200
+  [ Didier Roche ]
+  * some packaging cleaning and fixes to comply to our rules
+  * point to the launchpad project page
+
+  [ Renato Araujo Oliveira Filho ]
+  * added autostart support.
+  * Fixed contact name parser from folks.
+  * Initial implementation of sort fields.
+  * Fixed compilation warning when using debug flags.
+
+  [ Łukasz 'sil2100' Zemczak ]
+  * Fix the libexec dir to be the one we use in Ubuntu.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 31
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 13 Jun 2013 15:14:53 +0000
