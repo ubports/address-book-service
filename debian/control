@@ -18,15 +18,17 @@ Vcs-Bzr: https://code.launchpad.net/~phablet-team/address-book-service/trunk
 Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/address-book-service/trunk/files
 
 Package: address-book-service
-Architecture: i386 amd64 armhf
+Architecture: any
+Multi-Arch: same
 Depends: ${misc:Depends},
          ${shlibs:Depends},
 Description: Ubuntu contact service
  A contact aggregator service, that export all contact information thought dbus.
 
 Package: qtcontact5-galera
-Architecture: i386 amd64 armhf
-Depends: address-book-service (= ${source:Version}),
+Architecture: any
+Multi-Arch: same
+Depends: address-book-service (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends},
 Description: QtContacts backend for galera contact service.
