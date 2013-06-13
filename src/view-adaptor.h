@@ -75,7 +75,7 @@ public:
 
 public Q_SLOTS:
     QString contactDetails(const QStringList &fields, const QString &id);
-    QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize);
+    QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message);
     int count();
     void sort(const QString &field);
     void close();

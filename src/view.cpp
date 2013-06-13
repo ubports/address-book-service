@@ -54,6 +54,20 @@ public:
         }
     }
 
+    bool appendContact(ContactEntry *entry)
+    {
+        if (checkContact(entry)) {
+            m_contacts << entry;
+            return true;
+        }
+        return false;
+    }
+
+    bool removeContact(ContactEntry *entry)
+    {
+        return m_contacts.removeAll(entry);
+    }
+
 protected:
     void run()
     {
@@ -66,10 +80,10 @@ protected:
     }
 
 private:
-    ContactsMap *m_allContacts;
-    QList<ContactEntry*> m_contacts;
     Filter m_filter;
     QString m_sort;
+    ContactsMap *m_allContacts;
+    QList<ContactEntry*> m_contacts;
 
     bool checkContact(ContactEntry *entry)
     {
@@ -84,7 +98,6 @@ View::View(QString clause, QString sort, QStringList sources, ContactsMap *allCo
       m_adaptor(0),
       m_filterThread(new FilterThread(clause, sort, allContacts))
 {
-    connect(m_filterThread, SIGNAL(finished()), this, SLOT(filterFinished()));
     m_filterThread->start();
 }
 
@@ -96,9 +109,8 @@ View::~View()
 void View::close()
 {
     if (m_adaptor) {
-        Q_EMIT m_adaptor->contactsRemoved(0, m_contacts.count());
+        Q_EMIT m_adaptor->contactsRemoved(0, m_filterThread->result().count());
         Q_EMIT closed();
-        m_contacts.clear();
 
         QDBusConnection conn = QDBusConnection::sessionBus();
         unregisterObject(conn);
@@ -115,27 +127,28 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
     return QString();
 }
 
-QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize)
+QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
     m_filterThread->wait();
+    QList<ContactEntry*> entries = m_filterThread->result();
 
     if (startIndex < 0) {
         startIndex = 0;
     }
 
-    if ((pageSize < 0) || ((startIndex + pageSize) >= m_contacts.count())) {
-        pageSize = m_contacts.count() - startIndex;
+    if ((pageSize < 0) || ((startIndex + pageSize) >= entries.count())) {
+        pageSize = entries.count() - startIndex;
     }
 
     QList<QContact> contacts;
     for(int i = startIndex, iMax = (startIndex + pageSize); i < iMax; i++) {
         // TODO: filter fields
-        contacts << m_contacts[i]->individual()->contact();
+        contacts << entries[i]->individual()->contact();
     }
 
-    qDebug() << "Contacts details size:" << contacts.size();
     QStringList ret =  VCardParser::contactToVcard(contacts);
-    qDebug() << "Parse result:" << contacts.size();
+    QDBusMessage reply = message.createReply(ret);
+    QDBusConnection::sessionBus().send(reply);
     return ret;
 }
 
@@ -143,7 +156,7 @@ int View::count()
 {
     m_filterThread->wait();
 
-    return m_contacts.count();
+    return m_filterThread->result().count();
 }
 
 void View::sort(const QString &field)
@@ -184,14 +197,14 @@ void View::unregisterObject(QDBusConnection &connection)
     }
 }
 
+bool View::appendContact(ContactEntry *entry)
+{
+    return m_filterThread->appendContact(entry);
+}
+
 QObject *View::adaptor() const
 {
     return m_adaptor;
-}
-
-void View::filterFinished()
-{
-    m_contacts = m_filterThread->result();
 }
 
 } //namespace

@@ -87,11 +87,9 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
     if (name == CPIM_SERVICE_NAME) {
         if (!newOwner.isEmpty()) {
             // service appear
-            qDebug() << "SERVICE APPEAR";
             QMetaObject::invokeMethod(this, "initialize", Qt::QueuedConnection);
         } else if (!m_iface.isNull()) {
             // lost service
-            qDebug() << "SERVICE DISAPPEAR";
             QMetaObject::invokeMethod(this, "deinitialize", Qt::QueuedConnection);
         }
     }
@@ -104,16 +102,12 @@ void GaleraContactsService::initialize()
                                                                     CPIM_ADDRESSBOOK_OBJECT_PATH,
                                                                     CPIM_ADDRESSBOOK_IFACE_NAME));
         if (!m_iface->lastError().isValid()) {
-            qDebug() << "Connect signals";
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
-            //Q_EMIT serviceChanged();
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();
             m_iface.clear();
         }
-    } else {
-        qDebug() << "SERVICE ALREADY ONLINE";
     }
 }
 
@@ -137,12 +131,10 @@ bool GaleraContactsService::isOnline() const
 
 void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *request)
 {
-    qDebug() << Q_FUNC_INFO;
     if (!isOnline()) {
         QContactManagerEngine::updateContactFetchRequest(request, QList<QContact>(),
                                                          QContactManager::UnspecifiedError,
                                                          QContactAbstractRequest::FinishedState);
-        qWarning() << "SERVER OFFLINE";
         return;
     }
     //QContactFetchRequest *r = static_cast<QContactFetchRequest*>(request);
@@ -152,7 +144,6 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     //QContactManager::Error operationError = QContactManager::NoError;
 
     QString filterStr = Filter(request->filter()).toString();
-    qDebug() << "Queryyyy";
     QDBusMessage result = m_iface->call("query", filterStr, "", QStringList());
     if (result.type() == QDBusMessage::ErrorMessage) {
         qWarning() << result.errorName() << result.errorMessage();
@@ -169,7 +160,6 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     RequestData *requestData = new RequestData(request, view);
     m_pendingRequests << requestData;
     QMetaObject::invokeMethod(this, "fetchContactsPage", Qt::QueuedConnection, Q_ARG(galera::RequestData*, requestData));
-   //fetchContactsPage(requestData);
 }
 
 void GaleraContactsService::fetchContactsPage(RequestData *request)
@@ -181,7 +171,6 @@ void GaleraContactsService::fetchContactsPage(RequestData *request)
                                                          QContactManager::UnspecifiedError,
                                                          QContactAbstractRequest::FinishedState);
         destroyRequest(request);
-        qDebug() << "NOT ONLINE";
         return;
     }
     // Load contacs async
@@ -218,7 +207,6 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
         if (vcards.size() == FETCH_PAGE_SIZE) {
             opState = QContactAbstractRequest::ActiveState;
         }
-
         if (!vcards.isEmpty()) {
             QList<QContact> contacts = VCardParser::vcardToContact(vcards);
             QList<QContactId> contactsIds;
@@ -250,7 +238,6 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
         request->updateWatcher(0);
 
         QMetaObject::invokeMethod(this, "fetchContactsPage", Qt::QueuedConnection, Q_ARG(galera::RequestData*, request));
-        //fetchContactsPage(request);
     } else {
         destroyRequest(request);
     }
@@ -524,7 +511,6 @@ void GaleraContactsService::destroyRequest(RequestData *request)
 {
     qDebug() << Q_FUNC_INFO;
     m_pendingRequests.remove(request);
-    qDebug() << "REMOVE REQUEST:" << m_pendingRequests.size();
     delete request;
 }
 

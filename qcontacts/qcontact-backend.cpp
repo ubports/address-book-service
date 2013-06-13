@@ -280,7 +280,6 @@ bool GaleraManagerEngine::startRequest(QtContacts::QContactAbstractRequest *req)
     if (!checkDeletion.isNull()) {
         m_service->addRequest(req);
     }
-
     return true;
 }
 

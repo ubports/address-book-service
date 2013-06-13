@@ -50,12 +50,14 @@ public:
 
     // Adaptor
     SourceList availableSources();
-    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     QString linkContacts(const QStringList &contacts);
     View *query(const QString &clause, const QString &sort, const QStringList &sources);
-    int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
+
+public Q_SLOTS:
+    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
+    int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
 
 private Q_SLOTS:

@@ -49,24 +49,23 @@ public:
 
     // contacts
     bool appendContact(ContactEntry *entry);
+    bool removeContact(ContactEntry *entry);
 
     // Adaptor
     QString contactDetails(const QStringList &fields, const QString &id);
-    QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize);
     int count();
     void sort(const QString &field);
     void close();
 
+public Q_SLOTS:
+    QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message);
+
 Q_SIGNALS:
     void closed();
-
-public Q_SLOTS:
-    void filterFinished();
 
 private:
     QStringList m_sources;
     ViewAdaptor *m_adaptor;
-    QList<ContactEntry*> m_contacts;
     FilterThread *m_filterThread;
 
     void applyFilter();
