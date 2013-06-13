@@ -66,9 +66,9 @@ private Q_SLOTS:
 private:
     FolksIndividualAggregator *m_individualAggregator;
     ContactsMap *m_contacts;
-    AddressBookAdaptor *m_adaptor;
     QSet<View*> m_views;
     bool m_initializing;
+    AddressBookAdaptor *m_adaptor;
 
     void prepareFolks();
     QString removeContact(FolksIndividual *individual);

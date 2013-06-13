@@ -19,6 +19,7 @@
 #ifndef __GALERA_VIEW_H__
 #define __GALERA_VIEW_H__
 
+#include <common/sort-clause.h>
 #include <common/filter.h>
 
 #include <QtCore/QString>
@@ -33,6 +34,7 @@ class ContactEntry;
 class ViewAdaptor;
 class ContactsMap;
 class FilterThread;
+class SortContact;
 
 class View : public QObject
 {
@@ -65,11 +67,8 @@ Q_SIGNALS:
 
 private:
     QStringList m_sources;
-    ViewAdaptor *m_adaptor;
     FilterThread *m_filterThread;
-
-    void applyFilter();
-    bool checkContact(ContactEntry *entry);
+    ViewAdaptor *m_adaptor;
 };
 
 } //namespace

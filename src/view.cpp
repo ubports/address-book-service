@@ -34,13 +34,31 @@ using namespace QtVersit;
 
 namespace galera
 {
+class ContactLessThan
+{
+public:
+    ContactLessThan(const SortClause &sortClause)
+        : m_sortClause(sortClause)
+    {
+
+    }
+
+    bool operator()(galera::ContactEntry *entryA, galera::ContactEntry *entryB)
+    {
+        return QContactManagerEngine::compareContact(entryA->individual()->contact(),
+                                                     entryB->individual()->contact(),
+                                                     m_sortClause.toContactSortOrder()) < 0;
+    }
+private:
+    SortClause m_sortClause;
+};
 
 class FilterThread: public QThread
 {
 public:
     FilterThread(QString filter, QString sort, ContactsMap *allContacts)
         : m_filter(filter),
-          m_sort(sort),
+          m_sortClause(sort),
           m_allContacts(allContacts)
     {
     }
@@ -77,17 +95,18 @@ protected:
                 m_contacts << entry;
             }
         }
+        ContactLessThan lessThan(m_sortClause);
+        qSort(m_contacts.begin(), m_contacts.end(), lessThan);
     }
 
 private:
     Filter m_filter;
-    QString m_sort;
+    SortClause m_sortClause;
     ContactsMap *m_allContacts;
     QList<ContactEntry*> m_contacts;
 
     bool checkContact(ContactEntry *entry)
     {
-        //TODO: check query filter
         return m_filter.test(entry->individual()->contact());
     }
 };
@@ -95,8 +114,8 @@ private:
 View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
       m_sources(sources),
-      m_adaptor(0),
-      m_filterThread(new FilterThread(clause, sort, allContacts))
+      m_filterThread(new FilterThread(clause, sort, allContacts)),
+      m_adaptor(0)
 {
     m_filterThread->start();
 }

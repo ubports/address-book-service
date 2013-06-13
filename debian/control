@@ -19,6 +19,7 @@ Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/address-book-service/trun
 
 Package: address-book-service
 Architecture: any
+Multi-Arch: same
 Depends: ${misc:Depends},
          ${shlibs:Depends},
 Description: Ubuntu contact service
@@ -26,7 +27,8 @@ Description: Ubuntu contact service
 
 Package: qtcontact5-galera
 Architecture: any
-Depends: address-book-service (= ${source:Version}),
+Multi-Arch: same
+Depends: address-book-service (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends},
 Description: QtContacts backend for galera contact service.

@@ -38,3 +38,4 @@ endif()
 
 declare_test(clause-test)
 declare_test(contactmap-test)
+declare_test(sort-clause-test)

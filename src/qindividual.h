@@ -55,7 +55,7 @@ public:
     Q_DECLARE_FLAGS(Fields, Field)
 
     QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator);
-    ~QIndividual();    
+    ~QIndividual();
 
     QtContacts::QContact &contact();
     QtContacts::QContact copy(Fields fields = QIndividual::All);
@@ -127,7 +127,6 @@ private:
     static QStringList listParameters(FolksAbstractFieldDetails *details);
     static QStringList listContext(const QtContacts::QContactDetail &detail);
     static QList<int> contextsFromParameters(QStringList &parameters);
-
 
     static int onlineAccountProtocolFromString(const QString &protocol);
     static QString onlineAccountProtocolFromEnum(int protocol);
