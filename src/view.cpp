@@ -34,7 +34,6 @@ using namespace QtVersit;
 
 namespace galera
 {
-
 class ContactLessThan
 {
 public:
@@ -50,21 +49,75 @@ public:
                                                      entryB->individual()->contact(),
                                                      m_sortClause.toContactSortOrder()) < 0;
     }
-
 private:
     SortClause m_sortClause;
 };
 
+class FilterThread: public QThread
+{
+public:
+    FilterThread(QString filter, QString sort, ContactsMap *allContacts)
+        : m_filter(filter),
+          m_sortClause(sort),
+          m_allContacts(allContacts)
+    {
+    }
+
+    QList<ContactEntry*> result() const
+    {
+        if (isRunning()) {
+            return QList<ContactEntry*>();
+        } else {
+            return m_contacts;
+        }
+    }
+
+    bool appendContact(ContactEntry *entry)
+    {
+        if (checkContact(entry)) {
+            m_contacts << entry;
+            return true;
+        }
+        return false;
+    }
+
+    bool removeContact(ContactEntry *entry)
+    {
+        return m_contacts.removeAll(entry);
+    }
+
+protected:
+    void run()
+    {
+        Q_FOREACH(ContactEntry *entry, m_allContacts->values())
+        {
+            if (checkContact(entry)) {
+                m_contacts << entry;
+            }
+        }
+        ContactLessThan lessThan(m_sortClause);
+        qSort(m_contacts.begin(), m_contacts.end(), lessThan);
+    }
+
+private:
+    Filter m_filter;
+    SortClause m_sortClause;
+    ContactsMap *m_allContacts;
+    QList<ContactEntry*> m_contacts;
+
+    bool checkContact(ContactEntry *entry)
+    {
+        return m_filter.test(entry->individual()->contact());
+    }
+};
+
 View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
-      m_filter(clause),
-      m_sortClause(sort),
       m_sources(sources),
-      m_allContacts(allContacts),
+      m_filterThread(new FilterThread(clause, sort, allContacts)),
       m_adaptor(0)
 {
-    //TODO: run this async
-    applyFilter();
+    m_filterThread->start();
 }
 
 View::~View()
@@ -75,15 +128,17 @@ View::~View()
 void View::close()
 {
     if (m_adaptor) {
-        Q_EMIT m_adaptor->contactsRemoved(0, m_contacts.count());
+        Q_EMIT m_adaptor->contactsRemoved(0, m_filterThread->result().count());
         Q_EMIT closed();
-        m_contacts.clear();
 
         QDBusConnection conn = QDBusConnection::sessionBus();
         unregisterObject(conn);
         m_adaptor->deleteLater();
         m_adaptor = 0;
     }
+
+    delete m_filterThread;
+    m_filterThread = 0;
 }
 
 QString View::contactDetails(const QStringList &fields, const QString &id)
@@ -91,31 +146,36 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
     return QString();
 }
 
-QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize)
+QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
+    m_filterThread->wait();
+    QList<ContactEntry*> entries = m_filterThread->result();
+
     if (startIndex < 0) {
         startIndex = 0;
     }
 
-    if ((pageSize < 0) || ((startIndex + pageSize) >= m_contacts.count())) {
-        pageSize = m_contacts.count() - startIndex;
+    if ((pageSize < 0) || ((startIndex + pageSize) >= entries.count())) {
+        pageSize = entries.count() - startIndex;
     }
 
     QList<QContact> contacts;
     for(int i = startIndex, iMax = (startIndex + pageSize); i < iMax; i++) {
         // TODO: filter fields
-        contacts << m_contacts[i]->individual()->contact();
+        contacts << entries[i]->individual()->contact();
     }
 
-    qDebug() << "Contacts details size:" << contacts.size();
     QStringList ret =  VCardParser::contactToVcard(contacts);
-    qDebug() << "Parse result:" << contacts.size();
+    QDBusMessage reply = message.createReply(ret);
+    QDBusConnection::sessionBus().send(reply);
     return ret;
 }
 
 int View::count()
 {
-    return m_contacts.count();
+    m_filterThread->wait();
+
+    return m_filterThread->result().count();
 }
 
 void View::sort(const QString &field)
@@ -156,34 +216,14 @@ void View::unregisterObject(QDBusConnection &connection)
     }
 }
 
+bool View::appendContact(ContactEntry *entry)
+{
+    return m_filterThread->appendContact(entry);
+}
+
 QObject *View::adaptor() const
 {
     return m_adaptor;
-}
-
-bool View::checkContact(ContactEntry *entry)
-{
-    //TODO: check query filter
-    return m_filter.test(entry->individual()->contact());
-}
-
-bool View::appendContact(ContactEntry *entry)
-{
-    if (checkContact(entry)) {
-        m_contacts << entry;
-        return true;
-    }
-    return false;
-}
-
-void View::applyFilter()
-{
-    Q_FOREACH(ContactEntry *entry, m_allContacts->values())
-    {
-        appendContact(entry);
-    }
-    ContactLessThan lessThan(m_sortClause);
-    qSort(m_contacts.begin(), m_contacts.end(), lessThan);
 }
 
 } //namespace

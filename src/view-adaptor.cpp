@@ -23,7 +23,7 @@ namespace galera
 {
 
 ViewAdaptor::ViewAdaptor(const QDBusConnection &connection, View *parent)
-    : QDBusAbstractAdaptor(parent),      
+    : QDBusAbstractAdaptor(parent),
       m_view(parent),
       m_connection(connection)
 {
@@ -39,9 +39,17 @@ QString ViewAdaptor::contactDetails(const QStringList &fields, const QString &id
     return m_view->contactDetails(fields, id);
 }
 
-QStringList ViewAdaptor::contactsDetails(const QStringList &fields, int startIndex, int pageSize)
+QStringList ViewAdaptor::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    return m_view->contactsDetails(fields, startIndex, pageSize);
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_view, "contactsDetails",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QStringList&, fields),
+                              Q_ARG(int, startIndex),
+                              Q_ARG(int, pageSize),
+                              Q_ARG(const QDBusMessage&, message));
+
+    return QStringList();
 }
 
 int ViewAdaptor::count()

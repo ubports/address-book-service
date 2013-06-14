@@ -4,12 +4,14 @@ set(QCONTACTS_BACKEND_SRCS
     qcontact-backend.cpp
     qcontact-engineid.cpp
     contacts-service.cpp
+    request-data.cpp
 )
 
 set(QCONTACTS_BACKEND_HDRS
     qcontact-backend.h
     qcontact-engineid.h
     contacts-service.h
+    request-data.h
 )
 
 add_library(${QCONTACTS_BACKEND} MODULE

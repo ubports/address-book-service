@@ -10,6 +10,7 @@ set(GALERA_COMMON_LIB_HEADERS
     filter.h
     sort-clause.h
     vcard-parser.h
+    dbus-service-defs.h
 )
 
 add_library(${GALERA_COMMON_LIB} STATIC

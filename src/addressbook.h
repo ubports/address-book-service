@@ -38,7 +38,7 @@ class View;
 class ContactsMap;
 class AddressBookAdaptor;
 
-class AddressBook: public QObject, protected QDBusContext
+class AddressBook: public QObject
 {
     Q_OBJECT
 public:
@@ -50,12 +50,14 @@ public:
 
     // Adaptor
     SourceList availableSources();
-    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     QString linkContacts(const QStringList &contacts);
     View *query(const QString &clause, const QString &sort, const QStringList &sources);
-    int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
+
+public Q_SLOTS:
+    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
+    int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
 
 private Q_SLOTS:
@@ -64,8 +66,9 @@ private Q_SLOTS:
 private:
     FolksIndividualAggregator *m_individualAggregator;
     ContactsMap *m_contacts;
-    AddressBookAdaptor *m_adaptor;
     QSet<View*> m_views;
+    bool m_initializing;
+    AddressBookAdaptor *m_adaptor;
 
     void prepareFolks();
     QString removeContact(FolksIndividual *individual);

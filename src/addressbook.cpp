@@ -60,8 +60,8 @@ namespace galera
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
       m_contacts(new ContactsMap),
+      m_initializing(true),
       m_adaptor(0)
-
 {
     prepareFolks();
 }
@@ -116,17 +116,14 @@ SourceList AddressBook::availableSources()
 
 QString AddressBook::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
 {
-    setDelayedReply(true);
     ContactEntry *entry = m_contacts->valueFromVCard(contact);
     if (entry) {
         qWarning() << "Contact exists";
-        return "";
     } else {
         QContact qcontact = VCardParser::vcardToContact(contact);
         if (!qcontact.isEmpty()) {
             GHashTable *details = QIndividual::parseDetails(qcontact);
             //TOOD: lookup for source and use the correct store
-            message.setDelayedReply(true);
             QDBusMessage *cpy = new QDBusMessage(message);
             folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
                                                                  NULL, //parent
@@ -138,6 +135,9 @@ QString AddressBook::createContact(const QString &contact, const QString &source
             return "";
         }
     }
+
+    QDBusMessage reply = message.createReply(QString());
+    QDBusConnection::sessionBus().send(reply);
     return "";
 }
 
@@ -162,11 +162,6 @@ void AddressBook::viewClosed()
 
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
 {
-    setDelayedReply(true);
-    message.setDelayedReply(true);
-
-    qDebug() <<  "Remove contacts request:  " << contactIds;
-
     RemoveContactsData *data = new RemoveContactsData;
     data->m_addressbook = this;
     data->m_message = message;
@@ -208,7 +203,6 @@ void AddressBook::removeContactContinue(FolksIndividualAggregator *individualAgg
             removeContactContinue(individualAggregator, 0, data);
         }
     } else {
-        qDebug() << "notify client";
         QDBusMessage reply = removeData->m_message.createReply(removeData->m_sucessCount);
         QDBusConnection::sessionBus().send(reply);
         delete removeData;
@@ -231,19 +225,18 @@ bool AddressBook::unlinkContacts(const QString &parent, const QStringList &conta
 
 QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBusMessage &message)
 {
-    if (!contacts.isEmpty()) {
-        setDelayedReply(true);
-        message.setDelayedReply(true);
+    UpdateContactsData *data = 0;
 
-        UpdateContactsData *data = new UpdateContactsData;
+    if (!contacts.isEmpty()) {
+        data = new UpdateContactsData;
         data->m_contacts = VCardParser::vcardToContact(contacts);
         data->m_request = contacts;
         data->m_currentIndex = -1;
         data->m_addressbook = this;
         data->m_message = message;
 
-        updateContacts("", data);
     }
+    updateContacts("", data);
 
     return QStringList();
 }
@@ -252,28 +245,33 @@ void AddressBook::updateContacts(const QString &error, void *userData)
 {
     qDebug() << Q_FUNC_INFO << userData;
     UpdateContactsData *data = static_cast<UpdateContactsData*>(userData);
+    QDBusMessage reply;
 
-    if (!error.isEmpty()) {
-        data->m_result << error;
-    } else if (data->m_currentIndex > -1) {
-        data->m_result << data->m_request[data->m_currentIndex];
-    }
-
-    if (!data->m_contacts.isEmpty()) {
-        QContact newContact = data->m_contacts.takeFirst();
-        data->m_currentIndex++;
-
-        ContactEntry *entry = data->m_addressbook->m_contacts->value(newContact.detail<QContactGuid>().guid());
-        if (entry) {
-            entry->individual()->update(newContact, updateContacts, userData);
-        } else {
-            updateContacts("Contact not found!", userData);
+    if (data) {
+        if (!error.isEmpty()) {
+            data->m_result << error;
+        } else if (data->m_currentIndex > -1) {
+            data->m_result << data->m_request[data->m_currentIndex];
         }
-        return;
+
+        if (!data->m_contacts.isEmpty()) {
+            QContact newContact = data->m_contacts.takeFirst();
+            data->m_currentIndex++;
+
+            ContactEntry *entry = data->m_addressbook->m_contacts->value(newContact.detail<QContactGuid>().guid());
+            if (entry) {
+                entry->individual()->update(newContact, updateContacts, userData);
+            } else {
+                updateContacts("Contact not found!", userData);
+            }
+            return;
+        }
+        folks_persona_store_flush(folks_individual_aggregator_get_primary_store(data->m_addressbook->m_individualAggregator), 0, 0);
+        reply = data->m_message.createReply(data->m_result);
+    } else {
+        reply = data->m_message.createReply(QStringList());
     }
 
-    folks_persona_store_flush(folks_individual_aggregator_get_primary_store(data->m_addressbook->m_individualAggregator), 0, 0);
-    QDBusMessage reply = data->m_message.createReply(data->m_result);
     QDBusConnection::sessionBus().send(reply);
     delete data;
 }
@@ -293,7 +291,6 @@ QString AddressBook::removeContact(FolksIndividual *individual)
 
 QString AddressBook::addContact(FolksIndividual *individual)
 {
-    qDebug() << "Add contact" << folks_individual_get_id(individual);
     Q_ASSERT(!m_contacts->contains(individual));
     m_contacts->insert(new ContactEntry(new QIndividual(individual, m_individualAggregator)));
     //TODO: Notify view
@@ -339,16 +336,14 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     g_object_unref (iter);
 
     //TODO: check for linked and unliked contacts
-
     if (!removedIds.isEmpty()) {
-        qDebug() << "emit adaptor signal REMOVED" << removedIds;
         Q_EMIT self->m_adaptor->contactsRemoved(removedIds);
     }
 
     if (!addedIds.isEmpty()) {
-        qDebug() << "emit adaptor signal ADDED" << addedIds;
         Q_EMIT self->m_adaptor->contactsAdded(addedIds);
     }
+    self->m_initializing = false;
 }
 
 void AddressBook::aggregatorPrepareCb(GObject *source,

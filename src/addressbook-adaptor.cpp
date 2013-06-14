@@ -43,7 +43,13 @@ SourceList AddressBookAdaptor::availableSources()
 
 QString AddressBookAdaptor::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
 {
-    return m_addressBook->createContact(contact, source, message);
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "createContact",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QString&, contact),
+                              Q_ARG(const QString&, source),
+                              Q_ARG(const QDBusMessage&, message));
+    return QString();
 }
 
 QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &sort, const QStringList &sources)
@@ -55,7 +61,12 @@ QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &
 
 int AddressBookAdaptor::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
 {
-    return m_addressBook->removeContacts(contactIds, message);
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "removeContacts",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QStringList&, contactIds),
+                              Q_ARG(const QDBusMessage&, message));
+    return 0;
 }
 
 QStringList AddressBookAdaptor::sortFields()
@@ -75,9 +86,12 @@ bool AddressBookAdaptor::unlinkContacts(const QString &parentId, const QStringLi
 
 QStringList AddressBookAdaptor::updateContacts(const QStringList &contacts, const QDBusMessage &message)
 {
-    qDebug() << Q_FUNC_INFO << contacts;
-    return m_addressBook->updateContacts(contacts, message);
-
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "updateContacts",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QStringList&, contacts),
+                              Q_ARG(const QDBusMessage&, message));
+    return QStringList();
 }
 
 } //namespace

@@ -23,7 +23,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QSet>
-#include <QtCore/QAtomicInt>
+#include <QtCore/QMutex>
 
 #include <QtContacts/QContact>
 #include <QtContacts/QContactManagerEngine>
@@ -32,12 +32,12 @@
 #include <QtVersit/QVersitContactImporter>
 
 #include <QtDBus/QDBusPendingCallWatcher>
+#include <QtDBus/QDBusServiceWatcher>
 
 class QDBusInterface;
 using namespace QtContacts; // necessary for signal signatures
 
 namespace galera {
-
 class RequestData;
 
 class GaleraContactsService : public QObject
@@ -62,10 +62,12 @@ public:
 Q_SIGNALS:
     void contactsAdded(QList<QContactId> ids);
     void contactsRemoved(QList<QContactId> ids);
+    void serviceChanged();
 
 private Q_SLOTS:
     void onContactsAdded(QStringList ids);
     void onContactsRemoved(QStringList ids);
+    void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
 
 private:
     QString m_id;
@@ -74,15 +76,19 @@ private:
     QList<QtContacts::QContactId> m_contactIds;                 // list of contact Id's
     QList<QtContacts::QContactRelationship> m_relationships;    // list of contact relationships
     QMap<QtContacts::QContactId, QList<QtContacts::QContactRelationship> > m_orderedRelationships; // map of ordered lists of contact relationships
-    QList<QString> m_definitionIds;                             // list of definition types (id's)
-    quint32 m_nextContactId;
     QString m_managerUri;                                       // for faster lookup.
+    QDBusServiceWatcher *m_serviceWatcher;
 
     QSharedPointer<QDBusInterface> m_iface;
     QSet<RequestData*> m_pendingRequests;
 
+    Q_INVOKABLE void initialize();
+    Q_INVOKABLE void deinitialize();
+
+    bool isOnline() const;
+
     void fetchContacts(QtContacts::QContactFetchRequest *request);
-    void fetchContactsPage(RequestData *request);
+    Q_INVOKABLE void fetchContactsPage(galera::RequestData *request);
     void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
 
     void saveContact(QtContacts::QContactSaveRequest *request);
@@ -95,8 +101,6 @@ private:
     void removeContactDone(RequestData *request, QDBusPendingCallWatcher *call);
 
     void destroyRequest(RequestData *request);
-
-
 
     QList<QContactId> parseIds(QStringList ids) const;
 };

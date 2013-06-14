@@ -79,6 +79,7 @@ GaleraManagerEngine::GaleraManagerEngine()
     qDebug() << Q_FUNC_INFO << this;
     connect(m_service, SIGNAL(contactsAdded(QList<QContactId>)), this, SIGNAL(contactsAdded(QList<QContactId>)));
     connect(m_service, SIGNAL(contactsRemoved(QList<QContactId>)), this, SIGNAL(contactsRemoved(QList<QContactId>)));
+    connect(m_service, SIGNAL(serviceChanged()), this, SIGNAL(dataChanged()));
 }
 
 /*! Frees any memory used by this engine */
@@ -97,7 +98,6 @@ QMap<QString, QString> GaleraManagerEngine::managerParameters() const
 {
     qDebug() << Q_FUNC_INFO;
     QMap<QString, QString> parameters;
-    parameters.insert("id", "0000000000");
     return parameters;
 }
 
@@ -280,7 +280,6 @@ bool GaleraManagerEngine::startRequest(QtContacts::QContactAbstractRequest *req)
     if (!checkDeletion.isNull()) {
         m_service->addRequest(req);
     }
-
     return true;
 }
 

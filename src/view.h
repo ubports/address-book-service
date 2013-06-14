@@ -33,6 +33,7 @@ namespace galera
 class ContactEntry;
 class ViewAdaptor;
 class ContactsMap;
+class FilterThread;
 class SortContact;
 
 class View : public QObject
@@ -50,27 +51,24 @@ public:
 
     // contacts
     bool appendContact(ContactEntry *entry);
+    bool removeContact(ContactEntry *entry);
 
     // Adaptor
     QString contactDetails(const QStringList &fields, const QString &id);
-    QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize);
     int count();
     void sort(const QString &field);
     void close();
+
+public Q_SLOTS:
+    QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message);
 
 Q_SIGNALS:
     void closed();
 
 private:
-    Filter m_filter;
-    SortClause m_sortClause;
     QStringList m_sources;
-    QList<ContactEntry*> m_contacts;
-    ContactsMap *m_allContacts;
+    FilterThread *m_filterThread;
     ViewAdaptor *m_adaptor;
-
-    void applyFilter();
-    bool checkContact(ContactEntry *entry);
 };
 
 } //namespace
