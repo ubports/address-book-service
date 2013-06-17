@@ -209,6 +209,7 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
             opState = QContactAbstractRequest::ActiveState;
         }
         if (!vcards.isEmpty()) {
+            qDebug() << vcards;
             QList<QContact> contacts = VCardParser::vcardToContact(vcards);
             QList<QContactId> contactsIds;
 

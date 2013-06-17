@@ -60,6 +60,7 @@ public:
     ContactEntry *value(FolksIndividual *individual) const;
     ContactEntry *value(const QString &id) const;
     ContactEntry *take(FolksIndividual *individual);
+    void remove(const QString &id);
     void insert(ContactEntry *entry);
     int size() const;
 

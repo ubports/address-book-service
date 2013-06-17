@@ -29,6 +29,8 @@ namespace galera
 class VCardParser
 {
 public:
+    static const QString PidMapFieldName;
+    static const QString PidFieldName;
 
     static QStringList contactToVcard(QList<QtContacts::QContact> contacts);
     static QtContacts::QContact vcardToContact(const QString &vcard);

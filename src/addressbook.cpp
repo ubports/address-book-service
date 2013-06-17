@@ -226,9 +226,11 @@ bool AddressBook::unlinkContacts(const QString &parent, const QStringList &conta
 QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBusMessage &message)
 {
     UpdateContactsData *data = 0;
+    qDebug() << Q_FUNC_INFO << contacts;
 
     if (!contacts.isEmpty()) {
         data = new UpdateContactsData;
+        qDebug() << "update" << contacts;
         data->m_contacts = VCardParser::vcardToContact(contacts);
         data->m_request = contacts;
         data->m_currentIndex = -1;
@@ -279,22 +281,30 @@ void AddressBook::updateContacts(const QString &error, void *userData)
 
 QString AddressBook::removeContact(FolksIndividual *individual)
 {
-    Q_ASSERT(m_contacts->contains(individual));
-    ContactEntry *ci = m_contacts->take(individual);
-    if (ci) {
-        QString id = QString::fromUtf8(folks_individual_get_id(individual));
-        delete ci;
-        return id;
+    if (m_contacts->contains(individual)) {
+        ContactEntry *ci = m_contacts->take(individual);
+        if (ci) {
+            QString id = QString::fromUtf8(folks_individual_get_id(individual));
+            qDebug() << "Remove contact" << id;
+            delete ci;
+            return id;
+        }
     }
     return QString();
 }
 
 QString AddressBook::addContact(FolksIndividual *individual)
 {
-    Q_ASSERT(!m_contacts->contains(individual));
-    m_contacts->insert(new ContactEntry(new QIndividual(individual, m_individualAggregator)));
-    //TODO: Notify view
-    return QString::fromUtf8(folks_individual_get_id(individual));
+    QString id = QString::fromUtf8(folks_individual_get_id(individual));
+    ContactEntry *entry = m_contacts->value(id);
+    if (entry) {
+        entry->individual()->setIndividual(individual);
+    } else {
+        m_contacts->insert(new ContactEntry(new QIndividual(individual, m_individualAggregator)));
+        qDebug() << "Add contact" << folks_individual_get_id(individual);
+        //TODO: Notify view
+    }
+    return id;
 }
 
 void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggregator,
@@ -307,35 +317,34 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
 
     GeeIterator *iter;
     GeeSet *removed = gee_multi_map_get_keys(changes);
-    iter = gee_iterable_iterator(GEE_ITERABLE(removed));
-
-    while(gee_iterator_next(iter)) {
-        FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
-        if (individual) {
-            QString id = self->removeContact(individual);
-            if(!id.isEmpty()) {
-                removedIds << id;
-            }
-            g_object_unref(individual);
-        }
-    }
-    g_object_unref (iter);
-
     GeeCollection *added = gee_multi_map_get_values(changes);
+
     iter = gee_iterable_iterator(GEE_ITERABLE(added));
     while(gee_iterator_next(iter)) {
         FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
         if (individual) {
-            QString id = self->addContact(individual);
-            if(!id.isEmpty()) {
-                addedIds << id;
+            // add contact to the map
+            addedIds << self->addContact(individual);
+            g_object_unref(individual);
+        }
+    }
+    g_object_unref (iter);
+
+
+    iter = gee_iterable_iterator(GEE_ITERABLE(removed));
+    while(gee_iterator_next(iter)) {
+        FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
+        if (individual) {
+            QString id = QString::fromUtf8(folks_individual_get_id(individual));
+            if (!addedIds.contains(id)) {
+                // delete from contact map
+                removedIds << self->removeContact(individual);
             }
             g_object_unref(individual);
         }
     }
     g_object_unref (iter);
 
-    //TODO: check for linked and unliked contacts
     if (!removedIds.isEmpty()) {
         Q_EMIT self->m_adaptor->contactsRemoved(removedIds);
     }
