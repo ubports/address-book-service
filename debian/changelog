@@ -1,3 +1,13 @@
+address-book-service (0.1.0daily13.06.17-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Fixed qcontacts plugin to correct handle service disconnection.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 33
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 17 Jun 2013 07:01:57 +0000
+
 address-book-service (0.1.0daily13.06.13-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
