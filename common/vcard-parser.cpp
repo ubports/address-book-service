@@ -120,7 +120,7 @@ namespace
             }
 
             // Remove empty phone subtypes
-            /*
+            // Remove this after this fix get merged: https://codereview.qt-project.org/#change,59156
             if (updatedDetails->size() > 0) {
                 QContactDetail &det = updatedDetails->last();
                 if (det.type() == QContactPhoneNumber::Type) {
@@ -130,7 +130,6 @@ namespace
                     }
                 }
             }
-            */
         }
 
         virtual void documentProcessed(const QVersitDocument& document, QContact* contact)
