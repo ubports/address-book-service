@@ -230,7 +230,6 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
 
     if (!contacts.isEmpty()) {
         data = new UpdateContactsData;
-        qDebug() << "update" << contacts;
         data->m_contacts = VCardParser::vcardToContact(contacts);
         data->m_request = contacts;
         data->m_currentIndex = -1;
