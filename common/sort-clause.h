@@ -38,12 +38,14 @@ public:
     QString toString() const;
     QList<QtContacts::QContactSortOrder> toContactSortOrder() const;
 
+    static QStringList supportedFields();
+
 private:
     QList<QtContacts::QContactSortOrder> m_sortOrders;
 
     QtContacts::QContactSortOrder fromString(const QString &clause) const;
     QString toString(const QtContacts::QContactSortOrder &sort) const;
-    void initialize() const;
+    static void initialize();
 };
 
 }

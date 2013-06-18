@@ -210,10 +210,7 @@ void AddressBook::removeContactContinue(FolksIndividualAggregator *individualAgg
 
 QStringList AddressBook::sortFields()
 {
-    //TODO
-    QStringList fields;
-    fields << "id" << "name" << "full-name";
-    return fields;
+    return SortClause::supportedFields();
 }
 
 bool AddressBook::unlinkContacts(const QString &parent, const QStringList &contacts)
