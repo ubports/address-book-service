@@ -86,6 +86,13 @@ public:
         return m_contacts.removeAll(entry);
     }
 
+    void chageSort(SortClause clause)
+    {
+        m_sortClause = clause;
+        ContactLessThan lessThan(m_sortClause);
+        qSort(m_contacts.begin(), m_contacts.end(), lessThan);
+    }
+
 protected:
     void run()
     {
@@ -95,8 +102,8 @@ protected:
                 m_contacts << entry;
             }
         }
-        ContactLessThan lessThan(m_sortClause);
-        qSort(m_contacts.begin(), m_contacts.end(), lessThan);
+
+        chageSort(m_sortClause);
     }
 
 private:
@@ -180,6 +187,7 @@ int View::count()
 
 void View::sort(const QString &field)
 {
+    m_filterThread->chageSort(SortClause(field));
 }
 
 QString View::objectPath()
