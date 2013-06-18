@@ -93,6 +93,16 @@ namespace galera
                                  NULL, \
                                  NULL))
 
+    #define SET_PERSONA_NEW() \
+        GEE_SET(gee_hash_set_new(FOLKS_TYPE_PERSONA, \
+                                 (GBoxedCopyFunc) g_object_ref, g_object_unref, \
+                                 NULL, \
+                                 NULL, \
+                                 NULL, \
+                                 NULL, \
+                                 NULL, \
+                                 NULL))
+
     #define GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE) \
         GEE_MULTI_MAP(gee_hash_multi_map_new(G_TYPE_STRING,\
                                              (GBoxedCopyFunc) g_strdup, g_free, \
@@ -117,6 +127,13 @@ namespace galera
                                  (GHashFunc) folks_abstract_field_details_hash, \
                                  (GEqualFunc) folks_abstract_field_details_equal))
 
+    #define SET_PERSONA_NEW() \
+        GEE_SET(gee_hash_set_new(FOLKS_TYPE_PERSONA, \
+                             (GBoxedCopyFunc) g_object_ref, g_object_unref, \
+                             NULL, \
+                             NULL))
+
+
     #define GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE) \
         GEE_MULTI_MAP(gee_hash_multi_map_new(G_TYPE_STRING, \
                                              (GBoxedCopyFunc) g_strdup, \
@@ -127,6 +144,8 @@ namespace galera
                                               g_str_equal, \
                                               (GHashFunc) folks_abstract_field_details_hash, \
                                               (GEqualFunc) folks_abstract_field_details_equal));
+
+
 
 #endif
 
@@ -1317,9 +1336,7 @@ void QIndividual::createPersonaDone(GObject *aggregator, GAsyncResult *result, g
     } else {
         // Link the new personas
         GeeSet *personas = folks_individual_get_personas(data->m_self->m_individual);
-        GeeSet *newPersonas = GEE_SET(gee_hash_set_new(FOLKS_TYPE_PERSONA,
-                                                       (GBoxedCopyFunc) g_object_ref, g_object_unref,
-                                                       NULL, NULL));
+        GeeSet *newPersonas = SET_PERSONA_NEW();
         gee_collection_add_all(GEE_COLLECTION(newPersonas), GEE_COLLECTION(personas));
         gee_collection_add(GEE_COLLECTION(newPersonas), newPersona);
         data->m_self->m_primaryPersona = newPersona;

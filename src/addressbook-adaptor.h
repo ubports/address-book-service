@@ -96,13 +96,13 @@ public:
 
 public Q_SLOTS:
     SourceList availableSources();
-    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
-    QString linkContacts(const QStringList &contacts);
+    QStringList sortFields();
     QDBusObjectPath query(const QString &clause, const QString &sort, const QStringList &sources);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
-    QStringList sortFields();
-    bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
+    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
+    QString linkContacts(const QStringList &contacts);
+    bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
 
 Q_SIGNALS:
     void contactsAdded(const QStringList &ids);
