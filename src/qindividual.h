@@ -31,7 +31,6 @@
 
 namespace galera
 {
-typedef void (*UpdateDoneCB)(const QString&, void*);
 typedef GHashTable* (ParseDetailsFunc)(GHashTable*, const QList<QtContacts::QContactDetail> &);
 
 typedef QList<QtVersit::QVersitProperty> PropertyList;
@@ -60,13 +59,12 @@ public:
 
     QtContacts::QContact &contact();
     QtContacts::QContact copy(Fields fields = QIndividual::All);
-    bool update(const QString &vcard, UpdateDoneCB cb, void* data);
-    bool update(const QtContacts::QContact &contact, UpdateDoneCB cb, void* data);
+    bool update(const QString &vcard, QObject *object, const QString &slot);
+    bool update(const QtContacts::QContact &contact, QObject *object, const QString &slot);
     FolksIndividual *individual() const;
     void setIndividual(FolksIndividual *individual);
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
-
 private:
     FolksIndividual *m_individual;
     FolksPersona *m_primaryPersona;
@@ -122,6 +120,8 @@ private:
 
     static void createPersonaDone(GObject *detail, GAsyncResult *result, gpointer userdata);
     static void updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata);
+    static void updateDetailsSendReply(gpointer userdata, GError *error);
+    static void updateDetailsSendReply(gpointer userdata, const QString &errorMessage);
     static QString callDetailChangeFinish(QtContacts::QContactDetail::DetailType type, FolksPersona *persona, GAsyncResult *result);
     //static bool detailListIsEqual(QList<QtContacts::QContactDetail> original, QList<QtContacts::QContactDetail> details);
 

@@ -28,6 +28,8 @@
 
 #include <QtDBus/QtDBus>
 
+#include <QtContacts/QContact>
+
 #include <folks/folks.h>
 #include <glib.h>
 #include <glib-object.h>
@@ -37,6 +39,7 @@ namespace galera
 class View;
 class ContactsMap;
 class AddressBookAdaptor;
+class QIndividual;
 
 class AddressBook: public QObject
 {
@@ -59,6 +62,7 @@ public Q_SLOTS:
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
+    void updateContactsDone(galera::QIndividual *individual, const QString &error);
 
 private Q_SLOTS:
     void viewClosed();
@@ -70,12 +74,14 @@ private:
     bool m_initializing;
     AddressBookAdaptor *m_adaptor;
 
+    // Update command
+    QDBusMessage m_updateCommandReplyMessage;
+    QStringList m_updateCommandResult;
+    QList<QtContacts::QContact> m_updateCommandPendingContacts;
+
     void prepareFolks();
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
-
-
-    static void updateContacts(const QString &error, void *userData);
 
     static void individualsChangedCb(FolksIndividualAggregator *individualAggregator,
                                      GeeMultiMap *changes,

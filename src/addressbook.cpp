@@ -26,7 +26,6 @@
 
 #include <QtCore/QPair>
 #include <QtCore/QUuid>
-#include <QtContacts/QContact>
 
 using namespace QtContacts;
 
@@ -225,56 +224,45 @@ bool AddressBook::unlinkContacts(const QString &parent, const QStringList &conta
 
 QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBusMessage &message)
 {
-    UpdateContactsData *data = 0;
-    qDebug() << Q_FUNC_INFO << contacts;
+    //TODO: support multiple update contacts calls
+    Q_ASSERT(m_updateCommandPendingContacts.isEmpty());
 
-    if (!contacts.isEmpty()) {
-        data = new UpdateContactsData;
-        data->m_contacts = VCardParser::vcardToContact(contacts);
-        data->m_request = contacts;
-        data->m_currentIndex = -1;
-        data->m_addressbook = this;
-        data->m_message = message;
+    m_updateCommandReplyMessage = message;
+    m_updateCommandResult = contacts;
+    m_updateCommandPendingContacts << VCardParser::vcardToContact(contacts);
 
-    }
-    updateContacts("", data);
+    updateContactsDone(0, QString());
 
     return QStringList();
 }
 
-void AddressBook::updateContacts(const QString &error, void *userData)
+void AddressBook::updateContactsDone(galera::QIndividual *individual, const QString &error)
 {
-    qDebug() << Q_FUNC_INFO << userData;
-    UpdateContactsData *data = static_cast<UpdateContactsData*>(userData);
-    QDBusMessage reply;
+    Q_UNUSED(individual);
+    qDebug() << Q_FUNC_INFO;
 
-    if (data) {
-        if (!error.isEmpty()) {
-            data->m_result << error;
-        } else if (data->m_currentIndex > -1) {
-            data->m_result << data->m_request[data->m_currentIndex];
-        }
-
-        if (!data->m_contacts.isEmpty()) {
-            QContact newContact = data->m_contacts.takeFirst();
-            data->m_currentIndex++;
-
-            ContactEntry *entry = data->m_addressbook->m_contacts->value(newContact.detail<QContactGuid>().guid());
-            if (entry) {
-                entry->individual()->update(newContact, updateContacts, userData);
-            } else {
-                updateContacts("Contact not found!", userData);
-            }
-            return;
-        }
-        folks_persona_store_flush(folks_individual_aggregator_get_primary_store(data->m_addressbook->m_individualAggregator), 0, 0);
-        reply = data->m_message.createReply(data->m_result);
-    } else {
-        reply = data->m_message.createReply(QStringList());
+    if (!error.isEmpty()) {
+        // update the result with the error
+        m_updateCommandResult[m_updateCommandResult.size() - m_updateCommandPendingContacts.size()] = error;
     }
 
-    QDBusConnection::sessionBus().send(reply);
-    delete data;
+    if (!m_updateCommandPendingContacts.isEmpty()) {
+        QContact newContact = m_updateCommandPendingContacts.takeFirst();
+        ContactEntry *entry = m_contacts->value(newContact.detail<QContactGuid>().guid());
+        if (entry) {
+            entry->individual()->update(newContact, this, "updateContactsDone(galera::QIndividual*, const QString&)"); //));
+        } else {
+            updateContactsDone(0, "Contact not found!");
+        }
+    } else {
+        folks_persona_store_flush(folks_individual_aggregator_get_primary_store(m_individualAggregator), 0, 0);
+        QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
+        QDBusConnection::sessionBus().send(reply);
+
+        // clear command data
+        m_updateCommandResult.clear();
+        m_updateCommandReplyMessage = QDBusMessage();
+    }
 }
 
 

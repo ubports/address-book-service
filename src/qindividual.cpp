@@ -59,8 +59,8 @@ public:
     QList<QContactDetail> m_details;
     QContactDetail m_currentDetail;
 
-    galera::UpdateDoneCB m_doneCB;
-    void *m_doneData;
+    QObject *m_object;
+    QMetaMethod m_slot;
 };
 
 #ifdef FOLKS_0_9_0
@@ -1282,6 +1282,25 @@ QString QIndividual::callDetailChangeFinish(QtContacts::QContactDetail::DetailTy
     return errorMessage;
 }
 
+void QIndividual::updateDetailsSendReply(gpointer userdata, const QString &errorMessage)
+{
+    UpdateContactData *data = static_cast<UpdateContactData*>(userdata);
+    data->m_slot.invoke(data->m_object,
+                        Q_ARG(QIndividual*, data->m_self), Q_ARG(QString, errorMessage));
+    delete data;
+}
+
+void QIndividual::updateDetailsSendReply(gpointer userdata, GError *error)
+{
+    QString errorMessage;
+    if (error) {
+        errorMessage = QString::fromUtf8(error->message);
+        qWarning() << error->message;
+        g_error_free(error);
+    }
+    updateDetailsSendReply(userdata, errorMessage);
+}
+
 
 void QIndividual::createPersonaDone(GObject *aggregator, GAsyncResult *result, gpointer userdata)
 {
@@ -1294,10 +1313,7 @@ void QIndividual::createPersonaDone(GObject *aggregator, GAsyncResult *result, g
                                                                                            result,
                                                                                            &error);
     if (error) {
-        QString errorMessage = QString::fromUtf8(error->message);
-        qWarning() << error->message;
-        g_error_free(error);
-        data->m_doneCB(errorMessage, data->m_doneData);
+        updateDetailsSendReply(data, error);
     } else {
         // Link the new personas
         GeeSet *personas = folks_individual_get_personas(data->m_self->m_individual);
@@ -1326,21 +1342,17 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
             folks_individual_aggregator_link_personas_finish(FOLKS_INDIVIDUAL_AGGREGATOR(detail), result, &error);
             if (error) {
                 errorMessage = QString::fromUtf8(error->message);
-                g_error_free(error);
             }
         }
 
         if (!errorMessage.isEmpty()) {
-            qWarning() << "Error to update contact:" << errorMessage;
-            data->m_doneCB(errorMessage, data->m_doneData);
-            delete data;
+            updateDetailsSendReply(data, errorMessage);
             return;
         }
     }
 
     if (data->m_details.isEmpty()) {
-        data->m_doneCB(QString(), data->m_doneData);
-        delete data;
+        updateDetailsSendReply(data, 0);
         return;
     }
 
@@ -1390,9 +1402,14 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
     }
 }
 
-
-bool QIndividual::update(const QtContacts::QContact &newContact, UpdateDoneCB cb, void* userData)
+bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object, const QString &slot)
 {
+    int slotIndex = object->metaObject()->indexOfSlot(QMetaObject::normalizedSignature(slot.toUtf8().data()));
+    if (slotIndex == -1) {
+        qWarning() << "Invalid slot:" << slot << "for object" << object;
+        return false;
+    }
+
     QContact &originalContact = contact();
     if (newContact != originalContact) {
 
@@ -1400,8 +1417,8 @@ bool QIndividual::update(const QtContacts::QContact &newContact, UpdateDoneCB cb
         data->m_details = newContact.details();
         data->m_newContact = newContact;
         data->m_self = this;
-        data->m_doneCB = cb;
-        data->m_doneData = userData;
+        data->m_object = object;
+        data->m_slot = object->metaObject()->method(slotIndex);
         updateDetailsDone(0, 0, data);
         return true;
     } else {
@@ -1431,10 +1448,10 @@ void QIndividual::setIndividual(FolksIndividual *individual)
     }
 }
 
-bool QIndividual::update(const QString &vcard, UpdateDoneCB cb, void* data)
+bool QIndividual::update(const QString &vcard, QObject *object, const QString &slot)
 {
     QContact contact = VCardParser::vcardToContact(vcard);
-    return update(contact, cb, data);
+    return update(contact, object, slot);
 }
 
 QStringList QIndividual::listParameters(FolksAbstractFieldDetails *details)
