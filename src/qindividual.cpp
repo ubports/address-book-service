@@ -498,8 +498,15 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *per
         FolksRole *role = FOLKS_ROLE(folks_abstract_field_details_get_value(fd));
 
         QContactOrganization org;
-        org.setName(QString::fromUtf8(folks_role_get_organisation_name(role)));
-        org.setTitle(QString::fromUtf8(folks_role_get_title(role)));
+        QString field;
+        field = QString::fromUtf8(folks_role_get_organisation_name(role));
+        if (field.isEmpty()) {
+            org.setName(field);
+        }
+        field = QString::fromUtf8(folks_role_get_title(role));
+        if (!field.isEmpty()) {
+            org.setTitle(field);
+        }
         parseParameters(org, fd);
 
         g_object_unref(fd);
@@ -817,6 +824,9 @@ void QIndividual::updateFullName(const QtContacts::QContactDetail &detail, void*
     if (persona == 0) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseFullNameDetails, data);
     } else if (FOLKS_IS_NAME_DETAILS(persona) && (originalLabel != detail)) {
+        qDebug() << "Full Name diff";
+        qDebug() << "\t" << originalLabel << "\n\t" << detail;
+
         const QContactDisplayLabel *label = static_cast<const QContactDisplayLabel*>(&detail);
 
         folks_name_details_change_full_name(FOLKS_NAME_DETAILS(persona),
@@ -836,6 +846,9 @@ void QIndividual::updateName(const QtContacts::QContactDetail &detail, void* dat
     if (persona == 0) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseNameDetails, data);
     } else if (FOLKS_IS_NAME_DETAILS(persona) && (originalName != detail)) {
+        qDebug() << "Name diff";
+        qDebug() << "\t" << originalName << "\n\t" << detail;
+
         const QContactName *name = static_cast<const QContactName*>(&detail);
         FolksStructuredName *sn;
         sn = folks_structured_name_new(name->lastName().toUtf8().data(),
@@ -924,6 +937,9 @@ void QIndividual::updateRole(QtContacts::QContactDetail detail, void* data)
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseOrganizationDetails, data);
     } else if (FOLKS_IS_ROLE_DETAILS(persona) && (originalRole != detail)) {
+        qDebug() << "Role diff";
+        qDebug() << "\t" << originalRole << "\n\t" << detail;
+
         FolksRoleFieldDetails *roleDetails = 0;
         const QContactOrganization *cRole = static_cast<const QContactOrganization*>(&detail);
         GeeSet *roleSet = folks_role_details_get_roles(FOLKS_ROLE_DETAILS(persona));
@@ -977,6 +993,9 @@ void QIndividual::updateEmail(QtContacts::QContactDetail detail, void* data)
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseEmailDetails, data);
     } else if (FOLKS_IS_EMAIL_DETAILS(persona) && (originalEmail != detail)) {
+        qDebug() << "email diff";
+        qDebug() << "\t" << originalEmail << "\n\t" << detail;
+
         FolksEmailFieldDetails *emailDetails = 0;
         const QContactEmailAddress *email = static_cast<const QContactEmailAddress*>(&detail);
         GeeSet *emailSet = folks_email_details_get_email_addresses(FOLKS_EMAIL_DETAILS(persona));
@@ -1017,6 +1036,9 @@ void QIndividual::updatePhone(QtContacts::QContactDetail detail, void* data)
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parsePhoneNumbersDetails, data);
     } else if (FOLKS_IS_PHONE_DETAILS(persona) && (originalPhone != detail)) {
+        qDebug() << "Phone diff";
+        qDebug() << "\t" << originalPhone << "\n\t" << detail;
+
         /// Only update the details on the current persona
         FolksPhoneFieldDetails *phoneDetails = 0;
         const QContactPhoneNumber *phone = static_cast<const QContactPhoneNumber*>(&detail);
@@ -1059,8 +1081,13 @@ void QIndividual::updateAddress(QtContacts::QContactDetail detail, void* data)
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseAddressDetails, data);
     } else if (FOLKS_IS_POSTAL_ADDRESS_DETAILS(persona) && (originalAddress != detail)) {
+        qDebug() << "Adderess diff";
+        qDebug() << "\t" << originalAddress << "\n\t" << detail;
+
+
         FolksPostalAddressFieldDetails *addrDetails = 0;
         const QContactAddress *addr = static_cast<const QContactAddress*>(&detail);
+        qDebug() << "SubTypes:" << addr->subTypes();
         GeeSet *addrSet = folks_postal_address_details_get_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona));
 
         if (!addrSet || (gee_collection_get_size(GEE_COLLECTION(addrSet)) == 0)) {
@@ -1117,6 +1144,9 @@ void QIndividual::updateIm(QtContacts::QContactDetail detail, void* data)
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseImDetails, data);
     } else if (FOLKS_IS_IM_DETAILS(persona) && (originalIm != detail)) {
+        qDebug() << "Im diff";
+        qDebug() << "\t" << originalIm << "\n\t" << detail;
+
         const QContactOnlineAccount *im = static_cast<const QContactOnlineAccount*>(&detail);
         GeeMultiMap *imSet = folks_im_details_get_im_addresses(FOLKS_IM_DETAILS(persona));
 
@@ -1169,6 +1199,9 @@ void QIndividual::updateUrl(QtContacts::QContactDetail detail, void* data)
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseUrlDetails, data);
     } else if (FOLKS_IS_URL_DETAILS(persona) && (originalUrl != detail)) {
+        qDebug() << "Url diff";
+        qDebug() << "\t" << originalUrl << "\n\t" << detail;
+
         FolksUrlFieldDetails *urlDetails = 0;
         const QContactUrl *url = static_cast<const QContactUrl*>(&detail);
         GeeSet *urlSet = folks_url_details_get_urls(FOLKS_URL_DETAILS(persona));
@@ -1211,6 +1244,9 @@ void QIndividual::updateNote(QtContacts::QContactDetail detail, void* data)
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseNoteDetails, data);
     } else if (FOLKS_IS_URL_DETAILS(persona) && (originalNote != detail)) {
+        qDebug() << "Note diff";
+        qDebug() << "\t" << originalNote << "\n\t" << detail;
+
         FolksNoteFieldDetails *noteDetails = 0;
         const QContactNote *note = static_cast<const QContactNote*>(&detail);
         GeeSet *noteSet = folks_note_details_get_notes(FOLKS_NOTE_DETAILS(persona));
@@ -1265,7 +1301,7 @@ QString QIndividual::callDetailChangeFinish(QtContacts::QContactDetail::DetailTy
         break;
     case QContactDetail::TypeDisplayLabel:
         folks_name_details_change_full_name_finish(FOLKS_NAME_DETAILS(persona), result, &error);
-        break;
+       break;
     case QContactDetail::TypeEmailAddress:
         folks_email_details_change_email_addresses_finish(FOLKS_EMAIL_DETAILS(persona), result, &error);
         break;
