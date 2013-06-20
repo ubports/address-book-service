@@ -258,7 +258,7 @@ void AddressBook::updateContactsDone(galera::QIndividual *individual, const QStr
 
     if (!error.isEmpty()) {
         // update the result with the error
-        m_updateCommandResult[m_updateCommandResult.size() - m_updateCommandPendingContacts.size()] = error;
+        m_updateCommandResult[m_updateCommandResult.size() - m_updateCommandPendingContacts.size() - 1] = error;
     }
 
     if (!m_updateCommandPendingContacts.isEmpty()) {
