@@ -233,6 +233,11 @@ bool AddressBook::unlinkContacts(const QString &parent, const QStringList &conta
     return false;
 }
 
+bool AddressBook::isReady() const
+{
+    return m_ready;
+}
+
 QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBusMessage &message)
 {
     UpdateContactsData *data = 0;

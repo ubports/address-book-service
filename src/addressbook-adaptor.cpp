@@ -94,4 +94,9 @@ QStringList AddressBookAdaptor::updateContacts(const QStringList &contacts, cons
     return QStringList();
 }
 
+bool AddressBookAdaptor::isReady()
+{
+    return m_addressBook->isReady();
+}
+
 } //namespace

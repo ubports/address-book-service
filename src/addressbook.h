@@ -54,6 +54,7 @@ public:
     View *query(const QString &clause, const QString &sort, const QStringList &sources);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
+    bool isReady() const;
 
 public Q_SLOTS:
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);

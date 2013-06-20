@@ -37,6 +37,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
     Q_CLASSINFO("D-Bus Interface", CPIM_ADDRESSBOOK_IFACE_NAME)
     Q_CLASSINFO("D-Bus Introspection", ""
 "  <interface name=\"com.canonical.pim.AddressBook\">\n"
+"    <property name=\"isReady\" type=\"b\" access=\"read\"/>\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"
@@ -91,6 +92,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    </method>\n"
 "  </interface>\n"
         "")
+    Q_PROPERTY(bool isReady READ isReady NOTIFY ready)
 public:
     AddressBookAdaptor(const QDBusConnection &connection, AddressBook *parent);
     virtual ~AddressBookAdaptor();
@@ -104,6 +106,7 @@ public Q_SLOTS:
     QStringList sortFields();
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
+    bool isReady();
 
 Q_SIGNALS:
     void contactsAdded(const QStringList &ids);
