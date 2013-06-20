@@ -119,15 +119,29 @@ namespace
                 det.setDetailUri(pid);
             }
 
-            // Remove empty phone subtypes
+            // Remove empty phone and address subtypes
             // Remove this after this fix get merged: https://codereview.qt-project.org/#change,59156
             if (updatedDetails->size() > 0) {
                 QContactDetail &det = updatedDetails->last();
-                if (det.type() == QContactPhoneNumber::Type) {
-                    QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(det);
-                    if (phone.subTypes().size() == 0) {
-                        det.setValue(QContactPhoneNumber::FieldSubTypes, QVariant());
+                switch (det.type()) {
+                    case QContactDetail::TypePhoneNumber:
+                    {
+                        QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(det);
+                        if (phone.subTypes().size() == 0) {
+                            det.setValue(QContactPhoneNumber::FieldSubTypes, QVariant());
+                        }
+                        break;
                     }
+                    case QContactDetail::TypeAddress:
+                    {
+                        QContactAddress addr = static_cast<QContactAddress>(det);
+                        if (addr.subTypes().size() == 0) {
+                            det.setValue(QContactAddress::FieldSubTypes, QVariant());
+                        }
+                        break;
+                    }
+                    default:
+                        break;
                 }
             }
         }

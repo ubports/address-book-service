@@ -1677,9 +1677,9 @@ QList<int> QIndividual::contextsFromParameters(QStringList &parameters)
     QList<int> values;
     QStringList accepted;
     Q_FOREACH(const QString &param, parameters) {
-        if (map.contains(param)) {
+        if (map.contains(param.toLower())) {
             accepted << param;
-            values << map[param];
+            values << map[param.toLower()];
         }
     }
 
@@ -1712,8 +1712,8 @@ void QIndividual::parsePhoneParameters(QtContacts::QContactDetail &phone, const 
 
     QList<int> subTypes;
     Q_FOREACH(const QString &param, params) {
-        if (mapTypes.contains(param)) {
-            subTypes << mapTypes[param];
+        if (mapTypes.contains(param.toLower())) {
+            subTypes << mapTypes[param.toLower()];
         } else {
             qWarning() << "Invalid phone parameter:" << param;
         }
@@ -1739,8 +1739,8 @@ void QIndividual::parseAddressParameters(QtContacts::QContactDetail &address, co
     QList<int> values;
 
     Q_FOREACH(const QString &param, parameters) {
-        if (map.contains(param)) {
-            values << map[param];
+        if (map.contains(param.toLower())) {
+            values << map[param.toLower()];
         } else {
             qWarning() << "invalid Address subtype" << param;
         }
@@ -1766,8 +1766,8 @@ void QIndividual::parseOnlineAccountParameters(QtContacts::QContactDetail &im, c
     QSet<int> values;
 
     Q_FOREACH(const QString &param, parameters) {
-        if (map.contains(param)) {
-            values << map[param];
+        if (map.contains(param.toLower())) {
+            values << map[param.toLower()];
         } else {
             qWarning() << "invalid IM subtype" << param;
         }
@@ -1802,8 +1802,8 @@ int QIndividual::onlineAccountProtocolFromString(const QString &protocol)
         map["yahoo"] = QContactOnlineAccount::ProtocolYahoo;
     }
 
-    if (map.contains(protocol)) {
-        return map[protocol];
+    if (map.contains(protocol.toLower())) {
+        return map[protocol.toLower()];
     } else {
         qWarning() << "invalid IM protocol" << protocol;
     }
