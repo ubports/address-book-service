@@ -67,8 +67,9 @@ private:
     FolksIndividualAggregator *m_individualAggregator;
     ContactsMap *m_contacts;
     QSet<View*> m_views;
-    bool m_initializing;
+    bool m_ready;
     AddressBookAdaptor *m_adaptor;
+
 
     void prepareFolks();
     QString removeContact(FolksIndividual *individual);
@@ -89,6 +90,7 @@ private:
     static void removeContactContinue(FolksIndividualAggregator *individualAggregator,
                                       GAsyncResult *result,
                                       void *data);
+    static void isQuiescentChanged(GObject *source, GParamSpec *param, AddressBook *self);
 };
 
 } //namespace

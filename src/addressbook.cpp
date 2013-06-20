@@ -60,7 +60,7 @@ namespace galera
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
       m_contacts(new ContactsMap),
-      m_initializing(true),
+      m_ready(false),
       m_adaptor(0)
 {
     prepareFolks();
@@ -97,10 +97,20 @@ void AddressBook::prepareFolks()
 {
     //TODO: filter EDS (FolksBackendStore)
     m_individualAggregator = folks_individual_aggregator_new();
+    g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
+    if (m_ready) {
+        AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
+    }
+    g_signal_connect(m_individualAggregator,
+                     "notify::is-quiescent",
+                     (GCallback)AddressBook::isQuiescentChanged,
+                     this);
+
     g_signal_connect(m_individualAggregator,
                      "individuals-changed-detailed",
                      (GCallback) AddressBook::individualsChangedCb,
                      this);
+
     folks_individual_aggregator_prepare(m_individualAggregator,
                                         (GAsyncReadyCallback) AddressBook::aggregatorPrepareCb,
                                         this);
@@ -326,7 +336,7 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     while(gee_iterator_next(iter)) {
         FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
         if (individual) {
-            QString id = self->addContact(individual);
+            QString id = self->addContact(individual);QContactManagerEngine
             if(!id.isEmpty()) {
                 addedIds << id;
             }
@@ -336,14 +346,14 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     g_object_unref (iter);
 
     //TODO: check for linked and unliked contacts
-    if (!removedIds.isEmpty()) {
+    if (!removedIds.isEmpty() && self->m_ready) {
         Q_EMIT self->m_adaptor->contactsRemoved(removedIds);
     }
 
-    if (!addedIds.isEmpty()) {
+    if (!addedIds.isEmpty() && self->m_ready) {
         Q_EMIT self->m_adaptor->contactsAdded(addedIds);
     }
-    self->m_initializing = false;
+    qDebug() << "Added" << addedIds;
 }
 
 void AddressBook::aggregatorPrepareCb(GObject *source,
@@ -378,5 +388,17 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
     QDBusConnection::sessionBus().send(reply);
     delete msg;
 }
+
+void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, AddressBook *self)
+{
+    Q_UNUSED(source);
+    Q_UNUSED(param);
+
+    g_object_get(source, "is-quiescent", &self->m_ready, NULL);
+    if (self->m_ready) {
+        Q_EMIT self->m_adaptor->ready();
+    }
+}
+
 
 } //namespace

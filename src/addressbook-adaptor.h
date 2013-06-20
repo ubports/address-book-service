@@ -49,6 +49,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    <signal name=\"asyncOperationResult\">\n"
 "      <arg direction=\"out\" type=\"a(ss)\" name=\"errorMap\"/>\n"
 "    </signal>\n"
+"    <signal name=\"ready\"/>\n"
 "    <method name=\"availableSources\">\n"
 "      <arg direction=\"out\" type=\"a(sb)\"/>\n"
 "      <annotation value=\"SourceList\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
@@ -109,6 +110,7 @@ Q_SIGNALS:
     void contactsRemoved(const QStringList &ids);
     void contactsUpdated(const QStringList &ids);
     void asyncOperationResult(QMap<QString, QString> errors);
+    void ready();
 
 private:
     AddressBook *m_addressBook;
