@@ -127,7 +127,7 @@ namespace
                     case QContactDetail::TypePhoneNumber:
                     {
                         QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(det);
-                        if (phone.subTypes().size() == 0) {
+                        if (phone.subTypes().isEmpty()) {
                             det.setValue(QContactPhoneNumber::FieldSubTypes, QVariant());
                         }
                         break;
@@ -135,8 +135,11 @@ namespace
                     case QContactDetail::TypeAddress:
                     {
                         QContactAddress addr = static_cast<QContactAddress>(det);
-                        if (addr.subTypes().size() == 0) {
+                        if (addr.subTypes().isEmpty()) {
                             det.setValue(QContactAddress::FieldSubTypes, QVariant());
+                        } else {
+                            QSet<int> subtypes = addr.subTypes().toSet();
+                            det.setValue(QContactAddress::FieldSubTypes, QVariant::fromValue<QList<int> >(subtypes.toList()));
                         }
                         break;
                     }

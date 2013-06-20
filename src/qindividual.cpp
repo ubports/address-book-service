@@ -1081,12 +1081,17 @@ void QIndividual::updateAddress(QtContacts::QContactDetail detail, void* data)
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseAddressDetails, data);
     } else if (FOLKS_IS_POSTAL_ADDRESS_DETAILS(persona) && (originalAddress != detail)) {
-        qDebug() << "Adderess diff";
-        qDebug() << "\t" << originalAddress << "\n\t" << detail;
 
 
         FolksPostalAddressFieldDetails *addrDetails = 0;
         const QContactAddress *addr = static_cast<const QContactAddress*>(&detail);
+        const QContactAddress *addro = static_cast<const QContactAddress*>(&originalAddress);
+
+        qDebug() << "Adderess diff";
+        qDebug() << "\t" << *addro <<  "subtypes:" << addro->subTypes() << "context" << addro->contexts();
+        qDebug() << "\t" << *addr <<  "subtypes:" << addr->subTypes() << "context" << addr->contexts();
+
+
         qDebug() << "SubTypes:" << addr->subTypes();
         GeeSet *addrSet = folks_postal_address_details_get_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona));
 
@@ -1703,6 +1708,8 @@ QList<int> QIndividual::contextsFromParameters(QStringList &parameters)
 {
     static QMap<QString, int> map;
 
+    qDebug() << "PArse paramater:" << parameters;
+
     // populate the map once
     if (map.isEmpty()) {
         map["home"] = QContactDetail::ContextHome;
@@ -1722,6 +1729,8 @@ QList<int> QIndividual::contextsFromParameters(QStringList &parameters)
     Q_FOREACH(const QString &param, accepted) {
         parameters.removeOne(param);
     }
+
+    qDebug() << "PArseed paramater (DONE):" << parameters;
 
     return values;
 }

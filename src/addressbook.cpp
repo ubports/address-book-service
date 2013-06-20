@@ -242,6 +242,7 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
     //TODO: support multiple update contacts calls
     Q_ASSERT(m_updateCommandPendingContacts.isEmpty());
 
+    qDebug() << "update contacts:" << contacts;
     m_updateCommandReplyMessage = message;
     m_updateCommandResult = contacts;
     m_updateCommandPendingContacts << VCardParser::vcardToContact(contacts);
