@@ -336,7 +336,7 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     while(gee_iterator_next(iter)) {
         FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
         if (individual) {
-            QString id = self->addContact(individual);QContactManagerEngine
+            QString id = self->addContact(individual);
             if(!id.isEmpty()) {
                 addedIds << id;
             }
