@@ -24,6 +24,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QSet>
 #include <QtCore/QMutex>
+#include <QtCore/QQueue>
 
 #include <QtContacts/QContact>
 #include <QtContacts/QContactManagerEngine>
@@ -68,6 +69,7 @@ private Q_SLOTS:
     void onContactsAdded(QStringList ids);
     void onContactsRemoved(QStringList ids);
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
+    void onServiceReady();
 
 private:
     QString m_id;
@@ -78,9 +80,11 @@ private:
     QMap<QtContacts::QContactId, QList<QtContacts::QContactRelationship> > m_orderedRelationships; // map of ordered lists of contact relationships
     QString m_managerUri;                                       // for faster lookup.
     QDBusServiceWatcher *m_serviceWatcher;
+    bool m_serviceIsReady;
 
     QSharedPointer<QDBusInterface> m_iface;
-    QSet<RequestData*> m_pendingRequests;
+    QSet<RequestData*> m_runningRequests;
+    QQueue<QtContacts::QContactAbstractRequest*> m_pendingRequests;
 
     Q_INVOKABLE void initialize();
     Q_INVOKABLE void deinitialize();
