@@ -57,6 +57,7 @@ public:
     View *query(const QString &clause, const QString &sort, const QStringList &sources);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
+    bool isReady() const;
 
 public Q_SLOTS:
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
@@ -71,7 +72,7 @@ private:
     FolksIndividualAggregator *m_individualAggregator;
     ContactsMap *m_contacts;
     QSet<View*> m_views;
-    bool m_initializing;
+    bool m_ready;
     AddressBookAdaptor *m_adaptor;
 
     // Update command
@@ -95,6 +96,7 @@ private:
     static void removeContactContinue(FolksIndividualAggregator *individualAggregator,
                                       GAsyncResult *result,
                                       void *data);
+    static void isQuiescentChanged(GObject *source, GParamSpec *param, AddressBook *self);
 };
 
 } //namespace

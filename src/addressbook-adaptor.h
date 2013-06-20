@@ -37,6 +37,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
     Q_CLASSINFO("D-Bus Interface", CPIM_ADDRESSBOOK_IFACE_NAME)
     Q_CLASSINFO("D-Bus Introspection", ""
 "  <interface name=\"com.canonical.pim.AddressBook\">\n"
+"    <property name=\"isReady\" type=\"b\" access=\"read\"/>\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"
@@ -49,6 +50,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    <signal name=\"asyncOperationResult\">\n"
 "      <arg direction=\"out\" type=\"a(ss)\" name=\"errorMap\"/>\n"
 "    </signal>\n"
+"    <signal name=\"ready\"/>\n"
 "    <method name=\"availableSources\">\n"
 "      <arg direction=\"out\" type=\"a(sb)\"/>\n"
 "      <annotation value=\"SourceList\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
@@ -90,6 +92,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    </method>\n"
 "  </interface>\n"
         "")
+    Q_PROPERTY(bool isReady READ isReady NOTIFY ready)
 public:
     AddressBookAdaptor(const QDBusConnection &connection, AddressBook *parent);
     virtual ~AddressBookAdaptor();
@@ -103,12 +106,14 @@ public Q_SLOTS:
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
     QString linkContacts(const QStringList &contacts);
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
+    bool isReady();
 
 Q_SIGNALS:
     void contactsAdded(const QStringList &ids);
     void contactsRemoved(const QStringList &ids);
     void contactsUpdated(const QStringList &ids);
     void asyncOperationResult(QMap<QString, QString> errors);
+    void ready();
 
 private:
     AddressBook *m_addressBook;
