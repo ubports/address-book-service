@@ -281,6 +281,7 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
     //TODO: support multiple update contacts calls
     Q_ASSERT(m_updateCommandPendingContacts.isEmpty());
 
+    qDebug() << "update contacts:" << contacts;
     m_updateCommandReplyMessage = message;
     m_updateCommandResult = contacts;
     m_updateCommandPendingContacts << VCardParser::vcardToContact(contacts);
@@ -297,7 +298,7 @@ void AddressBook::updateContactsDone(galera::QIndividual *individual, const QStr
 
     if (!error.isEmpty()) {
         // update the result with the error
-        m_updateCommandResult[m_updateCommandResult.size() - m_updateCommandPendingContacts.size()] = error;
+        m_updateCommandResult[m_updateCommandResult.size() - m_updateCommandPendingContacts.size() - 1] = error;
     }
 
     if (!m_updateCommandPendingContacts.isEmpty()) {

@@ -173,6 +173,11 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     }
 
     QStringList ret =  VCardParser::contactToVcard(contacts);
+    qDebug() << "fetch" << ret;
+    QList<QContact> cs = VCardParser::vcardToContact(ret);
+    QStringList ret2 =  VCardParser::contactToVcard(cs);
+    qDebug() << "fetch2" << ret2;
+
     QDBusMessage reply = message.createReply(ret);
     QDBusConnection::sessionBus().send(reply);
     return ret;
