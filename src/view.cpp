@@ -75,6 +75,7 @@ public:
     bool appendContact(ContactEntry *entry)
     {
         if (checkContact(entry)) {
+            //TODO: append sorted
             m_contacts << entry;
             return true;
         }
@@ -125,6 +126,8 @@ View::View(QString clause, QString sort, QStringList sources, ContactsMap *allCo
       m_adaptor(0)
 {
     m_filterThread->start();
+
+    connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged(int)));
 }
 
 View::~View()
@@ -216,6 +219,7 @@ bool View::registerObject(QDBusConnection &connection)
             m_adaptor = 0;
         } else {
             qDebug() << "Object registered:" << objectPath();
+            connect(this, SIGNAL(countChanged(int)), m_adaptor, SIGNAL(countChanged(int)));
         }
     }
 
@@ -231,7 +235,20 @@ void View::unregisterObject(QDBusConnection &connection)
 
 bool View::appendContact(ContactEntry *entry)
 {
-    return m_filterThread->appendContact(entry);
+    if (m_filterThread->appendContact(entry)) {
+        Q_EMIT countChanged(m_filterThread->result().count());
+        return true;
+    }
+    return false;
+}
+
+bool View::removeContact(ContactEntry *entry)
+{
+    if (m_filterThread->removeContact(entry)) {
+        Q_EMIT countChanged(m_filterThread->result().count());
+        return true;
+    }
+    return false;
 }
 
 QObject *View::adaptor() const
