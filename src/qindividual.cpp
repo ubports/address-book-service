@@ -285,7 +285,6 @@ public:
             qWarning() << "NO PERSONA";
             return defaultPersona;
         } else {
-
             GeeSet *personas = folks_individual_get_personas(individual);
             QStringList index = uri.split(".");
             Q_ASSERT(index.count() >= 1);
@@ -1501,7 +1500,6 @@ void QIndividual::setIndividual(FolksIndividual *individual)
             g_object_ref(m_individual);
         }
         // initialize qcontact
-        m_contact = QContact();
         updateContact();
     }
 }

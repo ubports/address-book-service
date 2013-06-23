@@ -81,7 +81,8 @@ namespace
 
         virtual void contactProcessed(const QContact& contact, QVersitDocument* document)
         {
-            //nothing
+            Q_UNUSED(contact);
+            document->removeProperties("X-QTPROJECT-EXTENDED-DETAIL");
         }
     };
 
