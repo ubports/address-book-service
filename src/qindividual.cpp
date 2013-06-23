@@ -1410,10 +1410,10 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
     }
 
     if (data->m_details.isEmpty()) {
+        data->m_self->m_contact = data->m_newContact;
         updateDetailsSendReply(data, 0);
         return;
     }
-
 
     data->m_currentDetail = data->m_details.takeFirst();
     switch(data->m_currentDetail.type()) {
@@ -1708,8 +1708,6 @@ QList<int> QIndividual::contextsFromParameters(QStringList &parameters)
 {
     static QMap<QString, int> map;
 
-    qDebug() << "PArse paramater:" << parameters;
-
     // populate the map once
     if (map.isEmpty()) {
         map["home"] = QContactDetail::ContextHome;
@@ -1729,8 +1727,6 @@ QList<int> QIndividual::contextsFromParameters(QStringList &parameters)
     Q_FOREACH(const QString &param, accepted) {
         parameters.removeOne(param);
     }
-
-    qDebug() << "PArseed paramater (DONE):" << parameters;
 
     return values;
 }
