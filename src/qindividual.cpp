@@ -810,7 +810,7 @@ void QIndividual::createPersonaForDetail(QList<QtContacts::QContactDetail> cDeta
                                                          NULL, // we should pass the m_individual here but due a bug on folks lest do a work around
                                                          folks_individual_aggregator_get_primary_store(m_aggregator),
                                                          details,
-                                                         (GAsyncReadyCallback) createPersonaDone,
+                                                         (GAsyncReadyCallback) createPersonaForDetailDone,
                                                          (void*) data);
 
     g_hash_table_destroy(details);
@@ -831,10 +831,10 @@ void QIndividual::updateFullName(const QtContacts::QContactDetail &detail, void*
 
         folks_name_details_change_full_name(FOLKS_NAME_DETAILS(persona),
                                             label->label().toUtf8().data(),
-                                            (GAsyncReadyCallback) updateDetailsDone,
+                                            (GAsyncReadyCallback) updateDone,
                                             data);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -859,12 +859,12 @@ void QIndividual::updateName(const QtContacts::QContactDetail &detail, void* dat
 
         folks_name_details_change_structured_name(FOLKS_NAME_DETAILS(persona),
                                                   sn,
-                                                  (GAsyncReadyCallback) updateDetailsDone,
+                                                  (GAsyncReadyCallback) updateDone,
                                                   data);
 
         g_object_unref(sn);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -879,10 +879,10 @@ void QIndividual::updateNickname(const QtContacts::QContactDetail &detail, void*
         const QContactNickname *nickname = static_cast<const QContactNickname*>(&detail);
         folks_name_details_change_nickname(FOLKS_NAME_DETAILS(persona),
                                            nickname->nickname().toUtf8().data(),
-                                           (GAsyncReadyCallback) updateDetailsDone,
+                                           (GAsyncReadyCallback) updateDone,
                                            data);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -902,11 +902,11 @@ void QIndividual::updateBirthday(const QtContacts::QContactDetail &detail, void*
         }
         folks_birthday_details_change_birthday(FOLKS_BIRTHDAY_DETAILS(persona),
                                                dateTime,
-                                               (GAsyncReadyCallback) updateDetailsDone,
+                                               (GAsyncReadyCallback) updateDone,
                                                data);
         g_date_time_unref(dateTime);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -922,10 +922,10 @@ void QIndividual::updatePhoto(const QtContacts::QContactDetail &detail, void* da
         //const QContactAvatar *avatar = static_cast<const QContactAvatar*>(&detail);
         folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(persona),
                                            0,
-                                           (GAsyncReadyCallback) updateDetailsDone,
+                                           (GAsyncReadyCallback) updateDone,
                                            data);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -974,14 +974,14 @@ void QIndividual::updateRole(QtContacts::QContactDetail detail, void* data)
         parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(roleDetails), detail);
         folks_role_details_change_roles(FOLKS_ROLE_DETAILS(persona),
                                         roleSet,
-                                        (GAsyncReadyCallback) updateDetailsDone,
+                                        (GAsyncReadyCallback) updateDone,
                                         data);
 
         g_object_unref(roleDetails);
         g_object_unref(roleSet);
         g_object_unref(roleValue);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -1018,13 +1018,13 @@ void QIndividual::updateEmail(QtContacts::QContactDetail detail, void* data)
 
         folks_email_details_change_email_addresses(FOLKS_EMAIL_DETAILS(persona),
                                                    emailSet,
-                                                   (GAsyncReadyCallback) updateDetailsDone,
+                                                   (GAsyncReadyCallback) updateDone,
                                                    data);
 
         g_object_unref(emailSet);
         g_object_unref(emailDetails);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -1064,12 +1064,12 @@ void QIndividual::updatePhone(QtContacts::QContactDetail detail, void* data)
         parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(phoneDetails), detail);
         folks_phone_details_change_phone_numbers(FOLKS_PHONE_DETAILS(persona),
                                                  phoneSet,
-                                                 (GAsyncReadyCallback) updateDetailsDone,
+                                                 (GAsyncReadyCallback) updateDone,
                                                  data);
         g_object_unref(phoneDetails);
         g_object_unref(phoneSet);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -1131,13 +1131,13 @@ void QIndividual::updateAddress(QtContacts::QContactDetail detail, void* data)
         parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(addrDetails), detail);
         folks_postal_address_details_change_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona),
                                                              addrSet,
-                                                             (GAsyncReadyCallback) updateDetailsDone,
+                                                             (GAsyncReadyCallback) updateDone,
                                                              data);
         g_object_unref(addrDetails);
         g_object_unref(addrSet);
         g_object_unref(addrValue);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -1187,12 +1187,12 @@ void QIndividual::updateIm(QtContacts::QContactDetail detail, void* data)
 
         folks_im_details_change_im_addresses(FOLKS_IM_DETAILS(persona),
                                              imSet,
-                                             (GAsyncReadyCallback) updateDetailsDone,
+                                             (GAsyncReadyCallback) updateDone,
                                              data);
         g_object_unref(imSet);
         g_object_unref(imDetails);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -1232,12 +1232,12 @@ void QIndividual::updateUrl(QtContacts::QContactDetail detail, void* data)
         parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(urlDetails), detail);
         folks_url_details_change_urls(FOLKS_URL_DETAILS(persona),
                                       urlSet,
-                                      (GAsyncReadyCallback) updateDetailsDone,
+                                      (GAsyncReadyCallback) updateDone,
                                       data);
         g_object_unref(urlDetails);
         g_object_unref(urlSet);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -1277,12 +1277,12 @@ void QIndividual::updateNote(QtContacts::QContactDetail detail, void* data)
         parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(noteDetails), detail);
         folks_note_details_change_notes(FOLKS_NOTE_DETAILS(persona),
                                         noteSet,
-                                        (GAsyncReadyCallback) updateDetailsDone,
+                                        (GAsyncReadyCallback) updateDone,
                                         data);;
         g_object_unref(noteDetails);
         g_object_unref(noteSet);
     } else {
-        updateDetailsDone(G_OBJECT(persona), NULL, data);
+        updateDone(G_OBJECT(persona), NULL, data);
     }
 }
 
@@ -1362,7 +1362,7 @@ void QIndividual::updateDetailsSendReply(gpointer userdata, GError *error)
 }
 
 
-void QIndividual::createPersonaDone(GObject *aggregator, GAsyncResult *result, gpointer userdata)
+void QIndividual::createPersonaForDetailDone(GObject *aggregator, GAsyncResult *result, gpointer userdata)
 {
     qDebug() << Q_FUNC_INFO;
     UpdateContactData *data = static_cast<UpdateContactData*>(userdata);
@@ -1381,11 +1381,11 @@ void QIndividual::createPersonaDone(GObject *aggregator, GAsyncResult *result, g
         gee_collection_add_all(GEE_COLLECTION(newPersonas), GEE_COLLECTION(personas));
         gee_collection_add(GEE_COLLECTION(newPersonas), newPersona);
         data->m_self->m_primaryPersona = newPersona;
-        folks_individual_aggregator_link_personas(data->m_self->m_aggregator, newPersonas, updateDetailsDone, userdata);
+        folks_individual_aggregator_link_personas(data->m_self->m_aggregator, newPersonas, updateDone, userdata);
     }
 }
 
-void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata)
+void QIndividual::updateDone(GObject *detail, GAsyncResult *result, gpointer userdata)
 {
     QString errorMessage;
     UpdateContactData *data = static_cast<UpdateContactData*>(userdata);
@@ -1455,14 +1455,14 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
         break;
     default:
         qWarning() << "Update not implemented for" << data->m_currentDetail.type();
-        updateDetailsDone(0, 0, data);
+        updateDone(0, 0, data);
         break;
     }
 }
 
-bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object, const QString &slot)
+bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object, const char *slot)
 {
-    int slotIndex = object->metaObject()->indexOfSlot(QMetaObject::normalizedSignature(slot.toUtf8().data()));
+    int slotIndex = object->metaObject()->indexOfSlot(++slot);
     if (slotIndex == -1) {
         qWarning() << "Invalid slot:" << slot << "for object" << object;
         return false;
@@ -1477,7 +1477,7 @@ bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object
         data->m_self = this;
         data->m_object = object;
         data->m_slot = object->metaObject()->method(slotIndex);
-        updateDetailsDone(0, 0, data);
+        updateDone(0, 0, data);
         return true;
     } else {
         qDebug() << "Contact is equal";
@@ -1506,7 +1506,7 @@ void QIndividual::setIndividual(FolksIndividual *individual)
     }
 }
 
-bool QIndividual::update(const QString &vcard, QObject *object, const QString &slot)
+bool QIndividual::update(const QString &vcard, QObject *object, const char *slot)
 {
     QContact contact = VCardParser::vcardToContact(vcard);
     return update(contact, object, slot);
@@ -2228,12 +2228,6 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
     parseUrlDetails(details, contact.details(QContactUrl::Type));
 
     return details;
-}
-
-void QIndividual::folksIndividualAggregatorAddPersonaFromDetailsDone(GObject *source,
-                                                                     GAsyncResult *res,
-                                                                     QIndividual *individual)
-{
 }
 
 FolksPersona* QIndividual::primaryPersona()

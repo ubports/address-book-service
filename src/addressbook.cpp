@@ -111,7 +111,7 @@ void AddressBook::prepareFolks()
                      this);
 
     folks_individual_aggregator_prepare(m_individualAggregator,
-                                        (GAsyncReadyCallback) AddressBook::aggregatorPrepareCb,
+                                        (GAsyncReadyCallback) AddressBook::prepareFolksDone,
                                         this);
 }
 
@@ -121,14 +121,14 @@ SourceList AddressBook::availableSources(const QDBusMessage &message)
     QDBusMessage *msg = new QDBusMessage(message);
 
     if (folks_backend_store_get_is_prepared(backendStore)) {
-        availableSourcesReply(backendStore, 0, msg);
+        availableSourcesDone(backendStore, 0, msg);
     } else {
-        folks_backend_store_prepare(backendStore, (GAsyncReadyCallback) availableSourcesReply, msg);
+        folks_backend_store_prepare(backendStore, (GAsyncReadyCallback) availableSourcesDone, msg);
     }
     return SourceList();
 }
 
-void AddressBook::availableSourcesReply(FolksBackendStore *backendStore, GAsyncResult *res, QDBusMessage *message)
+void AddressBook::availableSourcesDone(FolksBackendStore *backendStore, GAsyncResult *res, QDBusMessage *message)
 {
     if (res) {
         folks_backend_store_prepare_finish(backendStore, res);
@@ -218,13 +218,13 @@ int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessag
     data->m_message = message;
     data->m_request = contactIds;
     data->m_sucessCount = 0;
-    removeContactContinue(0, 0, data);
+    removeContactDone(0, 0, data);
     return 0;
 }
 
-void AddressBook::removeContactContinue(FolksIndividualAggregator *individualAggregator,
-                                        GAsyncResult *result,
-                                        void *data)
+void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggregator,
+                                    GAsyncResult *result,
+                                    void *data)
 {
     GError *error = 0;
     RemoveContactsData *removeData = static_cast<RemoveContactsData*>(data);
@@ -247,11 +247,11 @@ void AddressBook::removeContactContinue(FolksIndividualAggregator *individualAgg
         if (entry) {
             folks_individual_aggregator_remove_individual(individualAggregator,
                                                           entry->individual()->individual(),
-                                                          (GAsyncReadyCallback) removeContactContinue,
+                                                          (GAsyncReadyCallback) removeContactDone,
                                                           data);
         } else {
             qWarning() << "ContactId not found:" << contactId;
-            removeContactContinue(individualAggregator, 0, data);
+            removeContactDone(individualAggregator, 0, data);
         }
     } else {
         QDBusMessage reply = removeData->m_message.createReply(removeData->m_sucessCount);
@@ -305,7 +305,7 @@ void AddressBook::updateContactsDone(galera::QIndividual *individual, const QStr
         QContact newContact = m_updateCommandPendingContacts.takeFirst();
         ContactEntry *entry = m_contacts->value(newContact.detail<QContactGuid>().guid());
         if (entry) {
-            entry->individual()->update(newContact, this, "updateContactsDone(galera::QIndividual*, const QString&)"); //));
+            entry->individual()->update(newContact, this, SLOT(updateContactsDone(galera::QIndividual*,QString)));
         } else {
             updateContactsDone(0, "Contact not found!");
         }
@@ -398,10 +398,13 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     qDebug() << "Added" << addedIds;
 }
 
-void AddressBook::aggregatorPrepareCb(GObject *source,
+void AddressBook::prepareFolksDone(GObject *source,
                                       GAsyncResult *res,
                                       AddressBook *self)
 {
+    Q_UNUSED(source);
+    Q_UNUSED(res);
+    Q_UNUSED(self);
 }
 
 void AddressBook::createContactDone(FolksIndividualAggregator *individualAggregator,
