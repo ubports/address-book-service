@@ -285,7 +285,6 @@ public:
             qWarning() << "NO PERSONA";
             return defaultPersona;
         } else {
-
             GeeSet *personas = folks_individual_get_personas(individual);
             QStringList index = uri.split(".");
             Q_ASSERT(index.count() >= 1);
@@ -1410,10 +1409,10 @@ void QIndividual::updateDetailsDone(GObject *detail, GAsyncResult *result, gpoin
     }
 
     if (data->m_details.isEmpty()) {
+        data->m_self->m_contact = data->m_newContact;
         updateDetailsSendReply(data, 0);
         return;
     }
-
 
     data->m_currentDetail = data->m_details.takeFirst();
     switch(data->m_currentDetail.type()) {
@@ -1501,7 +1500,6 @@ void QIndividual::setIndividual(FolksIndividual *individual)
             g_object_ref(m_individual);
         }
         // initialize qcontact
-        m_contact = QContact();
         updateContact();
     }
 }
@@ -1708,8 +1706,6 @@ QList<int> QIndividual::contextsFromParameters(QStringList &parameters)
 {
     static QMap<QString, int> map;
 
-    qDebug() << "PArse paramater:" << parameters;
-
     // populate the map once
     if (map.isEmpty()) {
         map["home"] = QContactDetail::ContextHome;
@@ -1729,8 +1725,6 @@ QList<int> QIndividual::contextsFromParameters(QStringList &parameters)
     Q_FOREACH(const QString &param, accepted) {
         parameters.removeOne(param);
     }
-
-    qDebug() << "PArseed paramater (DONE):" << parameters;
 
     return values;
 }
