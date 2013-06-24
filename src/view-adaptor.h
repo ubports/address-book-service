@@ -45,7 +45,7 @@ class ViewAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"i\" name=\"pos\"/>\n"
 "      <arg direction=\"out\" type=\"i\" name=\"lenght\"/>\n"
 "    </signal>\n"
-"    <signal name=\"contactsCreated\">\n"
+"    <signal name=\"contactsAdded\">\n"
 "      <arg direction=\"out\" type=\"i\" name=\"pos\"/>\n"
 "      <arg direction=\"out\" type=\"i\" name=\"lenght\"/>\n"
 "    </signal>\n"
@@ -81,7 +81,7 @@ public Q_SLOTS:
     void close();
 
 Q_SIGNALS:
-    void contactsCreated(int pos, int lenght);
+    void contactsAdded(int pos, int lenght);
     void contactsRemoved(int pos, int lenght);
     void contactsUpdated(int pos, int lenght);
 

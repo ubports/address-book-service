@@ -28,6 +28,7 @@ namespace galera
 ContactEntry::ContactEntry(QIndividual *individual)
     : m_individual(individual)
 {
+    Q_ASSERT(individual);
 }
 
 ContactEntry::~ContactEntry()
@@ -73,6 +74,16 @@ ContactEntry *ContactsMap::take(FolksIndividual *individual)
         return m_idToEntry.take(folks_individual_get_id(individual));
     }
     return 0;
+}
+
+void ContactsMap::remove(const QString &id)
+{
+    ContactEntry *entry = m_idToEntry[id];
+    if (entry) {
+        m_individualsToEntry.remove(entry->individual()->individual());
+        m_idToEntry.remove(id);
+        delete entry;
+    }
 }
 
 bool ContactsMap::contains(FolksIndividual *individual) const

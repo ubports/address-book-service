@@ -55,7 +55,7 @@ namespace
 
             if (detail.type() == QContactDetail::TypeExtendedDetail) {
                 const QContactExtendedDetail *extendedDetail = static_cast<const QContactExtendedDetail *>(&detail);
-                if (extendedDetail->name() == "CLIENTPIDMAP") {
+                if (extendedDetail->name() == galera::VCardParser::PidMapFieldName) {
                     QVersitProperty prop;
                     prop.setName(extendedDetail->name());
                     QStringList value;
@@ -70,11 +70,12 @@ namespace
             }
 
             if (!detail.detailUri().isEmpty()) {
-                QVersitProperty prop = toBeAdded->takeLast();
-                QMultiHash<QString, QString> params = prop.parameters();
-                params.insert("PID", detail.detailUri());
-                prop.setParameters(params);
-                *toBeAdded << prop;
+                if (toBeAdded->size() > 0) {
+                    QVersitProperty &prop = toBeAdded->last();
+                    QMultiHash<QString, QString> params = prop.parameters();
+                    params.insert(galera::VCardParser::PidFieldName, detail.detailUri());
+                    prop.setParameters(params);
+                }
             }
         }
 
@@ -102,16 +103,50 @@ namespace
             Q_UNUSED(document);
             Q_UNUSED(contact);
 
-            if (!*alreadyProcessed && (property.name() == "CLIENTPIDMAP")) {
+            if (!*alreadyProcessed && (property.name() == galera::VCardParser::PidMapFieldName)) {
                 QContactExtendedDetail detail;
                 detail.setName(property.name());
-                QStringList value = property.value<QStringList>();
+                QStringList value = property.value<QString>().split(";");
                 detail.setValue(QContactExtendedDetail::FieldData, value[0]);
                 detail.setValue(QContactExtendedDetail::FieldData + 1, value[1]);
                 *updatedDetails  << detail;
                 *alreadyProcessed = true;
             }
 
+            QString pid = property.parameters().value(galera::VCardParser::PidFieldName);
+            if (!pid.isEmpty()) {
+                QContactDetail &det = updatedDetails->last();
+                det.setDetailUri(pid);
+            }
+
+            // Remove empty phone and address subtypes
+            // Remove this after this fix get merged: https://codereview.qt-project.org/#change,59156
+            if (updatedDetails->size() > 0) {
+                QContactDetail &det = updatedDetails->last();
+                switch (det.type()) {
+                    case QContactDetail::TypePhoneNumber:
+                    {
+                        QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(det);
+                        if (phone.subTypes().isEmpty()) {
+                            det.setValue(QContactPhoneNumber::FieldSubTypes, QVariant());
+                        }
+                        break;
+                    }
+                    case QContactDetail::TypeAddress:
+                    {
+                        QContactAddress addr = static_cast<QContactAddress>(det);
+                        if (addr.subTypes().isEmpty()) {
+                            det.setValue(QContactAddress::FieldSubTypes, QVariant());
+                        } else {
+                            QSet<int> subtypes = addr.subTypes().toSet();
+                            det.setValue(QContactAddress::FieldSubTypes, QVariant::fromValue<QList<int> >(subtypes.toList()));
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
         }
 
         virtual void documentProcessed(const QVersitDocument& document, QContact* contact)
@@ -124,6 +159,9 @@ namespace
 
 namespace galera
 {
+
+const QString VCardParser::PidMapFieldName = QString("CLIENTPIDMAP");
+const QString VCardParser::PidFieldName = QString("PID");
 
 QStringList VCardParser::contactToVcard(QList<QtContacts::QContact> contacts)
 {
