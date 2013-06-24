@@ -115,12 +115,54 @@ void AddressBook::prepareFolks()
                                         this);
 }
 
-SourceList AddressBook::availableSources()
+SourceList AddressBook::availableSources(const QDBusMessage &message)
 {
-    //TODO
-    QList<Source> sources;
-    sources << Source("Facebook", false) << Source("Telepathy", true) << Source("Google", true);
-    return sources;
+    FolksBackendStore *backendStore = folks_backend_store_dup();
+    QDBusMessage *msg = new QDBusMessage(message);
+
+    if (folks_backend_store_get_is_prepared(backendStore)) {
+        availableSourcesReply(backendStore, 0, msg);
+    } else {
+        folks_backend_store_prepare(backendStore, (GAsyncReadyCallback) availableSourcesReply, msg);
+    }
+    return SourceList();
+}
+
+void AddressBook::availableSourcesReply(FolksBackendStore *backendStore, GAsyncResult *res, QDBusMessage *message)
+{
+    if (res) {
+        folks_backend_store_prepare_finish(backendStore, res);
+    }
+    GeeCollection *backends = folks_backend_store_list_backends(backendStore);
+    SourceList result;
+
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(backends));
+    while(gee_iterator_next(iter)) {
+        FolksBackend *backend = FOLKS_BACKEND(gee_iterator_get(iter));
+
+        GeeMap *stores = folks_backend_get_persona_stores(backend);
+        GeeCollection *values =  gee_map_get_values(stores);
+        GeeIterator *backendIter = gee_iterable_iterator(GEE_ITERABLE(values));
+
+        while(gee_iterator_next(backendIter)) {
+            FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
+
+            QString id = QString::fromUtf8(folks_persona_store_get_id(store));
+            bool canWrite = folks_persona_store_get_is_writeable(store);
+            result << Source(id, !canWrite);
+
+            g_object_unref(store);
+        }
+
+        g_object_unref(backendIter);
+        g_object_unref(backend);
+        g_object_unref(values);
+    }
+    g_object_unref(iter);
+
+    QDBusMessage reply = message->createReply(QVariant::fromValue<SourceList>(result));
+    QDBusConnection::sessionBus().send(reply);
+    delete message;
 }
 
 QString AddressBook::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
@@ -220,10 +262,7 @@ void AddressBook::removeContactContinue(FolksIndividualAggregator *individualAgg
 
 QStringList AddressBook::sortFields()
 {
-    //TODO
-    QStringList fields;
-    fields << "id" << "name" << "full-name";
-    return fields;
+    return SortClause::supportedFields();
 }
 
 bool AddressBook::unlinkContacts(const QString &parent, const QStringList &contacts)

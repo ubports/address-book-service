@@ -36,9 +36,13 @@ AddressBookAdaptor::~AddressBookAdaptor()
     // destructor
 }
 
-SourceList AddressBookAdaptor::availableSources()
+SourceList AddressBookAdaptor::availableSources(const QDBusMessage &message)
 {
-    return m_addressBook->availableSources();
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "availableSources",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QDBusMessage&, message));
+    return SourceList();
 }
 
 QString AddressBookAdaptor::createContact(const QString &contact, const QString &source, const QDBusMessage &message)

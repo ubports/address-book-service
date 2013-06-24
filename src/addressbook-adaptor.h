@@ -98,7 +98,7 @@ public:
     virtual ~AddressBookAdaptor();
 
 public Q_SLOTS:
-    SourceList availableSources();
+    SourceList availableSources(const QDBusMessage &message);
     QStringList sortFields();
     QDBusObjectPath query(const QString &clause, const QString &sort, const QStringList &sources);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);

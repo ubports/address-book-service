@@ -52,7 +52,6 @@ public:
     bool registerObject(QDBusConnection &connection);
 
     // Adaptor
-    SourceList availableSources();
     QString linkContacts(const QStringList &contacts);
     View *query(const QString &clause, const QString &sort, const QStringList &sources);
     QStringList sortFields();
@@ -60,6 +59,7 @@ public:
     bool isReady() const;
 
 public Q_SLOTS:
+    SourceList availableSources(const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
@@ -84,6 +84,9 @@ private:
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
 
+    static void availableSourcesReply(FolksBackendStore *backendStore,
+                                      GAsyncResult *res,
+                                      QDBusMessage *message);
     static void individualsChangedCb(FolksIndividualAggregator *individualAggregator,
                                      GeeMultiMap *changes,
                                      AddressBook *self);

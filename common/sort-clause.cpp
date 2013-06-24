@@ -94,7 +94,13 @@ QList<QtContacts::QContactSortOrder> SortClause::toContactSortOrder() const
     return m_sortOrders;
 }
 
-void SortClause::initialize() const
+QStringList SortClause::supportedFields()
+{
+    initialize();
+    return clauseFieldMap.keys();
+}
+
+void SortClause::initialize()
 {
     if (clauseFieldMap.isEmpty()) {
         clauseFieldMap["NAME_PREFIX"]   = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeName,           QContactName::FieldPrefix);
