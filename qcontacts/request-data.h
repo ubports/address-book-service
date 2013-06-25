@@ -19,6 +19,8 @@
 #ifndef __GALERA_REQUEST_DATA_H__
 #define __GALERA_REQUEST_DATA_H__
 
+#include <common/fetch-hint.h>
+
 #include <QtCore/QList>
 #include <QtCore/QSharedPointer>
 
@@ -34,12 +36,18 @@ class RequestData
 public:
     RequestData(QtContacts::QContactAbstractRequest *request,
                 QDBusInterface *view,
+                const FetchHint &hint,
                 QDBusPendingCallWatcher *watcher=0);
+
+    RequestData(QtContacts::QContactAbstractRequest *request,
+                QDBusPendingCallWatcher *watcher=0);
+
 
     ~RequestData();
 
     QtContacts::QContactAbstractRequest* request() const;
     QDBusInterface* view() const;
+    QStringList fields() const;
 
     void updateWatcher(QDBusPendingCallWatcher *watcher);
 
@@ -58,7 +66,9 @@ private:
     QSharedPointer<QDBusPendingCallWatcher> m_watcher;
     QList<QtContacts::QContact> m_result;
     int m_offset;
+    FetchHint m_hint;
 
+    void init(QtContacts::QContactAbstractRequest *request, QDBusInterface *view, QDBusPendingCallWatcher *watcher);
     static void deleteRequest(QtContacts::QContactAbstractRequest *obj);
     static void deleteView(QDBusInterface *view);
     static void deleteWatcher(QDBusPendingCallWatcher *watcher);

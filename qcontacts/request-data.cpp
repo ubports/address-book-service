@@ -23,9 +23,27 @@ namespace galera
 {
 
 RequestData::RequestData(QContactAbstractRequest *request,
-                         QDBusInterface *view,
+                         QDBusInterface *view, const FetchHint &hint,
+                         QDBusPendingCallWatcher *watcher)
+    : m_offset(0), m_hint(hint)
+{
+    init(request, view, watcher);
+}
+
+RequestData::RequestData(QtContacts::QContactAbstractRequest *request,
                          QDBusPendingCallWatcher *watcher)
     : m_offset(0)
+{
+    init(request, 0, watcher);
+}
+
+RequestData::~RequestData()
+{
+}
+
+void RequestData::init(QtContacts::QContactAbstractRequest *request,
+                       QDBusInterface *view,
+                       QDBusPendingCallWatcher *watcher)
 {
     m_request = QSharedPointer<QContactAbstractRequest>(request, RequestData::deleteRequest);
 
@@ -36,10 +54,7 @@ RequestData::RequestData(QContactAbstractRequest *request,
     if (watcher) {
         m_watcher = QSharedPointer<QDBusPendingCallWatcher>(watcher, RequestData::deleteWatcher);
     }
-}
 
-RequestData::~RequestData()
-{
 }
 
 QContactAbstractRequest* RequestData::request() const
@@ -55,6 +70,11 @@ int RequestData::offset() const
 QDBusInterface* RequestData::view() const
 {
     return m_view.data();
+}
+
+QStringList RequestData::fields() const
+{
+    return m_hint.fields();
 }
 
 void RequestData::updateWatcher(QDBusPendingCallWatcher *watcher)

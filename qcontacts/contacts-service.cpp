@@ -22,6 +22,7 @@
 
 #include "common/vcard-parser.h"
 #include "common/filter.h"
+#include "common/fetch-hint.h"
 #include "common/sort-clause.h"
 #include "common/dbus-service-defs.h"
 
@@ -157,10 +158,11 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
         return;
     }
     QContactFetchRequest *r = static_cast<QContactFetchRequest*>(request);
-    //QContactFetchHint fetchHint = r->fetchHint();
+
 
     QString sortStr = SortClause(r->sorting()).toString();
     QString filterStr = Filter(request->filter()).toString();
+    FetchHint fetchHint = FetchHint(request->fetchHint()).toString();
     QDBusMessage result = m_iface->call("query", filterStr, sortStr, QStringList());
     if (result.type() == QDBusMessage::ErrorMessage) {
         qWarning() << result.errorName() << result.errorMessage();
@@ -174,7 +176,7 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
                                              viewObjectPath.path(),
                                              CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
 
-    RequestData *requestData = new RequestData(request, view);
+    RequestData *requestData = new RequestData(request, view, fetchHint);
     m_runningRequests << requestData;
     QMetaObject::invokeMethod(this, "fetchContactsPage", Qt::QueuedConnection, Q_ARG(galera::RequestData*, requestData));
 }
@@ -191,7 +193,7 @@ void GaleraContactsService::fetchContactsPage(RequestData *request)
         return;
     }
     // Load contacs async
-    QDBusPendingCall pcall = request->view()->asyncCall("contactsDetails", QStringList(), request->offset(), FETCH_PAGE_SIZE);
+    QDBusPendingCall pcall = request->view()->asyncCall("contactsDetails", request->fields(), request->offset(), FETCH_PAGE_SIZE);
     if (pcall.isError()) {
         qWarning() << pcall.error().name() << pcall.error().message();
         QContactManagerEngine::updateContactFetchRequest(static_cast<QContactFetchRequest*>(request->request()),
@@ -310,7 +312,7 @@ void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *requ
     Q_FOREACH(QString contact, contacts) {
         QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, "");
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-        RequestData *requestData = new RequestData(request, 0, watcher);
+        RequestData *requestData = new RequestData(request, watcher);
         m_runningRequests << requestData;
         QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                          [=](QDBusPendingCallWatcher *call) {
@@ -382,7 +384,7 @@ void GaleraContactsService::removeContact(QContactRemoveRequest *request)
                                                           QContactAbstractRequest::FinishedState);
     } else {
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-        RequestData *requestData = new RequestData(request, 0, watcher);
+        RequestData *requestData = new RequestData(request, watcher);
         m_runningRequests << requestData;
         QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                          [=](QDBusPendingCallWatcher *call) {
@@ -438,7 +440,7 @@ void GaleraContactsService::updateContacts(QtContacts::QContactSaveRequest *requ
                                                         QContactAbstractRequest::FinishedState);
     } else {
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-        RequestData *requestData = new RequestData(request, 0, watcher);
+        RequestData *requestData = new RequestData(request, watcher);
         m_runningRequests << requestData;
         QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                          [=](QDBusPendingCallWatcher *call) {
