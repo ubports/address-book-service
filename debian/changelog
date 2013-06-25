@@ -1,3 +1,19 @@
+address-book-service (0.1.0daily13.06.25-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Fixed qcontacts plugins to wait for server fully start before
+    request any data.
+  * Added support to edit contacts with multiple persona.
+  * Implemented AddressBook::availableSources. Implemented support to
+    change sort clause in the view. Implemented AddressBook::sortFields.
+  * Update server contact cache with the new contact info if update
+    operation finish without error. (LP: #1193195)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 38
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 25 Jun 2013 07:51:07 +0000
+
 address-book-service (0.1.0daily13.06.17-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
