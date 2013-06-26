@@ -66,7 +66,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void closed();
-    void countChanged(int count);
+    void countChanged(int count=0);
 
 private:
     QStringList m_sources;

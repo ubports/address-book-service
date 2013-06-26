@@ -49,15 +49,25 @@ public:
     QDBusInterface* view() const;
     QStringList fields() const;
 
+
     void updateWatcher(QDBusPendingCallWatcher *watcher);
 
     void updateOffset(int offset);
     int offset() const;
 
-    void setResults(QList<QtContacts::QContact> result);
-    void appendResult(QList<QtContacts::QContact> result);
     QList<QtContacts::QContact> result() const;
 
+    void setError(QtContacts::QContactManager::Error error);
+    void update(QList<QtContacts::QContact> result,
+                QtContacts::QContactAbstractRequest::State state,
+                QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError,
+                QMap<int, QtContacts::QContactManager::Error> errorMap = QMap<int, QtContacts::QContactManager::Error>());
+    void update(QtContacts::QContactAbstractRequest::State state,
+                QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError,
+                QMap<int, QtContacts::QContactManager::Error> errorMap = QMap<int, QtContacts::QContactManager::Error>());
+
+    static void setError(QtContacts::QContactAbstractRequest *request,
+                         QtContacts::QContactManager::Error error = QtContacts::QContactManager::UnspecifiedError);
     static void registerMetaType();
 
 private:

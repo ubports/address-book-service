@@ -92,6 +92,7 @@ private:
     bool isOnline() const;
 
     void fetchContacts(QtContacts::QContactFetchRequest *request);
+    void fetchContactsById(QtContacts::QContactFetchByIdRequest *request);
     Q_INVOKABLE void fetchContactsPage(galera::RequestData *request);
     void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
 

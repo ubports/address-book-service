@@ -25,6 +25,11 @@ using namespace QtContacts;
 namespace galera
 {
 
+FetchHint::FetchHint()
+{
+    //empty
+}
+
 FetchHint::FetchHint(const QtContacts::QContactFetchHint &hint)
     : m_hint(hint)
 {
