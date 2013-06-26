@@ -84,22 +84,24 @@ private:
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
 
-    static void availableSourcesReply(FolksBackendStore *backendStore,
-                                      GAsyncResult *res,
-                                      QDBusMessage *message);
     static void individualsChangedCb(FolksIndividualAggregator *individualAggregator,
                                      GeeMultiMap *changes,
                                      AddressBook *self);
-    static void aggregatorPrepareCb(GObject *source,
-                                    GAsyncResult *res,
-                                    AddressBook *self);
+    static void isQuiescentChanged(GObject *source,
+                                   GParamSpec *param,
+                                   AddressBook *self);
+    static void availableSourcesDone(FolksBackendStore *backendStore,
+                                     GAsyncResult *res,
+                                     QDBusMessage *message);
+    static void prepareFolksDone(GObject *source,
+                                 GAsyncResult *res,
+                                 AddressBook *self);
     static void createContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *res,
                                   QDBusMessage *msg);
-    static void removeContactContinue(FolksIndividualAggregator *individualAggregator,
-                                      GAsyncResult *result,
-                                      void *data);
-    static void isQuiescentChanged(GObject *source, GParamSpec *param, AddressBook *self);
+    static void removeContactDone(FolksIndividualAggregator *individualAggregator,
+                                  GAsyncResult *result,
+                                  void *data);
 };
 
 } //namespace

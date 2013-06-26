@@ -114,6 +114,10 @@ namespace
                 *alreadyProcessed = true;
             }
 
+            if (!*alreadyProcessed) {
+                return;
+            }
+
             QString pid = property.parameters().value(galera::VCardParser::PidFieldName);
             if (!pid.isEmpty()) {
                 QContactDetail &det = updatedDetails->last();

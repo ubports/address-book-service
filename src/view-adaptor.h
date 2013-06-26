@@ -37,6 +37,7 @@ class ViewAdaptor: public QDBusAbstractAdaptor
     Q_CLASSINFO("D-Bus Interface", CPIM_ADDRESSBOOK_VIEW_IFACE_NAME)
     Q_CLASSINFO("D-Bus Introspection", ""
 "  <interface name=\"com.canonical.pim.AddressBookView\">\n"
+"    <property name=\"count\" type=\"i\" access=\"read\"/>\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"i\" name=\"pos\"/>\n"
 "      <arg direction=\"out\" type=\"i\" name=\"lenght\"/>\n"
@@ -52,9 +53,6 @@ class ViewAdaptor: public QDBusAbstractAdaptor
 "    <method name=\"sort\">\n"
 "      <arg direction=\"in\" type=\"s\" name=\"field\"/>\n"
 "    </method>\n"
-"    <method name=\"count\">\n"
-"      <arg direction=\"out\" type=\"i\"/>\n"
-"    </method>\n"
 "    <method name=\"contactsDetails\">\n"
 "      <arg direction=\"in\" type=\"as\" name=\"fields\"/>\n"
 "      <arg direction=\"in\" type=\"i\" name=\"startIndex\"/>\n"
@@ -69,6 +67,7 @@ class ViewAdaptor: public QDBusAbstractAdaptor
 "    <method name=\"close\"/>\n"
 "  </interface>\n"
         "")
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
 public:
     ViewAdaptor(const QDBusConnection &connection, View *parent);
     virtual ~ViewAdaptor();
@@ -84,6 +83,7 @@ Q_SIGNALS:
     void contactsAdded(int pos, int lenght);
     void contactsRemoved(int pos, int lenght);
     void contactsUpdated(int pos, int lenght);
+    void countChanged(int count);
 
 private:
     View *m_view;

@@ -92,7 +92,6 @@ QDBusArgument &operator<<(QDBusArgument &argument, const SourceList &sources)
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, SourceList &sources)
 {
-    qDebug() << "PAser list of sources";
     argument.beginArray();
     sources.clear();
     while(!argument.atEnd()) {

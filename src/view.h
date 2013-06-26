@@ -38,7 +38,9 @@ class SortContact;
 
 class View : public QObject
 {
-     Q_OBJECT
+    Q_OBJECT
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
+
 public:
     View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent);
     ~View();
@@ -64,6 +66,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void closed();
+    void countChanged(int count);
 
 private:
     QStringList m_sources;
