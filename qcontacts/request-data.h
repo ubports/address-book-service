@@ -19,6 +19,8 @@
 #ifndef __GALERA_REQUEST_DATA_H__
 #define __GALERA_REQUEST_DATA_H__
 
+#include <common/fetch-hint.h>
+
 #include <QtCore/QList>
 #include <QtCore/QSharedPointer>
 
@@ -34,22 +36,38 @@ class RequestData
 public:
     RequestData(QtContacts::QContactAbstractRequest *request,
                 QDBusInterface *view,
+                const FetchHint &hint,
                 QDBusPendingCallWatcher *watcher=0);
+
+    RequestData(QtContacts::QContactAbstractRequest *request,
+                QDBusPendingCallWatcher *watcher=0);
+
 
     ~RequestData();
 
     QtContacts::QContactAbstractRequest* request() const;
     QDBusInterface* view() const;
+    QStringList fields() const;
+
 
     void updateWatcher(QDBusPendingCallWatcher *watcher);
 
     void updateOffset(int offset);
     int offset() const;
 
-    void setResults(QList<QtContacts::QContact> result);
-    void appendResult(QList<QtContacts::QContact> result);
     QList<QtContacts::QContact> result() const;
 
+    void setError(QtContacts::QContactManager::Error error);
+    void update(QList<QtContacts::QContact> result,
+                QtContacts::QContactAbstractRequest::State state,
+                QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError,
+                QMap<int, QtContacts::QContactManager::Error> errorMap = QMap<int, QtContacts::QContactManager::Error>());
+    void update(QtContacts::QContactAbstractRequest::State state,
+                QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError,
+                QMap<int, QtContacts::QContactManager::Error> errorMap = QMap<int, QtContacts::QContactManager::Error>());
+
+    static void setError(QtContacts::QContactAbstractRequest *request,
+                         QtContacts::QContactManager::Error error = QtContacts::QContactManager::UnspecifiedError);
     static void registerMetaType();
 
 private:
@@ -58,7 +76,9 @@ private:
     QSharedPointer<QDBusPendingCallWatcher> m_watcher;
     QList<QtContacts::QContact> m_result;
     int m_offset;
+    FetchHint m_hint;
 
+    void init(QtContacts::QContactAbstractRequest *request, QDBusInterface *view, QDBusPendingCallWatcher *watcher);
     static void deleteRequest(QtContacts::QContactAbstractRequest *obj);
     static void deleteView(QDBusInterface *view);
     static void deleteWatcher(QDBusPendingCallWatcher *watcher);

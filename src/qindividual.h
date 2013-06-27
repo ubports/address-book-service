@@ -37,28 +37,11 @@ typedef QList<QtVersit::QVersitProperty> PropertyList;
 class QIndividual
 {
 public:
-    enum Field {
-        All = 0x0000,
-        Name = 0x0001,
-        FullName = 0x0002,
-        NickName = 0x0004,
-        Birthday = 0x0008,
-        Photo = 0x0016,
-        Role = 0x0032,
-        Email = 0x0064,
-        Phone = 0x0128,
-        Address = 0x0256,
-        Im = 0x512,
-        TimeZone = 0x1024,
-        Url = 0x2048
-    };
-    Q_DECLARE_FLAGS(Fields, Field)
-
     QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator);
     ~QIndividual();
 
     QtContacts::QContact &contact();
-    QtContacts::QContact copy(Fields fields = QIndividual::All);
+    QtContacts::QContact copy(QList<QtContacts::QContactDetail::DetailType> fields);
     bool update(const QString &vcard, QObject *object, const char *slot);
     bool update(const QtContacts::QContact &contact, QObject *object, const char *slot);
     FolksIndividual *individual() const;
@@ -72,7 +55,6 @@ private:
     QtContacts::QContact m_contact;
     QMap<QString, QPair<QtContacts::QContactDetail, FolksAbstractFieldDetails*> > m_fieldsMap;
 
-    bool fieldsContains(Fields fields, Field value) const;
     QMultiHash<QString, QString> parseDetails(FolksAbstractFieldDetails *details) const;
     void updateContact();
 
