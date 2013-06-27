@@ -689,18 +689,13 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaUrls(FolksPersona *pers
     return details;
 }
 
-bool QIndividual::fieldsContains(Fields fields, Field value) const
-{
-    return (fields.testFlag(QIndividual::All) || fields.testFlag(value));
-}
-
-QtContacts::QContact QIndividual::copy(Fields fields)
+QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
 {
     QList<QContactDetail> details;
     QContact result;
 
 
-    if (fields.testFlag(QIndividual::All)) {
+    if (fields.isEmpty()) {
         result = contact();
     } else {
         QContact fullContact = contact();
@@ -711,59 +706,55 @@ QtContacts::QContact QIndividual::copy(Fields fields)
             details << det;
         }
 
-        if (fieldsContains(fields, QIndividual::Name)) {
+        if (fields.contains(QContactDetail::TypeName)) {
             details << fullContact.detail<QContactName>();
         }
 
 
-        if (fieldsContains(fields, QIndividual::FullName)) {
+        if (fields.contains(QContactDetail::TypeDisplayLabel)) {
             details << fullContact.detail<QContactDisplayLabel>();
         }
 
-        if (fieldsContains(fields, QIndividual::NickName)) {
+        if (fields.contains(QContactDetail::TypeNickname)) {
             details << fullContact.detail<QContactNickname>();
         }
 
-        if (fieldsContains(fields, QIndividual::Birthday)) {
+        if (fields.contains(QContactDetail::TypeBirthday)) {
             details << fullContact.detail<QContactBirthday>();
         }
 
-        if (fieldsContains(fields, QIndividual::Photo)) {
+        if (fields.contains(QContactDetail::TypeAvatar)) {
             details << fullContact.detail<QContactAvatar>();
         }
 
-        if (fieldsContains(fields, QIndividual::Role)) {
+        if (fields.contains(QContactDetail::TypeOrganization)) {
             Q_FOREACH(QContactDetail det, fullContact.details<QContactOrganization>()) {
                 details << det;
             }
         }
 
-        if (fieldsContains(fields, QIndividual::Email)) {
+        if (fields.contains(QContactDetail::TypeEmailAddress)) {
             Q_FOREACH(QContactDetail det, fullContact.details<QContactEmailAddress>()) {
                 details << det;
             }
         }
 
-        if (fieldsContains(fields, QIndividual::Phone)) {
+        if (fields.contains(QContactDetail::TypePhoneNumber)) {
             Q_FOREACH(QContactDetail det, fullContact.details<QContactPhoneNumber>()) {
                 details << det;
             }
         }
 
-        if (fieldsContains(fields, QIndividual::Address)) {
+        if (fields.contains(QContactDetail::TypeAddress)) {
             Q_FOREACH(QContactDetail det, fullContact.details<QContactAddress>()) {
                 details << det;
             }
         }
 
-        if (fieldsContains(fields, QIndividual::Url)) {
+        if (fields.contains(QContactDetail::TypeUrl)) {
             Q_FOREACH(QContactDetail det, fullContact.details<QContactUrl>()) {
                 details << det;
             }
-        }
-
-        if (fieldsContains(fields, QIndividual::TimeZone)) {
-            //TODO
         }
 
         Q_FOREACH(QContactDetail det, details) {

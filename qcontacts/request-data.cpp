@@ -18,14 +18,36 @@
 
 #include "request-data.h"
 
+#include <QtContacts/QContactManagerEngine>
+
 using namespace QtContacts;
 namespace galera
 {
 
 RequestData::RequestData(QContactAbstractRequest *request,
                          QDBusInterface *view,
+                         const FetchHint &hint,
+                         QDBusPendingCallWatcher *watcher)
+    : m_offset(0),
+      m_hint(hint)
+{
+    init(request, view, watcher);
+}
+
+RequestData::RequestData(QtContacts::QContactAbstractRequest *request,
                          QDBusPendingCallWatcher *watcher)
     : m_offset(0)
+{
+    init(request, 0, watcher);
+}
+
+RequestData::~RequestData()
+{
+}
+
+void RequestData::init(QtContacts::QContactAbstractRequest *request,
+                       QDBusInterface *view,
+                       QDBusPendingCallWatcher *watcher)
 {
     m_request = QSharedPointer<QContactAbstractRequest>(request, RequestData::deleteRequest);
 
@@ -36,10 +58,7 @@ RequestData::RequestData(QContactAbstractRequest *request,
     if (watcher) {
         m_watcher = QSharedPointer<QDBusPendingCallWatcher>(watcher, RequestData::deleteWatcher);
     }
-}
 
-RequestData::~RequestData()
-{
 }
 
 QContactAbstractRequest* RequestData::request() const
@@ -57,6 +76,11 @@ QDBusInterface* RequestData::view() const
     return m_view.data();
 }
 
+QStringList RequestData::fields() const
+{
+    return m_hint.fields();
+}
+
 void RequestData::updateWatcher(QDBusPendingCallWatcher *watcher)
 {
     m_watcher.clear();
@@ -70,24 +94,71 @@ void RequestData::updateOffset(int offset)
     m_offset += offset;
 }
 
-void RequestData::setResults(QList<QContact> result)
-{
-    m_result = result;
-}
-
 QList<QContact> RequestData::result() const
 {
     return m_result;
 }
 
-void RequestData::appendResult(QList<QContact> result)
+void RequestData::setError(QContactManager::Error error)
+{
+    m_result.clear();
+    update(QContactAbstractRequest::FinishedState, error);
+}
+
+void RequestData::update(QList<QContact> result,
+                         QContactAbstractRequest::State state,
+                         QContactManager::Error error,
+                         QMap<int, QContactManager::Error> errorMap)
 {
     m_result += result;
+    update(state, error, errorMap);
 }
+
+void RequestData::update(QContactAbstractRequest::State state,
+                         QContactManager::Error error,
+                         QMap<int, QContactManager::Error> errorMap)
+{
+    switch (m_request->type()) {
+        case QContactAbstractRequest::ContactFetchRequest:
+            QContactManagerEngine::updateContactFetchRequest(static_cast<QContactFetchRequest*>(m_request.data()),
+                                                             m_result,
+                                                             error,
+                                                             state);
+            break;
+        case QContactAbstractRequest::ContactFetchByIdRequest:
+            QContactManagerEngine::updateContactFetchByIdRequest(static_cast<QContactFetchByIdRequest*>(m_request.data()),
+                                                                 m_result,
+                                                                 error,
+                                                                 errorMap,
+                                                                 state);
+            break;
+        case QContactAbstractRequest::ContactSaveRequest:
+            QContactManagerEngine::updateContactSaveRequest(static_cast<QContactSaveRequest*>(m_request.data()),
+                                                            m_result,
+                                                            error,
+                                                            QMap<int, QContactManager::Error>(),
+                                                            state);
+        case QContactAbstractRequest::ContactRemoveRequest:
+            QContactManagerEngine::updateContactRemoveRequest(static_cast<QContactRemoveRequest*>(m_request.data()),
+                                                              error,
+                                                              errorMap,
+                                                              state);
+            break;
+        default:
+            break;
+    }
+}
+
 
 void RequestData::registerMetaType()
 {
     qRegisterMetaType<galera::RequestData*>();
+}
+
+void RequestData::setError(QContactAbstractRequest *request, QContactManager::Error error)
+{
+    RequestData r(request);
+    r.setError(error);
 }
 
 void RequestData::deleteRequest(QContactAbstractRequest *obj)

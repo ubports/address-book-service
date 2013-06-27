@@ -23,6 +23,7 @@
 
 #include "common/vcard-parser.h"
 #include "common/filter.h"
+#include "common/fetch-hint.h"
 #include "common/dbus-service-defs.h"
 
 #include <QtContacts/QContact>
@@ -127,7 +128,7 @@ View::View(QString clause, QString sort, QStringList sources, ContactsMap *allCo
 {
     m_filterThread->start();
 
-    connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged(int)));
+    connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
 }
 
 View::~View()
@@ -171,16 +172,10 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
 
     QList<QContact> contacts;
     for(int i = startIndex, iMax = (startIndex + pageSize); i < iMax; i++) {
-        // TODO: filter fields
-        contacts << entries[i]->individual()->contact();
+        contacts << entries[i]->individual()->copy(FetchHint::parseFieldNames(fields));
     }
 
     QStringList ret =  VCardParser::contactToVcard(contacts);
-    qDebug() << "fetch" << ret;
-    QList<QContact> cs = VCardParser::vcardToContact(ret);
-    QStringList ret2 =  VCardParser::contactToVcard(cs);
-    qDebug() << "fetch2" << ret2;
-
     QDBusMessage reply = message.createReply(ret);
     QDBusConnection::sessionBus().send(reply);
     return ret;
