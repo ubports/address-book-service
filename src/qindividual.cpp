@@ -388,6 +388,7 @@ QList<QContactDetail> QIndividual::getDetails() const
         appendDetailsForPersona(&details, getPersonaFullName(persona), index, !wPropList.contains("full-name"));
         appendDetailsForPersona(&details, getPersonaNickName(persona), index, !wPropList.contains("nickname"));
         appendDetailsForPersona(&details, getPersonaBirthday(persona), index, !wPropList.contains("birthday"));
+        appendDetailsForPersona(&details, getPersonaPhoto(persona), index, !wPropList.contains("avatar"));
         appendDetailsForPersona(&details, getPersonaRoles(persona), index, !wPropList.contains("roles"));
         appendDetailsForPersona(&details, getPersonaEmails(persona), index, !wPropList.contains("email-addresses"));
         appendDetailsForPersona(&details, getPersonaPhones(persona), index, !wPropList.contains("phone-numbers"));
@@ -478,8 +479,56 @@ QtContacts::QContactDetail QIndividual::getPersonaBirthday(FolksPersona *persona
 
 QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona) const
 {
-    // TODO
-    return QContactAvatar();
+    QContactAvatar avatar;
+    if (!FOLKS_IS_AVATAR_DETAILS(persona)) {
+        return avatar;
+    }
+
+    GLoadableIcon *avatarIcon = folks_avatar_details_get_avatar(FOLKS_AVATAR_DETAILS(persona));
+    if (avatarIcon) {
+        QString url;
+        if (G_IS_FILE_ICON(avatarIcon)) {
+            GFile *avatarFile = g_file_icon_get_file(G_FILE_ICON(avatarIcon));
+            gchar *uri = g_file_get_uri(avatarFile);
+            if (uri) {
+                url = QString::fromUtf8(uri);
+                g_free(uri);
+            }
+            g_object_unref(avatarFile);
+        } else {
+            FolksAvatarCache *cache = folks_avatar_cache_dup();
+            const char *contactId = folks_individual_get_id(m_individual);
+            gchar *uri = folks_avatar_cache_build_uri_for_avatar(cache, contactId);
+            url = QString::fromUtf8(uri);
+            if (!QFile::exists(url)) {
+                folks_avatar_cache_store_avatar(cache,
+                                                contactId,
+                                                avatarIcon,
+                                                QIndividual::avatarCacheStoreDone,
+                                                strdup(uri));
+            }
+            g_free(uri);
+            g_object_unref(cache);
+        }
+        avatar.setImageUrl(QUrl(url));
+    }
+    return avatar;
+}
+
+void QIndividual::avatarCacheStoreDone(GObject *source, GAsyncResult *result, gpointer data)
+{
+    GError *error = 0;
+    gchar *uri = folks_avatar_cache_store_avatar_finish(FOLKS_AVATAR_CACHE(source),
+                                                        result,
+                                                        &error);
+
+    if (error) {
+        qWarning() << "Fail to store avatar" << error->message;
+        g_error_free(error);
+    }
+
+    Q_ASSERT(g_str_equal(data, uri));
+    g_free(data);
 }
 
 QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *persona) const
@@ -916,16 +965,30 @@ void QIndividual::updatePhoto(const QtContacts::QContactDetail &detail, void* da
 
     if (persona == 0) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parsePhotoDetails, data);
+        return;
     } else if (FOLKS_IS_AVATAR_DETAILS(persona) && (detail != originalAvatar)) {
-        //TODO:
-        //const QContactAvatar *avatar = static_cast<const QContactAvatar*>(&detail);
-        folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(persona),
-                                           0,
-                                           (GAsyncReadyCallback) updateDone,
-                                           data);
-    } else {
-        updateDone(G_OBJECT(persona), NULL, data);
+        const QContactAvatar *avatar = static_cast<const QContactAvatar*>(&detail);
+
+        QUrl avatarUri = avatar->imageUrl();
+        GFileIcon *avatarFileIcon = NULL;
+        if(!avatarUri.isEmpty()) {
+            QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
+
+            if(!formattedUri.isEmpty()) {
+                GFile *avatarFile = g_file_new_for_uri(formattedUri.toUtf8().data());
+                avatarFileIcon = G_FILE_ICON(g_file_icon_new(avatarFile));
+                g_object_unref(avatarFile);
+            }
+
+            folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(persona),
+                                               G_LOADABLE_ICON(avatarFileIcon),
+                                               (GAsyncReadyCallback) updateDone,
+                                                data);
+            g_object_unref(avatarFileIcon);
+            return;
+        }
     }
+    updateDone(G_OBJECT(persona), NULL, data);
 }
 
 void QIndividual::updateRole(QtContacts::QContactDetail detail, void* data)
