@@ -1,3 +1,13 @@
+address-book-service (0.1.0+13.10.20130628-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Initial implementation of FetchHint.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 42
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 28 Jun 2013 07:01:04 +0000
+
 address-book-service (0.1.0+13.10.20130627-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
