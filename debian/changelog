@@ -1,3 +1,13 @@
+address-book-service (0.1.0+13.10.20130702-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * [package]Added evolution and folks-eds into dependency list.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 44
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 02 Jul 2013 07:01:53 +0000
+
 address-book-service (0.1.0+13.10.20130628-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
