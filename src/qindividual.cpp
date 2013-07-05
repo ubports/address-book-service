@@ -265,6 +265,7 @@ public:
         int size = 0;
         QStringList index = uri.split(".");
         gpointer* values = gee_collection_to_array(GEE_COLLECTION(set), &size);
+        FolksAbstractFieldDetails *result = 0;
 
         if (size == 0) {
             return 0;
@@ -273,12 +274,11 @@ public:
             Q_ASSERT(pos >= 0);
             Q_ASSERT(pos < size);
 
-            g_free (values);
-            return FOLKS_ABSTRACT_FIELD_DETAILS(values[pos]);
+            result = FOLKS_ABSTRACT_FIELD_DETAILS(values[pos]);
         }
 
         g_free (values);
-        return 0;
+        return result;
     }
 
     static FolksPersona *personaFromUri(const QString &uri, FolksIndividual *individual, FolksPersona *defaultPersona)
@@ -1005,6 +1005,8 @@ void QIndividual::updateEmail(QtContacts::QContactDetail detail, void* data)
     } else if (originalEmail.isEmpty() || (FOLKS_IS_EMAIL_DETAILS(persona) && (originalEmail != detail))) {
         qDebug() << "email diff";
         qDebug() << "\t" << originalEmail << "\n\t" << detail;
+        qDebug() << "\tOriginal context:" << originalEmail.contexts();
+        qDebug() << "\tNew context:" << detail.contexts();
 
         FolksEmailFieldDetails *emailDetails = 0;
         const QContactEmailAddress *email = static_cast<const QContactEmailAddress*>(&detail);
@@ -1042,11 +1044,17 @@ void QIndividual::updatePhone(QtContacts::QContactDetail detail, void* data)
     } else if (originalPhone.isEmpty() || (FOLKS_IS_PHONE_DETAILS(persona) && (originalPhone != detail))) {
         qDebug() << "Phone diff";
         qDebug() << "\t" << originalPhone << "\n\t" << detail;
+        qDebug() << "\tOriginal context:" << originalPhone.contexts();
+        qDebug() << "\tNew context:" << detail.contexts();
+
 
         /// Only update the details on the current persona
         FolksPhoneFieldDetails *phoneDetails = 0;
         const QContactPhoneNumber *phone = static_cast<const QContactPhoneNumber*>(&detail);
         GeeSet *phoneSet = folks_phone_details_get_phone_numbers(FOLKS_PHONE_DETAILS(persona));
+
+        qDebug() << "\tOriginal subtypes:" << static_cast<const QContactPhoneNumber*>(&originalPhone)->subTypes();
+        qDebug() << "\tNew subtype:" << phone->subTypes();
 
         phoneDetails = FOLKS_PHONE_FIELD_DETAILS(QIndividualUtils::getDetailsFromSet(&phoneSet, detail.detailUri()));
 
@@ -1559,6 +1567,9 @@ QStringList QIndividual::parseContext(const QtContacts::QContactDetail &detail)
 
 void QIndividual::parseContext(FolksAbstractFieldDetails *fd, const QtContacts::QContactDetail &detail)
 {
+    // clear the current values to prevent duplicate values
+    folks_abstract_field_details_set_parameter(fd, "type", "");
+
     Q_FOREACH (const QString &param, listContext(detail)) {
         folks_abstract_field_details_add_parameter(fd, "type", param.toUtf8().data());
     }
