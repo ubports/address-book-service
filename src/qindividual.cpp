@@ -272,8 +272,13 @@ public:
             pos = index[1].toInt() - 1;
             Q_ASSERT(pos >= 0);
             Q_ASSERT(pos < size);
+
+            g_free (values);
+            return FOLKS_ABSTRACT_FIELD_DETAILS(values[pos]);
         }
-        return FOLKS_ABSTRACT_FIELD_DETAILS(values[pos]);
+
+        g_free (values);
+        return 0;
     }
 
     static FolksPersona *personaFromUri(const QString &uri, FolksIndividual *individual, FolksPersona *defaultPersona)
@@ -296,6 +301,28 @@ public:
 
             return FOLKS_PERSONA(values[pos]);
         }
+    }
+
+    static FolksAbstractFieldDetails *getDetailsFromSet(GeeSet **set, const QString &detailUri)
+    {
+        FolksAbstractFieldDetails *result = 0;
+        // create a new set if the current one is empty or null
+        if (!*set || (gee_collection_get_size(GEE_COLLECTION(*set)) == 0)) {
+            *set = SET_AFD_NEW();
+        } else {
+            // we need to copy the it becase the current one is read-only
+            GeeSet *newSet = SET_AFD_NEW();
+            gee_collection_add_all(GEE_COLLECTION(newSet), GEE_COLLECTION(*set));
+            *set = newSet;
+
+            result = QIndividualUtils::getDetails(*set, detailUri);
+        }
+
+        if (result) {
+            g_object_ref(result);
+        }
+
+        return result;
     }
 
 }; // class
@@ -926,7 +953,7 @@ void QIndividual::updateRole(QtContacts::QContactDetail detail, void* data)
 
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseOrganizationDetails, data);
-    } else if (FOLKS_IS_ROLE_DETAILS(persona) && (originalRole != detail)) {
+    } else if (originalRole.isEmpty() ||(FOLKS_IS_ROLE_DETAILS(persona) && (originalRole != detail))) {
         qDebug() << "Role diff";
         qDebug() << "\t" << originalRole << "\n\t" << detail;
 
@@ -934,14 +961,7 @@ void QIndividual::updateRole(QtContacts::QContactDetail detail, void* data)
         const QContactOrganization *cRole = static_cast<const QContactOrganization*>(&detail);
         GeeSet *roleSet = folks_role_details_get_roles(FOLKS_ROLE_DETAILS(persona));
 
-        if (!roleSet || (gee_collection_get_size(GEE_COLLECTION(roleSet)) == 0)) {
-            roleSet = SET_AFD_NEW();
-        } else {
-            roleDetails = FOLKS_ROLE_FIELD_DETAILS(QIndividualUtils::getDetails(roleSet, detail.detailUri()));
-            // this will be unref at the end of the function
-            g_object_ref(roleSet);
-            g_object_ref(roleDetails);
-        }
+        roleDetails = FOLKS_ROLE_FIELD_DETAILS(QIndividualUtils::getDetailsFromSet(&roleSet, detail.detailUri()));
 
         const gchar* title = cRole->title().isEmpty() ? "" : cRole->title().toUtf8().data();
         const gchar* name = cRole->name().isEmpty() ? "" : cRole->name().toUtf8().data();
@@ -982,21 +1002,15 @@ void QIndividual::updateEmail(QtContacts::QContactDetail detail, void* data)
 
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseEmailDetails, data);
-    } else if (FOLKS_IS_EMAIL_DETAILS(persona) && (originalEmail != detail)) {
+    } else if (originalEmail.isEmpty() || (FOLKS_IS_EMAIL_DETAILS(persona) && (originalEmail != detail))) {
         qDebug() << "email diff";
         qDebug() << "\t" << originalEmail << "\n\t" << detail;
 
         FolksEmailFieldDetails *emailDetails = 0;
         const QContactEmailAddress *email = static_cast<const QContactEmailAddress*>(&detail);
         GeeSet *emailSet = folks_email_details_get_email_addresses(FOLKS_EMAIL_DETAILS(persona));
-        if (!emailSet || (gee_collection_get_size(GEE_COLLECTION(emailSet)) == 0)) {
-            emailSet = SET_AFD_NEW();
-        } else {
-            emailDetails = FOLKS_EMAIL_FIELD_DETAILS(QIndividualUtils::getDetails(emailSet, detail.detailUri()));
-            // this will be unref at the end of the function
-            g_object_ref(emailSet);
-            g_object_ref(emailDetails);
-        }
+
+        emailDetails = FOLKS_EMAIL_FIELD_DETAILS(QIndividualUtils::getDetailsFromSet(&emailSet, detail.detailUri()));
 
         if (!emailDetails) {
             emailDetails = folks_email_field_details_new(email->emailAddress().toUtf8().data(), NULL);
@@ -1025,7 +1039,7 @@ void QIndividual::updatePhone(QtContacts::QContactDetail detail, void* data)
     // if we do not have a persona for this detail we need to create one
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parsePhoneNumbersDetails, data);
-    } else if (FOLKS_IS_PHONE_DETAILS(persona) && (originalPhone != detail)) {
+    } else if (originalPhone.isEmpty() || (FOLKS_IS_PHONE_DETAILS(persona) && (originalPhone != detail))) {
         qDebug() << "Phone diff";
         qDebug() << "\t" << originalPhone << "\n\t" << detail;
 
@@ -1034,14 +1048,7 @@ void QIndividual::updatePhone(QtContacts::QContactDetail detail, void* data)
         const QContactPhoneNumber *phone = static_cast<const QContactPhoneNumber*>(&detail);
         GeeSet *phoneSet = folks_phone_details_get_phone_numbers(FOLKS_PHONE_DETAILS(persona));
 
-        if (!phoneSet || (gee_collection_get_size(GEE_COLLECTION(phoneSet)) == 0)) {
-            phoneSet = SET_AFD_NEW();
-        } else {
-            phoneDetails = FOLKS_PHONE_FIELD_DETAILS(QIndividualUtils::getDetails(phoneSet, detail.detailUri()));
-            // this will be unref at the end of the function
-            g_object_ref(phoneSet);
-            g_object_ref(phoneDetails);
-        }
+        phoneDetails = FOLKS_PHONE_FIELD_DETAILS(QIndividualUtils::getDetailsFromSet(&phoneSet, detail.detailUri()));
 
         if (!phoneDetails) {
             phoneDetails = folks_phone_field_details_new(phone->number().toUtf8().data(), NULL);
@@ -1070,9 +1077,7 @@ void QIndividual::updateAddress(QtContacts::QContactDetail detail, void* data)
 
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseAddressDetails, data);
-    } else if (FOLKS_IS_POSTAL_ADDRESS_DETAILS(persona) && (originalAddress != detail)) {
-
-
+    } else if (originalAddress.isEmpty() || (FOLKS_IS_POSTAL_ADDRESS_DETAILS(persona) && (originalAddress != detail))) {
         FolksPostalAddressFieldDetails *addrDetails = 0;
         const QContactAddress *addr = static_cast<const QContactAddress*>(&detail);
         const QContactAddress *addro = static_cast<const QContactAddress*>(&originalAddress);
@@ -1081,18 +1086,10 @@ void QIndividual::updateAddress(QtContacts::QContactDetail detail, void* data)
         qDebug() << "\t" << *addro <<  "subtypes:" << addro->subTypes() << "context" << addro->contexts();
         qDebug() << "\t" << *addr <<  "subtypes:" << addr->subTypes() << "context" << addr->contexts();
 
-
         qDebug() << "SubTypes:" << addr->subTypes();
         GeeSet *addrSet = folks_postal_address_details_get_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona));
 
-        if (!addrSet || (gee_collection_get_size(GEE_COLLECTION(addrSet)) == 0)) {
-            addrSet = SET_AFD_NEW();
-        } else {
-            addrDetails = FOLKS_POSTAL_ADDRESS_FIELD_DETAILS(QIndividualUtils::getDetails(addrSet, detail.detailUri()));
-            // this will be unref at the end of the function
-            g_object_ref(addrSet);
-            g_object_ref(addrDetails);
-        }
+        addrDetails = FOLKS_POSTAL_ADDRESS_FIELD_DETAILS(QIndividualUtils::getDetailsFromSet(&addrSet, detail.detailUri()));
 
         FolksPostalAddress *addrValue;
         if (!addrDetails) {
@@ -1138,7 +1135,7 @@ void QIndividual::updateIm(QtContacts::QContactDetail detail, void* data)
 
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseImDetails, data);
-    } else if (FOLKS_IS_IM_DETAILS(persona) && (originalIm != detail)) {
+    } else if (originalIm.isEmpty() || (FOLKS_IS_IM_DETAILS(persona) && (originalIm != detail))) {
         qDebug() << "Im diff";
         qDebug() << "\t" << originalIm << "\n\t" << detail;
 
@@ -1163,7 +1160,6 @@ void QIndividual::updateIm(QtContacts::QContactDetail detail, void* data)
                     gee_multi_map_remove_all(imSet, oldProtocolName.toUtf8().data());
                 }
             }
-
             g_object_ref(imSet);
         }
 
@@ -1193,7 +1189,7 @@ void QIndividual::updateUrl(QtContacts::QContactDetail detail, void* data)
 
     if (!persona) {
         createPersonaForDetail(QList<QContactDetail>() << detail, QIndividual::parseUrlDetails, data);
-    } else if (FOLKS_IS_URL_DETAILS(persona) && (originalUrl != detail)) {
+    } else if (originalUrl.isEmpty() || (FOLKS_IS_URL_DETAILS(persona) && (originalUrl != detail))) {
         qDebug() << "Url diff";
         qDebug() << "\t" << originalUrl << "\n\t" << detail;
 
@@ -1201,15 +1197,7 @@ void QIndividual::updateUrl(QtContacts::QContactDetail detail, void* data)
         const QContactUrl *url = static_cast<const QContactUrl*>(&detail);
         GeeSet *urlSet = folks_url_details_get_urls(FOLKS_URL_DETAILS(persona));
 
-        if (!urlSet || (gee_collection_get_size(GEE_COLLECTION(urlSet)) == 0)) {
-            urlSet = SET_AFD_NEW();
-        } else {
-            urlDetails = FOLKS_URL_FIELD_DETAILS(QIndividualUtils::getDetails(urlSet, detail.detailUri()));
-
-            // this will be unref at the end of the function
-            g_object_ref(urlSet);
-            g_object_ref(urlDetails);
-        }
+        urlDetails = FOLKS_URL_FIELD_DETAILS(QIndividualUtils::getDetailsFromSet(&urlSet, detail.detailUri()));
 
         if (!urlDetails) {
             urlDetails = folks_url_field_details_new(url->url().toUtf8().data(), NULL);
@@ -1246,15 +1234,7 @@ void QIndividual::updateNote(QtContacts::QContactDetail detail, void* data)
         const QContactNote *note = static_cast<const QContactNote*>(&detail);
         GeeSet *noteSet = folks_note_details_get_notes(FOLKS_NOTE_DETAILS(persona));
 
-        if (!noteSet || (gee_collection_get_size(GEE_COLLECTION(noteSet)) == 0)) {
-            noteSet = SET_AFD_NEW();
-        } else {
-            noteDetails = FOLKS_NOTE_FIELD_DETAILS(QIndividualUtils::getDetails(noteSet, detail.detailUri()));
-
-            // this will be unref at the end of the function
-            g_object_ref(noteSet);
-            g_object_ref(noteDetails);
-        }
+        noteDetails = FOLKS_NOTE_FIELD_DETAILS(QIndividualUtils::getDetailsFromSet(&noteSet, detail.detailUri()));
 
         if (!noteDetails) {
             noteDetails = folks_note_field_details_new(note->note().toUtf8().data(), NULL, 0);
@@ -2247,7 +2227,7 @@ QtContacts::QContactDetail QIndividual::detailFromUri(QtContacts::QContactDetail
             return detail;
         }
     }
-    return m_contact.detail(type);
+    return QContactDetail();
 }
 
 } //namespace
