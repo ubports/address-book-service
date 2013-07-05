@@ -80,6 +80,8 @@ private:
     QList<QtContacts::QContactDetail> getPersonaIms(FolksPersona *persona) const;
     QList<QtContacts::QContactDetail> getPersonaUrls(FolksPersona *persona) const;
 
+    static void avatarCacheStoreDone(GObject *source, GAsyncResult *result, gpointer data);
+
     // update
     void updateFullName(const QtContacts::QContactDetail &name, void* data);
     void updateName(const QtContacts::QContactDetail &name, void* data);

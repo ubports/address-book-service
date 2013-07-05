@@ -53,6 +53,7 @@ namespace
             Q_UNUSED(processedFields);
             Q_UNUSED(toBeRemoved);
 
+            // Export custom property PIDMAP
             if (detail.type() == QContactDetail::TypeExtendedDetail) {
                 const QContactExtendedDetail *extendedDetail = static_cast<const QContactExtendedDetail *>(&detail);
                 if (extendedDetail->name() == galera::VCardParser::PidMapFieldName) {
@@ -64,18 +65,23 @@ namespace
                     prop.setValueType(QVersitProperty::CompoundType);
                     prop.setValue(value);
                     *toBeAdded << prop;
-
-                    //TODO remove original property
                 }
             }
 
-            if (!detail.detailUri().isEmpty()) {
-                if (toBeAdded->size() > 0) {
-                    QVersitProperty &prop = toBeAdded->last();
-                    QMultiHash<QString, QString> params = prop.parameters();
-                    params.insert(galera::VCardParser::PidFieldName, detail.detailUri());
-                    prop.setParameters(params);
-                }
+            // export detailUir as PID field
+            if (!detail.detailUri().isEmpty() && toBeAdded->size()) {
+                QVersitProperty &prop = toBeAdded->last();
+                QMultiHash<QString, QString> params = prop.parameters();
+                params.insert(galera::VCardParser::PidFieldName, detail.detailUri());
+                prop.setParameters(params);
+            }
+
+            // export avatar as url istead of raw data
+            if ((detail.type() == QContactDetail::TypeAvatar) && toBeAdded->size()) {
+                QContactAvatar avatar = static_cast<QContactAvatar>(detail);
+                QVersitProperty &prop = toBeAdded->last();
+                prop.insertParameter(QStringLiteral("VALUE"), QStringLiteral("URL"));
+                prop.setValue(avatar.imageUrl().toString(QUrl::RemoveUserInfo));
             }
         }
 
