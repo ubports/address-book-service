@@ -1,3 +1,15 @@
+address-book-service (0.1.0+13.10.20130708-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Implemented avatars support.
+  * Fixed contact edit when adding a new field. Folks return a read only
+    list of details we need to copy it before start to modify it.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 47
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 08 Jul 2013 07:01:02 +0000
+
 address-book-service (0.1.0+13.10.20130702-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
