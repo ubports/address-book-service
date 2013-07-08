@@ -1177,6 +1177,7 @@ void QIndividual::updateAddress(QtContacts::QContactDetail detail, void* data)
         } else {
             addrValue = FOLKS_POSTAL_ADDRESS(folks_abstract_field_details_get_value(FOLKS_ABSTRACT_FIELD_DETAILS(addrDetails)));
             Q_ASSERT(addrValue);
+            g_object_ref(addrValue);
             folks_postal_address_set_po_box(addrValue, addr->postOfficeBox().toUtf8().data());
             folks_postal_address_set_street(addrValue, addr->street().toUtf8().data());
             folks_postal_address_set_locality(addrValue, addr->locality().toUtf8().data());
