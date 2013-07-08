@@ -40,6 +40,7 @@ public:
     QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator);
     ~QIndividual();
 
+    QString id() const;
     QtContacts::QContact &contact();
     QtContacts::QContact copy(QList<QtContacts::QContactDetail::DetailType> fields);
     bool update(const QString &vcard, QObject *object, const char *slot);

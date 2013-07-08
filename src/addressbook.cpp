@@ -282,6 +282,7 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
     Q_ASSERT(m_updateCommandPendingContacts.isEmpty());
 
     qDebug() << "update contacts:" << contacts;
+    m_updatedIds.clear();
     m_updateCommandReplyMessage = message;
     m_updateCommandResult = contacts;
     m_updateCommandPendingContacts << VCardParser::vcardToContact(contacts);
@@ -296,9 +297,20 @@ void AddressBook::updateContactsDone(galera::QIndividual *individual, const QStr
     Q_UNUSED(individual);
     qDebug() << Q_FUNC_INFO;
 
+    int currentContactIndex = m_updateCommandResult.size() - m_updateCommandPendingContacts.size() - 1;
+
     if (!error.isEmpty()) {
         // update the result with the error
-        m_updateCommandResult[m_updateCommandResult.size() - m_updateCommandPendingContacts.size() - 1] = error;
+        m_updateCommandResult[currentContactIndex] = error;
+    } else if (individual){
+        // update the result with the new contact info
+        m_updatedIds << individual->id();
+        QStringList newContacts = VCardParser::contactToVcard(QList<QContact>() << individual->contact());
+        if (newContacts.length() == 1) {
+            m_updateCommandResult[currentContactIndex] = newContacts[0];
+        } else {
+            m_updateCommandResult[currentContactIndex] = "";
+        }
     }
 
     if (!m_updateCommandPendingContacts.isEmpty()) {
@@ -315,6 +327,9 @@ void AddressBook::updateContactsDone(galera::QIndividual *individual, const QStr
         QDBusConnection::sessionBus().send(reply);
 
         // clear command data
+        Q_EMIT m_adaptor->contactsUpdated(m_updatedIds);
+
+        m_updatedIds.clear();
         m_updateCommandResult.clear();
         m_updateCommandReplyMessage = QDBusMessage();
     }

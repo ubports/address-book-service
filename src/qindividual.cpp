@@ -340,6 +340,15 @@ QIndividual::~QIndividual()
     g_object_unref(m_individual);
 }
 
+QString QIndividual::id() const
+{
+    if (m_individual) {
+        return QString::fromUtf8(folks_individual_get_id(m_individual));
+    } else {
+        return "";
+    }
+}
+
 QtContacts::QContactDetail QIndividual::getUid() const
 {
     QContactGuid uid;
@@ -1084,6 +1093,7 @@ void QIndividual::updateEmail(QtContacts::QContactDetail detail, void* data)
                                                    email->emailAddress().toUtf8().data());
         }
 
+        parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(emailDetails), detail);
         folks_email_details_change_email_addresses(FOLKS_EMAIL_DETAILS(persona),
                                                    emailSet,
                                                    (GAsyncReadyCallback) updateDone,
@@ -1187,6 +1197,7 @@ void QIndividual::updateAddress(QtContacts::QContactDetail detail, void* data)
         }
 
         parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(addrDetails), detail);
+
         folks_postal_address_details_change_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona),
                                                              addrSet,
                                                              (GAsyncReadyCallback) updateDone,
@@ -1451,7 +1462,7 @@ void QIndividual::updateDone(GObject *detail, GAsyncResult *result, gpointer use
     }
 
     if (data->m_details.isEmpty()) {
-        data->m_self->m_contact = data->m_newContact;
+        data->m_self->updateContact();
         updateDetailsSendReply(data, 0);
         return;
     }
