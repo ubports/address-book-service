@@ -521,7 +521,6 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona) c
                 url = QString::fromUtf8(uri);
                 g_free(uri);
             }
-            g_object_unref(avatarFile);
         } else {
             FolksAvatarCache *cache = folks_avatar_cache_dup();
             const char *contactId = folks_individual_get_id(m_individual);
