@@ -257,27 +257,68 @@ public:
         return retval;
     }
 
+    // TODO: optimize
+    static QList<FolksAbstractFieldDetails*> sortFieldDetails(GeeSet *set)
+    {
+        QList<FolksAbstractFieldDetails*> sorted;
+        GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(set));
+        while(gee_iterator_next(iter)) {
+            sorted << FOLKS_ABSTRACT_FIELD_DETAILS(gee_iterator_get(iter));
+        }
+        qSort(sorted.begin(), sorted.end(), lessThanFieldDetails);
+        g_object_unref(iter);
+        return sorted;
+    }
+
+    // At this point we will relay on  "x-evolution-ui-slot" to keep the sort of the fields
+    // this only works with EDS backend we need to find a more generic solution in the future
+    static int fieldSlot(FolksAbstractFieldDetails *fieldA)
+    {
+        int pos = -1;
+        GeeMultiMap *map = folks_abstract_field_details_get_parameters(fieldA);
+        GeeCollection *values = gee_multi_map_get(map, "x-evolution-ui-slot");
+        if (values) {
+            gint size;
+            gpointer* array = gee_collection_to_array(GEE_COLLECTION(values), &size);
+            if (size) {
+                QString sPos = QString::fromUtf8((const char*)array[0]);
+                pos = sPos.toInt();
+            }
+            g_free(array);
+            g_object_unref(values);
+        }
+        return pos;
+    }
+
+    static bool lessThanFieldDetails(FolksAbstractFieldDetails *fieldA, FolksAbstractFieldDetails *fieldB)
+    {
+        int fieldASlot = fieldSlot(fieldA);
+        int fieldBSlot = fieldSlot(fieldB);
+        return fieldASlot < fieldBSlot;
+    }
+
     static FolksAbstractFieldDetails *getDetails(GeeSet *set, const QString &uri)
     {
         Q_ASSERT(set);
 
         int pos = 0;
-        int size = 0;
         QStringList index = uri.split(".");
-        gpointer* values = gee_collection_to_array(GEE_COLLECTION(set), &size);
         FolksAbstractFieldDetails *result = 0;
 
-        if (size == 0) {
-            return 0;
-        } else if (index.count() == 2) {
-            pos = index[1].toInt() - 1;
-            Q_ASSERT(pos >= 0);
-            Q_ASSERT(pos < size);
+        if (index.count() == 2) {
+            QList<FolksAbstractFieldDetails*> sortedFields = sortFieldDetails(set);
 
-            result = FOLKS_ABSTRACT_FIELD_DETAILS(values[pos]);
+            pos = index[1].toInt() - 1;
+            if (pos >=0 && (pos < sortedFields.size())) {
+                result = sortedFields.at(pos);
+                g_object_ref(result);
+            }
+
+            Q_FOREACH(FolksAbstractFieldDetails *det, sortedFields) {
+                g_object_unref(det);
+            }
         }
 
-        g_free (values);
         return result;
     }
 
@@ -314,14 +355,8 @@ public:
             GeeSet *newSet = SET_AFD_NEW();
             gee_collection_add_all(GEE_COLLECTION(newSet), GEE_COLLECTION(*set));
             *set = newSet;
-
             result = QIndividualUtils::getDetails(*set, detailUri);
         }
-
-        if (result) {
-            g_object_ref(result);
-        }
-
         return result;
     }
 
@@ -371,6 +406,7 @@ QList<QtContacts::QContactDetail> QIndividual::getClientPidMap() const
         detail.setValue(QContactExtendedDetail::FieldData, index++);
         detail.setValue(QContactExtendedDetail::FieldData + 1, QString::fromUtf8(folks_persona_get_uid(persona)));
         details << detail;
+        g_object_unref(persona);
     }
 
     g_object_unref(iter);
@@ -432,7 +468,10 @@ QList<QContactDetail> QIndividual::getDetails() const
         appendDetailsForPersona(&details, getPersonaIms(persona), index, !wPropList.contains("im-addresses"));
         appendDetailsForPersona(&details, getPersonaUrls(persona), index, !wPropList.contains("urls"));
         personaIndex++;
+
+        g_object_unref(persona);
     }
+    g_object_unref(iter);
     return details;
 }
 
@@ -574,14 +613,12 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *per
 
     QList<QtContacts::QContactDetail> details;
     GeeSet *roles = folks_role_details_get_roles(FOLKS_ROLE_DETAILS(persona));
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(roles));
-
-    while(gee_iterator_next(iter)) {
-        FolksAbstractFieldDetails *fd = FOLKS_ABSTRACT_FIELD_DETAILS(gee_iterator_get(iter));
+    QList<FolksAbstractFieldDetails*> sortedFields = QIndividualUtils::sortFieldDetails(roles);
+    Q_FOREACH(FolksAbstractFieldDetails *fd, sortedFields) {
         FolksRole *role = FOLKS_ROLE(folks_abstract_field_details_get_value(fd));
-
         QContactOrganization org;
         QString field;
+
         field = QString::fromUtf8(folks_role_get_organisation_name(role));
         if (field.isEmpty()) {
             org.setName(field);
@@ -595,9 +632,6 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *per
         g_object_unref(fd);
         details << org;
     }
-
-    g_object_unref (iter);
-
     return details;
 }
 
@@ -609,10 +643,8 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaEmails(FolksPersona *pe
 
     QList<QtContacts::QContactDetail> details;
     GeeSet *emails = folks_email_details_get_email_addresses(FOLKS_EMAIL_DETAILS(persona));
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(emails));
-
-    while(gee_iterator_next(iter)) {
-        FolksAbstractFieldDetails *fd = FOLKS_ABSTRACT_FIELD_DETAILS(gee_iterator_get(iter));
+    QList<FolksAbstractFieldDetails*> sortedFields = QIndividualUtils::sortFieldDetails(emails);
+    Q_FOREACH(FolksAbstractFieldDetails *fd, sortedFields) {
         const gchar *email = (const gchar*) folks_abstract_field_details_get_value(fd);
 
         QContactEmailAddress addr;
@@ -622,8 +654,6 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaEmails(FolksPersona *pe
         g_object_unref(fd);
         details << addr;
     }
-
-    g_object_unref (iter);
 
     return details;
 }
@@ -636,10 +666,8 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaPhones(FolksPersona *pe
 
     QList<QtContacts::QContactDetail> details;
     GeeSet *phones = folks_phone_details_get_phone_numbers(FOLKS_PHONE_DETAILS(persona));
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(phones));
-
-    while(gee_iterator_next(iter)) {
-        FolksAbstractFieldDetails *fd = FOLKS_ABSTRACT_FIELD_DETAILS(gee_iterator_get(iter));
+    QList<FolksAbstractFieldDetails*> sortedFields = QIndividualUtils::sortFieldDetails(phones);
+    Q_FOREACH(FolksAbstractFieldDetails *fd, sortedFields) {
         const gchar *phone = (const char*) folks_abstract_field_details_get_value(fd);
 
         QContactPhoneNumber number;
@@ -649,8 +677,6 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaPhones(FolksPersona *pe
         g_object_unref(fd);
         details << number;
     }
-
-    g_object_unref (iter);
 
     return details;
 }
@@ -663,10 +689,8 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona 
 
     QList<QtContacts::QContactDetail> details;
     GeeSet *addresses = folks_postal_address_details_get_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona));
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(addresses));
-
-    while(gee_iterator_next(iter)) {
-        FolksAbstractFieldDetails *fd = FOLKS_ABSTRACT_FIELD_DETAILS(gee_iterator_get(iter));
+    QList<FolksAbstractFieldDetails*> sortedFields = QIndividualUtils::sortFieldDetails(addresses);
+    Q_FOREACH(FolksAbstractFieldDetails *fd, sortedFields) {
         FolksPostalAddress *addr = FOLKS_POSTAL_ADDRESS(folks_abstract_field_details_get_value(fd));
 
         QContactAddress address;
@@ -704,9 +728,6 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona 
         g_object_unref(fd);
         details << address;
     }
-
-    g_object_unref (iter);
-
     return details;
 }
 
@@ -738,10 +759,10 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *perso
             g_object_unref(fd);
             details << account;
         }
-        g_object_unref (iterValues);
+        g_object_unref(iterValues);
     }
 
-    g_object_unref (iter);
+    g_object_unref(iter);
 
     return details;
 }
@@ -754,10 +775,8 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaUrls(FolksPersona *pers
 
     QList<QtContacts::QContactDetail> details;
     GeeSet *urls = folks_url_details_get_urls(FOLKS_URL_DETAILS(persona));
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(urls));
-
-    while(gee_iterator_next(iter)) {
-        FolksAbstractFieldDetails *fd = FOLKS_ABSTRACT_FIELD_DETAILS(gee_iterator_get(iter));
+    QList<FolksAbstractFieldDetails*> sortedFields = QIndividualUtils::sortFieldDetails(urls);
+    Q_FOREACH(FolksAbstractFieldDetails *fd, sortedFields) {
         const char *url = (const char*) folks_abstract_field_details_get_value(fd);
 
         QContactUrl detail;
@@ -767,8 +786,6 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaUrls(FolksPersona *pers
         g_object_unref(fd);
         details << detail;
     }
-
-    g_object_unref (iter);
 
     return details;
 }
@@ -1590,7 +1607,12 @@ QStringList QIndividual::listParameters(FolksAbstractFieldDetails *details)
             }
             g_free(type);
         }
+
+        g_free(parameter);
+        g_object_unref(iter);
     }
+
+    g_object_unref(siter);
     return params;
 }
 
@@ -2300,7 +2322,7 @@ FolksPersona* QIndividual::primaryPersona()
         }
         g_object_unref(persona);
     }
-    g_object_unref (iter);
+    g_object_unref(iter);
 
     return m_primaryPersona;
 }
