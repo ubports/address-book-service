@@ -47,6 +47,7 @@
 using namespace QtVersit;
 using namespace QtContacts;
 
+#define FIELD_SLOT_PARAMETER    "x-evolution-ui-slot"
 namespace
 {
 
@@ -239,6 +240,7 @@ namespace galera
     } \
 }
 
+//TODO: this class is big enough to move to individual file and we need a refactory inside
 class QIndividualUtils
 {
 public:
@@ -336,7 +338,8 @@ public:
     {
         QString pos("1");
         GeeMultiMap *map = folks_abstract_field_details_get_parameters(fieldA);
-        GeeCollection *values = gee_multi_map_get(map, "x-evolution-ui-slot");
+
+        GeeCollection *values = gee_multi_map_get(map, FIELD_SLOT_PARAMETER);
         if (values) {
             gint size;
             gpointer* array = gee_collection_to_array(GEE_COLLECTION(values), &size);
@@ -417,7 +420,7 @@ public:
         return result;
     }
 
-    static void addNewField(GeeSet *set, FolksAbstractFieldDetails *field)
+    static int getNewSlotNumber(GeeCollection *set)
     {
         GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(set));
         int maxSlot = 1;
@@ -430,13 +433,43 @@ public:
             }
             g_object_unref(fd);
         }
+        g_object_unref(iter);
 
+        return maxSlot;
+    }
+
+    static void addNewField(GeeSet *set, FolksAbstractFieldDetails *field)
+    {
+        int maxSlot = getNewSlotNumber(GEE_COLLECTION(set));
         GeeMultiMap *map = folks_abstract_field_details_get_parameters(field);
-        gee_multi_map_set(map, "x-evolution-ui-slot", (const char*) QString::number(maxSlot).toUtf8().data());
+        gee_multi_map_set(map, FIELD_SLOT_PARAMETER, (const char*) QString::number(maxSlot).toUtf8().data());
         gee_collection_add(GEE_COLLECTION(set), field);
     }
 
+    static void copyIMMap(GeeMultiMap *src, GeeMultiMap *target)
+    {
+        GeeSet *keys = gee_multi_map_get_keys(src);
+        GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(keys));
 
+        while(gee_iterator_next(iter)) {
+            char* key = (char*) gee_iterator_get(iter);
+            GeeCollection *value = gee_multi_map_get(src, key);
+
+            GeeIterator *vIter = gee_iterable_iterator(GEE_ITERABLE(value));
+            while(gee_iterator_next(vIter)) {
+                FolksImFieldDetails *imDetails = FOLKS_IM_FIELD_DETAILS(gee_iterator_get(vIter));
+                gee_multi_map_set(target, key, imDetails);
+                g_object_unref(imDetails);
+            }
+
+            g_object_unref(vIter);
+            g_object_unref(value);
+            g_free(key);
+        }
+
+        g_object_unref(iter);
+        g_object_unref(keys);
+    }
 }; // class
 
 QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator)
@@ -841,6 +874,7 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *perso
     GeeMultiMap *ims = folks_im_details_get_im_addresses(FOLKS_IM_DETAILS(persona));
     GeeSet *keys = gee_multi_map_get_keys(ims);
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(keys));
+    int fieldIndex = 1;
 
     while(gee_iterator_next(iter)) {
         const gchar *key = (const gchar*) gee_iterator_get(iter);
@@ -856,8 +890,8 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *perso
             account.setProtocol(static_cast<QContactOnlineAccount::Protocol>(onlineAccountProtocolFromString(QString::fromUtf8(key))));
             parseParameters(account, fd);
 
-            QString fieldSlot = QIndividualUtils::fieldSlot(fd);
-            account.setDetailUri(QString("%1.%2").arg(index).arg(fieldSlot));
+            //EDS slot number is not available (Folsk BUG)
+            account.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
 
             g_object_unref(fd);
             details << account;
@@ -1306,8 +1340,6 @@ void QIndividual::updateEmail(QtContacts::QContactDetail detail, void* data)
     } else if (originalEmail.isEmpty() || (FOLKS_IS_EMAIL_DETAILS(persona) && (originalEmail != detail))) {
         qDebug() << "email diff";
         qDebug() << "\t" << originalEmail << "\n\t" << detail;
-        qDebug() << "\tOriginal context:" << originalEmail.contexts();
-        qDebug() << "\tNew context:" << detail.contexts();
 
         FolksEmailFieldDetails *emailDetails = 0;
         const QContactEmailAddress *email = static_cast<const QContactEmailAddress*>(&detail);
@@ -1350,7 +1382,6 @@ void QIndividual::updatePhone(QtContacts::QContactDetail detail, void* data)
         qDebug() << "\t" << originalPhone << "\n\t" << detail;
         qDebug() << "\tOriginal context:" << originalPhone.contexts();
         qDebug() << "\tNew context:" << detail.contexts();
-
 
         /// Only update the details on the current persona
         FolksPhoneFieldDetails *phoneDetails = 0;
@@ -1395,7 +1426,6 @@ void QIndividual::updateAddress(QtContacts::QContactDetail detail, void* data)
         qDebug() << "\t" << *addro <<  "subtypes:" << addro->subTypes() << "context" << addro->contexts();
         qDebug() << "\t" << *addr <<  "subtypes:" << addr->subTypes() << "context" << addr->contexts();
 
-        qDebug() << "SubTypes:" << addr->subTypes();
         GeeSet *addrSet = folks_postal_address_details_get_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona));
 
         addrDetails = FOLKS_POSTAL_ADDRESS_FIELD_DETAILS(QIndividualUtils::getDetailsFromSet(&addrSet, detail.detailUri()));
@@ -1452,42 +1482,75 @@ void QIndividual::updateIm(QtContacts::QContactDetail detail, void* data)
         qDebug() << "\t" << originalIm << "\n\t" << detail;
 
         const QContactOnlineAccount *im = static_cast<const QContactOnlineAccount*>(&detail);
-        GeeMultiMap *imSet = folks_im_details_get_im_addresses(FOLKS_IM_DETAILS(persona));
+        GeeMultiMap *imMap = folks_im_details_get_im_addresses(FOLKS_IM_DETAILS(persona));
 
-        if (!imSet || (gee_multi_map_get_size(GEE_MULTI_MAP(imSet)) == 0)) {
-            imSet = GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE_IM_FIELD_DETAILS);
+        if (!imMap || (gee_multi_map_get_size(GEE_MULTI_MAP(imMap)) == 0)) {
+            imMap = GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE_IM_FIELD_DETAILS);
         } else {
-            // We can not relay on the index inside of detailUri because online account are stored in a hash
-            QContactOnlineAccount oldIm = static_cast<QContactOnlineAccount>(originalIm);
-            QString oldProtocolName = onlineAccountProtocolFromEnum(oldIm.protocol());
-            GeeCollection *value = gee_multi_map_get(imSet, oldProtocolName.toUtf8().data());
+            GeeMultiMap *imMapCpy = GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE_IM_FIELD_DETAILS);
+            QIndividualUtils::copyIMMap(imMap, imMapCpy);
+            imMap = imMapCpy;
+            g_object_ref(imMap);
 
-            // Remove the old one
-            if (value) {
-                // if there is more than one address only remove the correct one
-                if (gee_collection_get_size(value) > 1) {
-                    gee_collection_remove(value, oldIm.accountUri().toUtf8().data());
+            // remove old im
+            if (!originalIm.isEmpty()) {
+                QContactOnlineAccount oldIm = static_cast<QContactOnlineAccount>(originalIm);
+                QString oldProtocolName = onlineAccountProtocolFromEnum(oldIm.protocol());
+                GeeCollection *value = gee_multi_map_get(imMap, oldProtocolName.toUtf8().data());
+
+                if (gee_collection_get_size(value) == 1) {
+                    gee_multi_map_remove_all(imMap, oldProtocolName.toUtf8().data());
                 } else {
-                    // otherwise remove the key
-                    gee_multi_map_remove_all(imSet, oldProtocolName.toUtf8().data());
+                    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(value));
+                    while (gee_iterator_next (iter)) {
+                        FolksImFieldDetails *im = FOLKS_IM_FIELD_DETAILS(gee_iterator_get(iter));
+
+                        if (oldIm.accountUri() == QString::fromUtf8((const char*)folks_abstract_field_details_get_value(FOLKS_ABSTRACT_FIELD_DETAILS(im)))) {
+                            gee_multi_map_remove(imMap, oldProtocolName.toUtf8().data(), im);
+                            g_object_unref(im);
+                            break;
+                        }
+                        g_object_unref(im);
+                    }
+                    g_object_unref(iter);
                 }
             }
-            g_object_ref(imSet);
         }
 
+
+        //EDS slot number is not available for IM
+        // Get slot number
+        // GeeCollection *values = gee_multi_map_get_values(imMap);
+        //int maxSlot = QIndividualUtils::getNewSlotNumber(values);
+
+        int maxSlot = 1;
+        QList<QContactDetail> dets = static_cast<UpdateContactData*>(data)->parent()->contact().details(QContactDetail::TypeOnlineAccount);
+        Q_FOREACH(QContactDetail d, dets) {
+            if (!d.detailUri().isEmpty()) {
+                int n = d.detailUri().split(".")[1].toInt();
+                if (n > maxSlot) {
+                    maxSlot = n + 1;
+                }
+            }
+        }
         // Append the new one
         FolksImFieldDetails *imDetails = folks_im_field_details_new(im->accountUri().toUtf8().data(), NULL);
+
+        // set slot number
+        GeeMultiMap *map = folks_abstract_field_details_get_parameters(FOLKS_ABSTRACT_FIELD_DETAILS(imDetails));
+        gee_multi_map_set(map, FIELD_SLOT_PARAMETER, (const char*) QString::number(maxSlot).toUtf8().data());
+
+        // populate context
         parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(imDetails), detail);
 
-        gee_multi_map_set(imSet,
-                          onlineAccountProtocolFromEnum(im->protocol()).toUtf8().data(),
-                          imDetails);
+        gee_multi_map_set(imMap, onlineAccountProtocolFromEnum(im->protocol()).toUtf8().data(), imDetails);
 
         folks_im_details_change_im_addresses(FOLKS_IM_DETAILS(persona),
-                                             imSet,
+                                             imMap,
                                              (GAsyncReadyCallback) updateDone,
                                              data);
-        g_object_unref(imSet);
+
+        g_object_unref(imMap);
         g_object_unref(imDetails);
     } else {
         updateDone(G_OBJECT(persona), NULL, data);
