@@ -32,10 +32,7 @@
 namespace galera
 {
 typedef GHashTable* (*ParseDetailsFunc)(GHashTable*, const QList<QtContacts::QContactDetail> &);
-typedef GeeSet* (*GetDetailsSetFunction) (void*);
-typedef void (*DetailsChangeFunction) (void*, GeeSet*, GAsyncReadyCallback, gpointer);
 
-typedef QList<QtVersit::QVersitProperty> PropertyList;
 class QIndividual
 {
 public:
@@ -47,8 +44,11 @@ public:
     QtContacts::QContact copy(QList<QtContacts::QContactDetail::DetailType> fields);
     bool update(const QString &vcard, QObject *object, const char *slot);
     bool update(const QtContacts::QContact &contact, QObject *object, const char *slot);
-    FolksIndividual *individual() const;
     void setIndividual(FolksIndividual *individual);
+    FolksIndividual *individual() const;
+
+    FolksPersona *getPersona(int index) const;
+    int personaCount() const;
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
 private:
@@ -85,39 +85,9 @@ private:
 
     static void avatarCacheStoreDone(GObject *source, GAsyncResult *result, gpointer data);
 
-    // update
-    void updateFullName(const QtContacts::QContactDetail &name, void* data);
-    void updateName(const QtContacts::QContactDetail &name, void* data);
-    void updateNickname(const QtContacts::QContactDetail &detail, void* data);
-    void updateBirthday(const QtContacts::QContactDetail &detail, void* data);
-    void updatePhoto(const QtContacts::QContactDetail &detail, void* data);
-    void updateTimezone(const QtContacts::QContactDetail &detail, void* data);
-    void updateRole(QtContacts::QContactDetail detail, void* data);
-    void updatePhone(QtContacts::QContactDetail detail, void* data);
-    void updateEmail(QtContacts::QContactDetail detail, void* data);
-    void updateIm(QtContacts::QContactDetail detail, void* data);
-    void updateUrl(QtContacts::QContactDetail details, void* data);
-    void updateNote(QtContacts::QContactDetail detail, void* data);
-    void updateAddress(QtContacts::QContactDetail detail, void* data);
-
     // create
-    void createPersonaForDetail(QList<QtContacts::QContactDetail> detail, ParseDetailsFunc parseFunc, void *data) const;
+    void createPersonaFromDetails(QList<QtContacts::QContactDetail> detail, ParseDetailsFunc parseFunc, void *data) const;
     static void createPersonaForDetailDone(GObject *detail, GAsyncResult *result, gpointer userdata);
-
-    // remove
-    void removeDetail(QtContacts::QContactDetail detail, GType detailGType, GetDetailsSetFunction getDetailsSetFunction, DetailsChangeFunction changeFunction, void* data);
-    void removeRole(QtContacts::QContactDetail detail, void* data);
-    void removePhone(QtContacts::QContactDetail detail, void* data);
-    void removeEmail(QtContacts::QContactDetail detail, void* data);
-    void removeIm(QtContacts::QContactDetail detail, void* data);
-    void removeUrl(QtContacts::QContactDetail detail, void* data);
-    void removeNote(QtContacts::QContactDetail detail, void* data);
-    void removeAddress(QtContacts::QContactDetail detail, void* data);
-
-    static void updateDone(GObject *detail, GAsyncResult *result, gpointer userdata);
-    static void updateDetailsSendReply(gpointer userdata, GError *error);
-    static void updateDetailsSendReply(gpointer userdata, const QString &errorMessage);
-    static QString callDetailChangeFinish(QtContacts::QContactDetail::DetailType type, FolksPersona *persona, GAsyncResult *result);
 
     // translate details
     static GHashTable *parseAddressDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
@@ -134,25 +104,6 @@ private:
     static GHashTable *parseEmailDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
     static GHashTable *parseBirthdayDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
     static GHashTable *parseUrlDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-
-    static QStringList listParameters(FolksAbstractFieldDetails *details);
-    static void parseParameters(QtContacts::QContactDetail &detail, FolksAbstractFieldDetails *fd);
-    static void parsePhoneParameters(QtContacts::QContactDetail &phone, const QStringList &parameters);
-    static void parseAddressParameters(QtContacts::QContactDetail &address, const QStringList &parameters);
-    static void parseOnlineAccountParameters(QtContacts::QContactDetail &im, const QStringList &parameters);
-
-    static QList<int> contextsFromParameters(QStringList &parameters);
-    static QStringList listContext(const QtContacts::QContactDetail &detail);
-    static void parseContext(FolksAbstractFieldDetails *fd, const QtContacts::QContactDetail &detail);
-    static QStringList parseContext(const QtContacts::QContactDetail &detail);
-    static QStringList parsePhoneContext(const QtContacts::QContactDetail &detail);
-    static QStringList parseAddressContext(const QtContacts::QContactDetail &detail);
-    static QStringList parseOnlineAccountContext(const QtContacts::QContactDetail &detail);
-
-    static int onlineAccountProtocolFromString(const QString &protocol);
-    static QString onlineAccountProtocolFromEnum(int protocol);
-
-    friend class QIndividualUtils;
 };
 
 } //namespace
