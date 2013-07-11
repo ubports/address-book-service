@@ -78,6 +78,7 @@ private:
     // Update command
     QDBusMessage m_updateCommandReplyMessage;
     QStringList m_updateCommandResult;
+    QStringList m_updatedIds;
     QList<QtContacts::QContact> m_updateCommandPendingContacts;
 
     void prepareFolks();

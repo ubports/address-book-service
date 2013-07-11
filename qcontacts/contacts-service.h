@@ -63,11 +63,13 @@ public:
 Q_SIGNALS:
     void contactsAdded(QList<QContactId> ids);
     void contactsRemoved(QList<QContactId> ids);
+    void contactsUpdated(QList<QContactId> ids);
     void serviceChanged();
 
 private Q_SLOTS:
     void onContactsAdded(QStringList ids);
     void onContactsRemoved(QStringList ids);
+    void onContactsUpdated(QStringList ids);
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
     void onServiceReady();
 

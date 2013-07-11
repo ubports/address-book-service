@@ -122,6 +122,7 @@ void GaleraContactsService::initialize()
             connect(m_iface.data(), SIGNAL(ready()), this, SLOT(onServiceReady()));
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
+            connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();
             m_iface.clear();
@@ -525,6 +526,11 @@ void GaleraContactsService::onContactsAdded(QStringList ids)
 void GaleraContactsService::onContactsRemoved(QStringList ids)
 {
     Q_EMIT contactsRemoved(parseIds(ids));
+}
+
+void GaleraContactsService::onContactsUpdated(QStringList ids)
+{
+    Q_EMIT contactsUpdated(parseIds(ids));
 }
 
 } //namespace

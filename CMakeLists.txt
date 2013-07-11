@@ -22,9 +22,9 @@ else()
     message(STATUS "Using folks NEW (>= 0.9.0) API")
 endif()
 
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
+add_definitions(-std=c++11)
 
 # Coverage tools
 OPTION(ENABLE_COVERAGE "Build with coverage analysis support" OFF)
