@@ -1,3 +1,14 @@
+address-book-service (0.1.0+13.10.20130712-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * * Fixed contact update crash. * Fixed contact address update. * Emit
+    the signal ¨contactUpdated¨ after a contact has been changed.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 49
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 12 Jul 2013 07:01:45 +0000
+
 address-book-service (0.1.0+13.10.20130708-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
