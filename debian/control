@@ -23,7 +23,7 @@ Depends: evolution-data-server,
          ${misc:Depends},
          ${shlibs:Depends},
 Description: Ubuntu contact service
- A contact aggregator service, that export all contact information thought dbus.
+ A contact aggregator service, that exports all contact information through dbus.
 
 Package: qtcontact5-galera
 Architecture: any
