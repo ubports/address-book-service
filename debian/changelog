@@ -1,3 +1,9 @@
+address-book-service (0.1.0+13.10.20130712-0ubuntu1test1) saucy; urgency=low
+
+  * test release 
+
+ -- Bill Filler <bill.filler@canonical.com>  Mon, 15 Jul 2013 11:44:48 -0400
+
 address-book-service (0.1.0+13.10.20130712-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
