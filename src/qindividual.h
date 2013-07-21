@@ -64,24 +64,42 @@ private:
     FolksPersona *primaryPersona();
     QtContacts::QContactDetail detailFromUri(QtContacts::QContactDetail::DetailType type, const QString &uri) const;
 
-    void appendDetailsForPersona(QList<QtContacts::QContactDetail> *list, QtContacts::QContactDetail detail, bool readOnly) const;
-    void appendDetailsForPersona(QList<QtContacts::QContactDetail> *list, QList<QtContacts::QContactDetail> details, bool readOnly) const;
+    void appendDetailsForPersona(QtContacts::QContact *contact,
+                                 const QtContacts::QContactDetail &detail,
+                                 bool readOnly) const;
+    void appendDetailsForPersona(QtContacts::QContact *contact,
+                                 QList<QtContacts::QContactDetail> details,
+                                 const QString &preferredAction,
+                                 const QtContacts::QContactDetail &preferred,
+                                 bool readOnly) const;
 
     // QContact
-    QList<QtContacts::QContactDetail> getDetails() const;
     QtContacts::QContactDetail getUid() const;
     QList<QtContacts::QContactDetail> getClientPidMap() const;
-    QtContacts::QContactDetail getPersonaName(FolksPersona *persona, int index) const;
-    QtContacts::QContactDetail getPersonaFullName(FolksPersona *persona, int index) const;
-    QtContacts::QContactDetail getPersonaNickName(FolksPersona *persona, int index) const;
-    QtContacts::QContactDetail getPersonaBirthday(FolksPersona *persona, int index) const;
-    QtContacts::QContactDetail getPersonaPhoto(FolksPersona *persona, int index) const;
-    QList<QtContacts::QContactDetail> getPersonaRoles(FolksPersona *persona, int index) const;
-    QList<QtContacts::QContactDetail> getPersonaEmails(FolksPersona *persona, int index) const;
-    QList<QtContacts::QContactDetail> getPersonaPhones(FolksPersona *persona, int index) const;
-    QList<QtContacts::QContactDetail> getPersonaAddresses(FolksPersona *persona, int index) const;
-    QList<QtContacts::QContactDetail> getPersonaIms(FolksPersona *persona, int index) const;
-    QList<QtContacts::QContactDetail> getPersonaUrls(FolksPersona *persona, int index) const;
+    QtContacts::QContactDetail getPersonaName           (FolksPersona *persona, int index) const;
+    QtContacts::QContactDetail getPersonaFullName       (FolksPersona *persona, int index) const;
+    QtContacts::QContactDetail getPersonaNickName       (FolksPersona *persona, int index) const;
+    QtContacts::QContactDetail getPersonaBirthday       (FolksPersona *persona, int index) const;
+    QtContacts::QContactDetail getPersonaPhoto          (FolksPersona *persona, int index) const;
+    QtContacts::QContactDetail getPersonaFavorite       (FolksPersona *persona, int index) const;
+    QList<QtContacts::QContactDetail> getPersonaRoles   (FolksPersona *persona,
+                                                         QtContacts::QContactDetail *preferredRole,
+                                                         int index) const;
+    QList<QtContacts::QContactDetail> getPersonaEmails  (FolksPersona *persona,
+                                                         QtContacts::QContactDetail *preferredEmail,
+                                                         int index) const;
+    QList<QtContacts::QContactDetail> getPersonaPhones  (FolksPersona *persona,
+                                                         QtContacts::QContactDetail *preferredPhone,
+                                                         int index) const;
+    QList<QtContacts::QContactDetail> getPersonaAddresses(FolksPersona *persona,
+                                                          QtContacts::QContactDetail *preferredAddress,
+                                                          int index) const;
+    QList<QtContacts::QContactDetail> getPersonaIms     (FolksPersona *persona,
+                                                         QtContacts::QContactDetail *preferredIm,
+                                                         int index) const;
+    QList<QtContacts::QContactDetail> getPersonaUrls    (FolksPersona *persona,
+                                                         QtContacts::QContactDetail *preferredUrl,
+                                                         int index) const;
 
     static void avatarCacheStoreDone(GObject *source, GAsyncResult *result, gpointer data);
 
@@ -90,20 +108,34 @@ private:
     static void createPersonaForDetailDone(GObject *detail, GAsyncResult *result, gpointer userdata);
 
     // translate details
-    static GHashTable *parseAddressDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parsePhotoDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parsePhoneNumbersDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseOrganizationDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseImDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseNoteDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseFullNameDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseNicknameDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseNameDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseGenderDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseFavoriteDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseEmailDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseBirthdayDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
-    static GHashTable *parseUrlDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parseFullNameDetails     (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parseNicknameDetails     (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parseNameDetails         (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parseGenderDetails       (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parseFavoriteDetails     (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parsePhotoDetails        (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parseBirthdayDetails     (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parseAddressDetails      (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QtContacts::QContactDetail &prefDetail);
+    static GHashTable *parsePhoneNumbersDetails (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QtContacts::QContactDetail &prefDetail);
+    static GHashTable *parseOrganizationDetails (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QtContacts::QContactDetail &prefDetail);
+    static GHashTable *parseImDetails           (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QtContacts::QContactDetail &prefDetail);
+    static GHashTable *parseNoteDetails         (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QtContacts::QContactDetail &prefDetail);
+    static GHashTable *parseEmailDetails        (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QtContacts::QContactDetail &prefDetail);
+    static GHashTable *parseUrlDetails          (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QtContacts::QContactDetail &prefDetail);
 };
 
 } //namespace

@@ -55,7 +55,8 @@ namespace
 static void gValueGeeSetAddStringFieldDetails(GValue *value,
                                               GType g_type,
                                               const char* v_string,
-                                              const QtContacts::QContactDetail &detail)
+                                              const QtContacts::QContactDetail &detail,
+                                              bool ispreferred)
 {
     GeeCollection *collection = (GeeCollection*) g_value_get_object(value);
     if(collection == NULL) {
@@ -89,7 +90,7 @@ static void gValueGeeSetAddStringFieldDetails(GValue *value,
     if (fieldDetails == NULL) {
         qWarning() << "Invalid fieldDetails type" << g_type;
     } else {
-        galera::DetailContextParser::parseContext(fieldDetails, detail);
+        galera::DetailContextParser::parseContext(fieldDetails, detail, ispreferred);
         gee_collection_add(collection, fieldDetails);
 
         g_object_unref(fieldDetails);
@@ -97,7 +98,7 @@ static void gValueGeeSetAddStringFieldDetails(GValue *value,
 }
 
 #define PERSONA_DETAILS_INSERT_STRING_FIELD_DETAILS(\
-        details, cDetails, key, value, q_type, g_type, member) \
+        details, cDetails, key, value, q_type, g_type, member, prefDetail) \
 { \
     if(cDetails.size() > 0) { \
         value = GeeUtils::gValueSliceNew(G_TYPE_OBJECT); \
@@ -105,7 +106,8 @@ static void gValueGeeSetAddStringFieldDetails(GValue *value,
             if(!detail.isEmpty()) { \
                 gValueGeeSetAddStringFieldDetails(value, (g_type), \
                         detail.member().toUtf8().data(), \
-                        detail); \
+                        detail, \
+                        detail == prefDetail); \
             } \
         } \
         GeeUtils::personaDetailsInsert((details), (key), (value)); \
@@ -168,61 +170,31 @@ QList<QtContacts::QContactDetail> QIndividual::getClientPidMap() const
     return details;
 }
 
-void QIndividual::appendDetailsForPersona(QList<QtContacts::QContactDetail> *list, QtContacts::QContactDetail detail, bool readOnly) const
+void QIndividual::appendDetailsForPersona(QtContacts::QContact *contact,
+                                          const QtContacts::QContactDetail &detail,
+                                          bool readOnly) const
 {
     if (!detail.isEmpty()) {
+        QtContacts::QContactDetail cpy(detail);
         if (readOnly) {
-            QContactManagerEngine::setDetailAccessConstraints(&detail, QContactDetail::ReadOnly);
+            QContactManagerEngine::setDetailAccessConstraints(&cpy, QContactDetail::ReadOnly);
         }
-        list->append(detail);
+        contact->appendDetail(cpy);
     }
 }
 
-void QIndividual::appendDetailsForPersona(QList<QtContacts::QContactDetail> *list, QList<QtContacts::QContactDetail> details, bool readOnly) const
+void QIndividual::appendDetailsForPersona(QtContacts::QContact *contact,
+                                          QList<QtContacts::QContactDetail> details,
+                                          const QString &preferredAction,
+                                          const QtContacts::QContactDetail &preferred,
+                                          bool readOnly) const
 {
-    Q_FOREACH(QContactDetail detail, details) {
-        appendDetailsForPersona(list, detail, readOnly);
-    }
-}
-
-
-QList<QContactDetail> QIndividual::getDetails() const
-{
-    int personaIndex = 1;
-    QList<QContactDetail> details;
-    GeeSet *personas = folks_individual_get_personas(m_individual);
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
-
-    while(gee_iterator_next(iter)) {
-        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
-
-        int wsize = 0;
-        gchar **wproperties = folks_persona_get_writeable_properties(persona, &wsize);
-        //"gender", "local-ids", "avatar", "postal-addresses", "urls", "phone-numbers", "structured-name",
-        //"anti-links", "im-addresses", "is-favourite", "birthday", "notes", "roles", "email-addresses",
-        //"web-service-addresses", "groups", "full-name"
-        QStringList wPropList;
-        for(int i=0; i < wsize; i++) {
-            wPropList << wproperties[i];
+    Q_FOREACH(const QContactDetail &detail, details) {
+        appendDetailsForPersona(contact, detail, readOnly);
+        if (!preferred.isEmpty()) {
+            contact->setPreferredDetail(preferredAction, preferred);
         }
-
-        appendDetailsForPersona(&details, getPersonaName(persona, personaIndex), !wPropList.contains("structured-name"));
-        appendDetailsForPersona(&details, getPersonaFullName(persona, personaIndex), !wPropList.contains("full-name"));
-        appendDetailsForPersona(&details, getPersonaNickName(persona, personaIndex), !wPropList.contains("nickname"));
-        appendDetailsForPersona(&details, getPersonaBirthday(persona, personaIndex), !wPropList.contains("birthday"));
-        appendDetailsForPersona(&details, getPersonaPhoto(persona, personaIndex), !wPropList.contains("avatar"));
-        appendDetailsForPersona(&details, getPersonaRoles(persona, personaIndex), !wPropList.contains("roles"));
-        appendDetailsForPersona(&details, getPersonaEmails(persona, personaIndex), !wPropList.contains("email-addresses"));
-        appendDetailsForPersona(&details, getPersonaPhones(persona, personaIndex), !wPropList.contains("phone-numbers"));
-        appendDetailsForPersona(&details, getPersonaAddresses(persona, personaIndex), !wPropList.contains("postal-addresses"));
-        appendDetailsForPersona(&details, getPersonaIms(persona, personaIndex), !wPropList.contains("im-addresses"));
-        appendDetailsForPersona(&details, getPersonaUrls(persona, personaIndex), !wPropList.contains("urls"));
-        personaIndex++;
-
-        g_object_unref(persona);
     }
-    g_object_unref(iter);
-    return details;
 }
 
 QContactDetail QIndividual::getPersonaName(FolksPersona *persona, int index) const
@@ -360,7 +332,9 @@ void QIndividual::avatarCacheStoreDone(GObject *source, GAsyncResult *result, gp
     g_free(data);
 }
 
-QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *persona, int index) const
+QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *persona,
+                                                               QtContacts::QContactDetail *preferredRole,
+                                                               int index) const
 {
     if (!FOLKS_IS_ROLE_DETAILS(persona)) {
         return QList<QtContacts::QContactDetail>();
@@ -385,9 +359,12 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *per
         if (!field.isEmpty()) {
             org.setTitle(field);
         }
-        DetailContextParser::parseParameters(org, fd);
-
+        bool isPref = false;
+        DetailContextParser::parseParameters(org, fd, &isPref);
         org.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
+        if (isPref) {
+            *preferredRole = org;
+        }
 
         g_object_unref(fd);
         details << org;
@@ -396,7 +373,9 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *per
     return details;
 }
 
-QList<QtContacts::QContactDetail> QIndividual::getPersonaEmails(FolksPersona *persona, int index) const
+QList<QtContacts::QContactDetail> QIndividual::getPersonaEmails(FolksPersona *persona,
+                                                                QtContacts::QContactDetail *preferredEmail,
+                                                                int index) const
 {
     if (!FOLKS_IS_EMAIL_DETAILS(persona)) {
         return QList<QtContacts::QContactDetail>();
@@ -414,9 +393,12 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaEmails(FolksPersona *pe
 
         QContactEmailAddress addr;
         addr.setEmailAddress(QString::fromUtf8(email));
-        DetailContextParser::parseParameters(addr, fd);
-
+        bool isPref = false;
+        DetailContextParser::parseParameters(addr, fd, &isPref);
         addr.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
+        if (isPref) {
+            *preferredEmail = addr;
+        }
 
         g_object_unref(fd);
         details << addr;
@@ -425,7 +407,9 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaEmails(FolksPersona *pe
     return details;
 }
 
-QList<QtContacts::QContactDetail> QIndividual::getPersonaPhones(FolksPersona *persona, int index) const
+QList<QtContacts::QContactDetail> QIndividual::getPersonaPhones(FolksPersona *persona,
+                                                                QtContacts::QContactDetail *preferredPhone,
+                                                                int index) const
 {
     if (!FOLKS_IS_PHONE_DETAILS(persona)) {
         return QList<QtContacts::QContactDetail>();
@@ -442,9 +426,12 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaPhones(FolksPersona *pe
 
         QContactPhoneNumber number;
         number.setNumber(QString::fromUtf8(phone));
-        DetailContextParser::parseParameters(number, fd);
-
+        bool isPref = false;
+        DetailContextParser::parseParameters(number, fd, &isPref);
         number.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
+        if (isPref) {
+            *preferredPhone = number;
+        }
 
         g_object_unref(fd);
         details << number;
@@ -453,7 +440,9 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaPhones(FolksPersona *pe
     return details;
 }
 
-QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona *persona, int index) const
+QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona *persona,
+                                                                   QtContacts::QContactDetail *preferredAddress,
+                                                                   int index) const
 {
     if (!FOLKS_IS_POSTAL_ADDRESS_DETAILS(persona)) {
         return QList<QtContacts::QContactDetail>();
@@ -498,9 +487,13 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona 
         if (field && strlen(field)) {
             address.setStreet(QString::fromUtf8(field));
         }
-        DetailContextParser::parseParameters(address, fd);
 
+        bool isPref = false;
+        DetailContextParser::parseParameters(address, fd, &isPref);
         address.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
+        if (isPref) {
+            *preferredAddress = address;
+        }
 
         g_object_unref(fd);
         details << address;
@@ -509,7 +502,9 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona 
     return details;
 }
 
-QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *persona, int index) const
+QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *persona,
+                                                             QtContacts::QContactDetail *preferredIm,
+                                                             int index) const
 {
     if (!FOLKS_IS_IM_DETAILS(persona)) {
         return QList<QtContacts::QContactDetail>();
@@ -534,10 +529,13 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *perso
             account.setAccountUri(QString::fromUtf8(uri));
             int protocolId = DetailContextParser::accountProtocolFromString(QString::fromUtf8(key));
             account.setProtocol(static_cast<QContactOnlineAccount::Protocol>(protocolId));
-            DetailContextParser::parseParameters(account, fd);
 
+            bool isPref = false;
+            DetailContextParser::parseParameters(account, fd, &isPref);
             account.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
-
+            if (isPref) {
+                *preferredIm = account;
+            }
             g_object_unref(fd);
             details << account;
         }
@@ -549,7 +547,9 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *perso
     return details;
 }
 
-QList<QtContacts::QContactDetail> QIndividual::getPersonaUrls(FolksPersona *persona, int index) const
+QList<QtContacts::QContactDetail> QIndividual::getPersonaUrls(FolksPersona *persona,
+                                                              QtContacts::QContactDetail *preferredUrl,
+                                                              int index) const
 {
     if (!FOLKS_IS_URL_DETAILS(persona)) {
         return QList<QtContacts::QContactDetail>();
@@ -566,15 +566,29 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaUrls(FolksPersona *pers
 
         QContactUrl detail;
         detail.setUrl(QString::fromUtf8(url));
-        DetailContextParser::parseParameters(detail, fd);
-
+        bool isPref = false;
+        DetailContextParser::parseParameters(detail, fd, &isPref);
         detail.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
-
+        if (isPref) {
+            *preferredUrl = detail;
+        }
         g_object_unref(fd);
         details << detail;
     }
     g_object_unref(iter);
     return details;
+}
+
+QtContacts::QContactDetail QIndividual::getPersonaFavorite(FolksPersona *persona, int index) const
+{
+    if (!FOLKS_IS_FAVOURITE_DETAILS(persona)) {
+        return QtContacts::QContactDetail();
+    }
+
+    QContactFavorite detail;
+    detail.setFavorite(folks_favourite_details_get_is_favourite(FOLKS_FAVOURITE_DETAILS(persona)));
+    detail.setDetailUri(QString("%1.%2").arg(index).arg(1));
+    return detail;
 }
 
 QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
@@ -669,9 +683,90 @@ void QIndividual::updateContact()
         m_contact.appendDetail(detail);
     }
 
-    Q_FOREACH(QContactDetail detail, getDetails()) {
-        m_contact.appendDetail(detail);
+    int personaIndex = 1;
+    GeeSet *personas = folks_individual_get_personas(m_individual);
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+    FolksPersona *persona;
+
+    while(gee_iterator_next(iter)) {
+         persona = FOLKS_PERSONA(gee_iterator_get(iter));
+
+        int wsize = 0;
+        gchar **wproperties = folks_persona_get_writeable_properties(persona, &wsize);
+        //"gender", "local-ids", "avatar", "postal-addresses", "urls", "phone-numbers", "structured-name",
+        //"anti-links", "im-addresses", "is-favourite", "birthday", "notes", "roles", "email-addresses",
+        //"web-service-addresses", "groups", "full-name"
+        QStringList wPropList;
+        for(int i=0; i < wsize; i++) {
+            wPropList << wproperties[i];
+        }
+
+        appendDetailsForPersona(&m_contact,
+                                getPersonaName(persona, personaIndex),
+                                !wPropList.contains("structured-name"));
+        appendDetailsForPersona(&m_contact,
+                                getPersonaFullName(persona, personaIndex),
+                                !wPropList.contains("full-name"));
+        appendDetailsForPersona(&m_contact,
+                                getPersonaNickName(persona, personaIndex),
+                                !wPropList.contains("structured-name"));
+        appendDetailsForPersona(&m_contact,
+                                getPersonaBirthday(persona, personaIndex),
+                                !wPropList.contains("birthday"));
+        appendDetailsForPersona(&m_contact,
+                                getPersonaPhoto(persona, personaIndex),
+                                !wPropList.contains("avatar"));
+        appendDetailsForPersona(&m_contact,
+                                getPersonaFavorite(persona, personaIndex),
+                                !wPropList.contains("is-favourite"));
+
+        QList<QContactDetail> details;
+        QContactDetail prefDetail;
+        details = getPersonaRoles(persona, &prefDetail, personaIndex);
+        appendDetailsForPersona(&m_contact,
+                                details,
+                                VCardParser::PreferredActionNames[QContactOrganization::Type],
+                                prefDetail,
+                                !wPropList.contains("roles"));
+
+        details = getPersonaEmails(persona, &prefDetail, personaIndex);
+        appendDetailsForPersona(&m_contact,
+                                details,
+                                VCardParser::PreferredActionNames[QContactEmailAddress::Type],
+                                prefDetail,
+                                !wPropList.contains("email-addresses"));
+
+        details = getPersonaPhones(persona, &prefDetail, personaIndex);
+        appendDetailsForPersona(&m_contact,
+                                details,
+                                VCardParser::PreferredActionNames[QContactPhoneNumber::Type],
+                                prefDetail,
+                                !wPropList.contains("phone-numbers"));
+
+        details = getPersonaAddresses(persona, &prefDetail, personaIndex);
+        appendDetailsForPersona(&m_contact,
+                                details,
+                                VCardParser::PreferredActionNames[QContactAddress::Type],
+                                prefDetail,
+                                !wPropList.contains("postal-addresses"));
+
+        details = getPersonaIms(persona, &prefDetail, personaIndex);
+        appendDetailsForPersona(&m_contact,
+                                details,
+                                VCardParser::PreferredActionNames[QContactOnlineAccount::Type],
+                                prefDetail,
+                                !wPropList.contains("im-addresses"));
+
+        details = getPersonaUrls(persona, &prefDetail, personaIndex);
+        appendDetailsForPersona(&m_contact,
+                                details,
+                                VCardParser::PreferredActionNames[QContactUrl::Type],
+                                prefDetail,
+                                !wPropList.contains("urls"));
+        personaIndex++;
+        g_object_unref(persona);
     }
+    g_object_unref(iter);
 }
 
 bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object, const char *slot)
@@ -743,7 +838,9 @@ void QIndividual::setIndividual(FolksIndividual *individual)
 }
 
 
-GHashTable *QIndividual::parseAddressDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails)
+GHashTable *QIndividual::parseAddressDetails(GHashTable *details,
+                                             const QList<QtContacts::QContactDetail> &cDetails,
+                                             const QtContacts::QContactDetail &prefDetail)
 {
     if(cDetails.size() == 0) {
         return details;
@@ -771,7 +868,9 @@ GHashTable *QIndividual::parseAddressDetails(GHashTable *details, const QList<Qt
             }
 
             FolksPostalAddressFieldDetails *pafd = folks_postal_address_field_details_new(postalAddress, NULL);
-            DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(pafd), address);
+            DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(pafd),
+                                              address,
+                                              detail == prefDetail);
             gee_collection_add(collection, pafd);
 
             g_object_unref(pafd);
@@ -834,7 +933,9 @@ GHashTable *QIndividual::parseBirthdayDetails(GHashTable *details, const QList<Q
     return details;
 }
 
-GHashTable *QIndividual::parseEmailDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails)
+GHashTable *QIndividual::parseEmailDetails(GHashTable *details,
+                                           const QList<QtContacts::QContactDetail> &cDetails,
+                                           const QtContacts::QContactDetail &prefDetail)
 {
     if(cDetails.size() == 0) {
         return details;
@@ -843,7 +944,7 @@ GHashTable *QIndividual::parseEmailDetails(GHashTable *details, const QList<QtCo
     GValue *value;
     PERSONA_DETAILS_INSERT_STRING_FIELD_DETAILS(details, cDetails,
                                                 FOLKS_PERSONA_DETAIL_EMAIL_ADDRESSES, value, QContactEmailAddress,
-                                                FOLKS_TYPE_EMAIL_FIELD_DETAILS, emailAddress);
+                                                FOLKS_TYPE_EMAIL_FIELD_DETAILS, emailAddress, prefDetail);
     return details;
 }
 
@@ -960,7 +1061,9 @@ GHashTable *QIndividual::parseNicknameDetails(GHashTable *details, const QList<Q
     return details;
 }
 
-GHashTable *QIndividual::parseNoteDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails)
+GHashTable *QIndividual::parseNoteDetails(GHashTable *details,
+                                          const QList<QtContacts::QContactDetail> &cDetails,
+                                          const QtContacts::QContactDetail &prefDetail)
 {
     if(cDetails.size() == 0) {
         return details;
@@ -969,13 +1072,17 @@ GHashTable *QIndividual::parseNoteDetails(GHashTable *details, const QList<QtCon
     GValue *value;
     PERSONA_DETAILS_INSERT_STRING_FIELD_DETAILS(details, cDetails,
                                                 FOLKS_PERSONA_DETAIL_NOTES, value, QContactNote,
-                                                FOLKS_TYPE_NOTE_FIELD_DETAILS, note);
+                                                FOLKS_TYPE_NOTE_FIELD_DETAILS, note, prefDetail);
 
     return details;
 }
 
-GHashTable *QIndividual::parseImDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails)
+GHashTable *QIndividual::parseImDetails(GHashTable *details,
+                                        const QList<QtContacts::QContactDetail> &cDetails,
+                                        const QtContacts::QContactDetail &prefDetail)
 {
+    Q_UNUSED(prefDetail);
+
     if(cDetails.size() == 0) {
         return details;
     }
@@ -997,7 +1104,9 @@ GHashTable *QIndividual::parseImDetails(GHashTable *details, const QList<QtConta
     return details;
 }
 
-GHashTable *QIndividual::parseOrganizationDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails)
+GHashTable *QIndividual::parseOrganizationDetails(GHashTable *details,
+                                                  const QList<QtContacts::QContactDetail> &cDetails,
+                                                  const QtContacts::QContactDetail &prefDetail)
 {
     if(cDetails.size() == 0) {
         return details;
@@ -1018,7 +1127,7 @@ GHashTable *QIndividual::parseOrganizationDetails(GHashTable *details, const QLi
                 g_value_take_object(value, collection);
             }
             FolksRoleFieldDetails *rfd = folks_role_field_details_new(role, NULL);
-            DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(rfd), org);
+            DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(rfd), org, detail == prefDetail);
             gee_collection_add(collection, rfd);
 
             g_object_unref(rfd);
@@ -1030,7 +1139,9 @@ GHashTable *QIndividual::parseOrganizationDetails(GHashTable *details, const QLi
     return details;
 }
 
-GHashTable *QIndividual::parsePhoneNumbersDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails)
+GHashTable *QIndividual::parsePhoneNumbersDetails(GHashTable *details,
+                                                  const QList<QtContacts::QContactDetail> &cDetails,
+                                                  const QtContacts::QContactDetail &prefDetail)
 {
     if(cDetails.size() == 0) {
         return details;
@@ -1043,7 +1154,7 @@ GHashTable *QIndividual::parsePhoneNumbersDetails(GHashTable *details, const QLi
             gValueGeeSetAddStringFieldDetails(value,
                                               FOLKS_TYPE_PHONE_FIELD_DETAILS,
                                               phone.number().toUtf8().data(),
-                                              phone);
+                                              phone, detail == prefDetail);
         }
     }
     GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_PHONE_NUMBERS, value);
@@ -1051,7 +1162,9 @@ GHashTable *QIndividual::parsePhoneNumbersDetails(GHashTable *details, const QLi
     return details;
 }
 
-GHashTable *QIndividual::parseUrlDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails)
+GHashTable *QIndividual::parseUrlDetails(GHashTable *details,
+                                         const QList<QtContacts::QContactDetail> &cDetails,
+                                         const QtContacts::QContactDetail &prefDetail)
 {
     if(cDetails.size() == 0) {
         return details;
@@ -1060,7 +1173,7 @@ GHashTable *QIndividual::parseUrlDetails(GHashTable *details, const QList<QtCont
     GValue *value;
     PERSONA_DETAILS_INSERT_STRING_FIELD_DETAILS(details, cDetails,
                                                 FOLKS_PERSONA_DETAIL_URLS, value, QContactUrl,
-                                                FOLKS_TYPE_URL_FIELD_DETAILS, url);
+                                                FOLKS_TYPE_URL_FIELD_DETAILS, url, prefDetail);
 
     return details;
 }
@@ -1073,20 +1186,36 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
                                                 NULL,
                                                 (GDestroyNotify) GeeUtils::gValueSliceFree);
 
-    parseAddressDetails(details, contact.details(QContactAddress::Type));
     parsePhotoDetails(details, contact.details(QContactAvatar::Type));
     parseBirthdayDetails(details, contact.details(QContactBirthday::Type));
-    parseEmailDetails(details, contact.details(QContactEmailAddress::Type));
     parseFavoriteDetails(details, contact.details(QContactFavorite::Type));
     parseGenderDetails(details, contact.details(QContactGender::Type));
     parseNameDetails(details, contact.details(QContactName::Type));
     parseFullNameDetails(details, contact.details(QContactDisplayLabel::Type));
     parseNicknameDetails(details, contact.details(QContactNickname::Type));
-    parseNoteDetails(details, contact.details(QContactNote::Type));
-    parseImDetails(details, contact.details(QContactOnlineAccount::Type));
-    parseOrganizationDetails(details, contact.details(QContactOrganization::Type));
-    parsePhoneNumbersDetails(details, contact.details(QContactPhoneNumber::Type));
-    parseUrlDetails(details, contact.details(QContactUrl::Type));
+
+
+    parseAddressDetails(details,
+                        contact.details(QContactAddress::Type),
+                        contact.preferredDetail(VCardParser::PreferredActionNames[QContactAddress::Type]));
+    parseEmailDetails(details,
+                      contact.details(QContactEmailAddress::Type),
+                      contact.preferredDetail(VCardParser::PreferredActionNames[QContactEmailAddress::Type]));
+    parseNoteDetails(details,
+                     contact.details(QContactNote::Type),
+                     contact.preferredDetail(VCardParser::PreferredActionNames[QContactNote::Type]));
+    parseImDetails(details,
+                   contact.details(QContactOnlineAccount::Type),
+                   contact.preferredDetail(VCardParser::PreferredActionNames[QContactOnlineAccount::Type]));
+    parseOrganizationDetails(details,
+                             contact.details(QContactOrganization::Type),
+                             contact.preferredDetail(VCardParser::PreferredActionNames[QContactOrganization::Type]));
+    parsePhoneNumbersDetails(details,
+                             contact.details(QContactPhoneNumber::Type),
+                             contact.preferredDetail(VCardParser::PreferredActionNames[QContactPhoneNumber::Type]));
+    parseUrlDetails(details,
+                    contact.details(QContactUrl::Type),
+                    contact.preferredDetail(VCardParser::PreferredActionNames[QContactUrl::Type]));
 
     return details;
 }

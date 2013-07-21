@@ -55,11 +55,24 @@ private:
 
     void invokeSlot(const QString &errorMessage = QString());
 
-    static bool isEqual(QList<QtContacts::QContactDetail> listA, QList<QtContacts::QContactDetail> listB);
+    static bool isEqual(QList<QtContacts::QContactDetail> listA,
+                        const QtContacts::QContactDetail &prefA,
+                        QList<QtContacts::QContactDetail> listB,
+                        const QtContacts::QContactDetail &prefB);
+    static bool isEqual(QList<QtContacts::QContactDetail> listA,
+                        QList<QtContacts::QContactDetail> listB);
     static bool checkPersona(QtContacts::QContactDetail &det, int persona);
-    static QList<QtContacts::QContactDetail> detailsFromPersona(const QtContacts::QContact &contact, QtContacts::QContactDetail::DetailType type, int persona, bool includeEmptyPersona);
-    QList<QtContacts::QContactDetail> originalDetailsFromPersona(QtContacts::QContactDetail::DetailType type, int persona) const;
-    QList<QtContacts::QContactDetail> detailsFromPersona(QtContacts::QContactDetail::DetailType type, int persona) const;
+    static QList<QtContacts::QContactDetail> detailsFromPersona(const QtContacts::QContact &contact,
+                                                                QtContacts::QContactDetail::DetailType type,
+                                                                int persona,
+                                                                bool includeEmptyPersona,
+                                                                QtContacts::QContactDetail *pref);
+    QList<QtContacts::QContactDetail> originalDetailsFromPersona(QtContacts::QContactDetail::DetailType type,
+                                                                 int persona,
+                                                                 QtContacts::QContactDetail *pref) const;
+    QList<QtContacts::QContactDetail> detailsFromPersona(QtContacts::QContactDetail::DetailType type,
+                                                         int persona,
+                                                         QtContacts::QContactDetail *pref) const;
 
     void updatePersona(int index);
     void updateAddress();
@@ -74,6 +87,7 @@ private:
     void updateOrganization();
     void updatePhone();
     void updateUrl();
+    void updateFavorite();
 
     QString callDetailChangeFinish(QtContacts::QContactDetail::DetailType detailType,
                                    FolksPersona *persona,

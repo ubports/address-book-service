@@ -30,7 +30,7 @@ namespace galera {
 class DetailContextParser
 {
 public:
-    static void parseContext(FolksAbstractFieldDetails *fd, const QtContacts::QContactDetail &detail);
+    static void parseContext(FolksAbstractFieldDetails *fd, const QtContacts::QContactDetail &detail, bool isPreffered);
     static QStringList parseContext(const QtContacts::QContactDetail &detail);
     static QStringList listContext(const QtContacts::QContactDetail &detail);
     static QStringList parsePhoneContext(const QtContacts::QContactDetail &detail);
@@ -39,7 +39,7 @@ public:
     static QString accountProtocolName(int protocol);
 
     static QStringList listParameters(FolksAbstractFieldDetails *details);
-    static void parseParameters(QtContacts::QContactDetail &detail, FolksAbstractFieldDetails *fd);
+    static void parseParameters(QtContacts::QContactDetail &detail, FolksAbstractFieldDetails *fd, bool *isPref);
     static QList<int> contextsFromParameters(QStringList &parameters);
     static void parsePhoneParameters(QtContacts::QContactDetail &phone, const QStringList &params);
     static void parseAddressParameters(QtContacts::QContactDetail &address, const QStringList &parameters);
