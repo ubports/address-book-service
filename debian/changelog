@@ -8,6 +8,12 @@ address-book-service (0.1.0+13.10.20130719-0ubuntu1) saucy; urgency=low
 
  -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 19 Jul 2013 07:01:31 +0000
 
+address-book-service (0.1.0+13.10.20130712-0ubuntu2) saucy; urgency=low
+
+  * debian/control: Fixed typos in address-book-service description (LP: #1197543)
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Sat, 13 Jul 2013 17:23:12 +0100
+
 address-book-service (0.1.0+13.10.20130712-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
