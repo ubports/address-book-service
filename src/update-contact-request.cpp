@@ -198,8 +198,11 @@ void UpdateContactRequest::updateAvatar()
     if (persona && FOLKS_IS_AVATAR_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
         qDebug() << "avatar diff";
         //Only supports one avatar
-        QContactAvatar avatar = static_cast<QContactAddress>(newDetails[0]);
-        QUrl avatarUri = avatar.imageUrl();
+        QUrl avatarUri;
+        if (newDetails.count()) {
+            QContactAvatar avatar = static_cast<QContactAddress>(newDetails[0]);
+            avatarUri = avatar.imageUrl();
+        }
 
         GFileIcon *avatarFileIcon = NULL;
         if(!avatarUri.isEmpty()) {
@@ -233,11 +236,17 @@ void UpdateContactRequest::updateBirthday()
     if (persona && FOLKS_IS_BIRTHDAY_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
         qDebug() << "birthday diff";
         //Only supports one birthday
-        QContactBirthday birthday = static_cast<QContactBirthday>(newDetails[0]);
+        QDateTime dateTimeBirthday;
+        if (newDetails.count()) {
+            QContactBirthday birthday = static_cast<QContactBirthday>(newDetails[0]);
+            if (!birthday.isEmpty()) {
+                dateTimeBirthday = birthday.dateTime();
+            }
+        }
 
         GDateTime *dateTime = NULL;
-        if (!birthday.isEmpty()) {
-            dateTime = g_date_time_new_from_unix_utc(birthday.dateTime().toMSecsSinceEpoch() / 1000);
+        if (dateTimeBirthday.isValid()) {
+            dateTime = g_date_time_new_from_unix_utc(dateTimeBirthday.toMSecsSinceEpoch() / 1000);
         }
         folks_birthday_details_change_birthday(FOLKS_BIRTHDAY_DETAILS(persona),
                                                dateTime,
@@ -258,10 +267,14 @@ void UpdateContactRequest::updateFullName()
     if (persona && FOLKS_IS_NAME_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
         qDebug() << "Full Name diff";
         //Only supports one fullName
-        QContactDisplayLabel label = static_cast<QContactDisplayLabel>(newDetails[0]);
+        QString fullName;
+        if (newDetails.count()) {
+            QContactDisplayLabel label = static_cast<QContactDisplayLabel>(newDetails[0]);
+            fullName = label.label();
+        }
 
         folks_name_details_change_full_name(FOLKS_NAME_DETAILS(persona),
-                                            label.label().toUtf8().data(),
+                                            fullName.toUtf8().data(),
                                             (GAsyncReadyCallback) updateDetailsDone,
                                             this);
     } else {
@@ -317,14 +330,16 @@ void UpdateContactRequest::updateName()
     if (persona && FOLKS_IS_NAME_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
         qDebug() << "Name diff";
         //Only supports one fullName
-        QContactName name = static_cast<QContactName>(newDetails[0]);
-
         FolksStructuredName *sn;
-        sn = folks_structured_name_new(name.lastName().toUtf8().data(),
-                                       name.firstName().toUtf8().data(),
-                                       name.middleName().toUtf8().data(),
-                                       name.prefix().toUtf8().data(),
-                                       name.suffix().toUtf8().data());
+        if (newDetails.count()) {
+            QContactName name = static_cast<QContactName>(newDetails[0]);
+
+            sn = folks_structured_name_new(name.lastName().toUtf8().data(),
+                                           name.firstName().toUtf8().data(),
+                                           name.middleName().toUtf8().data(),
+                                           name.prefix().toUtf8().data(),
+                                           name.suffix().toUtf8().data());
+        }
 
         folks_name_details_change_structured_name(FOLKS_NAME_DETAILS(persona),
                                                   sn,
@@ -345,10 +360,14 @@ void UpdateContactRequest::updateNickname()
     if (persona && FOLKS_IS_NAME_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
         qDebug() << "Nickname diff";
         //Only supports one fullName
-        QContactNickname nickname = static_cast<QContactNickname>(newDetails[0]);
+        QString nicknameValue;
+        if (newDetails.count()) {
+            QContactNickname nickname = static_cast<QContactNickname>(newDetails[0]);
+            nicknameValue = nickname.nickname();
+        }
 
         folks_name_details_change_nickname(FOLKS_NAME_DETAILS(persona),
-                                           nickname.nickname().toUtf8().data(),
+                                           nicknameValue.toUtf8().data(),
                                            (GAsyncReadyCallback) updateDetailsDone,
                                            this);
     } else {
@@ -569,9 +588,13 @@ void UpdateContactRequest::updateFavorite()
     if (persona && FOLKS_IS_FAVOURITE_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
         qDebug() << "Favorite diff";
         //Only supports one fullName
-        QContactFavorite favorite = static_cast<QContactFavorite>(newDetails[0]);
+        bool isFavorite = false;
+        if (newDetails.count()) {
+            QContactFavorite favorite = static_cast<QContactFavorite>(newDetails[0]);
+            isFavorite = favorite.isFavorite();
+        }
         folks_favourite_details_change_is_favourite(FOLKS_FAVOURITE_DETAILS(persona),
-                                                    favorite.isFavorite(),
+                                                    isFavorite,
                                                     (GAsyncReadyCallback) updateDetailsDone,
                                                     this);
     } else {
