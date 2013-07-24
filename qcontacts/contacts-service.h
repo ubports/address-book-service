@@ -86,7 +86,7 @@ private:
 
     QSharedPointer<QDBusInterface> m_iface;
     QSet<RequestData*> m_runningRequests;
-    QQueue<QtContacts::QContactAbstractRequest*> m_pendingRequests;
+    QQueue<QPointer<QtContacts::QContactAbstractRequest> *> m_pendingRequests;
 
     Q_INVOKABLE void initialize();
     Q_INVOKABLE void deinitialize();
