@@ -27,6 +27,9 @@
 #include <QtCore/QPair>
 #include <QtCore/QUuid>
 
+#include <signal.h>
+#include <sys/socket.h>
+
 using namespace QtContacts;
 
 namespace
@@ -56,12 +59,15 @@ public:
 namespace galera
 {
 
+int AddressBook::m_sigQuitFd[2] = {0, 0};
+
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
       m_contacts(new ContactsMap),
       m_ready(false),
       m_adaptor(0)
 {
+    prepareUnixSignals();
     prepareFolks();
 }
 
@@ -90,6 +96,34 @@ bool AddressBook::registerObject(QDBusConnection &connection)
     }
 
     return (m_adaptor != 0);
+}
+
+void AddressBook::shutdown()
+{
+    m_ready = false;
+
+    Q_FOREACH(View* view, m_views) {
+        view->close();
+    }
+
+    if (m_contacts) {
+        delete m_contacts;
+        m_contacts = 0;
+    }
+
+    if (m_individualAggregator) {
+        g_clear_object(&m_individualAggregator);
+    }
+
+    if (m_adaptor) {
+        //FIXME: use the connection used in register funcion
+        QDBusConnection connection = QDBusConnection::sessionBus();
+        connection.unregisterObject(objectPath());
+        delete m_adaptor;
+        m_adaptor = 0;
+    }
+
+    Q_EMIT stopped();
 }
 
 void AddressBook::prepareFolks()
@@ -358,7 +392,6 @@ QString AddressBook::addContact(FolksIndividual *individual)
         entry->individual()->setIndividual(individual);
     } else {
         m_contacts->insert(new ContactEntry(new QIndividual(individual, m_individualAggregator)));
-        qDebug() << "Add contact" << folks_individual_get_id(individual);
         //TODO: Notify view
     }
     return id;
@@ -410,6 +443,9 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     if (!addedIds.isEmpty() && self->m_ready) {
         Q_EMIT self->m_adaptor->contactsAdded(addedIds);
     }
+
+    g_object_unref(added);
+    g_object_unref(removed);
     qDebug() << "Added" << addedIds;
 }
 
@@ -460,5 +496,45 @@ void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, Address
     }
 }
 
+void AddressBook::quitSignalHandler(int)
+ {
+     char a = 1;
+     ::write(m_sigQuitFd[0], &a, sizeof(a));
+ }
+
+int AddressBook::init()
+{
+    struct sigaction quit;
+
+     quit.sa_handler = AddressBook::quitSignalHandler;
+     sigemptyset(&quit.sa_mask);
+     quit.sa_flags |= SA_RESTART;
+
+     if (sigaction(SIGQUIT, &quit, 0) > 0)
+        return 1;
+
+    return 0;
+}
+
+void AddressBook::prepareUnixSignals()
+{
+    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, m_sigQuitFd)) {
+       qFatal("Couldn't create HUP socketpair");
+    }
+
+    m_snQuit = new QSocketNotifier(m_sigQuitFd[1], QSocketNotifier::Read, this);
+    connect(m_snQuit, SIGNAL(activated(int)), this, SLOT(handleSigQuit()));
+}
+
+void AddressBook::handleSigQuit()
+{
+    m_snQuit->setEnabled(false);
+    char tmp;
+    ::read(m_sigQuitFd[1], &tmp, sizeof(tmp));
+
+    shutdown();
+
+    m_snQuit->setEnabled(true);
+}
 
 } //namespace

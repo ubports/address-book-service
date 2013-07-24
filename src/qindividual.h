@@ -55,8 +55,11 @@ private:
     FolksIndividual *m_individual;
     FolksPersona *m_primaryPersona;
     FolksIndividualAggregator *m_aggregator;
-    QtContacts::QContact m_contact;
+    QtContacts::QContact *m_contact;
     QMap<QString, QPair<QtContacts::QContactDetail, FolksAbstractFieldDetails*> > m_fieldsMap;
+
+    QIndividual();
+    QIndividual(const QIndividual &);
 
     QMultiHash<QString, QString> parseDetails(FolksAbstractFieldDetails *details) const;
     void updateContact();

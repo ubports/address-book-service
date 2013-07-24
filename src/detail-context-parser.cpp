@@ -200,6 +200,12 @@ QString DetailContextParser::accountProtocolName(int protocol)
 
 QStringList DetailContextParser::listParameters(FolksAbstractFieldDetails *details)
 {
+    static QStringList whiteList;
+
+    if (whiteList.isEmpty()) {
+        whiteList << "x-evolution-ui-slot"
+                  << "x-google-label";
+    }
     GeeMultiMap *map = folks_abstract_field_details_get_parameters(details);
     GeeSet *keys = gee_multi_map_get_keys(map);
     GeeIterator *siter = gee_iterable_iterator(GEE_ITERABLE(keys));
@@ -212,8 +218,10 @@ QStringList DetailContextParser::listParameters(FolksAbstractFieldDetails *detai
             params << "pref";
             continue;
         } else if (QString::fromUtf8(parameter) != "type") {
-            qDebug() << "not suported field details" << parameter;
-            // FIXME: check what to do with other parameters
+            if (!whiteList.contains(QString::fromUtf8(parameter))) {
+                qDebug() << "not suported field details" << parameter;
+                // FIXME: check what to do with other parameters
+            }
             continue;
         }
 

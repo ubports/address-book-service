@@ -50,6 +50,7 @@ public:
 
     static QString objectPath();
     bool registerObject(QDBusConnection &connection);
+    void shutdown();
 
     // Adaptor
     QString linkContacts(const QStringList &contacts);
@@ -57,6 +58,11 @@ public:
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
     bool isReady() const;
+
+    static int init();
+
+Q_SIGNALS:
+    void stopped();
 
 public Q_SLOTS:
     SourceList availableSources(const QDBusMessage &message);
@@ -67,6 +73,9 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void viewClosed();
+
+    // Unix signal handlers.
+    void handleSigQuit();
 
 private:
     FolksIndividualAggregator *m_individualAggregator;
@@ -80,6 +89,16 @@ private:
     QStringList m_updateCommandResult;
     QStringList m_updatedIds;
     QList<QtContacts::QContact> m_updateCommandPendingContacts;
+
+    // Unix signals
+    static int m_sigQuitFd[2];
+
+    QSocketNotifier *m_snQuit;
+    void setupUnixSignals();
+
+    // Unix signal handlers.
+    void prepareUnixSignals();
+    static void quitSignalHandler(int unused);
 
     void prepareFolks();
     QString removeContact(FolksIndividual *individual);

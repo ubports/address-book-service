@@ -252,7 +252,9 @@ void UpdateContactRequest::updateBirthday()
                                                dateTime,
                                                (GAsyncReadyCallback) updateDetailsDone,
                                                this);
-        g_date_time_unref(dateTime);
+        if (dateTime) {
+            g_date_time_unref(dateTime);
+        }
     } else {
         updateDetailsDone(0, 0, this);
     }
@@ -330,7 +332,7 @@ void UpdateContactRequest::updateName()
     if (persona && FOLKS_IS_NAME_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
         qDebug() << "Name diff";
         //Only supports one fullName
-        FolksStructuredName *sn;
+        FolksStructuredName *sn = 0;
         if (newDetails.count()) {
             QContactName name = static_cast<QContactName>(newDetails[0]);
 
@@ -345,7 +347,9 @@ void UpdateContactRequest::updateName()
                                                   sn,
                                                   (GAsyncReadyCallback) updateDetailsDone,
                                                   this);
-        g_object_unref(sn);
+        if (sn) {
+            g_object_unref(sn);
+        }
     } else {
         updateDetailsDone(0, 0, this);
     }
