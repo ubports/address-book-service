@@ -504,7 +504,7 @@ void AddressBook::quitSignalHandler(int)
 
 int AddressBook::init()
 {
-    struct sigaction quit;
+    struct sigaction quit = { { 0 } };
 
      quit.sa_handler = AddressBook::quitSignalHandler;
      sigemptyset(&quit.sa_mask);

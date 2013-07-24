@@ -193,21 +193,21 @@ namespace
 namespace galera
 {
 
-const QString VCardParser::PidMapFieldName = QString("CLIENTPIDMAP");
-const QString VCardParser::PidFieldName = QString("PID");
-const QString VCardParser::PrefParamName = QString("PREF");
+const QString VCardParser::PidMapFieldName = QStringLiteral("CLIENTPIDMAP");
+const QString VCardParser::PidFieldName = QStringLiteral("PID");
+const QString VCardParser::PrefParamName = QStringLiteral("PREF");
 
 static QMap<QtContacts::QContactDetail::DetailType, QString> prefferedActions()
 {
     QMap<QtContacts::QContactDetail::DetailType, QString> values;
 
-    values.insert(QContactDetail::TypeAddress, "ADR");
-    values.insert(QContactDetail::TypeEmailAddress, "EMAIL");
-    values.insert(QContactDetail::TypeNote, "NOTE");
-    values.insert(QContactDetail::TypeOnlineAccount, "IMPP");
-    values.insert(QContactDetail::TypeOrganization, "ORG");
-    values.insert(QContactDetail::TypePhoneNumber, "TEL");
-    values.insert(QContactDetail::TypeUrl, "URL");
+    values.insert(QContactDetail::TypeAddress, QStringLiteral("ADR"));
+    values.insert(QContactDetail::TypeEmailAddress, QStringLiteral("EMAIL"));
+    values.insert(QContactDetail::TypeNote, QStringLiteral("NOTE"));
+    values.insert(QContactDetail::TypeOnlineAccount, QStringLiteral("IMPP"));
+    values.insert(QContactDetail::TypeOrganization, QStringLiteral("ORG"));
+    values.insert(QContactDetail::TypePhoneNumber, QStringLiteral("TEL"));
+    values.insert(QContactDetail::TypeUrl, QStringLiteral("URL"));
 
     return values;
 }

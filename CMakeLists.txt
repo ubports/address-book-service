@@ -40,6 +40,15 @@ if(ENABLE_COVERAGE)
     include(${CMAKE_SOURCE_DIR}/cmake/lcov.cmake)
 endif()
 
+# Memcheck tools
+OPTION(ENABLE_MEMCHECK "Build with memcheck support" OFF)
+if(ENABLE_MEMCHECK)
+    message(STATUS "Using memcheck flags")
+    add_definitions(-fsanitize=address -fno-omit-frame-pointer)
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+endif()
+
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
                "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
                IMMEDIATE @ONLY)
