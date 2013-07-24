@@ -163,20 +163,22 @@ void UpdateContactRequest::updateAddress()
         Q_FOREACH(QContactDetail newDetail, newDetails) {
             QContactAddress addr = static_cast<QContactAddress>(newDetail);
 
-            FolksPostalAddress *field;
-            field = folks_postal_address_new(addr.postOfficeBox().toUtf8().data(),
-                                             NULL,
-                                             addr.street().toUtf8().data(),
-                                             addr.locality().toUtf8().data(),
-                                             addr.region().toUtf8().data(),
-                                             addr.postcode().toUtf8().data(),
-                                             addr.country().toUtf8().data(),
-                                             NULL,
-                                             NULL);
+            FolksPostalAddress *pa;
+            pa = folks_postal_address_new(addr.postOfficeBox().toUtf8().data(),
+                                          NULL,
+                                          addr.street().toUtf8().data(),
+                                          addr.locality().toUtf8().data(),
+                                          addr.region().toUtf8().data(),
+                                          addr.postcode().toUtf8().data(),
+                                          addr.country().toUtf8().data(),
+                                          NULL,
+                                          NULL);
 
+            FolksPostalAddressFieldDetails *field = folks_postal_address_field_details_new(pa, NULL);
             DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(field), newDetail, newDetail == prefDetail);
             gee_collection_add(GEE_COLLECTION(newSet), field);
             g_object_unref(field);
+            g_object_unref(pa);
         }
 
         folks_postal_address_details_change_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona),
