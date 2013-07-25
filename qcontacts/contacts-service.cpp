@@ -81,12 +81,11 @@ GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
 GaleraContactsService::~GaleraContactsService()
 {
     while(!m_pendingRequests.isEmpty()) {
-        QPointer<QContactAbstractRequest> *request = m_pendingRequests.takeFirst();
-        if (*request) {
-            QContactManagerEngine::updateRequestState(request->data(),
+        QPointer<QContactAbstractRequest> request = m_pendingRequests.takeFirst();
+        if (request) {
+            QContactManagerEngine::updateRequestState(request,
                                                       QContactAbstractRequest::CanceledState);
         }
-        request->clear();
     }
 
     Q_ASSERT(m_runningRequests.size() == 0);
@@ -111,10 +110,9 @@ void GaleraContactsService::onServiceReady()
 {
     m_serviceIsReady = true;
     while(!m_pendingRequests.isEmpty()) {
-        QPointer<QContactAbstractRequest> *request = m_pendingRequests.takeFirst();
-        if (*request) {
-            addRequest(request->data());
-            request->clear();
+        QPointer<QContactAbstractRequest> request = m_pendingRequests.takeFirst();
+        if (request) {
+            addRequest(request);
         }
     }
 }
@@ -493,7 +491,7 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
 {
     qDebug() << Q_FUNC_INFO << request->state();
     if (!m_serviceIsReady) {
-        m_pendingRequests << new QPointer<QtContacts::QContactAbstractRequest>(request);
+        m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
         return;
     }
     if (!isOnline()) {
