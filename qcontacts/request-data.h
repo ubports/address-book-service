@@ -23,6 +23,7 @@
 
 #include <QtCore/QList>
 #include <QtCore/QSharedPointer>
+#include <QtCore/QPointer>
 
 #include <QtContacts/QContactAbstractRequest>
 
@@ -54,6 +55,7 @@ public:
 
     void updateOffset(int offset);
     int offset() const;
+    bool isLive() const;
 
     QList<QtContacts::QContact> result() const;
 
@@ -71,7 +73,7 @@ public:
     static void registerMetaType();
 
 private:
-    QSharedPointer<QtContacts::QContactAbstractRequest> m_request;
+    QPointer<QtContacts::QContactAbstractRequest> m_request;
     QSharedPointer<QDBusInterface> m_view;
     QSharedPointer<QDBusPendingCallWatcher> m_watcher;
     QList<QtContacts::QContact> m_result;

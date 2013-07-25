@@ -43,13 +43,14 @@ RequestData::RequestData(QtContacts::QContactAbstractRequest *request,
 
 RequestData::~RequestData()
 {
+    m_request.clear();
 }
 
 void RequestData::init(QtContacts::QContactAbstractRequest *request,
                        QDBusInterface *view,
                        QDBusPendingCallWatcher *watcher)
 {
-    m_request = QSharedPointer<QContactAbstractRequest>(request, RequestData::deleteRequest);
+    m_request = request;
 
     if (view) {
         m_view = QSharedPointer<QDBusInterface>(view, RequestData::deleteView);
@@ -69,6 +70,11 @@ QContactAbstractRequest* RequestData::request() const
 int RequestData::offset() const
 {
     return m_offset;
+}
+
+bool RequestData::isLive() const
+{
+    return !m_request.isNull();
 }
 
 QDBusInterface* RequestData::view() const
@@ -118,6 +124,10 @@ void RequestData::update(QContactAbstractRequest::State state,
                          QContactManager::Error error,
                          QMap<int, QContactManager::Error> errorMap)
 {
+    if (!isLive()) {
+        return;
+    }
+
     switch (m_request->type()) {
         case QContactAbstractRequest::ContactFetchRequest:
             QContactManagerEngine::updateContactFetchRequest(static_cast<QContactFetchRequest*>(m_request.data()),
@@ -159,11 +169,6 @@ void RequestData::setError(QContactAbstractRequest *request, QContactManager::Er
 {
     RequestData r(request);
     r.setError(error);
-}
-
-void RequestData::deleteRequest(QContactAbstractRequest *obj)
-{
-    //nothing
 }
 
 void RequestData::deleteView(QDBusInterface *view)
