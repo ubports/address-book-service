@@ -18,6 +18,8 @@
 
 #include "detail-context-parser.h"
 
+#include "common/vcard-parser.h"
+
 #include <QtCore/QMap>
 
 #include <QtContacts/qcontactdetails.h>
@@ -26,13 +28,19 @@ using namespace QtContacts;
 
 namespace galera {
 
-void DetailContextParser::parseContext(FolksAbstractFieldDetails *fd, const QtContacts::QContactDetail &detail)
+void DetailContextParser::parseContext(FolksAbstractFieldDetails *fd,
+                                       const QtContacts::QContactDetail &detail,
+                                       bool isPreffered)
 {
     // clear the current values to prevent duplicate values
     folks_abstract_field_details_set_parameter(fd, "type", "");
 
     Q_FOREACH(const QString &param, listContext(detail)) {
         folks_abstract_field_details_add_parameter(fd, "type", param.toUtf8().data());
+    }
+
+    if (isPreffered) {
+        folks_abstract_field_details_set_parameter(fd, VCardParser::PrefParamName.toLower().toUtf8().data(), "1");
     }
 }
 
@@ -192,6 +200,12 @@ QString DetailContextParser::accountProtocolName(int protocol)
 
 QStringList DetailContextParser::listParameters(FolksAbstractFieldDetails *details)
 {
+    static QStringList whiteList;
+
+    if (whiteList.isEmpty()) {
+        whiteList << "x-evolution-ui-slot"
+                  << "x-google-label";
+    }
     GeeMultiMap *map = folks_abstract_field_details_get_parameters(details);
     GeeSet *keys = gee_multi_map_get_keys(map);
     GeeIterator *siter = gee_iterable_iterator(GEE_ITERABLE(keys));
@@ -200,9 +214,14 @@ QStringList DetailContextParser::listParameters(FolksAbstractFieldDetails *detai
 
     while (gee_iterator_next (siter)) {
         char *parameter = (char*) gee_iterator_get(siter);
-        if (QString::fromUtf8(parameter) != "type") {
-            qDebug() << "not suported field details" << parameter;
-            // FIXME: check what to do with other parameters
+        if (QString::fromUtf8(parameter).toUpper() == VCardParser::PrefParamName) {
+            params << "pref";
+            continue;
+        } else if (QString::fromUtf8(parameter) != "type") {
+            if (!whiteList.contains(QString::fromUtf8(parameter))) {
+                qDebug() << "not suported field details" << parameter;
+                // FIXME: check what to do with other parameters
+            }
             continue;
         }
 
@@ -226,9 +245,18 @@ QStringList DetailContextParser::listParameters(FolksAbstractFieldDetails *detai
     return params;
 }
 
-void DetailContextParser::parseParameters(QtContacts::QContactDetail &detail, FolksAbstractFieldDetails *fd)
+void DetailContextParser::parseParameters(QtContacts::QContactDetail &detail,
+                                          FolksAbstractFieldDetails *fd,
+                                          bool *isPref)
 {
     QStringList params = listParameters(fd);
+
+    if (isPref) {
+        *isPref = params.contains(VCardParser::PrefParamName.toLower());
+        if (*isPref) {
+            params.removeOne(VCardParser::PrefParamName.toLower());
+        }
+    }
     QList<int> context = contextsFromParameters(params);
     if (!context.isEmpty()) {
         detail.setContexts(context);
