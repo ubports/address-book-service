@@ -126,6 +126,7 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
       m_contact(0)
 {
     g_object_ref(m_individual);
+    updateContact();
 }
 
 QIndividual::~QIndividual()
@@ -721,8 +722,7 @@ void QIndividual::updateContact()
 
     while(gee_iterator_next(iter)) {
          persona = FOLKS_PERSONA(gee_iterator_get(iter));
-         Q_ASSERT(persona);
-
+         Q_ASSERT(FOLKS_IS_PERSONA(persona));
 
         int wsize = 0;
         gchar **wproperties = folks_persona_get_writeable_properties(persona, &wsize);

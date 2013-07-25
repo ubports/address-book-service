@@ -40,11 +40,11 @@ if(ENABLE_COVERAGE)
     include(${CMAKE_SOURCE_DIR}/cmake/lcov.cmake)
 endif()
 
-# Memcheck tools
-OPTION(ENABLE_MEMCHECK "Build with memcheck support" OFF)
-if(ENABLE_MEMCHECK)
-    message(STATUS "Using memcheck flags")
-    add_definitions(-fsanitize=address -fno-omit-frame-pointer)
+# Address Sanitizer
+OPTION(ENABLE_ADDRSANITIZER "Build with address sanitizer support" OFF)
+if(ENABLE_ADDRSANITIZER)
+    message(STATUS "Using address sanitizer flags")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 endif()
 
