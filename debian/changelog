@@ -1,3 +1,99 @@
+address-book-service (0.1.0+13.10.20130724-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Fixed Postal Address field update crash.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 54
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 24 Jul 2013 07:01:47 +0000
+
+address-book-service (0.1.0+13.10.20130719-0ubuntu1) saucy; urgency=low
+
+  [ Bill Filler ]
+  * add autostart for upstart.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 51
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 19 Jul 2013 07:01:31 +0000
+
+address-book-service (0.1.0+13.10.20130712-0ubuntu2) saucy; urgency=low
+
+  * debian/control: Fixed typos in address-book-service description (LP: #1197543)
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Sat, 13 Jul 2013 17:23:12 +0100
+
+address-book-service (0.1.0+13.10.20130712-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * * Fixed contact update crash. * Fixed contact address update. * Emit
+    the signal ¨contactUpdated¨ after a contact has been changed.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 49
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 12 Jul 2013 07:01:45 +0000
+
+address-book-service (0.1.0+13.10.20130708-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Implemented avatars support.
+  * Fixed contact edit when adding a new field. Folks return a read only
+    list of details we need to copy it before start to modify it.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 47
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 08 Jul 2013 07:01:02 +0000
+
+address-book-service (0.1.0+13.10.20130702-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * [package]Added evolution and folks-eds into dependency list.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 44
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 02 Jul 2013 07:01:53 +0000
+
+address-book-service (0.1.0+13.10.20130628-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Initial implementation of FetchHint.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 42
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 28 Jun 2013 07:01:04 +0000
+
+address-book-service (0.1.0+13.10.20130627-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Changed View.count from signal to property. Renamed callback
+    functions to follow the code style.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 40
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 27 Jun 2013 07:01:05 +0000
+
+address-book-service (0.1.0daily13.06.25-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Fixed qcontacts plugins to wait for server fully start before
+    request any data.
+  * Added support to edit contacts with multiple persona.
+  * Implemented AddressBook::availableSources. Implemented support to
+    change sort clause in the view. Implemented AddressBook::sortFields.
+  * Update server contact cache with the new contact info if update
+    operation finish without error. (LP: #1193195)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 38
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 25 Jun 2013 07:51:07 +0000
+
 address-book-service (0.1.0daily13.06.17-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]

@@ -53,6 +53,7 @@ namespace
             Q_UNUSED(processedFields);
             Q_UNUSED(toBeRemoved);
 
+            // Export custom property PIDMAP
             if (detail.type() == QContactDetail::TypeExtendedDetail) {
                 const QContactExtendedDetail *extendedDetail = static_cast<const QContactExtendedDetail *>(&detail);
                 if (extendedDetail->name() == galera::VCardParser::PidMapFieldName) {
@@ -64,24 +65,51 @@ namespace
                     prop.setValueType(QVersitProperty::CompoundType);
                     prop.setValue(value);
                     *toBeAdded << prop;
-
-                    //TODO remove original property
                 }
             }
 
+            if (toBeAdded->size() == 0) {
+                return;
+            }
+
+            // export detailUir as PID field
             if (!detail.detailUri().isEmpty()) {
-                if (toBeAdded->size() > 0) {
+                QVersitProperty &prop = toBeAdded->last();
+                QMultiHash<QString, QString> params = prop.parameters();
+                params.insert(galera::VCardParser::PidFieldName, detail.detailUri());
+                prop.setParameters(params);
+            }
+
+            switch (detail.type()) {
+                case QContactDetail::TypeAvatar:
+                {
+                    QContactAvatar avatar = static_cast<QContactAvatar>(detail);
                     QVersitProperty &prop = toBeAdded->last();
-                    QMultiHash<QString, QString> params = prop.parameters();
-                    params.insert(galera::VCardParser::PidFieldName, detail.detailUri());
-                    prop.setParameters(params);
+                    prop.insertParameter(QStringLiteral("VALUE"), QStringLiteral("URL"));
+                    prop.setValue(avatar.imageUrl().toString(QUrl::RemoveUserInfo));
+                    break;
                 }
+                case QContactDetail::TypePhoneNumber:
+                {
+                    QString prefName = galera::VCardParser::PreferredActionNames[QContactDetail::TypePhoneNumber];
+                    QContactDetail prefPhone = contact.preferredDetail(prefName);
+                    if (prefPhone == detail) {
+                        QVersitProperty &prop = toBeAdded->last();
+                        QMultiHash<QString, QString> params = prop.parameters();
+                        params.insert(galera::VCardParser::PrefParamName, "1");
+                        prop.setParameters(params);
+                    }
+                    break;
+                }
+                default:
+                    break;
             }
         }
 
         virtual void contactProcessed(const QContact& contact, QVersitDocument* document)
         {
-            //nothing
+            Q_UNUSED(contact);
+            document->removeProperties("X-QTPROJECT-EXTENDED-DETAIL");
         }
     };
 
@@ -123,40 +151,41 @@ namespace
                 det.setDetailUri(pid);
             }
 
+            if (updatedDetails->size() == 0) {
+                return;
+            }
+
             // Remove empty phone and address subtypes
-            // Remove this after this fix get merged: https://codereview.qt-project.org/#change,59156
-            if (updatedDetails->size() > 0) {
-                QContactDetail &det = updatedDetails->last();
-                switch (det.type()) {
-                    case QContactDetail::TypePhoneNumber:
-                    {
-                        QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(det);
-                        if (phone.subTypes().isEmpty()) {
-                            det.setValue(QContactPhoneNumber::FieldSubTypes, QVariant());
-                        }
-                        break;
+            QContactDetail &det = updatedDetails->last();
+            switch (det.type()) {
+                case QContactDetail::TypePhoneNumber:
+                {
+                    QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(det);
+                    if (phone.subTypes().isEmpty()) {
+                        det.setValue(QContactPhoneNumber::FieldSubTypes, QVariant());
                     }
-                    case QContactDetail::TypeAddress:
-                    {
-                        QContactAddress addr = static_cast<QContactAddress>(det);
-                        if (addr.subTypes().isEmpty()) {
-                            det.setValue(QContactAddress::FieldSubTypes, QVariant());
-                        } else {
-                            QSet<int> subtypes = addr.subTypes().toSet();
-                            det.setValue(QContactAddress::FieldSubTypes, QVariant::fromValue<QList<int> >(subtypes.toList()));
-                        }
-                        break;
+                    if (property.parameters().contains(galera::VCardParser::PrefParamName)) {
+                        m_prefferedPhone = phone;
                     }
-                    default:
-                        break;
+                    break;
                 }
+                default:
+                    break;
             }
         }
 
         virtual void documentProcessed(const QVersitDocument& document, QContact* contact)
         {
-            //nothing
+            Q_UNUSED(document);
+            Q_UNUSED(contact);
+            if (!m_prefferedPhone.isEmpty()) {
+                contact->setPreferredDetail(galera::VCardParser::PreferredActionNames[QContactDetail::TypePhoneNumber],
+                                            m_prefferedPhone);
+                m_prefferedPhone = QContactDetail();
+            }
         }
+    private:
+        QContactDetail m_prefferedPhone;
     };
 }
 
@@ -164,8 +193,26 @@ namespace
 namespace galera
 {
 
-const QString VCardParser::PidMapFieldName = QString("CLIENTPIDMAP");
-const QString VCardParser::PidFieldName = QString("PID");
+const QString VCardParser::PidMapFieldName = QStringLiteral("CLIENTPIDMAP");
+const QString VCardParser::PidFieldName = QStringLiteral("PID");
+const QString VCardParser::PrefParamName = QStringLiteral("PREF");
+
+static QMap<QtContacts::QContactDetail::DetailType, QString> prefferedActions()
+{
+    QMap<QtContacts::QContactDetail::DetailType, QString> values;
+
+    values.insert(QContactDetail::TypeAddress, QStringLiteral("ADR"));
+    values.insert(QContactDetail::TypeEmailAddress, QStringLiteral("EMAIL"));
+    values.insert(QContactDetail::TypeNote, QStringLiteral("NOTE"));
+    values.insert(QContactDetail::TypeOnlineAccount, QStringLiteral("IMPP"));
+    values.insert(QContactDetail::TypeOrganization, QStringLiteral("ORG"));
+    values.insert(QContactDetail::TypePhoneNumber, QStringLiteral("TEL"));
+    values.insert(QContactDetail::TypeUrl, QStringLiteral("URL"));
+
+    return values;
+}
+const QMap<QtContacts::QContactDetail::DetailType, QString> VCardParser::PreferredActionNames = prefferedActions();
+
 
 QStringList VCardParser::contactToVcard(QList<QtContacts::QContact> contacts)
 {

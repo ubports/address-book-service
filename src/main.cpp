@@ -23,6 +23,7 @@
 
 int main(int argc, char** argv)
 {
+    galera::AddressBook::init();
     galera::Source::registerMetaType();
     QCoreApplication app(argc, argv);
 
@@ -40,6 +41,7 @@ int main(int argc, char** argv)
     }
 
     galera::AddressBook *book = new galera::AddressBook;
+    app.connect(book, SIGNAL(stopped()), SLOT(quit()));
     book->registerObject(connection);
     int ret = app.exec();
 

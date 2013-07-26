@@ -4,8 +4,11 @@ set(CONTACTS_SERVICE_LIB_SRC
     addressbook.cpp
     addressbook-adaptor.cpp
     contacts-map.cpp
+    detail-context-parser.cpp
+    gee-utils.cpp
     qindividual.cpp
     source.cpp
+    update-contact-request.cpp
     view.cpp
     view-adaptor.cpp
 )
@@ -14,8 +17,11 @@ set(CONTACTS_SERVICE_LIB_HEADERS
     addressbook.h
     addressbook-adaptor.h
     contacts-map.h
+    detail-context-parser.h
+    gee-utils.h
     qindividual.h
     source.h
+    update-contact-request.h
     view.h
     view-adaptor.h
 )

@@ -12,18 +12,18 @@ Build-Depends: cmake (>= 2.8.9),
                qtpim5-dev,
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/address-book-service
-# If you aren't a member of ~phablet-team but need to upload packaging changes,
-# just go ahead.  ~phablet-team will notice and sync up the code again.
 Vcs-Bzr: https://code.launchpad.net/~phablet-team/address-book-service/trunk
 Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/address-book-service/trunk/files
 
 Package: address-book-service
 Architecture: any
 Multi-Arch: same
-Depends: ${misc:Depends},
+Depends: evolution-data-server,
+         libfolks-eds25,
+         ${misc:Depends},
          ${shlibs:Depends},
 Description: Ubuntu contact service
- A contact aggregator service, that export all contact information thought dbus.
+ A contact aggregator service, that exports all contact information through dbus.
 
 Package: qtcontact5-galera
 Architecture: any
