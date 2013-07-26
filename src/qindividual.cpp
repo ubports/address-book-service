@@ -129,6 +129,14 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
     updateContact();
 }
 
+void QIndividual::notifyUpdate()
+{
+    for(int i=0; i < m_listeners.size(); i++) {
+        QPair<QObject*, QMetaMethod> listener = m_listeners[i];
+        listener.second.invoke(listener.first, Q_ARG(QIndividual*, this));
+    }
+}
+
 QIndividual::~QIndividual()
 {
     if (m_contact) {
@@ -288,6 +296,21 @@ QtContacts::QContactDetail QIndividual::getPersonaBirthday(FolksPersona *persona
     return detail;
 }
 
+void QIndividual::folksPersonaChanged(FolksPersona *persona,
+                                      GParamSpec *pspec,
+                                      QIndividual *self)
+{
+    const gchar* paramName = g_param_spec_get_name(pspec);
+    if (QString::fromUtf8(paramName) == QStringLiteral("avatar")) {
+        QContactDetail newAvatar = self->getPersonaPhoto(persona, 1);
+        QContactAvatar avatar = self->m_contact->detail(QContactAvatar::Type);
+        avatar.setImageUrl(newAvatar.value(QContactAvatar::FieldImageUrl).toUrl());
+        self->m_contact->saveDetail(&avatar);
+        self->notifyUpdate();
+    }
+    //TODO: implement for all details
+}
+
 QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, int index) const
 {
     QContactAvatar avatar;
@@ -323,6 +346,10 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, i
         avatar.setImageUrl(QUrl(url));
         avatar.setDetailUri(QString("%1.1").arg(index));
     }
+
+    g_signal_connect(G_OBJECT(persona), "notify::avatar",
+                     (GCallback) QIndividual::folksPersonaChanged,
+                     const_cast<QIndividual*>(this));
     return avatar;
 }
 
@@ -854,6 +881,16 @@ int QIndividual::personaCount() const
 {
     GeeSet *personas = folks_individual_get_personas(m_individual);
     return gee_collection_get_size(GEE_COLLECTION(personas));
+}
+
+void QIndividual::addListener(QObject *object, const char *slot)
+{
+    int slotIndex = object->metaObject()->indexOfSlot(++slot);
+    if (slotIndex == -1) {
+        qWarning() << "Invalid slot:" << slot << "for object" << object;
+    } else {
+        m_listeners << qMakePair(object, object->metaObject()->method(slotIndex));
+    }
 }
 
 void QIndividual::setIndividual(FolksIndividual *individual)

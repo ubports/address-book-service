@@ -49,6 +49,7 @@ public:
 
     FolksPersona *getPersona(int index) const;
     int personaCount() const;
+    void addListener(QObject *object, const char *slot);
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
 private:
@@ -57,9 +58,12 @@ private:
     FolksIndividualAggregator *m_aggregator;
     QtContacts::QContact *m_contact;
     QMap<QString, QPair<QtContacts::QContactDetail, FolksAbstractFieldDetails*> > m_fieldsMap;
+    QList<QPair<QObject*, QMetaMethod> > m_listeners;
 
     QIndividual();
     QIndividual(const QIndividual &);
+
+    void notifyUpdate();
 
     QMultiHash<QString, QString> parseDetails(FolksAbstractFieldDetails *details) const;
     void updateContact();
@@ -139,6 +143,10 @@ private:
     static GHashTable *parseUrlDetails          (GHashTable *details,
                                                  const QList<QtContacts::QContactDetail> &cDetails,
                                                  const QtContacts::QContactDetail &prefDetail);
+    // property changed
+    static void folksPersonaChanged             (FolksPersona *persona,
+                                                 GParamSpec *pspec,
+                                                 QIndividual *self);
 };
 
 } //namespace

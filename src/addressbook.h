@@ -73,6 +73,7 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void viewClosed();
+    void individualChanged(QIndividual *individual);
 
     // Unix signal handlers.
     void handleSigQuit();

@@ -245,6 +245,11 @@ void AddressBook::viewClosed()
     m_views.remove(qobject_cast<View*>(QObject::sender()));
 }
 
+void AddressBook::individualChanged(QIndividual *individual)
+{
+    Q_EMIT m_adaptor->contactsUpdated(QStringList() << individual->id());
+}
+
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
 {
     RemoveContactsData *data = new RemoveContactsData;
@@ -391,7 +396,9 @@ QString AddressBook::addContact(FolksIndividual *individual)
     if (entry) {
         entry->individual()->setIndividual(individual);
     } else {
-        m_contacts->insert(new ContactEntry(new QIndividual(individual, m_individualAggregator)));
+        QIndividual *i = new QIndividual(individual, m_individualAggregator);
+        i->addListener(this, SLOT(individualChanged(QIndividual*)));
+        m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
     }
     return id;
