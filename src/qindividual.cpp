@@ -303,8 +303,10 @@ void QIndividual::folksPersonaChanged(FolksPersona *persona,
     const gchar* paramName = g_param_spec_get_name(pspec);
     if (QString::fromUtf8(paramName) == QStringLiteral("avatar")) {
         QContactDetail newAvatar = self->getPersonaPhoto(persona, 1);
+
         QContactAvatar avatar = self->m_contact->detail(QContactAvatar::Type);
         avatar.setImageUrl(newAvatar.value(QContactAvatar::FieldImageUrl).toUrl());
+
         self->m_contact->saveDetail(&avatar);
         self->notifyUpdate();
     }
@@ -344,8 +346,8 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, i
             g_object_unref(cache);
         }
         avatar.setImageUrl(QUrl(url));
-        avatar.setDetailUri(QString("%1.1").arg(index));
     }
+    avatar.setDetailUri(QString("%1.1").arg(index));
 
     g_signal_connect(G_OBJECT(persona), "notify::avatar",
                      (GCallback) QIndividual::folksPersonaChanged,
