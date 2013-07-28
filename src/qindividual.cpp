@@ -294,7 +294,6 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, i
     if (!FOLKS_IS_AVATAR_DETAILS(persona)) {
         return avatar;
     }
-    return avatar;
 
     GLoadableIcon *avatarIcon = folks_avatar_details_get_avatar(FOLKS_AVATAR_DETAILS(persona));
     if (avatarIcon) {
