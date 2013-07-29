@@ -1,3 +1,17 @@
+address-book-service (0.1.0+13.10.20130729-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Favorite and PreferredAction support implementation.
+  * Avoid QContactEngine crash when the request is deleted during a
+    query. (LP: #1204265)
+  * Removed missing return call.
+  * Only notify about the new contacts on FetchRequest. (LP: #1193200)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 59
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 29 Jul 2013 07:45:52 +0000
+
 address-book-service (0.1.0+13.10.20130724-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
