@@ -116,7 +116,7 @@ void RequestData::update(QList<QContact> result,
                          QContactManager::Error error,
                          QMap<int, QContactManager::Error> errorMap)
 {
-    m_result += result;
+    m_result = result;
     update(state, error, errorMap);
 }
 
