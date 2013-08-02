@@ -1,3 +1,13 @@
+address-book-service (0.1.0+13.10.20130802-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Initial contact details change support.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 61
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 02 Aug 2013 07:01:49 +0000
+
 address-book-service (0.1.0+13.10.20130729-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
