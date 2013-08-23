@@ -24,9 +24,9 @@ BEGIN:VCARD
 VERSION:3.0
 N:Gump;Forrest
 FN:Forrest Gump
-TEL;TYPE=WORK,VOICE:(111) 555-1212
-TEL;TYPE=HOME,VOICE:(404) 555-1212
-EMAIL;TYPE=PREF,INTERNET:forrestgump@example.com
+TEL;TYPE=WORK,VOICE;PID=1.1:(111) 555-1212
+TEL;TYPE=HOME,VOICE;PID=1.2:(404) 555-1212
+EMAIL;TYPE=PREF,INTERNET;PID=1.1:forrestgump@example.com
 END:VCARD
 """
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         contactId = service.create(vcard)
         vcard = vcard.replace("VERSION:3.0", "VERSION:3.0\nUID:%s" % (contactId))
         vcard = vcard.replace("N:Gump;Forrest", "N:Hanks;Tom")
-        vcard = vcard.replace("FN:Forrest Gump", "N:Tom Hanks")
+        vcard = vcard.replace("FN:Forrest Gump", "FN:Tom Hanks")
         print (service.update(vcard))
 
     if args.command == 'create':
