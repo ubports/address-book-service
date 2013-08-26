@@ -1,3 +1,13 @@
+address-book-service (0.1.0+13.10.20130826-0ubuntu1) saucy; urgency=low
+
+  [ Matthew Fischer ]
+  * Cleanup and fixes for the example code.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 63
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 26 Aug 2013 02:37:32 +0000
+
 address-book-service (0.1.0+13.10.20130802-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
