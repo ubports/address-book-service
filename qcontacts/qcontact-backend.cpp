@@ -28,6 +28,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qstringbuilder.h>
 #include <QtCore/quuid.h>
+#include <QtCore/QCoreApplication>
 
 #include <QVersitDocument>
 #include <QVersitProperty>
@@ -287,12 +288,25 @@ bool GaleraManagerEngine::startRequest(QtContacts::QContactAbstractRequest *req)
 bool GaleraManagerEngine::cancelRequest(QtContacts::QContactAbstractRequest *req)
 {
     qDebug() << Q_FUNC_INFO;
-    return true;
+    if (req) {
+        updateRequestState(req, QContactAbstractRequest::CanceledState);
+        return req->waitForFinished();
+    } else {
+        return false;
+    }
 }
 
 bool GaleraManagerEngine::waitForRequestFinished(QtContacts::QContactAbstractRequest *req, int msecs)
 {
     qDebug() << Q_FUNC_INFO;
+    Q_UNUSED(msecs);
+
+    if (req) {
+        while(req->state() != QContactAbstractRequest::ActiveState) {
+            QCoreApplication::processEvents();
+        }
+    }
+
     return true;
 }
 

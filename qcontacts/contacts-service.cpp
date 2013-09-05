@@ -205,6 +205,7 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
                                              CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
 
     RequestData *requestData = new RequestData(request, view, fetchHint);
+
     m_runningRequests << requestData;
     QMetaObject::invokeMethod(this, "fetchContactsPage", Qt::QueuedConnection, Q_ARG(galera::RequestData*, requestData));
 }
