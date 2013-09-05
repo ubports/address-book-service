@@ -302,7 +302,7 @@ bool GaleraManagerEngine::waitForRequestFinished(QtContacts::QContactAbstractReq
     Q_UNUSED(msecs);
 
     if (req) {
-        while(req->state() != QContactAbstractRequest::ActiveState) {
+        while(req->state() == QContactAbstractRequest::ActiveState) {
             QCoreApplication::processEvents();
         }
     }
