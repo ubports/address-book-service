@@ -29,20 +29,25 @@ RequestData::RequestData(QContactAbstractRequest *request,
                          const FetchHint &hint,
                          QDBusPendingCallWatcher *watcher)
     : m_offset(0),
-      m_hint(hint)
+      m_hint(hint),
+      m_canceled(false)
 {
     init(request, view, watcher);
 }
 
 RequestData::RequestData(QtContacts::QContactAbstractRequest *request,
                          QDBusPendingCallWatcher *watcher)
-    : m_offset(0)
+    : m_offset(0),
+      m_canceled(false)
 {
     init(request, 0, watcher);
 }
 
 RequestData::~RequestData()
 {
+    if (!m_request.isNull() && m_canceled) {
+        update(QContactAbstractRequest::CanceledState);
+    }
     m_request.clear();
 }
 
@@ -76,6 +81,16 @@ bool RequestData::isLive() const
 {
     return !m_request.isNull() &&
            (m_request->state() == QContactAbstractRequest::ActiveState);
+}
+
+void RequestData::cancel()
+{
+    m_canceled = true;
+}
+
+bool RequestData::canceled() const
+{
+    return m_canceled;
 }
 
 QDBusInterface* RequestData::view() const

@@ -214,7 +214,6 @@ void GaleraContactsService::fetchContactsPage(RequestData *request)
 {
     qDebug() << Q_FUNC_INFO;
     if (!isOnline() || !request->isLive()) {
-        request->setError(QContactManager::UnspecifiedError);
         destroyRequest(request);
         return;
     }
@@ -486,6 +485,15 @@ void GaleraContactsService::updateContactDone(RequestData *request, QDBusPending
 
     request->update(contacts, QContactAbstractRequest::FinishedState, opError, saveError);
     destroyRequest(request);
+}
+
+void GaleraContactsService::cancelRequest(QtContacts::QContactAbstractRequest *request)
+{
+    Q_FOREACH(RequestData* rData, m_runningRequests) {
+        if (rData->request() == request) {
+            rData->cancel();
+        }
+    }
 }
 
 void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *request)

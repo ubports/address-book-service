@@ -268,6 +268,7 @@ bool GaleraManagerEngine::validateContact(const QtContacts::QContact &contact, Q
 void GaleraManagerEngine::requestDestroyed(QtContacts::QContactAbstractRequest *req)
 {
     qDebug() << Q_FUNC_INFO;
+    waitForRequestFinished(req, -1);
 }
 
 bool GaleraManagerEngine::startRequest(QtContacts::QContactAbstractRequest *req)
@@ -289,8 +290,8 @@ bool GaleraManagerEngine::cancelRequest(QtContacts::QContactAbstractRequest *req
 {
     qDebug() << Q_FUNC_INFO;
     if (req) {
-        updateRequestState(req, QContactAbstractRequest::CanceledState);
-        return req->waitForFinished();
+        m_service->cancelRequest(req);
+        return true;
     } else {
         return false;
     }
