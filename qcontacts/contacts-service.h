@@ -59,7 +59,6 @@ public:
     QList<QtContacts::QContactRelationship> relationships() const;
 
     void addRequest(QtContacts::QContactAbstractRequest *request);
-
 Q_SIGNALS:
     void contactsAdded(QList<QContactId> ids);
     void contactsRemoved(QList<QContactId> ids);

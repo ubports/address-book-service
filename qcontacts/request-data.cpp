@@ -74,7 +74,8 @@ int RequestData::offset() const
 
 bool RequestData::isLive() const
 {
-    return !m_request.isNull();
+    return !m_request.isNull() &&
+           (m_request->state() == QContactAbstractRequest::ActiveState);
 }
 
 QDBusInterface* RequestData::view() const
