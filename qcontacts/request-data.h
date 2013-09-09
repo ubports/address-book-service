@@ -56,6 +56,8 @@ public:
     void updateOffset(int offset);
     int offset() const;
     bool isLive() const;
+    void cancel();
+    bool canceled() const;
 
     QList<QtContacts::QContact> result() const;
 
@@ -79,6 +81,7 @@ private:
     QList<QtContacts::QContact> m_result;
     int m_offset;
     FetchHint m_hint;
+    bool m_canceled;
 
     void init(QtContacts::QContactAbstractRequest *request, QDBusInterface *view, QDBusPendingCallWatcher *watcher);
     static void deleteRequest(QtContacts::QContactAbstractRequest *obj);

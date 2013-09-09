@@ -289,8 +289,8 @@ bool GaleraManagerEngine::cancelRequest(QtContacts::QContactAbstractRequest *req
 {
     qDebug() << Q_FUNC_INFO;
     if (req) {
-        updateRequestState(req, QContactAbstractRequest::CanceledState);
-        return req->waitForFinished();
+        m_service->cancelRequest(req);
+        return true;
     } else {
         return false;
     }
