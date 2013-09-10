@@ -85,6 +85,7 @@ bool RequestData::isLive() const
 
 void RequestData::cancel()
 {
+    m_watcher.clear();
     m_canceled = true;
 }
 
