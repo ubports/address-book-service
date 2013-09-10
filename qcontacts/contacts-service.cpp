@@ -492,6 +492,17 @@ void GaleraContactsService::cancelRequest(QtContacts::QContactAbstractRequest *r
     Q_FOREACH(RequestData* rData, m_runningRequests) {
         if (rData->request() == request) {
             rData->cancel();
+            return;
+        }
+    }
+}
+
+void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *request)
+{
+    Q_FOREACH(RequestData* rData, m_runningRequests) {
+        if (rData->request() == request) {
+            rData->wait();
+            return;
         }
     }
 }

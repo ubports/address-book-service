@@ -30,7 +30,8 @@ RequestData::RequestData(QContactAbstractRequest *request,
                          QDBusPendingCallWatcher *watcher)
     : m_offset(0),
       m_hint(hint),
-      m_canceled(false)
+      m_canceled(false),
+      m_eventLoop(0)
 {
     init(request, view, watcher);
 }
@@ -38,7 +39,8 @@ RequestData::RequestData(QContactAbstractRequest *request,
 RequestData::RequestData(QtContacts::QContactAbstractRequest *request,
                          QDBusPendingCallWatcher *watcher)
     : m_offset(0),
-      m_canceled(false)
+      m_canceled(false),
+      m_eventLoop(0)
 {
     init(request, 0, watcher);
 }
@@ -94,6 +96,21 @@ bool RequestData::canceled() const
     return m_canceled;
 }
 
+void RequestData::wait()
+{
+    if (m_eventLoop) {
+        qWarning() << "Recursive wait call";
+        Q_ASSERT(false);
+    }
+
+    if (isLive()) {
+        QEventLoop eventLoop;
+        m_eventLoop = &eventLoop;
+        eventLoop.exec();
+        m_eventLoop = 0;
+    }
+}
+
 QDBusInterface* RequestData::view() const
 {
     return m_view.data();
@@ -126,6 +143,9 @@ void RequestData::setError(QContactManager::Error error)
 {
     m_result.clear();
     update(QContactAbstractRequest::FinishedState, error);
+    if (m_eventLoop) {
+        m_eventLoop->quit();
+    }
 }
 
 void RequestData::update(QList<QContact> result,
@@ -173,6 +193,10 @@ void RequestData::update(QContactAbstractRequest::State state,
             break;
         default:
             break;
+    }
+
+    if (m_eventLoop && (state != QContactAbstractRequest::ActiveState)) {
+        m_eventLoop->quit();
     }
 }
 

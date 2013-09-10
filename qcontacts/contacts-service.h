@@ -60,6 +60,7 @@ public:
 
     void addRequest(QtContacts::QContactAbstractRequest *request);
     void cancelRequest(QtContacts::QContactAbstractRequest *request);
+    void waitRequest(QtContacts::QContactAbstractRequest *request);
 
 Q_SIGNALS:
     void contactsAdded(QList<QContactId> ids);
