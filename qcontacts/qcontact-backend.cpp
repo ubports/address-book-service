@@ -268,7 +268,6 @@ bool GaleraManagerEngine::validateContact(const QtContacts::QContact &contact, Q
 void GaleraManagerEngine::requestDestroyed(QtContacts::QContactAbstractRequest *req)
 {
     qDebug() << Q_FUNC_INFO;
-    waitForRequestFinished(req, -1);
 }
 
 bool GaleraManagerEngine::startRequest(QtContacts::QContactAbstractRequest *req)
