@@ -30,6 +30,8 @@
 
 #include <QtVersit/QVersitDocument>
 
+#include <QtCore/QReadWriteLock>
+
 using namespace QtContacts;
 using namespace QtVersit;
 
@@ -60,7 +62,8 @@ public:
     FilterThread(QString filter, QString sort, ContactsMap *allContacts)
         : m_filter(filter),
           m_sortClause(sort),
-          m_allContacts(allContacts)
+          m_allContacts(allContacts),
+          m_stopped(false)
     {
     }
 
@@ -95,11 +98,25 @@ public:
         qSort(m_contacts.begin(), m_contacts.end(), lessThan);
     }
 
+    void stop()
+    {
+        m_stoppedLock.lockForWrite();
+        m_stopped = true;
+        m_stoppedLock.unlock();
+    }
+
 protected:
     void run()
     {
         Q_FOREACH(ContactEntry *entry, m_allContacts->values())
         {
+            m_stoppedLock.lockForRead();
+            if (m_stopped) {
+                m_stoppedLock.unlock();
+                return;
+            }
+            m_stoppedLock.unlock();
+
             if (checkContact(entry)) {
                 m_contacts << entry;
             }
@@ -113,6 +130,8 @@ private:
     SortClause m_sortClause;
     ContactsMap *m_allContacts;
     QList<ContactEntry*> m_contacts;
+    bool m_stopped;
+    QReadWriteLock m_stoppedLock;
 
     bool checkContact(ContactEntry *entry)
     {
@@ -146,6 +165,11 @@ void View::close()
         unregisterObject(conn);
         m_adaptor->deleteLater();
         m_adaptor = 0;
+    }
+
+    if (m_filterThread->isRunning()) {
+        m_filterThread->stop();
+        m_filterThread->wait();
     }
 
     delete m_filterThread;
