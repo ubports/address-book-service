@@ -82,13 +82,11 @@ GaleraContactsService::~GaleraContactsService()
 {
     while(!m_pendingRequests.isEmpty()) {
         QPointer<QContactAbstractRequest> request = m_pendingRequests.takeFirst();
-        if (request) {
-            QContactManagerEngine::updateRequestState(request,
-                                                      QContactAbstractRequest::CanceledState);
-        }
+        request->cancel();
+        request->waitForFinished();
     }
+    m_runningRequests.clear();
 
-    Q_ASSERT(m_runningRequests.size() == 0);
     delete m_serviceWatcher;
 }
 
@@ -98,10 +96,10 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
     if (name == CPIM_SERVICE_NAME) {
         if (!newOwner.isEmpty()) {
             // service appear
-            QMetaObject::invokeMethod(this, "initialize", Qt::QueuedConnection);
+            initialize();
         } else if (!m_iface.isNull()) {
             // lost service
-            QMetaObject::invokeMethod(this, "deinitialize", Qt::QueuedConnection);
+            deinitialize();
         }
     }
 }
@@ -138,13 +136,20 @@ void GaleraContactsService::initialize()
 
 void GaleraContactsService::deinitialize()
 {
+    m_serviceIsReady = false;
+    Q_FOREACH(RequestData* rData, m_runningRequests) {
+        rData->cancel();
+        rData->request()->waitForFinished();
+        rData->setError(QContactManager::UnspecifiedError);
+    }
+    m_runningRequests.clear();
+
     if (!m_iface.isNull()) {
         m_id.clear();
         m_contacts.clear();
         m_contactIds.clear();
         m_relationships.clear();
         m_orderedRelationships.clear();
-        m_iface.clear();
         Q_EMIT serviceChanged();
     }
 }
@@ -156,9 +161,8 @@ bool GaleraContactsService::isOnline() const
 
 void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdRequest *request)
 {
-    qDebug() << Q_FUNC_INFO;
-
     if (!isOnline()) {
+        qWarning() << "Server is not online";
         RequestData::setError(request);
         return;
     }
@@ -184,9 +188,8 @@ void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdReque
 
 void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *request)
 {
-    qDebug() << Q_FUNC_INFO;
-
     if (!isOnline()) {
+        qWarning() << "Server is not online";
         RequestData::setError(request);
         return;
     }
@@ -212,8 +215,8 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
 
 void GaleraContactsService::fetchContactsPage(RequestData *request)
 {
-    qDebug() << Q_FUNC_INFO;
     if (!isOnline() || !request->isLive()) {
+        qWarning() << "Server is not online";
         destroyRequest(request);
         return;
     }
@@ -238,8 +241,6 @@ void GaleraContactsService::fetchContactsPage(RequestData *request)
 
 void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call)
 {
-    qDebug() << Q_FUNC_INFO;
-
     if (!request->isLive()) {
         destroyRequest(request);
         return;
@@ -293,7 +294,6 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
 
 void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request)
 {
-    qDebug() << Q_FUNC_INFO;
     QList<QContact> contacts = request->contacts();
     QStringList vcards = VCardParser::contactToVcard(contacts);
 
@@ -323,8 +323,8 @@ void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request
 }
 void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts)
 {
-    qDebug() << Q_FUNC_INFO;
     if (!isOnline()) {
+        qWarning() << "Server is not online";
         RequestData::setError(request);
         return;
     }
@@ -349,8 +349,6 @@ void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *requ
 
 void GaleraContactsService::createContactsDone(RequestData *request, QDBusPendingCallWatcher *call)
 {
-    qDebug() << Q_FUNC_INFO;
-
     if (!request->isLive()) {
         destroyRequest(request);
         return;
@@ -382,6 +380,7 @@ void GaleraContactsService::createContactsDone(RequestData *request, QDBusPendin
 void GaleraContactsService::removeContact(QContactRemoveRequest *request)
 {
     if (!isOnline()) {
+        qWarning() << "Server is not online";
         RequestData::setError(request);
         return;
     }
@@ -434,6 +433,7 @@ void GaleraContactsService::updateContacts(QtContacts::QContactSaveRequest *requ
 {
     qDebug() << Q_FUNC_INFO;
     if (!isOnline()) {
+        qWarning() << "Server is not online";
         RequestData::setError(request);
         return;
     }
@@ -504,6 +504,7 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
         return;
     }
     if (!isOnline()) {
+        qWarning() << "Server is not online";
         QContactManagerEngine::updateRequestState(request, QContactAbstractRequest::FinishedState);
         return;
     }
