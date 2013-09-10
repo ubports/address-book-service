@@ -193,21 +193,47 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     QString sortStr = SortClause(request->sorting()).toString();
     QString filterStr = Filter(request->filter()).toString();
     FetchHint fetchHint = FetchHint(request->fetchHint()).toString();
-    QDBusMessage result = m_iface->call("query", filterStr, sortStr, QStringList());
-    if (result.type() == QDBusMessage::ErrorMessage) {
-        qWarning() << result.errorName() << result.errorMessage();
+
+    QDBusPendingCall pcall = m_iface->asyncCall("query", filterStr, sortStr, QStringList());
+    if (pcall.isError()) {
+        qWarning() << pcall.error().name() << pcall.error().message();
         RequestData::setError(request);
         return;
     }
-    QDBusObjectPath viewObjectPath = result.arguments()[0].value<QDBusObjectPath>();
-    QDBusInterface *view = new QDBusInterface(CPIM_SERVICE_NAME,
-                                             viewObjectPath.path(),
-                                             CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
 
-    RequestData *requestData = new RequestData(request, view, fetchHint);
-
+    RequestData *requestData = new RequestData(request, 0, fetchHint);
     m_runningRequests << requestData;
-    QMetaObject::invokeMethod(this, "fetchContactsPage", Qt::QueuedConnection, Q_ARG(galera::RequestData*, requestData));
+
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                     [=](QDBusPendingCallWatcher *call) {
+                        this->fetchContactsContinue(requestData, call);
+                     });
+}
+
+
+void GaleraContactsService::fetchContactsContinue(RequestData *request,
+                                                  QDBusPendingCallWatcher *call)
+{
+    qDebug() << Q_FUNC_INFO;
+    if (!request->isLive()) {
+        destroyRequest(request);
+        return;
+    }
+
+    QDBusPendingReply<QDBusObjectPath> reply = *call;
+
+    if (reply.isError()) {
+        qWarning() << reply.error().name() << reply.error().message();
+        destroyRequest(request);
+    } else {
+        QDBusObjectPath viewObjectPath = reply.value();
+        QDBusInterface *view = new QDBusInterface(CPIM_SERVICE_NAME,
+                                                  viewObjectPath.path(),
+                                                  CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
+        request->updateView(view);
+        QMetaObject::invokeMethod(this, "fetchContactsPage", Qt::QueuedConnection, Q_ARG(galera::RequestData*, request));
+    }
 }
 
 void GaleraContactsService::fetchContactsPage(RequestData *request)

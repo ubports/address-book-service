@@ -53,6 +53,7 @@ public:
 
 
     void updateWatcher(QDBusPendingCallWatcher *watcher);
+    void updateView(QDBusInterface* view);
 
     void updateOffset(int offset);
     int offset() const;

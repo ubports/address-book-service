@@ -60,7 +60,7 @@ void RequestData::init(QtContacts::QContactAbstractRequest *request,
     m_request = request;
 
     if (view) {
-        m_view = QSharedPointer<QDBusInterface>(view, RequestData::deleteView);
+        updateView(view);
     }
 
     if (watcher) {
@@ -114,6 +114,11 @@ void RequestData::wait()
 QDBusInterface* RequestData::view() const
 {
     return m_view.data();
+}
+
+void RequestData::updateView(QDBusInterface* view)
+{
+    m_view = QSharedPointer<QDBusInterface>(view, RequestData::deleteView);
 }
 
 QStringList RequestData::fields() const
