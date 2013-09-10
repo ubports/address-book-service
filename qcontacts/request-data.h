@@ -24,6 +24,7 @@
 #include <QtCore/QList>
 #include <QtCore/QSharedPointer>
 #include <QtCore/QPointer>
+#include <QtCore/QEventLoop>
 
 #include <QtContacts/QContactAbstractRequest>
 
@@ -52,12 +53,14 @@ public:
 
 
     void updateWatcher(QDBusPendingCallWatcher *watcher);
+    void updateView(QDBusInterface* view);
 
     void updateOffset(int offset);
     int offset() const;
     bool isLive() const;
     void cancel();
     bool canceled() const;
+    void wait();
 
     QList<QtContacts::QContact> result() const;
 
@@ -82,6 +85,7 @@ private:
     int m_offset;
     FetchHint m_hint;
     bool m_canceled;
+    QEventLoop *m_eventLoop;
 
     void init(QtContacts::QContactAbstractRequest *request, QDBusInterface *view, QDBusPendingCallWatcher *watcher);
     static void deleteRequest(QtContacts::QContactAbstractRequest *obj);

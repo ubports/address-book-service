@@ -60,6 +60,7 @@ public:
 
     void addRequest(QtContacts::QContactAbstractRequest *request);
     void cancelRequest(QtContacts::QContactAbstractRequest *request);
+    void waitRequest(QtContacts::QContactAbstractRequest *request);
 
 Q_SIGNALS:
     void contactsAdded(QList<QContactId> ids);
@@ -95,6 +96,8 @@ private:
     bool isOnline() const;
 
     void fetchContacts(QtContacts::QContactFetchRequest *request);
+    void fetchContactsContinue(RequestData *request,
+                               QDBusPendingCallWatcher *call);
     void fetchContactsById(QtContacts::QContactFetchByIdRequest *request);
     Q_INVOKABLE void fetchContactsPage(galera::RequestData *request);
     void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);

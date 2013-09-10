@@ -300,13 +300,7 @@ bool GaleraManagerEngine::waitForRequestFinished(QtContacts::QContactAbstractReq
 {
     qDebug() << Q_FUNC_INFO;
     Q_UNUSED(msecs);
-
-    if (req) {
-        while(req->state() == QContactAbstractRequest::ActiveState) {
-            QCoreApplication::processEvents();
-        }
-    }
-
+    m_service->waitRequest(req);
     return true;
 }
 
