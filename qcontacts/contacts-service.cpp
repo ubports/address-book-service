@@ -136,13 +136,14 @@ void GaleraContactsService::initialize()
 
 void GaleraContactsService::deinitialize()
 {
-    m_serviceIsReady = false;
     Q_FOREACH(RequestData* rData, m_runningRequests) {
         rData->cancel();
         rData->request()->waitForFinished();
         rData->setError(QContactManager::UnspecifiedError);
     }
-    m_runningRequests.clear();
+
+    //clear contacts
+    Q_EMIT contactsRemoved(m_contactIds);
 
     if (!m_iface.isNull()) {
         m_id.clear();
@@ -151,6 +152,15 @@ void GaleraContactsService::deinitialize()
         m_relationships.clear();
         m_orderedRelationships.clear();
         Q_EMIT serviceChanged();
+    }
+
+    // this will make the service re-initialize
+    QDBusMessage result = m_iface->call("ping");
+    if (result.type() == QDBusMessage::ErrorMessage) {
+        qWarning() << result.errorName() << result.errorMessage();
+        m_serviceIsReady = false;
+    } else {
+        m_serviceIsReady = m_iface.data()->property("isReady").toBool();
     }
 }
 
@@ -499,15 +509,18 @@ void GaleraContactsService::cancelRequest(QtContacts::QContactAbstractRequest *r
 void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *request)
 {
     qDebug() << Q_FUNC_INFO << request->state();
+
     if (!m_serviceIsReady) {
         m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
         return;
     }
+
     if (!isOnline()) {
         qWarning() << "Server is not online";
         QContactManagerEngine::updateRequestState(request, QContactAbstractRequest::FinishedState);
         return;
     }
+
     Q_ASSERT(request->state() == QContactAbstractRequest::ActiveState);
     switch (request->type()) {
         case QContactAbstractRequest::ContactFetchRequest:

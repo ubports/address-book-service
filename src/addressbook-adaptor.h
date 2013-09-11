@@ -51,6 +51,9 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"a(ss)\" name=\"errorMap\"/>\n"
 "    </signal>\n"
 "    <signal name=\"ready\"/>\n"
+"    <method name=\"ping\">\n"
+"      <arg direction=\"out\" type=\"b\"/>\n"
+"    </method>\n"
 "    <method name=\"availableSources\">\n"
 "      <arg direction=\"out\" type=\"a(sb)\"/>\n"
 "      <annotation value=\"SourceList\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
@@ -107,6 +110,7 @@ public Q_SLOTS:
     QString linkContacts(const QStringList &contacts);
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
     bool isReady();
+    bool ping();
 
 Q_SIGNALS:
     void contactsAdded(const QStringList &ids);
