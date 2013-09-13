@@ -297,6 +297,13 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
                     QContactId newId = QContactId(engineId);
 
                     contact->setId(newId);
+                    // set tag to be used when creating sections
+                    QContactName detailName = contact->detail<QContactName>();
+                    if (!detailName.firstName().isEmpty() && QString(detailName.firstName().at(0)).contains(QRegExp("([a-z]|[A-Z])"))) {
+                        contact->addTag(detailName.firstName().at(0).toUpper());
+                    } else {
+                        contact->addTag("#");
+                    }
                     contactsIds << newId;
                 }
             }
