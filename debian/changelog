@@ -1,3 +1,25 @@
+address-book-service (0.1.0+13.10.20130916.1-0ubuntu1) saucy; urgency=low
+
+  [ Gustavo Pichorim Boiko ]
+  * Terminate the thread before destroying it to avoid crashes. (LP:
+    #1222989)
+
+  [ Tiago Salem Herrmann ]
+  * group contacts starting with non A-Z characters into a separate
+    section. (LP: #1208514)
+
+  [ Renato Araujo Oliveira Filho ]
+  * Implemented support to cancel async request.
+  * Fixed cancel query to only notify about the cancelation when the
+    query stops.
+  * Delete dbus async call when request is cancelled.
+  * Use a different event loop during the wait for request to finish.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 70
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 16 Sep 2013 18:31:09 +0000
+
 address-book-service (0.1.0+13.10.20130826-0ubuntu1) saucy; urgency=low
 
   [ Matthew Fischer ]
