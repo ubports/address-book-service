@@ -164,13 +164,19 @@ void UpdateContactRequest::updateAddress()
             QContactAddress addr = static_cast<QContactAddress>(newDetail);
 
             FolksPostalAddress *pa;
-            pa = folks_postal_address_new(addr.postOfficeBox().toUtf8().data(),
+            QByteArray postOfficeBox = addr.postOfficeBox().toUtf8();
+            QByteArray street = addr.street().toUtf8();
+            QByteArray locality = addr.locality().toUtf8();
+            QByteArray postcode = addr.postcode().toUtf8();
+            QByteArray country = addr.country().toUtf8();
+
+            pa = folks_postal_address_new(postOfficeBox.constData(),
                                           NULL,
-                                          addr.street().toUtf8().data(),
-                                          addr.locality().toUtf8().data(),
-                                          addr.region().toUtf8().data(),
-                                          addr.postcode().toUtf8().data(),
-                                          addr.country().toUtf8().data(),
+                                          street.constData(),
+                                          locality.constData(),
+                                          region.constData(),
+                                          postcode.constData(),
+                                          country.constData(),
                                           NULL,
                                           NULL);
 
@@ -211,7 +217,8 @@ void UpdateContactRequest::updateAvatar()
             QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
 
             if(!formattedUri.isEmpty()) {
-                GFile *avatarFile = g_file_new_for_uri(formattedUri.toUtf8().data());
+                QByteArray uriUtf8 = formattedUri.toUtf8();
+                GFile *avatarFile = g_file_new_for_uri(uriUtf8.constData());
                 avatarFileIcon = G_FILE_ICON(g_file_icon_new(avatarFile));
                 g_object_unref(avatarFile);
             }
@@ -277,8 +284,9 @@ void UpdateContactRequest::updateFullName()
             fullName = label.label();
         }
 
+        QByteArray fullNameUtf8 = fullName.toUtf8();
         folks_name_details_change_full_name(FOLKS_NAME_DETAILS(persona),
-                                            fullName.toUtf8().data(),
+                                            fullNameUtf8.constData(),
                                             (GAsyncReadyCallback) updateDetailsDone,
                                             this);
     } else {
@@ -309,7 +317,8 @@ void UpdateContactRequest::updateEmail()
             QContactEmailAddress email = static_cast<QContactEmailAddress>(newDetail);
             FolksEmailFieldDetails *field;
 
-            field = folks_email_field_details_new(email.emailAddress().toUtf8().data(), NULL);
+            QByteArray emailAddress = email.emailAddress().toUtf8();
+            field = folks_email_field_details_new(emailAddress.constData(), NULL);
             DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(field), newDetail, newDetail == prefDetail);
             gee_collection_add(GEE_COLLECTION(newSet), field);
             g_object_unref(field);
@@ -338,11 +347,16 @@ void UpdateContactRequest::updateName()
         if (newDetails.count()) {
             QContactName name = static_cast<QContactName>(newDetails[0]);
 
-            sn = folks_structured_name_new(name.lastName().toUtf8().data(),
-                                           name.firstName().toUtf8().data(),
-                                           name.middleName().toUtf8().data(),
-                                           name.prefix().toUtf8().data(),
-                                           name.suffix().toUtf8().data());
+            QByteArray lastName = name.lastName().toUtf8();
+            QByteArray firstName = name.firstName().toUtf8();
+            QByteArray middleName = name.middleName().toUtf8();
+            QByteArray prefix = name.prefix().toUtf8();
+            QByteArray suffix = name.suffix().toUtf8();
+            sn = folks_structured_name_new(lastName.constData(),
+                                           firstName.constData(),
+                                           middleName.constData(),
+                                           prefix.constData(),
+                                           suffix.constData());
         }
 
         folks_name_details_change_structured_name(FOLKS_NAME_DETAILS(persona),
@@ -372,8 +386,9 @@ void UpdateContactRequest::updateNickname()
             nicknameValue = nickname.nickname();
         }
 
+        QByteArray nicknameValueUtf8 = nicknameValue.toUtf8();
         folks_name_details_change_nickname(FOLKS_NAME_DETAILS(persona),
-                                           nicknameValue.toUtf8().data(),
+                                           nicknameValueUtf8.constData(),
                                            (GAsyncReadyCallback) updateDetailsDone,
                                            this);
     } else {
@@ -399,7 +414,8 @@ void UpdateContactRequest::updateNote()
             QContactNote note = static_cast<QContactNote>(newDetail);
             FolksNoteFieldDetails *field;
 
-            field = folks_note_field_details_new(note.note().toUtf8().data(), 0, 0);
+            QByteArray noteUtf8 = note.note().toUtf8();
+            field = folks_note_field_details_new(noteUtf8.constData(), 0, 0);
             DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(field), newDetail, newDetail == prefDetail);
             gee_collection_add(GEE_COLLECTION(newSet), field);
             g_object_unref(field);
@@ -438,12 +454,13 @@ void UpdateContactRequest::updateOnlineAccount()
             FolksImFieldDetails *field;
 
             if (account.protocol() != QContactOnlineAccount::ProtocolUnknown) {
-                field = folks_im_field_details_new(account.accountUri().toUtf8().data(), NULL);
+                QByteArray accountUri = account.accountUri().toUtf8();
+                field = folks_im_field_details_new(accountUri.constData(), NULL);
                 DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(field), account, account == prefDetail);
 
                 QString protocolName(DetailContextParser::accountProtocolName(account.protocol()));
-                qDebug() << "Append protocol" << protocolName << account.accountUri();
-                gee_multi_map_set(imMap, protocolName.toUtf8().data(), field);
+                QByteArray protocolNameUtf8 = protocolName.toUtf8();
+                gee_multi_map_set(imMap, protocolNameUtf8.constData(), field);
 
                 g_object_unref(field);
             }
@@ -483,12 +500,12 @@ void UpdateContactRequest::updateOrganization()
             FolksRoleFieldDetails *field;
             FolksRole *roleValue;
 
-            const gchar* title = org.title().isEmpty() ? "" : org.title().toUtf8().data();
-            const gchar* name = org.name().isEmpty() ? "" : org.name().toUtf8().data();
-            const gchar* roleName = org.role().isEmpty() ? "" : org.role().toUtf8().data();
+            QByteArray title = org.title().isEmpty() ? "" : org.title().toUtf8();
+            QByteArray name = org.name().isEmpty() ? "" : org.name().toUtf8();
+            QByteArray roleName = org.role().isEmpty() ? "" : org.role().toUtf8();
 
-            roleValue = folks_role_new(title, name, "");
-            folks_role_set_role(roleValue, roleName);
+            roleValue = folks_role_new(title.constData(), name.constData(), "");
+            folks_role_set_role(roleValue, roleName.constData());
             field = folks_role_field_details_new(roleValue, NULL);
 
             DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(field), newDetail, newDetail == prefDetail);
@@ -530,7 +547,8 @@ void UpdateContactRequest::updatePhone()
             QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(newDetail);
             FolksPhoneFieldDetails *field;
 
-            field = folks_phone_field_details_new(phone.number().toUtf8().data(), NULL);
+            QByteArray phoneNumber = phone.number().toUtf8();
+            field = folks_phone_field_details_new(phoneNumber.constData(), NULL);
             DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(field), newDetail, newDetail == prefDetail);
             gee_collection_add(GEE_COLLECTION(newSet), field);
             g_object_unref(field);
@@ -569,7 +587,8 @@ void UpdateContactRequest::updateUrl()
             QContactUrl url = static_cast<QContactUrl>(newDetail);
             FolksUrlFieldDetails *field;
 
-            field = folks_url_field_details_new(url.url().toUtf8().data(), NULL);
+            QByteArray urlValue = url.url().toUtf8();
+            field = folks_url_field_details_new(urlValue.constData(), NULL);
             DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(field), newDetail, prefDetail == newDetail);
             gee_collection_add(GEE_COLLECTION(newSet), field);
             g_object_unref(field);
