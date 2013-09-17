@@ -167,6 +167,7 @@ void UpdateContactRequest::updateAddress()
             QByteArray postOfficeBox = addr.postOfficeBox().toUtf8();
             QByteArray street = addr.street().toUtf8();
             QByteArray locality = addr.locality().toUtf8();
+            QByteArray region = addr.region().toUtf8();
             QByteArray postcode = addr.postcode().toUtf8();
             QByteArray country = addr.country().toUtf8();
 
