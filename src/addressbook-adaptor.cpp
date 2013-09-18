@@ -103,4 +103,9 @@ bool AddressBookAdaptor::isReady()
     return m_addressBook->isReady();
 }
 
+bool AddressBookAdaptor::ping()
+{
+    return true;
+}
+
 } //namespace
