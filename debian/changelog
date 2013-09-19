@@ -1,3 +1,13 @@
+address-book-service (0.1.0+13.10.20130919.3-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Fixed service respaw on QContact plugin. (LP: #1222994)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 72
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 19 Sep 2013 15:47:05 +0000
+
 address-book-service (0.1.0+13.10.20130916.1-0ubuntu1) saucy; urgency=low
 
   [ Gustavo Pichorim Boiko ]
