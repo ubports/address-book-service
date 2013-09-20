@@ -394,12 +394,16 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *per
         QString field;
 
         field = QString::fromUtf8(folks_role_get_organisation_name(role));
-        if (field.isEmpty()) {
+        if (!field.isEmpty()) {
             org.setName(field);
         }
         field = QString::fromUtf8(folks_role_get_title(role));
         if (!field.isEmpty()) {
             org.setTitle(field);
+        }
+        field = QString::fromUtf8(folks_role_get_role(role));
+        if (!field.isEmpty()) {
+            org.setRole(field);
         }
         bool isPref = false;
         DetailContextParser::parseParameters(org, fd, &isPref);
