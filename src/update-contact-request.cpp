@@ -209,7 +209,7 @@ void UpdateContactRequest::updateAvatar()
         //Only supports one avatar
         QUrl avatarUri;
         if (newDetails.count()) {
-            QContactAvatar avatar = static_cast<QContactAddress>(newDetails[0]);
+            QContactAvatar avatar = static_cast<QContactAvatar>(newDetails[0]);
             avatarUri = avatar.imageUrl();
         }
 

@@ -169,6 +169,14 @@ namespace
                     }
                     break;
                 }
+                case QContactDetail::TypeAvatar:
+                {
+                    QString value = property.parameters().value("VALUE");
+                    if (value == "URL") {
+                        det.setValue(QContactAvatar::FieldImageUrl, QUrl(property.value()));
+                    }
+                    break;
+                }
                 default:
                     break;
             }
