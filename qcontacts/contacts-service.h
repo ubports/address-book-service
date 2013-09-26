@@ -53,8 +53,12 @@ public:
     void appendEngine(QtContacts::QContactManagerEngine *engine);
     void removeEngine(QtContacts::QContactManagerEngine *engine);
 
-    QList<QtContacts::QContact> contacts() const;
-    QList<QtContacts::QContactId> contactIds() const;
+    QList<QtContacts::QContact> contacts() const {
+        return m_contacts;
+    }
+    QList<QtContacts::QContactId> contactIds() const {
+        return m_contactIds;
+    }
 
     QList<QtContacts::QContactRelationship> relationships() const;
 

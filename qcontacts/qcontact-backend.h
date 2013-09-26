@@ -98,6 +98,9 @@ public:
 private:
     GaleraManagerEngine();
 
+    QList<QtContacts::QContact> contacts() const;
+    QList<QtContacts::QContactId> contactIds(const QList<QtContacts::QContact> &contacts) const;
+
     GaleraContactsService *m_service;
 };
 

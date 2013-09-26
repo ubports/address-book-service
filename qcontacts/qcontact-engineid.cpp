@@ -52,7 +52,7 @@ GaleraEngineId::GaleraEngineId(const QMap<QString, QString> &parameters, const Q
 {
     qDebug() << Q_FUNC_INFO << engineIdString;
     m_contactId = engineIdString;
-    m_managerUri = QContactManager::buildUri("memory", parameters);
+    m_managerUri = QContactManager::buildUri("galera", parameters);
 }
 
 bool GaleraEngineId::isEqualTo(const QtContacts::QContactEngineId *other) const
