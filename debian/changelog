@@ -1,3 +1,16 @@
+address-book-service (0.1.0+13.10.20131001.4-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Fixed avatar update operation. (LP: #1207774)
+
+  [ Maxim Ermilov ]
+  * Implemented sync functions.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 77
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 01 Oct 2013 21:20:41 +0000
+
 address-book-service (0.1.0+13.10.20130925-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
