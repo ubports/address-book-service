@@ -732,7 +732,12 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         self->updateFullName();
         break;
     case QContactDetail::TypeEmailAddress:
-        self->updateEmail();
+        //WORKAROUND: Folks automatically add online accounts based on e-mail address
+        // for example user@gmail.com will create a jabber account, and this causes some
+        // confusions on the service during the update, because of that we first update
+        // the online account and this will avoid problems with the automatic update ]
+        // from folks
+        self->updateOnlineAccount();
         break;
     case QContactDetail::TypeFavorite:
         self->updateFavorite();
@@ -747,7 +752,8 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         self->updateNote();
         break;
     case QContactDetail::TypeOnlineAccount:
-        self->updateOnlineAccount();
+        //WORKAROUND: see TypeEmailAddress update clause
+        self->updateEmail();
         break;
     case QContactDetail::TypeOrganization:
         self->updateOrganization();
