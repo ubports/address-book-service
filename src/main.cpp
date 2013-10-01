@@ -21,11 +21,27 @@
 #include "source.h"
 #include "common/dbus-service-defs.h"
 
+void contactServiceMessageOutput(QtMsgType type,
+                                 const QMessageLogContext &context,
+                                 const QString &message)
+{
+    Q_UNUSED(type);
+    Q_UNUSED(context);
+    Q_UNUSED(message);
+    //nothing
+}
+
+
 int main(int argc, char** argv)
 {
     galera::AddressBook::init();
     galera::Source::registerMetaType();
     QCoreApplication app(argc, argv);
+
+    // disable debug message if variable not exported
+    if (qgetenv("CONTACT_SERVICE_DEBUG").isEmpty()) {
+        qInstallMessageHandler(contactServiceMessageOutput);
+    }
 
     // Register service
     QDBusConnection connection = QDBusConnection::sessionBus();
