@@ -45,7 +45,6 @@ QtContacts::QContactManagerEngine* GaleraEngineFactory::engine(const QMap<QStrin
 {
     Q_UNUSED(error);
 
-    qDebug() << Q_FUNC_INFO;
     GaleraManagerEngine *engine = GaleraManagerEngine::createEngine(parameters);
     return engine;
 }
@@ -53,19 +52,16 @@ QtContacts::QContactManagerEngine* GaleraEngineFactory::engine(const QMap<QStrin
 QtContacts::QContactEngineId* GaleraEngineFactory::createContactEngineId(const QMap<QString, QString> &parameters,
                                                                          const QString &engineIdString) const
 {
-    qDebug() << Q_FUNC_INFO;
     return new GaleraEngineId(parameters, engineIdString);
 }
 
 QString GaleraEngineFactory::managerName() const
 {
-    qDebug() << Q_FUNC_INFO;
     return QString::fromLatin1("galera");
 }
 
 GaleraManagerEngine* GaleraManagerEngine::createEngine(const QMap<QString, QString> &parameters)
 {
-    qDebug() << Q_FUNC_INFO;
     GaleraManagerEngine *engine = new GaleraManagerEngine();
     return engine;
 }
@@ -77,7 +73,6 @@ GaleraManagerEngine* GaleraManagerEngine::createEngine(const QMap<QString, QStri
 GaleraManagerEngine::GaleraManagerEngine()
     : m_service(new GaleraContactsService(managerUri()))
 {
-    qDebug() << Q_FUNC_INFO << this;
     connect(m_service, SIGNAL(contactsAdded(QList<QContactId>)), this, SIGNAL(contactsAdded(QList<QContactId>)));
     connect(m_service, SIGNAL(contactsRemoved(QList<QContactId>)), this, SIGNAL(contactsRemoved(QList<QContactId>)));
     connect(m_service, SIGNAL(contactsUpdated(QList<QContactId>)), this, SIGNAL(contactsChanged(QList<QContactId>)));
@@ -98,22 +93,18 @@ QString GaleraManagerEngine::managerName() const
 
 QMap<QString, QString> GaleraManagerEngine::managerParameters() const
 {
-    qDebug() << Q_FUNC_INFO;
     QMap<QString, QString> parameters;
     return parameters;
 }
 
 int GaleraManagerEngine::managerVersion() const
 {
-    qDebug() << Q_FUNC_INFO;
     return 1;
 }
 
 /* Filtering */
 QList<QContactId> GaleraManagerEngine::contactIds(const QtContacts::QContactFilter &filter, const QList<QtContacts::QContactSortOrder> &sortOrders, QtContacts::QContactManager::Error *error) const
 {
-    qDebug() << Q_FUNC_INFO;
-
     /* Special case the fast case */
     if (filter.type() == QtContacts::QContactFilter::DefaultFilter && sortOrders.count() == 0) {
         return m_service->contactIds();
@@ -131,12 +122,10 @@ QList<QContactId> GaleraManagerEngine::contactIds(const QtContacts::QContactFilt
 
 QList<QtContacts::QContact> GaleraManagerEngine::contacts(const QtContacts::QContactFilter &filter, const QList<QtContacts::QContactSortOrder>& sortOrders, const QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const
 {
-    qDebug() << Q_FUNC_INFO;
-    Q_UNUSED(fetchHint); // no optimizations are possible in the memory backend; ignore the fetch hint.
+    Q_UNUSED(fetchHint);
     Q_UNUSED(error);
 
     QList<QContact> sorted;
-
     QList<QContact> contactsList = contacts();
 
     /* First filter out contacts - check for default filter first */
@@ -175,8 +164,7 @@ QList<QContact> GaleraManagerEngine::contacts() const
 
 QContact GaleraManagerEngine::contact(const QtContacts::QContactId &contactId, const QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const
 {
-    qDebug() << Q_FUNC_INFO;
-    Q_UNUSED(fetchHint); // no optimizations are possible in the memory backend; ignore the fetch hint
+    Q_UNUSED(fetchHint);
 
     QList<QContact> contactsList = contacts();
 
@@ -194,8 +182,6 @@ QContact GaleraManagerEngine::contact(const QtContacts::QContactId &contactId, c
 
 bool GaleraManagerEngine::saveContact(QtContacts::QContact *contact, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
-
     QContactSaveRequest request;
 
     request.setContact(*contact);
@@ -212,8 +198,6 @@ bool GaleraManagerEngine::saveContact(QtContacts::QContact *contact, QtContacts:
 
 bool GaleraManagerEngine::removeContact(const QtContacts::QContactId &contactId, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
-
     *error = QContactManager::NoError;
     contact(contactId, QContactFetchHint(), error);
     if (*error == QContactManager::DoesNotExistError) {
@@ -233,6 +217,7 @@ bool GaleraManagerEngine::removeContact(const QtContacts::QContactId &contactId,
 bool GaleraManagerEngine::saveRelationship(QtContacts::QContactRelationship *relationship, QtContacts::QContactManager::Error *error)
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -240,6 +225,7 @@ bool GaleraManagerEngine::saveRelationship(QtContacts::QContactRelationship *rel
 bool GaleraManagerEngine::removeRelationship(const QtContacts::QContactRelationship &relationship, QtContacts::QContactManager::Error *error)
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -248,6 +234,7 @@ bool GaleraManagerEngine::removeRelationship(const QtContacts::QContactRelations
 bool GaleraManagerEngine::saveContacts(QList<QtContacts::QContact> *contacts, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -255,6 +242,7 @@ bool GaleraManagerEngine::saveContacts(QList<QtContacts::QContact> *contacts, QM
 bool GaleraManagerEngine::saveContacts(QList<QtContacts::QContact> *contacts,  const QList<QtContacts::QContactDetail::DetailType> &typeMask, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -262,6 +250,7 @@ bool GaleraManagerEngine::saveContacts(QList<QtContacts::QContact> *contacts,  c
 bool GaleraManagerEngine::removeContacts(const QList<QtContacts::QContactId> &contactIds, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -270,6 +259,7 @@ bool GaleraManagerEngine::removeContacts(const QList<QtContacts::QContactId> &co
 bool GaleraManagerEngine::setSelfContactId(const QtContacts::QContactId &contactId, QtContacts::QContactManager::Error *error)
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -277,6 +267,7 @@ bool GaleraManagerEngine::setSelfContactId(const QtContacts::QContactId &contact
 QtContacts::QContactId GaleraManagerEngine::selfContactId(QtContacts::QContactManager::Error *error) const
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return QContactId();
 }
@@ -285,6 +276,7 @@ QtContacts::QContactId GaleraManagerEngine::selfContactId(QtContacts::QContactMa
 QList<QtContacts::QContactRelationship> GaleraManagerEngine::relationships(const QString &relationshipType, const QContact& participant, QContactRelationship::Role role, QtContacts::QContactManager::Error *error) const
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return QList<QContactRelationship>();
 }
@@ -292,6 +284,7 @@ QList<QtContacts::QContactRelationship> GaleraManagerEngine::relationships(const
 bool GaleraManagerEngine::saveRelationships(QList<QtContacts::QContactRelationship> *relationships, QMap<int, QtContacts::QContactManager::Error>* errorMap, QtContacts::QContactManager::Error *error)
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -299,6 +292,7 @@ bool GaleraManagerEngine::saveRelationships(QList<QtContacts::QContactRelationsh
 bool GaleraManagerEngine::removeRelationships(const QList<QtContacts::QContactRelationship> &relationships, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -307,6 +301,7 @@ bool GaleraManagerEngine::removeRelationships(const QList<QtContacts::QContactRe
 bool GaleraManagerEngine::validateContact(const QtContacts::QContact &contact, QtContacts::QContactManager::Error *error) const
 {
     qDebug() << Q_FUNC_INFO;
+
     *error = QContactManager::NoError;
     return true;
 }
@@ -314,12 +309,10 @@ bool GaleraManagerEngine::validateContact(const QtContacts::QContact &contact, Q
 /* Asynchronous Request Support */
 void GaleraManagerEngine::requestDestroyed(QtContacts::QContactAbstractRequest *req)
 {
-    qDebug() << Q_FUNC_INFO;
 }
 
 bool GaleraManagerEngine::startRequest(QtContacts::QContactAbstractRequest *req)
 {
-    qDebug() << Q_FUNC_INFO;
     if (!req) {
         return false;
     }
@@ -334,7 +327,6 @@ bool GaleraManagerEngine::startRequest(QtContacts::QContactAbstractRequest *req)
 
 bool GaleraManagerEngine::cancelRequest(QtContacts::QContactAbstractRequest *req)
 {
-    qDebug() << Q_FUNC_INFO;
     if (req) {
         m_service->cancelRequest(req);
         return true;
@@ -345,7 +337,6 @@ bool GaleraManagerEngine::cancelRequest(QtContacts::QContactAbstractRequest *req
 
 bool GaleraManagerEngine::waitForRequestFinished(QtContacts::QContactAbstractRequest *req, int msecs)
 {
-    qDebug() << Q_FUNC_INFO;
     Q_UNUSED(msecs);
     m_service->waitRequest(req);
     return true;
@@ -355,7 +346,6 @@ bool GaleraManagerEngine::waitForRequestFinished(QtContacts::QContactAbstractReq
 bool GaleraManagerEngine::isRelationshipTypeSupported(const QString &relationshipType, QtContacts::QContactType::TypeValues contactType) const
 {
     qDebug() << Q_FUNC_INFO;
-
     return true;
 }
 
@@ -367,7 +357,6 @@ bool GaleraManagerEngine::isFilterSupported(const QtContacts::QContactFilter &fi
 
 QList<QVariant::Type> GaleraManagerEngine::supportedDataTypes() const
 {
-    qDebug() << Q_FUNC_INFO;
     QList<QVariant::Type> st;
     st.append(QVariant::String);
     st.append(QVariant::Date);

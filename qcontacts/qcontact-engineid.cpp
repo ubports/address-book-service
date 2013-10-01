@@ -26,38 +26,32 @@ namespace galera
 GaleraEngineId::GaleraEngineId()
     : m_contactId("")
 {
-    //qDebug() << Q_FUNC_INFO;
 }
 
 GaleraEngineId::GaleraEngineId(const QString &contactId, const QString &managerUri)
     : m_contactId(contactId),
       m_managerUri(managerUri)
 {
-    //qDebug() << Q_FUNC_INFO;
 }
 
 GaleraEngineId::~GaleraEngineId()
 {
-    //qDebug() << Q_FUNC_INFO;
 }
 
 GaleraEngineId::GaleraEngineId(const GaleraEngineId &other)
     : m_contactId(other.m_contactId),
       m_managerUri(other.m_managerUri)
 {
-    //qDebug() << Q_FUNC_INFO;
 }
 
 GaleraEngineId::GaleraEngineId(const QMap<QString, QString> &parameters, const QString &engineIdString)
 {
-    qDebug() << Q_FUNC_INFO << engineIdString;
     m_contactId = engineIdString;
     m_managerUri = QContactManager::buildUri("galera", parameters);
 }
 
 bool GaleraEngineId::isEqualTo(const QtContacts::QContactEngineId *other) const
 {
-    //qDebug() << Q_FUNC_INFO;
     if (m_contactId != static_cast<const GaleraEngineId*>(other)->m_contactId)
         return false;
     return true;
@@ -65,7 +59,6 @@ bool GaleraEngineId::isEqualTo(const QtContacts::QContactEngineId *other) const
 
 bool GaleraEngineId::isLessThan(const QtContacts::QContactEngineId *other) const
 {
-    //qDebug() << Q_FUNC_INFO;
     const GaleraEngineId *otherPtr = static_cast<const GaleraEngineId*>(other);
     if (m_managerUri < otherPtr->m_managerUri)
         return true;
@@ -76,19 +69,16 @@ bool GaleraEngineId::isLessThan(const QtContacts::QContactEngineId *other) const
 
 QString GaleraEngineId::managerUri() const
 {
-    //qDebug() << Q_FUNC_INFO;
     return m_managerUri;
 }
 
 QString GaleraEngineId::toString() const
 {
-    //qDebug() << Q_FUNC_INFO;
     return m_contactId;
 }
 
 QtContacts::QContactEngineId* GaleraEngineId::clone() const
 {
-    //qDebug() << Q_FUNC_INFO;
     return new GaleraEngineId(m_contactId, m_managerUri);
 }
 
@@ -102,23 +92,18 @@ QDebug& GaleraEngineId::debugStreamOut(QDebug &dbg) const
 
 uint GaleraEngineId::hash() const
 {
-    //qDebug() << Q_FUNC_INFO;
     return qHash(m_contactId);
 }
 
 #ifndef QT_NO_DATASTREAM
 QDataStream& operator<<(QDataStream& out, const GaleraEngineId& engineId)
 {
-    qDebug() << Q_FUNC_INFO;
-
     out << engineId.m_managerUri << engineId.m_contactId;
     return out;
 }
 
 QDataStream& operator>>(QDataStream& in, GaleraEngineId& engineId)
 {
-    qDebug() << Q_FUNC_INFO;
-
     QString managerUri;
     QString contactId;
 
