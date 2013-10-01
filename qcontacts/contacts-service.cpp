@@ -228,7 +228,6 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
 void GaleraContactsService::fetchContactsContinue(RequestData *request,
                                                   QDBusPendingCallWatcher *call)
 {
-    qDebug() << Q_FUNC_INFO;
     if (!request->isLive()) {
         destroyRequest(request);
         return;
@@ -452,8 +451,6 @@ void GaleraContactsService::removeContact(QContactRemoveRequest *request)
 
 void GaleraContactsService::removeContactDone(RequestData *request, QDBusPendingCallWatcher *call)
 {
-    qDebug() << Q_FUNC_INFO;
-
     if (!request->isLive()) {
         destroyRequest(request);
         return;
@@ -474,7 +471,6 @@ void GaleraContactsService::removeContactDone(RequestData *request, QDBusPending
 
 void GaleraContactsService::updateContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts)
 {
-    qDebug() << Q_FUNC_INFO;
     if (!isOnline()) {
         qWarning() << "Server is not online";
         RequestData::setError(request);
@@ -499,8 +495,6 @@ void GaleraContactsService::updateContacts(QtContacts::QContactSaveRequest *requ
 
 void GaleraContactsService::updateContactDone(RequestData *request, QDBusPendingCallWatcher *call)
 {
-    qDebug() << Q_FUNC_INFO;
-
     if (!request->isLive()) {
         destroyRequest(request);
         return;
@@ -552,8 +546,6 @@ void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *req
 
 void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *request)
 {
-    qDebug() << Q_FUNC_INFO << request->state();
-
     if (!m_serviceIsReady) {
         m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
         return;
@@ -600,7 +592,6 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
 
 void GaleraContactsService::destroyRequest(RequestData *request)
 {
-    qDebug() << Q_FUNC_INFO;
     m_runningRequests.remove(request);
     delete request;
 }
