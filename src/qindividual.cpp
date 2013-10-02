@@ -348,10 +348,6 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, i
         avatar.setImageUrl(QUrl(url));
     }
     avatar.setDetailUri(QString("%1.1").arg(index));
-
-    g_signal_connect(G_OBJECT(persona), "notify::avatar",
-                     (GCallback) QIndividual::folksPersonaChanged,
-                     const_cast<QIndividual*>(this));
     return avatar;
 }
 
@@ -750,7 +746,17 @@ void QIndividual::updateContact()
     GeeSet *personas = folks_individual_get_personas(m_individual);
     Q_ASSERT(personas);
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+
     FolksPersona *persona;
+
+    // disconnect any previous handler
+    Q_FOREACH(gpointer persona, m_notifyConnections.keys()) {
+        Q_FOREACH(int handlerId, m_notifyConnections[persona]) {
+            g_signal_handler_disconnect(persona, handlerId);
+        }
+    }
+
+    m_notifyConnections.clear();
 
     while(gee_iterator_next(iter)) {
          persona = FOLKS_PERSONA(gee_iterator_get(iter));
@@ -830,6 +836,15 @@ void QIndividual::updateContact()
                                 prefDetail,
                                 !wPropList.contains("urls"));
         personaIndex++;
+
+        // for now we are getting updated only about avatar changes
+        int handlerId = g_signal_connect(G_OBJECT(persona), "notify::avatar",
+                                         (GCallback) QIndividual::folksPersonaChanged,
+                                         const_cast<QIndividual*>(this));
+        QList<int> ids = m_notifyConnections[persona];
+        ids << handlerId;
+        m_notifyConnections[persona] = ids;
+
         g_object_unref(persona);
     }
 

@@ -25,6 +25,7 @@
 #include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+#include <QtCore/QTimer>
 
 #include <QtDBus/QtDBus>
 
@@ -40,6 +41,7 @@ class View;
 class ContactsMap;
 class AddressBookAdaptor;
 class QIndividual;
+class DirtyContactsNotify;
 
 class AddressBook: public QObject
 {
@@ -85,6 +87,9 @@ private:
     bool m_ready;
     AddressBookAdaptor *m_adaptor;
 
+    // timer to avoid send several updates at the same time
+    DirtyContactsNotify *m_notifyContactUpdate;
+
     // Update command
     QDBusMessage m_updateCommandReplyMessage;
     QStringList m_updateCommandResult;
@@ -123,6 +128,8 @@ private:
     static void removeContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *result,
                                   void *data);
+
+    friend class DirtyContactsNotify;
 };
 
 } //namespace

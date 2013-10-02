@@ -59,6 +59,7 @@ private:
     QtContacts::QContact *m_contact;
     QMap<QString, QPair<QtContacts::QContactDetail, FolksAbstractFieldDetails*> > m_fieldsMap;
     QList<QPair<QObject*, QMetaMethod> > m_listeners;
+    QMap<gpointer, QList<int> > m_notifyConnections;
 
     QIndividual();
     QIndividual(const QIndividual &);
