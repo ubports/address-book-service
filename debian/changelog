@@ -1,3 +1,17 @@
+address-book-service (0.1.0+13.10.20131004.1-0ubuntu1) saucy; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Removed debug message from qtcontacts client plugin.
+  * Fixed service timeout when updating the e-mail address. (LP:
+    #1231397)
+  * Disabled debug message by default. To see the debug messages you
+    need to set "ADDRESS_BOOK_SERVICE_DEBUG=On".
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 81
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 04 Oct 2013 07:23:24 +0000
+
 address-book-service (0.1.0+13.10.20131001.4-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
