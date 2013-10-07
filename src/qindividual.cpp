@@ -256,9 +256,23 @@ QtContacts::QContactDetail QIndividual::getPersonaFullName(FolksPersona *persona
     }
 
     QContactDisplayLabel detail;
-    const gchar *fullName = folks_name_details_get_full_name(FOLKS_NAME_DETAILS(persona));
-    if (fullName && strlen(fullName)) {
-        detail.setLabel(QString::fromUtf8(fullName));
+    FolksStructuredName *sn = folks_name_details_get_structured_name(FOLKS_NAME_DETAILS(persona));
+    QString displayName;
+    if (sn) {
+        const char *name = folks_structured_name_get_given_name(sn);
+        if (name && strlen(name)) {
+            displayName += QString::fromUtf8(name);
+        }
+        name = folks_structured_name_get_family_name(sn);
+        if (name && strlen(name)) {
+            if (!displayName.isEmpty()) {
+                displayName += " ";
+            }
+            displayName += QString::fromUtf8(name);
+        }
+    }
+    if (!displayName.isEmpty()) {
+        detail.setLabel(displayName);
         detail.setDetailUri(QString("%1.1").arg(index));
     }
     return detail;
