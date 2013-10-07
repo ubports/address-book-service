@@ -311,6 +311,8 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
                     QContactName detailName = contact->detail<QContactName>();
                     if (!detailName.firstName().isEmpty() && QString(detailName.firstName().at(0)).contains(QRegExp("([a-z]|[A-Z])"))) {
                         contact->addTag(detailName.firstName().at(0).toUpper());
+                    } else if (!detailName.lastName().isEmpty() && QString(detailName.lastName().at(0)).contains(QRegExp("([a-z]|[A-Z])"))) {
+                        contact->addTag(detailName.lastName().at(0).toUpper());
                     } else {
                         contact->addTag("#");
                     }
