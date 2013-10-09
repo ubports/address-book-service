@@ -1,3 +1,15 @@
+address-book-service (0.1.0+13.10.20131009-0ubuntu1) saucy; urgency=low
+
+  [ Tiago Salem Herrmann ]
+  * Sort by last name contacts with no first name. (LP: #1235971)
+  * Use a custom display label so we can correctly sort contacts that
+    have no first name.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 84
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 09 Oct 2013 06:04:29 +0000
+
 address-book-service (0.1.0+13.10.20131004.1-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
