@@ -676,6 +676,9 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
         result = contact();
     } else {
         QContact fullContact = contact();
+        // this will remove the contact details but will keep the other metadata like preferred fields
+        result = fullContact;
+        result.clearDetails();
 
         // mandatory
         details << fullContact.detail<QContactGuid>();
