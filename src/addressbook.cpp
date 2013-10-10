@@ -58,14 +58,51 @@ public:
 
 namespace galera
 {
+//this timeout represents how long the server will wait for changes on the contact before notify the client
+#define NOTIFY_CONTACTS_TIMEOUT 500
 
 int AddressBook::m_sigQuitFd[2] = {0, 0};
+
+// this is a helper class uses a timer with a small timeout to notify the client about
+// any contact change notification. This class should be used instead of emit the signal directly
+// this will avoid notify about the contact update several times when updating different fields simultaneously
+// With that we can reduce the dbus traffic and skip some client calls to query about the new contact info.
+class DirtyContactsNotify
+{
+public:
+    DirtyContactsNotify(AddressBookAdaptor *adaptor)
+    {
+        m_timer.setInterval(NOTIFY_CONTACTS_TIMEOUT);
+        m_timer.setSingleShot(true);
+        QObject::connect(&m_timer, &QTimer::timeout,
+                         [=]() {
+                            Q_EMIT adaptor->contactsUpdated(m_ids);
+                            m_ids.clear();
+                         });
+    }
+
+    void append(QStringList ids)
+    {
+        Q_FOREACH(QString id, ids) {
+            if (!m_ids.contains(id)) {
+                m_ids << id;
+            }
+        }
+
+        m_timer.start();
+    }
+
+private:
+    QTimer m_timer;
+    QStringList m_ids;
+};
 
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
       m_contacts(new ContactsMap),
       m_ready(false),
-      m_adaptor(0)
+      m_adaptor(0),
+      m_notifyContactUpdate(0)
 {
     prepareUnixSignals();
     prepareFolks();
@@ -74,6 +111,10 @@ AddressBook::AddressBook(QObject *parent)
 AddressBook::~AddressBook()
 {
     // destructor
+    if (m_notifyContactUpdate) {
+        delete m_notifyContactUpdate;
+        m_notifyContactUpdate = 0;
+    }
 }
 
 QString AddressBook::objectPath()
@@ -90,11 +131,17 @@ bool AddressBook::registerObject(QDBusConnection &connection)
             qWarning() << "Could not register object!" << objectPath();
             delete m_adaptor;
             m_adaptor = 0;
+            if (m_notifyContactUpdate) {
+                delete m_notifyContactUpdate;
+                m_notifyContactUpdate = 0;
+            }
         } else {
             qDebug() << "Object registered:" << objectPath();
         }
     }
-
+    if (m_adaptor) {
+        m_notifyContactUpdate = new DirtyContactsNotify(m_adaptor);
+    }
     return (m_adaptor != 0);
 }
 
@@ -247,7 +294,7 @@ void AddressBook::viewClosed()
 
 void AddressBook::individualChanged(QIndividual *individual)
 {
-    Q_EMIT m_adaptor->contactsUpdated(QStringList() << individual->id());
+    m_notifyContactUpdate->append(QStringList() << individual->id());
 }
 
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
@@ -320,7 +367,6 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
     //TODO: support multiple update contacts calls
     Q_ASSERT(m_updateCommandPendingContacts.isEmpty());
 
-    qDebug() << "update contacts:" << contacts;
     m_updatedIds.clear();
     m_updateCommandReplyMessage = message;
     m_updateCommandResult = contacts;
@@ -365,9 +411,10 @@ void AddressBook::updateContactsDone(galera::QIndividual *individual, const QStr
         QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
         QDBusConnection::sessionBus().send(reply);
 
-        // clear command data
-        Q_EMIT m_adaptor->contactsUpdated(m_updatedIds);
+        // notify about the changes
+        m_notifyContactUpdate->append(m_updatedIds);
 
+        // clear command data
         m_updatedIds.clear();
         m_updateCommandResult.clear();
         m_updateCommandReplyMessage = QDBusMessage();
@@ -396,6 +443,7 @@ QString AddressBook::addContact(FolksIndividual *individual)
     if (entry) {
         entry->individual()->setIndividual(individual);
     } else {
+        Q_ASSERT(!m_contacts->contains(individual));
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
         m_contacts->insert(new ContactEntry(i));
