@@ -59,8 +59,7 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
       m_iface(0)
 {
     RequestData::registerMetaType();
-    //qRegisterMetaType<galera::RequestData>();
-
+ 
     m_serviceWatcher = new QDBusServiceWatcher(CPIM_SERVICE_NAME,
                                                QDBusConnection::sessionBus(),
                                                QDBusServiceWatcher::WatchForOwnerChange,
@@ -82,8 +81,10 @@ GaleraContactsService::~GaleraContactsService()
 {
     while(!m_pendingRequests.isEmpty()) {
         QPointer<QContactAbstractRequest> request = m_pendingRequests.takeFirst();
-        request->cancel();
-        request->waitForFinished();
+        if (request) {
+            request->cancel();
+            request->waitForFinished();
+        }
     }
     m_runningRequests.clear();
 
