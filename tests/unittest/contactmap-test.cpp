@@ -88,7 +88,7 @@ private Q_SLOTS:
     void initTestCase()
     {
         m_eventLoop = new QEventLoop(this);
-        m_individualAggregator = folks_individual_aggregator_new();
+        m_individualAggregator = folks_individual_aggregator_dup();
 
         g_signal_connect(m_individualAggregator,
                          "individuals-changed-detailed",
