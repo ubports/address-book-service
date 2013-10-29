@@ -58,7 +58,7 @@ add_custom_target(uninstall "${CMAKE_COMMAND}"
 
 enable_testing()
 
-add_subdirectory(folks)
+add_subdirectory(3rd_party)
 add_subdirectory(common)
 add_subdirectory(src)
 add_subdirectory(qcontacts)
