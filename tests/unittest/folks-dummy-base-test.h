@@ -26,7 +26,7 @@
 
 //#include <QtContacts>
 
-#include <folks/folks-dummy.h>
+#include <folks-dummy.h>
 
 class ScopedEventLoop
 {
@@ -78,7 +78,7 @@ private:
 //    static void individualAggregatorAddedPersona(FolksIndividualAggregator *fia,
 //                                                 GAsyncResult *res,
 //                                                 BaseDummyTest *self);
-private Q_SLOTS:
+protected Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void init();

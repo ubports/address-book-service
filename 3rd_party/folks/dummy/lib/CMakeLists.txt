@@ -7,6 +7,10 @@ SOURCES
     dummy-fat-persona.vala
     dummy-persona-store.vala
     dummy-persona.vala
+GENERATE_VAPI
+    folks-dummy
+GENERATE_HEADER
+    folks-dummy
 PACKAGES
     posix
     folks

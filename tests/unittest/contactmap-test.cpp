@@ -17,6 +17,8 @@
  */
 
 
+#include "folks-dummy-base-test.h"
+
 #include <QObject>
 #include <QtTest>
 #include <QDebug>
@@ -32,7 +34,7 @@
 using namespace QtContacts;
 using namespace galera;
 
-class ContactMapTest : public QObject
+class ContactMapTest : public BaseDummyTest
 {
     Q_OBJECT
 
@@ -87,8 +89,10 @@ private:
 private Q_SLOTS:
     void initTestCase()
     {
+        BaseDummyTest::initTestCase();
+
         m_eventLoop = new QEventLoop(this);
-        m_individualAggregator = folks_individual_aggregator_dup();
+        m_individualAggregator = folks_individual_aggregator_new();
 
         g_signal_connect(m_individualAggregator,
                          "individuals-changed-detailed",
@@ -105,6 +109,8 @@ private Q_SLOTS:
     {
         delete m_eventLoop;
         g_object_unref(m_individualAggregator);
+
+        BaseDummyTest::cleanupTestCase();
     }
 
     void testLookupByFolksIndividual()

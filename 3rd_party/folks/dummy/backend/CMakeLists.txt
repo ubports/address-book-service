@@ -10,7 +10,7 @@ PACKAGES
     gio-2.0
     gobject-2.0
 CUSTOM_VAPIS
-    ${folks-dummy-lib_SOURCE_DIR}/folks-dummy.vapi
+    ${folks-dummy-lib_BINARY_DIR}/folks-dummy.vapi
 )
 
 add_definitions(-DBACKEND_NAME="dummy")

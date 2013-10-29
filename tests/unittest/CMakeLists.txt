@@ -42,12 +42,11 @@ macro(declare_test_full TESTNAME USE_DUMMY_FOLKS)
         add_test(${TESTNAME}
                  ${DBUS_RUNNER}
                  --task ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TEST_ARGS})
-        set(TEST_ENVIRONMENT "QT_QPA_PLATFORM=minimal\;FOLKS_BACKEND_PATH=${folks-dummy-backend_BINARY_DIR}/dummy.so")
     else()
         add_test(${TESTNAME} ${TESTNAME})
-        set(TEST_ENVIRONMENT "QT_QPA_PLATFORM=minimal")
     endif()
 
+    set(TEST_ENVIRONMENT "QT_QPA_PLATFORM=minimal\;FOLKS_BACKEND_PATH=${folks-dummy-backend_BINARY_DIR}/dummy.so")
     set_tests_properties(${TESTNAME} PROPERTIES
                           ENVIRONMENT ${TEST_ENVIRONMENT}
                           TIMEOUT ${CTEST_TESTING_TIMEOUT})
@@ -55,6 +54,7 @@ endmacro()
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
+    ${folks-dummy-lib_BINARY_DIR}
     ${GLIB_INCLUDE_DIRS}
     ${GIO_INCLUDE_DIRS}
     ${FOLKS_INCLUDE_DIRS}
@@ -67,11 +67,12 @@ if(NOT CTEST_TESTING_TIMEOUT)
 endif()
 
 declare_test(clause-test)
-declare_test(contactmap-test)
 declare_test(sort-clause-test)
 declare_test(fetch-hint-test)
 
 if(DBUS_RUNNER)
+    #TODO: port contactmap test to use dummy backend
+    #declare_test_with_folks(contactmap-test)
     declare_test_with_folks(service-life-cycle-test)
 elseif()
     message(STATUS "DBus test runner not found. Some tests will be disabled")

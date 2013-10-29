@@ -3,6 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake (>= 2.8.9),
+               dbus-test-runner,
                debhelper (>= 9),
                gobject-introspection (>= 1.31.0-2~),
                libfolks-dev,
