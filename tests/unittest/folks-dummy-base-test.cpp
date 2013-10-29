@@ -75,31 +75,25 @@ void BaseDummyTest::initTestCase()
 
 void BaseDummyTest::init()
 {
-    //m_addressBook = new galera::AddressBook;
+    m_addressBook = new galera::AddressBook;
 }
 
 void BaseDummyTest::cleanup()
 {   
-    qDebug() << "Waintig cleanup";
     QDBusConnection connection = QDBusConnection::sessionBus();
     connection.unregisterService(CPIM_SERVICE_NAME);
-    //delete m_addressBook;
+    delete m_addressBook;
     m_addressBook = 0;
-    qDebug() << "Waintig cleanup:DONE";
 }
 
 void BaseDummyTest::cleanupTestCase()
 {
-    qDebug() << "Waintig cleanupTestCase";
-
     g_object_unref(m_primaryPersonaStore);
     g_object_unref(m_backend);
     g_object_unref(m_backendStore);
     m_primaryPersonaStore = 0;
     m_backend = 0;
     m_backendStore = 0;
-
-    qDebug() << "Waintig cleanupTestCase: DONE";
 }
 
 void BaseDummyTest::configurePrimaryStore()

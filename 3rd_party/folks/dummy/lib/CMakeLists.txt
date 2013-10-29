@@ -2,7 +2,7 @@ project(folks-dummy-lib)
 
 vala_precompile(LIB_DUMMY_VALA_C
 SOURCES
-    internal.vala
+    internal_0_9_2.vala
     dummy-backend.vala
     dummy-fat-persona.vala
     dummy-persona-store.vala
