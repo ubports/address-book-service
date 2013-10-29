@@ -55,7 +55,7 @@ void BaseDummyTest::initTestCase()
 
     ScopedEventLoop loop(&m_eventLoop);
 
-    m_backendStore = folks_backend_store_new();
+    m_backendStore = folks_backend_store_dup();
     folks_backend_store_load_backends(m_backendStore,
                                       (GAsyncReadyCallback) BaseDummyTest::backendStoreLoaded,
                                       this);
@@ -182,7 +182,7 @@ QString BaseDummyTest::createContact(const QtContacts::QContact &qcontact)
 {
     ScopedEventLoop loop(&m_eventLoop);
 
-    FolksIndividualAggregator *fia = folks_individual_aggregator_dup();
+    FolksIndividualAggregator *fia = folks_individual_aggregator_new();
     folks_individual_aggregator_prepare(fia,
                                         (GAsyncReadyCallback) BaseDummyTest::individualAggregatorPrepared,
                                         this);
