@@ -18,6 +18,7 @@
 
 #include "folks-dummy-base-test.h"
 
+#include "src/qindividual.h"
 #include "common/dbus-service-defs.h"
 
 #include <QDebug>
@@ -79,7 +80,7 @@ void BaseDummyTest::init()
 }
 
 void BaseDummyTest::cleanup()
-{   
+{
     QDBusConnection connection = QDBusConnection::sessionBus();
     connection.unregisterService(CPIM_SERVICE_NAME);
     delete m_addressBook;
@@ -121,7 +122,7 @@ void BaseDummyTest::configurePrimaryStore()
 }
 
 void BaseDummyTest::startService()
-{    
+{
     QDBusConnection connection = QDBusConnection::sessionBus();
     if (connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
         QFAIL("Pin service already registered!");
@@ -176,3 +177,54 @@ void BaseDummyTest::checkError(GError *error)
     }
     QVERIFY(error == 0);
 }
+
+QString BaseDummyTest::createContact(const QtContacts::QContact &qcontact)
+{
+    ScopedEventLoop loop(&m_eventLoop);
+
+    FolksIndividualAggregator *fia = folks_individual_aggregator_dup();
+    folks_individual_aggregator_prepare(fia,
+                                        (GAsyncReadyCallback) BaseDummyTest::individualAggregatorPrepared,
+                                        this);
+
+    loop.exec();
+
+    GHashTable *details = galera::QIndividual::parseDetails(qcontact);
+    loop.reset(&m_eventLoop);
+    folks_individual_aggregator_add_persona_from_details(fia,
+                                                         NULL, //parent
+                                                         FOLKS_PERSONA_STORE(m_primaryPersonaStore),
+                                                         details,
+                                                         (GAsyncReadyCallback) BaseDummyTest::individualAggregatorAddedPersona,
+                                                         this);
+
+    loop.exec();
+    return QString();
+}
+
+void BaseDummyTest::individualAggregatorPrepared(FolksIndividualAggregator *fia,
+                                                 GAsyncResult *res,
+                                                 BaseDummyTest *self)
+{
+    GError *error = 0;
+
+    folks_individual_aggregator_prepare_finish(fia, res, &error);
+    checkError(error);
+
+    self->m_eventLoop->quit();
+    self->m_eventLoop = 0;
+}
+
+void BaseDummyTest::individualAggregatorAddedPersona(FolksIndividualAggregator *fia,
+                                                     GAsyncResult *res,
+                                                     BaseDummyTest *self)
+{
+    GError *error = 0;
+    qDebug() << "Contact added";
+    folks_individual_aggregator_add_persona_from_details_finish(fia, res, &error);
+    checkError(error);
+
+    self->m_eventLoop->quit();
+    self->m_eventLoop = 0;
+}
+

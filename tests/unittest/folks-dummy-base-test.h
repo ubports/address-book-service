@@ -49,19 +49,18 @@ protected:
 //    QtContacts::QContactManager *m_contactManager;
     galera::AddressBook *m_addressBook;
 
-//    QString createContact(const QtContacts::QContact &qcontact);
+    QString createContact(const QtContacts::QContact &qcontact);
     void startService();
     void startServiceSync();
 
 private:
     DummyfBackend *m_backend;
-    FolksBackendStore *m_backendStore;
     DummyfPersonaStore *m_primaryPersonaStore;
+    FolksBackendStore *m_backendStore;
     QEventLoop *m_eventLoop;
 
     static void checkError(GError *error);
     void configurePrimaryStore();
-
 
     static void backendEnabled(FolksBackendStore *backendStore,
                                GAsyncResult *res,
@@ -71,13 +70,13 @@ private:
                                    GAsyncResult *res,
                                    BaseDummyTest *self);
 
-//    static void individualAggregatorPrepared(FolksIndividualAggregator *fia,
-//                                             GAsyncResult *res,
-//                                             BaseDummyTest *self);
+    static void individualAggregatorPrepared(FolksIndividualAggregator *fia,
+                                             GAsyncResult *res,
+                                             BaseDummyTest *self);
 
-//    static void individualAggregatorAddedPersona(FolksIndividualAggregator *fia,
-//                                                 GAsyncResult *res,
-//                                                 BaseDummyTest *self);
+    static void individualAggregatorAddedPersona(FolksIndividualAggregator *fia,
+                                                 GAsyncResult *res,
+                                                 BaseDummyTest *self);
 protected Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
