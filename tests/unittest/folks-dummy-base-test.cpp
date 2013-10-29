@@ -55,7 +55,7 @@ void BaseDummyTest::initTestCase()
 
     ScopedEventLoop loop(&m_eventLoop);
 
-    m_backendStore = folks_backend_store_dup();
+    m_backendStore = folks_backend_store_new();
     folks_backend_store_load_backends(m_backendStore,
                                       (GAsyncReadyCallback) BaseDummyTest::backendStoreLoaded,
                                       this);
