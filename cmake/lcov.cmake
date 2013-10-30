@@ -29,6 +29,8 @@
 set(REMOVE_PATTERN
     q*.h
     folks/*.h
+    dummy-*.c
+    internal_0_9_2.c
     *.moc
     moc_*.cpp
     locale_facets.h
