@@ -50,9 +50,7 @@ void ScopedEventLoop::exec()
 
 void BaseDummyTest::initTestCase()
 {
-    qputenv("FOLKS_BACKENDS_ALLOWED", "dummy");
-    qputenv("FOLKS_PRIMARY_STORE", "dummy");
-
+    initEnviroment();
     ScopedEventLoop loop(&m_eventLoop);
 
     m_backendStore = folks_backend_store_dup();
@@ -145,6 +143,57 @@ void BaseDummyTest::startServiceSync()
     while(!m_addressBook->isReady()) {
         QCoreApplication::instance()->processEvents();
     }
+}
+
+void BaseDummyTest::mkpath(const QString &path)
+{
+    QDir dir;
+    QVERIFY(dir.mkpath(path));
+}
+
+void BaseDummyTest::initEnviroment()
+{
+    QVERIFY(m_tmpDir.isValid());
+    QString tmpFullPath = QString("%1/folks-test").arg(m_tmpDir.path());
+
+    qputenv("FOLKS_BACKENDS_ALLOWED", "dummy");
+    qputenv("FOLKS_PRIMARY_STORE", "dummy");
+
+    qDebug() << "setting up in transient directory:" << tmpFullPath;
+
+    // home
+    qputenv("HOME", tmpFullPath.toUtf8().data());
+
+    // cache
+    QString cacheDir = QString("%1/.cache").arg(tmpFullPath);
+
+    mkpath(cacheDir);
+    qputenv("XDG_CACHE_HOME", cacheDir.toUtf8().data());
+
+    // config
+    QString configDir = QString("%1/.config").arg(tmpFullPath);
+    mkpath(configDir);
+    qputenv("XDG_CONFIG_HOME", configDir.toUtf8().data());
+
+    // data
+    QString dataDir = QString("%1/.local/share").arg(tmpFullPath);
+    mkpath(dataDir);
+    qputenv("XDG_DATA_HOME", dataDir.toUtf8().data());
+    mkpath(QString("%1/folks").arg(dataDir));
+
+    // runtime
+    QString runtimeDir = QString("%1/XDG_RUNTIME_DIR").arg(tmpFullPath);
+    mkpath(runtimeDir);
+    qputenv("XDG_RUNTIME_DIR", runtimeDir.toUtf8().data());
+
+    qputenv("XDG_DESKTOP_DIR", "");
+    qputenv("XDG_DOCUMENTS_DIR", "");
+    qputenv("XDG_DOWNLOAD_DIR", "");
+    qputenv("XDG_MUSIC_DIR", "");
+    qputenv("XDG_PICTURES_DIR", "");
+    qputenv("XDG_PUBLICSHARE_DIR", "");
+    qputenv("XDG_TEMPLATES_DIR", "");
+    qputenv("XDG_VIDEOS_DIR", "");
 }
 
 void BaseDummyTest::backendEnabled(FolksBackendStore *backendStore,

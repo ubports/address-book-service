@@ -52,28 +52,28 @@ protected:
     QString createContact(const QtContacts::QContact &qcontact);
     void startService();
     void startServiceSync();
+    void initEnviroment();
 
 private:
     DummyfBackend *m_backend;
     DummyfPersonaStore *m_primaryPersonaStore;
     FolksBackendStore *m_backendStore;
     QEventLoop *m_eventLoop;
+    QTemporaryDir m_tmpDir;
 
-    static void checkError(GError *error);
     void configurePrimaryStore();
 
+    static void mkpath(const QString &path);
+    static void checkError(GError *error);
     static void backendEnabled(FolksBackendStore *backendStore,
                                GAsyncResult *res,
                                BaseDummyTest *self);
-
     static void backendStoreLoaded(FolksBackendStore *backendStore,
                                    GAsyncResult *res,
                                    BaseDummyTest *self);
-
     static void individualAggregatorPrepared(FolksIndividualAggregator *fia,
                                              GAsyncResult *res,
                                              BaseDummyTest *self);
-
     static void individualAggregatorAddedPersona(FolksIndividualAggregator *fia,
                                                  GAsyncResult *res,
                                                  BaseDummyTest *self);
