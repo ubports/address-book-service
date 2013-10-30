@@ -3,13 +3,16 @@ Section: utils
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake (>= 2.8.9),
+               dbus-test-runner,
                debhelper (>= 9),
+               gobject-introspection (>= 1.31.0-2~),
                libfolks-dev,
-               libfolks-eds25,
+               libgee-0.8-dev (>= 0.8.4),
                qt5-default,
                qt5-qmake,
                qtbase5-dev,
                qtpim5-dev,
+               valac (>= 0.20),
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/address-book-service
 Vcs-Bzr: https://code.launchpad.net/~phablet-team/address-book-service/trunk

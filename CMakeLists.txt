@@ -6,8 +6,9 @@ include(FindPkgConfig)
 # Standard install paths
 include(GNUInstallDirs)
 
-
 find_package(Qt5Core REQUIRED)
+find_program(DBUS_RUNNER dbus-test-runner)
+
 add_definitions(-DQT_NO_KEYWORDS)
 
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.32)
@@ -57,6 +58,7 @@ add_custom_target(uninstall "${CMAKE_COMMAND}"
 
 enable_testing()
 
+add_subdirectory(3rd_party)
 add_subdirectory(common)
 add_subdirectory(src)
 add_subdirectory(qcontacts)

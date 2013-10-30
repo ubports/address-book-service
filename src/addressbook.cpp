@@ -546,7 +546,7 @@ void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, Address
     Q_UNUSED(param);
 
     g_object_get(source, "is-quiescent", &self->m_ready, NULL);
-    if (self->m_ready) {
+    if (self->m_ready && self->m_adaptor) {
         Q_EMIT self->m_adaptor->ready();
     }
 }

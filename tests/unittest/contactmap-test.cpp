@@ -17,6 +17,8 @@
  */
 
 
+#include "folks-dummy-base-test.h"
+
 #include <QObject>
 #include <QtTest>
 #include <QDebug>
@@ -32,7 +34,7 @@
 using namespace QtContacts;
 using namespace galera;
 
-class ContactMapTest : public QObject
+class ContactMapTest : public BaseDummyTest
 {
     Q_OBJECT
 
@@ -72,6 +74,7 @@ private:
         }
         g_object_unref (iter);
         self->m_eventLoop->quit();
+        self->m_eventLoop = 0;
     }
 
     int randomIndex() const
@@ -84,10 +87,36 @@ private:
         return m_individuals[randomIndex()];
     }
 
+    void createContactWithSuffix(const QString &suffix)
+    {
+        QtContacts::QContact contact;
+        QtContacts::QContactName name;
+        name.setFirstName(QString("Fulano_%1").arg(suffix));
+        name.setMiddleName("de");
+        name.setLastName("Tal");
+        contact.saveDetail(&name);
+
+        QtContacts::QContactEmailAddress email;
+        email.setEmailAddress(QString("fulano_%1@ubuntu.com").arg(suffix));
+        contact.saveDetail(&email);
+
+        QtContacts::QContactPhoneNumber phone;
+        phone.setNumber("33331410");
+        contact.saveDetail(&phone);
+
+        createContact(contact);
+    }
+
 private Q_SLOTS:
     void initTestCase()
     {
-        m_eventLoop = new QEventLoop(this);
+        BaseDummyTest::initTestCase();
+
+        createContactWithSuffix("1");
+        createContactWithSuffix("2");
+        createContactWithSuffix("3");
+
+        ScopedEventLoop loop(&m_eventLoop);
         m_individualAggregator = folks_individual_aggregator_new();
 
         g_signal_connect(m_individualAggregator,
@@ -98,13 +127,16 @@ private Q_SLOTS:
         folks_individual_aggregator_prepare(m_individualAggregator,
                                             (GAsyncReadyCallback) ContactMapTest::folksIndividualAggregatorPrepareDone,
                                             this);
-        m_eventLoop->exec();
+
+        loop.exec();
     }
 
     void cleanupTestCase()
     {
         delete m_eventLoop;
         g_object_unref(m_individualAggregator);
+
+        BaseDummyTest::cleanupTestCase();
     }
 
     void testLookupByFolksIndividual()
