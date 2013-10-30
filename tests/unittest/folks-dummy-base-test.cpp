@@ -269,7 +269,6 @@ void BaseDummyTest::individualAggregatorAddedPersona(FolksIndividualAggregator *
                                                      BaseDummyTest *self)
 {
     GError *error = 0;
-    qDebug() << "Contact added";
     folks_individual_aggregator_add_persona_from_details_finish(fia, res, &error);
     checkError(error);
 

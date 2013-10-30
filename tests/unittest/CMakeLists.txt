@@ -71,7 +71,6 @@ declare_test(sort-clause-test)
 declare_test(fetch-hint-test)
 
 if(DBUS_RUNNER)
-    #TODO: port contactmap test to use dummy backend
     declare_test_with_folks(contactmap-test)
     declare_test_with_folks(service-life-cycle-test)
 elseif()
