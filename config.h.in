@@ -1,1 +1,13 @@
+#ifndef __GALERA_CONFIG_H__
+#define __GALERA_CONFIG_H__
 
+#define FOLKS_VERSION                   "@FOLKS_VERSION@"
+#define FOLKS_GREATER_LESS_THEN_0_9_5    @FOLKS_GREATER_LESS_THEN_0_9_5@
+
+#if FOLKS_GREATER_LESS_THEN_0_9_5
+    #define FOLKS_INDIVIDUAL_AGGREGATOR_DUP    folks_individual_aggregator_new
+#else
+    #define FOLKS_INDIVIDUAL_AGGREGATOR_DUP    folks_individual_aggregator_dup
+#endif
+
+#endif

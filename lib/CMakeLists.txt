@@ -1,3 +1,5 @@
+project(address-book-service-lib)
+
 set(CONTACTS_SERVICE_LIB address-book-service-lib)
 
 set(CONTACTS_SERVICE_LIB_SRC
@@ -40,18 +42,6 @@ target_link_libraries(${CONTACTS_SERVICE_LIB}
 
 qt5_use_modules(${CONTACTS_SERVICE_LIB} Core Contacts DBus Versit)
 
-set(CONTACTS_SERVICE address-book-service)
-
-add_executable(${CONTACTS_SERVICE}
-    main.cpp
-)
-
-target_link_libraries(${CONTACTS_SERVICE}
-    ${CONTACTS_SERVICE_LIB}
-)
-
-qt5_use_modules(${CONTACTS_SERVICE} Core Contacts DBus Versit)
-
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
@@ -59,7 +49,3 @@ include_directories(
     ${GIO_INCLUDE_DIRS}
     ${FOLKS_INCLUDE_DIRS}
 )
-
-install(TARGETS ${CONTACTS_SERVICE}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_FULL_LIBEXECDIR})
-

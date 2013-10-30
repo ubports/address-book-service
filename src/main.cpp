@@ -43,25 +43,10 @@ int main(int argc, char** argv)
         qInstallMessageHandler(contactServiceMessageOutput);
     }
 
-    // Register service
-    QDBusConnection connection = QDBusConnection::sessionBus();
-    if (connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
-        return false;
-    }
+    galera::AddressBook book;
+    book.start();
+    app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
 
-    if (!connection.registerService(CPIM_SERVICE_NAME))
-    {
-        qWarning() << "Could not register service!" << CPIM_SERVICE_NAME;
-    } else {
-        qDebug() << "Interface registered:" << CPIM_SERVICE_NAME;
-    }
-
-    galera::AddressBook *book = new galera::AddressBook;
-    app.connect(book, SIGNAL(stopped()), SLOT(quit()));
-    book->registerObject(connection);
-    int ret = app.exec();
-
-    //delete book;
-    return ret;
+    return app.exec();
 }
 

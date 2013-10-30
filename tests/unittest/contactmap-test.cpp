@@ -16,8 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
+#include "config.h"
 #include "folks-dummy-base-test.h"
+#include "lib/contacts-map.h"
+#include "lib/qindividual.h"
 
 #include <QObject>
 #include <QtTest>
@@ -27,9 +29,6 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-
-#include "src/contacts-map.h"
-#include "src/qindividual.h"
 
 using namespace QtContacts;
 using namespace galera;
@@ -117,7 +116,7 @@ private Q_SLOTS:
         createContactWithSuffix("3");
 
         ScopedEventLoop loop(&m_eventLoop);
-        m_individualAggregator = folks_individual_aggregator_new();
+        m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
 
         g_signal_connect(m_individualAggregator,
                          "individuals-changed-detailed",

@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "addressbook.h"
 #include "addressbook-adaptor.h"
 #include "view.h"
@@ -29,6 +30,8 @@
 
 #include <signal.h>
 #include <sys/socket.h>
+
+
 
 using namespace QtContacts;
 
@@ -102,14 +105,16 @@ AddressBook::AddressBook(QObject *parent)
       m_contacts(new ContactsMap),
       m_ready(false),
       m_adaptor(0),
+      m_connection(QDBusConnection::sessionBus()),
       m_notifyContactUpdate(0)
 {
+    memset(&m_glibHandlersId, 0, sizeof(int)*2);
     prepareUnixSignals();
-    prepareFolks();
 }
 
 AddressBook::~AddressBook()
 {
+    shutdown();
     // destructor
     if (m_notifyContactUpdate) {
         delete m_notifyContactUpdate;
@@ -124,6 +129,14 @@ QString AddressBook::objectPath()
 
 bool AddressBook::registerObject(QDBusConnection &connection)
 {
+    if (connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
+        qWarning() << "Galera pin service already registered";
+        return false;
+    } else if (!connection.registerService(CPIM_SERVICE_NAME)) {
+        qWarning() << "Could not register service!" << CPIM_SERVICE_NAME;
+        return false;
+    }
+
     if (!m_adaptor) {
         m_adaptor = new AddressBookAdaptor(connection, this);
         if (!connection.registerObject(galera::AddressBook::objectPath(), this))
@@ -145,6 +158,16 @@ bool AddressBook::registerObject(QDBusConnection &connection)
     return (m_adaptor != 0);
 }
 
+bool AddressBook::start(QDBusConnection connection)
+{
+    if (registerObject(connection)) {
+        m_connection = connection;
+        prepareFolks();
+        return true;
+    }
+    return false;
+}
+
 void AddressBook::shutdown()
 {
     m_ready = false;
@@ -159,6 +182,9 @@ void AddressBook::shutdown()
     }
 
     if (m_individualAggregator) {
+        g_signal_handler_disconnect(m_individualAggregator, m_glibHandlersId[0]);
+        g_signal_handler_disconnect(m_individualAggregator, m_glibHandlersId[1]);
+        memset(&m_glibHandlersId, 0, sizeof(int)*2);
         g_clear_object(&m_individualAggregator);
     }
 
@@ -170,26 +196,31 @@ void AddressBook::shutdown()
         m_adaptor = 0;
     }
 
+    if (m_connection.interface() &&
+        m_connection.interface()->isValid() &&
+        m_connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
+        m_connection.unregisterService(CPIM_SERVICE_NAME);
+    }
+
     Q_EMIT stopped();
 }
 
 void AddressBook::prepareFolks()
 {
-    //TODO: filter EDS (FolksBackendStore)
-    m_individualAggregator = folks_individual_aggregator_new();
+    m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
     if (m_ready) {
         AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
     }
-    g_signal_connect(m_individualAggregator,
-                     "notify::is-quiescent",
-                     (GCallback)AddressBook::isQuiescentChanged,
-                     this);
+    m_glibHandlersId[0] = g_signal_connect(m_individualAggregator,
+                                          "notify::is-quiescent",
+                                          (GCallback)AddressBook::isQuiescentChanged,
+                                          this);
 
-    g_signal_connect(m_individualAggregator,
-                     "individuals-changed-detailed",
-                     (GCallback) AddressBook::individualsChangedCb,
-                     this);
+    m_glibHandlersId[1] = g_signal_connect(m_individualAggregator,
+                                          "individuals-changed-detailed",
+                                          (GCallback) AddressBook::individualsChangedCb,
+                                          this);
 
     folks_individual_aggregator_prepare(m_individualAggregator,
                                         (GAsyncReadyCallback) AddressBook::prepareFolksDone,

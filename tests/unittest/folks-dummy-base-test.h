@@ -19,12 +19,10 @@
 #ifndef __BASE_DUMMY_TEST_H__
 #define __BASE_DUMMY_TEST_H__
 
-#include "src/addressbook.h"
+#include "lib/addressbook.h"
 
 #include <QObject>
 #include <QEventLoop>
-
-//#include <QtContacts>
 
 #include <folks-dummy.h>
 
@@ -46,7 +44,6 @@ class BaseDummyTest : public QObject
     Q_OBJECT
 
 protected:
-//    QtContacts::QContactManager *m_contactManager;
     galera::AddressBook *m_addressBook;
 
     QString createContact(const QtContacts::QContact &qcontact);
