@@ -85,13 +85,14 @@ private:
     FolksIndividualAggregator *m_individualAggregator;
     ContactsMap *m_contacts;
     QSet<View*> m_views;
-    bool m_ready;
     AddressBookAdaptor *m_adaptor;
-    int m_glibHandlersId[2];
-    QDBusConnection m_connection;
-
     // timer to avoid send several updates at the same time
     DirtyContactsNotify *m_notifyContactUpdate;
+
+    bool m_ready;
+    int m_individualsChangedDetailedId;
+    int m_notifyIsQuiescentHandlerId;
+    QDBusConnection m_connection;
 
     // Update command
     QDBusMessage m_updateCommandReplyMessage;

@@ -16,9 +16,9 @@ pkg_check_modules(GIO REQUIRED gio-2.0>=2.32)
 pkg_check_modules(FOLKS REQUIRED folks>=0.9.0)
 
 if(FOLKS_VERSION VERSION_LESS "0.9.5")
-    set(FOLKS_GREATER_LESS_THEN_0_9_5 "1")
+    set(FOLKS_VERSION_LESS_THAN_0_9_5 "1")
 else()
-    set(FOLKS_GREATER_LESS_THEN_0_9_5 "0")
+    set(FOLKS_VERSION_LESS_THAN_0_9_5 "0")
 endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
