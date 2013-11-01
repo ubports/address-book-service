@@ -16,35 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "base-client-test.h"
-#include "common/dbus-service-defs.h"
+#ifndef __BASE_DUMMY_TEST_H__
+#define __BASE_DUMMY_TEST_H__
 
 #include <QtCore/QObject>
-#include <QtCore/QDebug>
-#include <QtDBus/QDBusReply>
-#include <QtTest>
+#include <QtContacts/QContact>
+#include <QtDBus/QDBusInterface>
 
-class ServiceLifeCycleTest : public BaseClientTest
+class BaseClientTest : public QObject
 {
     Q_OBJECT
-private Q_SLOTS:
+protected:
+    QDBusInterface *m_serverIface;
+    QDBusInterface *m_dummyIface;
 
-    void testServiceReady()
-    {
-        QCOMPARE(m_serverIface->property("isReady").toBool(), true);
-        QCOMPARE(m_dummyIface->property("isReady").toBool(), true);
-    }
-
-    void testCallServiceFunction()
-    {
-        QDBusReply<bool> result = m_serverIface->call("ping");
-        QCOMPARE(result.value(), true);
-
-        result = m_dummyIface->call("ping");
-        QCOMPARE(result.value(), true);
-    }
+protected Q_SLOTS:
+    void initTestCase();
+    void cleanupTestCase();
+    void init();
+    void cleanup();
 };
 
-QTEST_MAIN(ServiceLifeCycleTest)
-
-#include "service-life-cycle-test.moc"
+#endif

@@ -17,7 +17,9 @@
  */
 
 #include "config.h"
-#include "folks-dummy-base-test.h"
+#include "dummy-backend.h"
+#include "scoped-loop.h"
+
 #include "lib/contacts-map.h"
 #include "lib/qindividual.h"
 
@@ -33,11 +35,12 @@
 using namespace QtContacts;
 using namespace galera;
 
-class ContactMapTest : public BaseDummyTest
+class ContactMapTest : public QObject
 {
     Q_OBJECT
 
 private:
+    DummyBackendProxy *m_dummy;
     FolksIndividualAggregator *m_individualAggregator;
     QEventLoop *m_eventLoop;
     ContactsMap m_map;
@@ -103,13 +106,14 @@ private:
         phone.setNumber("33331410");
         contact.saveDetail(&phone);
 
-        createContact(contact);
+        m_dummy->createContact(contact);
     }
 
 private Q_SLOTS:
     void initTestCase()
     {
-        BaseDummyTest::initTestCase();
+        m_dummy = new DummyBackendProxy();
+        m_dummy->start();
 
         createContactWithSuffix("1");
         createContactWithSuffix("2");
@@ -134,8 +138,7 @@ private Q_SLOTS:
     {
         delete m_eventLoop;
         g_object_unref(m_individualAggregator);
-
-        BaseDummyTest::cleanupTestCase();
+        delete m_dummy;
     }
 
     void testLookupByFolksIndividual()

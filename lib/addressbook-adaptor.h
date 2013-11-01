@@ -59,7 +59,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <annotation value=\"SourceList\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
 "    </method>\n"
 "    <method name=\"source\">\n"
-"      <arg direction=\"out\" type=\"a(sb)\"/>\n"
+"      <arg direction=\"out\" type=\"(sb)\"/>\n"
 "      <annotation value=\"Source\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
 "    </method>\n"
 "    <method name=\"sortFields\">\n"
@@ -102,6 +102,7 @@ public:
 
 public Q_SLOTS:
     SourceList availableSources(const QDBusMessage &message);
+    Source source(const QDBusMessage &message);
     QStringList sortFields();
     QDBusObjectPath query(const QString &clause, const QString &sort, const QStringList &sources);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);

@@ -31,7 +31,8 @@
 #include <signal.h>
 #include <sys/socket.h>
 
-
+//this timeout represents how long the server will wait for changes on the contact before notify the client
+#define NOTIFY_CONTACTS_TIMEOUT 500
 
 using namespace QtContacts;
 
@@ -61,9 +62,6 @@ public:
 
 namespace galera
 {
-//this timeout represents how long the server will wait for changes on the contact before notify the client
-#define NOTIFY_CONTACTS_TIMEOUT 500
-
 int AddressBook::m_sigQuitFd[2] = {0, 0};
 
 // this is a helper class uses a timer with a small timeout to notify the client about
@@ -175,6 +173,7 @@ void AddressBook::shutdown()
     Q_FOREACH(View* view, m_views) {
         view->close();
     }
+    m_views.clear();
 
     if (m_contacts) {
         delete m_contacts;
@@ -189,24 +188,24 @@ void AddressBook::shutdown()
     }
 
     if (m_adaptor) {
-        //FIXME: use the connection used in register funcion
-        QDBusConnection connection = QDBusConnection::sessionBus();
-        connection.unregisterObject(objectPath());
+        if (m_connection.interface() &&
+            m_connection.interface()->isValid()) {
+
+            m_connection.unregisterObject(objectPath());
+            if (m_connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
+                m_connection.unregisterService(CPIM_SERVICE_NAME);
+            }
+        }
+
         delete m_adaptor;
         m_adaptor = 0;
+        Q_EMIT stopped();
     }
-
-    if (m_connection.interface() &&
-        m_connection.interface()->isValid() &&
-        m_connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
-        m_connection.unregisterService(CPIM_SERVICE_NAME);
-    }
-
-    Q_EMIT stopped();
 }
 
 void AddressBook::prepareFolks()
 {
+    qDebug() << "Prepare folks";
     m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
     if (m_ready) {
@@ -229,22 +228,72 @@ void AddressBook::prepareFolks()
 
 SourceList AddressBook::availableSources(const QDBusMessage &message)
 {
+    getSource(message, false);
+    return SourceList();
+}
+
+Source AddressBook::source(const QDBusMessage &message)
+{
+    getSource(message, true);
+    return Source();
+}
+
+void AddressBook::getSource(const QDBusMessage &message, bool onlyTheDefault)
+{
     FolksBackendStore *backendStore = folks_backend_store_dup();
     QDBusMessage *msg = new QDBusMessage(message);
 
     if (folks_backend_store_get_is_prepared(backendStore)) {
-        availableSourcesDone(backendStore, 0, msg);
+        if (onlyTheDefault) {
+            availableSourcesDoneListDefaultSource(backendStore, 0, msg);
+        } else {
+            availableSourcesDoneListAllSources(backendStore, 0, msg);
+        }
     } else {
-        folks_backend_store_prepare(backendStore, (GAsyncReadyCallback) availableSourcesDone, msg);
+        if (onlyTheDefault) {
+            folks_backend_store_prepare(backendStore,
+                                        (GAsyncReadyCallback) availableSourcesDoneListDefaultSource,
+                                        msg);
+        } else {
+            folks_backend_store_prepare(backendStore,
+                                        (GAsyncReadyCallback) availableSourcesDoneListAllSources,
+                                        msg);
+        }
     }
-    return SourceList();
+
+    g_object_unref(backendStore);
 }
 
-void AddressBook::availableSourcesDone(FolksBackendStore *backendStore, GAsyncResult *res, QDBusMessage *message)
+void AddressBook::availableSourcesDoneListAllSources(FolksBackendStore *backendStore,
+                                                     GAsyncResult *res,
+                                                     QDBusMessage *msg)
+{
+    SourceList list = availableSourcesDoneImpl(backendStore, res);
+    QDBusMessage reply = msg->createReply(QVariant::fromValue<SourceList>(list));
+    QDBusConnection::sessionBus().send(reply);
+    delete msg;
+}
+
+void AddressBook::availableSourcesDoneListDefaultSource(FolksBackendStore *backendStore,
+                                                        GAsyncResult *res,
+                                                        QDBusMessage *msg)
+{
+    Source defaultSource;
+    SourceList list = availableSourcesDoneImpl(backendStore, res);
+    if (list.count() > 0) {
+        defaultSource = list[0];
+    }
+    QDBusMessage reply = msg->createReply(QVariant::fromValue<Source>(defaultSource));
+    QDBusConnection::sessionBus().send(reply);
+    delete msg;
+}
+
+SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore, GAsyncResult *res)
 {
     if (res) {
         folks_backend_store_prepare_finish(backendStore, res);
     }
+
     GeeCollection *backends = folks_backend_store_list_backends(backendStore);
     SourceList result;
 
@@ -271,10 +320,7 @@ void AddressBook::availableSourcesDone(FolksBackendStore *backendStore, GAsyncRe
         g_object_unref(values);
     }
     g_object_unref(iter);
-
-    QDBusMessage reply = message->createReply(QVariant::fromValue<SourceList>(result));
-    QDBusConnection::sessionBus().send(reply);
-    delete message;
+    return result;
 }
 
 QString AddressBook::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
@@ -577,6 +623,7 @@ void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, Address
     Q_UNUSED(param);
 
     g_object_get(source, "is-quiescent", &self->m_ready, NULL);
+    qDebug() << "Folks is ready" << self->m_ready;
     if (self->m_ready && self->m_adaptor) {
         Q_EMIT self->m_adaptor->ready();
     }
@@ -591,12 +638,13 @@ void AddressBook::quitSignalHandler(int)
 int AddressBook::init()
 {
     struct sigaction quit = { { 0 } };
+    Source::registerMetaType();
 
-     quit.sa_handler = AddressBook::quitSignalHandler;
-     sigemptyset(&quit.sa_mask);
-     quit.sa_flags |= SA_RESTART;
+    quit.sa_handler = AddressBook::quitSignalHandler;
+    sigemptyset(&quit.sa_mask);
+    quit.sa_flags |= SA_RESTART;
 
-     if (sigaction(SIGQUIT, &quit, 0) > 0)
+    if (sigaction(SIGQUIT, &quit, 0) > 0)
         return 1;
 
     return 0;
