@@ -31,8 +31,6 @@
 #include <signal.h>
 #include <sys/socket.h>
 
-
-
 using namespace QtContacts;
 
 namespace
@@ -102,13 +100,15 @@ private:
 
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
+      m_individualAggregator(0),
       m_contacts(new ContactsMap),
-      m_ready(false),
       m_adaptor(0),
-      m_connection(QDBusConnection::sessionBus()),
-      m_notifyContactUpdate(0)
+      m_notifyContactUpdate(0),
+      m_ready(false),
+      m_individualsChangedDetailedId(0),
+      m_notifyIsQuiescentHandlerId(0),
+      m_connection(QDBusConnection::sessionBus())
 {
-    memset(&m_glibHandlersId, 0, sizeof(int)*2);
     prepareUnixSignals();
 }
 
@@ -182,9 +182,11 @@ void AddressBook::shutdown()
     }
 
     if (m_individualAggregator) {
-        g_signal_handler_disconnect(m_individualAggregator, m_glibHandlersId[0]);
-        g_signal_handler_disconnect(m_individualAggregator, m_glibHandlersId[1]);
-        memset(&m_glibHandlersId, 0, sizeof(int)*2);
+        g_signal_handler_disconnect(m_individualAggregator,
+                                    m_individualsChangedDetailedId);
+        g_signal_handler_disconnect(m_individualAggregator,
+                                    m_notifyIsQuiescentHandlerId);
+        m_individualsChangedDetailedId = m_notifyIsQuiescentHandlerId = 0;
         g_clear_object(&m_individualAggregator);
     }
 
@@ -212,12 +214,12 @@ void AddressBook::prepareFolks()
     if (m_ready) {
         AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
     }
-    m_glibHandlersId[0] = g_signal_connect(m_individualAggregator,
+    m_notifyIsQuiescentHandlerId = g_signal_connect(m_individualAggregator,
                                           "notify::is-quiescent",
                                           (GCallback)AddressBook::isQuiescentChanged,
                                           this);
 
-    m_glibHandlersId[1] = g_signal_connect(m_individualAggregator,
+    m_individualsChangedDetailedId = g_signal_connect(m_individualAggregator,
                                           "individuals-changed-detailed",
                                           (GCallback) AddressBook::individualsChangedCb,
                                           this);
