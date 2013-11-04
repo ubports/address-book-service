@@ -51,7 +51,7 @@ public:
     virtual ~AddressBook();
 
     static QString objectPath();
-    bool registerObject(QDBusConnection &connection);
+    bool start(QDBusConnection connection = QDBusConnection::sessionBus());
     void shutdown();
 
     // Adaptor
@@ -84,11 +84,14 @@ private:
     FolksIndividualAggregator *m_individualAggregator;
     ContactsMap *m_contacts;
     QSet<View*> m_views;
-    bool m_ready;
     AddressBookAdaptor *m_adaptor;
-
     // timer to avoid send several updates at the same time
     DirtyContactsNotify *m_notifyContactUpdate;
+
+    bool m_ready;
+    int m_individualsChangedDetailedId;
+    int m_notifyIsQuiescentHandlerId;
+    QDBusConnection m_connection;
 
     // Update command
     QDBusMessage m_updateCommandReplyMessage;
@@ -100,6 +103,9 @@ private:
     static int m_sigQuitFd[2];
 
     QSocketNotifier *m_snQuit;
+    // Disable copy contructor
+    AddressBook(const AddressBook&);
+
     void setupUnixSignals();
 
     // Unix signal handlers.
@@ -107,6 +113,7 @@ private:
     static void quitSignalHandler(int unused);
 
     void prepareFolks();
+    bool registerObject(QDBusConnection &connection);
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
 

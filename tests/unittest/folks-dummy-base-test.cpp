@@ -15,11 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include "config.h"
 #include "folks-dummy-base-test.h"
-
-#include "src/qindividual.h"
-#include "common/dbus-service-defs.h"
+#include "lib/qindividual.h"
 
 #include <QDebug>
 #include <QTest>
@@ -50,7 +48,14 @@ void ScopedEventLoop::exec()
 
 void BaseDummyTest::initTestCase()
 {
+    m_backend = 0;
+    m_primaryPersonaStore = 0;
+    m_backendStore = 0;
+    m_eventLoop = 0;
+    m_addressBook = 0;
+
     initEnviroment();
+
     ScopedEventLoop loop(&m_eventLoop);
 
     m_backendStore = folks_backend_store_dup();
@@ -79,8 +84,6 @@ void BaseDummyTest::init()
 
 void BaseDummyTest::cleanup()
 {
-    QDBusConnection connection = QDBusConnection::sessionBus();
-    connection.unregisterService(CPIM_SERVICE_NAME);
     delete m_addressBook;
     m_addressBook = 0;
 }
@@ -121,20 +124,8 @@ void BaseDummyTest::configurePrimaryStore()
 
 void BaseDummyTest::startService()
 {
-    QDBusConnection connection = QDBusConnection::sessionBus();
-    if (connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
-        QFAIL("Pin service already registered!");
-    }
-
-    if (!connection.registerService(CPIM_SERVICE_NAME))
-    {
-        QFAIL("Could not register pim service!");
-    } else {
-        qDebug() << "Interface registered:" << CPIM_SERVICE_NAME;
-    }
-
-    m_addressBook = new galera::AddressBook;
-    m_addressBook->registerObject(connection);
+    qDebug() << "START SERVICE";
+    m_addressBook->start();
 }
 
 void BaseDummyTest::startServiceSync()
@@ -231,7 +222,7 @@ QString BaseDummyTest::createContact(const QtContacts::QContact &qcontact)
 {
     ScopedEventLoop loop(&m_eventLoop);
 
-    FolksIndividualAggregator *fia = folks_individual_aggregator_new();
+    FolksIndividualAggregator *fia = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     folks_individual_aggregator_prepare(fia,
                                         (GAsyncReadyCallback) BaseDummyTest::individualAggregatorPrepared,
                                         this);
@@ -248,6 +239,7 @@ QString BaseDummyTest::createContact(const QtContacts::QContact &qcontact)
                                                          this);
 
     loop.exec();
+    g_object_unref(fia);
     return QString();
 }
 

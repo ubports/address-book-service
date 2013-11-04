@@ -28,6 +28,9 @@
 
 set(REMOVE_PATTERN
     q*.h
+    folks/*.h
+    dummy-*.c
+    internal_0_9_2.c
     *.moc
     moc_*.cpp
     locale_facets.h
@@ -49,7 +52,7 @@ ADD_CUSTOM_COMMAND(TARGET lcov
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
 ADD_CUSTOM_COMMAND(TARGET lcov
-    COMMAND lcov --directory . --capture --output-file ./coverage/stap_all.info --no-checksum --compat-libtool
+    COMMAND lcov --directory . --capture --output-file ./coverage/stap_all.info --checksum -f
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
 ADD_CUSTOM_COMMAND(TARGET lcov
