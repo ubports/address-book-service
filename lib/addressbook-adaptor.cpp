@@ -47,7 +47,7 @@ SourceList AddressBookAdaptor::availableSources(const QDBusMessage &message)
 
 Source AddressBookAdaptor::source(const QDBusMessage &message)
 {
-	message.setDelayedReply(true);
+    message.setDelayedReply(true);
     QMetaObject::invokeMethod(m_addressBook, "source",
                               Qt::QueuedConnection,
                               Q_ARG(const QDBusMessage&, message));
