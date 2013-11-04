@@ -43,6 +43,16 @@ private Q_SLOTS:
         result = m_dummyIface->call("ping");
         QCOMPARE(result.value(), true);
     }
+
+    void testServiceShutdown()
+    {
+        m_dummyIface->call("quit");
+        QDBusReply<bool> result = m_serverIface->call("ping");
+        QVERIFY(result.error().isValid());
+
+        result = m_dummyIface->call("ping");
+        QVERIFY(result.error().isValid());
+    }
 };
 
 QTEST_MAIN(ServiceLifeCycleTest)

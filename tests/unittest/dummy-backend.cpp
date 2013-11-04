@@ -54,12 +54,11 @@ void DummyBackendProxy::start(bool useDBus)
 void DummyBackendProxy::shutdown()
 {
     m_isReady = false;
-
     if (m_adaptor) {
         QDBusConnection connection = QDBusConnection::sessionBus();
-
         connection.unregisterObject(DUMMY_OBJECT_PATH);
         connection.unregisterService(DUMMY_SERVICE_NAME);
+        qDebug() << "Unregister service; DUMMY";
 
         delete m_adaptor;
         m_adaptor = 0;
