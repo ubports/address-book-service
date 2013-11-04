@@ -16,25 +16,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "folks-dummy-base-test.h"
+#include "base-client-test.h"
+#include "common/dbus-service-defs.h"
 
-#include <QObject>
+#include <QtCore/QObject>
+#include <QtCore/QDebug>
+#include <QtDBus/QDBusReply>
 #include <QtTest>
-#include <QDebug>
 
-class ServiceLifeCycleTest : public BaseDummyTest
+class ServiceLifeCycleTest : public BaseClientTest
 {
     Q_OBJECT
 private Q_SLOTS:
 
     void testServiceReady()
     {
-        QCOMPARE(m_addressBook->isReady(), false);
-        startService();
-        while(!m_addressBook->isReady()) {
-            QCoreApplication::instance()->processEvents();
-        }
-        QCOMPARE(m_addressBook->isReady(), true);
+        QCOMPARE(m_serverIface->property("isReady").toBool(), true);
+        QCOMPARE(m_dummyIface->property("isReady").toBool(), true);
+    }
+
+    void testCallServiceFunction()
+    {
+        QDBusReply<bool> result = m_serverIface->call("ping");
+        QCOMPARE(result.value(), true);
+
+        result = m_dummyIface->call("ping");
+        QCOMPARE(result.value(), true);
+    }
+
+    void testServiceShutdown()
+    {
+        m_dummyIface->call("quit");
+        QDBusReply<bool> result = m_serverIface->call("ping");
+        QVERIFY(result.error().isValid());
+
+        result = m_dummyIface->call("ping");
+        QVERIFY(result.error().isValid());
     }
 };
 

@@ -1,23 +1,8 @@
-macro(declare_test TESTNAME)
-    declare_test_full(${TESTNAME} false)
-endmacro()
-
-macro(declare_test_with_folks TESTNAME)
-    declare_test_full(${TESTNAME} true)
-endmacro()
-
-macro(declare_test_full TESTNAME USE_DUMMY_FOLKS)
-    if(${USE_DUMMY_FOLKS} STREQUAL "true")
-        add_executable(${TESTNAME}
-                        folks-dummy-base-test.cpp
-                        folks-dummy-base-test.h
-                        ${TESTNAME}.cpp
-        )
-    else()
-        add_executable(${TESTNAME}
-                        ${TESTNAME}.cpp
-        )
-    endif()
+macro(declare_test TESTNAME RUN_SERVER)
+    add_executable(${TESTNAME}
+                   ${ARGN}
+                   ${TESTNAME}.cpp
+    )
     qt5_use_modules(${TESTNAME} Core Contacts Versit Test DBus)
 
     if(TEST_XML_OUTPUT)
@@ -33,13 +18,13 @@ macro(declare_test_full TESTNAME USE_DUMMY_FOLKS)
                           ${GLIB_LIBRARIES}
                           ${GIO_LIBRARIES}
                           ${FOLKS_LIBRARIES}
-                          ${FOLKS_DUMMY_LIBRARIES}
     )
 
-    if(${USE_DUMMY_FOLKS} STREQUAL "true")
+    if(${RUN_SERVER} STREQUAL "True")
         add_test(${TESTNAME}
                  ${DBUS_RUNNER}
-                 --task ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TEST_ARGS})
+                 --task ${CMAKE_CURRENT_BINARY_DIR}/address-book-server-test
+                 --task ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TEST_ARGS} --wait-for=com.canonical.pim)
     else()
         add_test(${TESTNAME} ${TESTNAME})
     endif()
@@ -65,13 +50,47 @@ if(NOT CTEST_TESTING_TIMEOUT)
     set(CTEST_TESTING_TIMEOUT 60)
 endif()
 
-declare_test(clause-test)
-declare_test(sort-clause-test)
-declare_test(fetch-hint-test)
+declare_test(clause-test False)
+declare_test(sort-clause-test False)
+declare_test(fetch-hint-test False)
+
+set(DUMMY_BACKEND_SRC
+    scoped-loop.h
+    scoped-loop.cpp
+    dummy-backend.cpp
+    dummy-backend.h)
+
+declare_test(contactmap-test False ${DUMMY_BACKEND_SRC})
 
 if(DBUS_RUNNER)
-    declare_test_with_folks(contactmap-test)
-    declare_test_with_folks(service-life-cycle-test)
+    set(BASE_CLIENT_TEST_SRC
+        dummy-backend-defs.h
+        base-client-test.h
+        base-client-test.cpp)
+
+    declare_test(addressbook-test True ${BASE_CLIENT_TEST_SRC})
+    declare_test(service-life-cycle-test True ${BASE_CLIENT_TEST_SRC})
 elseif()
     message(STATUS "DBus test runner not found. Some tests will be disabled")
 endif()
+
+# server code
+add_executable(address-book-server-test
+    scoped-loop.h
+    scoped-loop.cpp
+    dummy-backend.h
+    dummy-backend.cpp
+    addressbook-server.cpp
+)
+
+qt5_use_modules(address-book-server-test Core Contacts Versit DBus)
+
+target_link_libraries(address-book-server-test
+                      address-book-service-lib
+                      folks-dummy
+                      ${CONTACTS_SERVICE_LIB}
+                      ${GLIB_LIBRARIES}
+                      ${GIO_LIBRARIES}
+                      ${FOLKS_LIBRARIES}
+)
+

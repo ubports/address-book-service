@@ -45,6 +45,15 @@ SourceList AddressBookAdaptor::availableSources(const QDBusMessage &message)
     return SourceList();
 }
 
+Source AddressBookAdaptor::source(const QDBusMessage &message)
+{
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "source",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QDBusMessage&, message));
+    return Source();
+}
+
 QString AddressBookAdaptor::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
 {
     message.setDelayedReply(true);
