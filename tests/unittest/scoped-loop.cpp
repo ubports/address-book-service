@@ -16,33 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "addressbook.h"
+#include "scoped-loop.h"
 
-void contactServiceMessageOutput(QtMsgType type,
-                                 const QMessageLogContext &context,
-                                 const QString &message)
+ScopedEventLoop::ScopedEventLoop(QEventLoop **proxy)
 {
-    Q_UNUSED(type);
-    Q_UNUSED(context);
-    Q_UNUSED(message);
-    //nothing
+    reset(proxy);
 }
 
-
-int main(int argc, char** argv)
+ScopedEventLoop::~ScopedEventLoop()
 {
-    galera::AddressBook::init();
-    QCoreApplication app(argc, argv);
+    *m_proxy = 0;
+}
 
-    // disable debug message if variable not exported
-    if (qgetenv("ADDRESS_BOOK_SERVICE_DEBUG").isEmpty()) {
-        qInstallMessageHandler(contactServiceMessageOutput);
+void ScopedEventLoop::reset(QEventLoop **proxy)
+{
+    *proxy = &m_eventLoop;
+    m_proxy = proxy;
+}
+
+void ScopedEventLoop::exec()
+{
+    if (*m_proxy) {
+        m_eventLoop.exec();
+        *m_proxy = 0;
     }
-
-    galera::AddressBook book;
-    book.start();
-    app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
-
-    return app.exec();
 }
-

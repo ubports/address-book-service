@@ -16,33 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "addressbook.h"
-
-void contactServiceMessageOutput(QtMsgType type,
-                                 const QMessageLogContext &context,
-                                 const QString &message)
-{
-    Q_UNUSED(type);
-    Q_UNUSED(context);
-    Q_UNUSED(message);
-    //nothing
-}
-
+#include "lib/addressbook.h"
+#include "dummy-backend.h"
 
 int main(int argc, char** argv)
 {
     galera::AddressBook::init();
     QCoreApplication app(argc, argv);
 
-    // disable debug message if variable not exported
-    if (qgetenv("ADDRESS_BOOK_SERVICE_DEBUG").isEmpty()) {
-        qInstallMessageHandler(contactServiceMessageOutput);
-    }
+    // dummy
+    DummyBackendProxy dummy;
+    dummy.start(true);
 
+    // addressbook
     galera::AddressBook book;
     book.start();
-    app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
 
+    book.connect(&dummy, SIGNAL(stopped()), SLOT(shutdown()));
+    app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
     return app.exec();
 }
 

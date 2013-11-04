@@ -52,7 +52,6 @@ public:
 
     static QString objectPath();
     bool start(QDBusConnection connection = QDBusConnection::sessionBus());
-    void shutdown();
 
     // Adaptor
     QString linkContacts(const QStringList &contacts);
@@ -67,7 +66,9 @@ Q_SIGNALS:
     void stopped();
 
 public Q_SLOTS:
+    void shutdown();
     SourceList availableSources(const QDBusMessage &message);
+    Source source(const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
@@ -106,6 +107,8 @@ private:
     // Disable copy contructor
     AddressBook(const AddressBook&);
 
+    void getSource(const QDBusMessage &message, bool onlyTheDefault);
+
     void setupUnixSignals();
 
     // Unix signal handlers.
@@ -117,15 +120,20 @@ private:
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
 
+    static void availableSourcesDoneListAllSources(FolksBackendStore *backendStore,
+                                                   GAsyncResult *res,
+                                                   QDBusMessage *msg);
+    static void availableSourcesDoneListDefaultSource(FolksBackendStore *backendStore,
+                                                      GAsyncResult *res,
+                                                      QDBusMessage *msg);
+    static SourceList availableSourcesDoneImpl(FolksBackendStore *backendStore,
+                                               GAsyncResult *res);
     static void individualsChangedCb(FolksIndividualAggregator *individualAggregator,
                                      GeeMultiMap *changes,
                                      AddressBook *self);
     static void isQuiescentChanged(GObject *source,
                                    GParamSpec *param,
                                    AddressBook *self);
-    static void availableSourcesDone(FolksBackendStore *backendStore,
-                                     GAsyncResult *res,
-                                     QDBusMessage *message);
     static void prepareFolksDone(GObject *source,
                                  GAsyncResult *res,
                                  AddressBook *self);
