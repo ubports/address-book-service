@@ -36,8 +36,6 @@ macro(declare_test_full TESTNAME USE_DUMMY_FOLKS)
                           ${FOLKS_DUMMY_LIBRARIES}
     )
 
-
-
     if(${USE_DUMMY_FOLKS} STREQUAL "true")
         add_test(${TESTNAME}
                  ${DBUS_RUNNER}
@@ -54,6 +52,7 @@ endmacro()
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
+    ${CMAKE_BINARY_DIR}
     ${folks-dummy-lib_BINARY_DIR}
     ${GLIB_INCLUDE_DIRS}
     ${GIO_INCLUDE_DIRS}

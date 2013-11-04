@@ -1,65 +1,32 @@
-set(CONTACTS_SERVICE_LIB address-book-service-lib)
+project(address-book-service)
 
-set(CONTACTS_SERVICE_LIB_SRC
-    addressbook.cpp
-    addressbook-adaptor.cpp
-    contacts-map.cpp
-    detail-context-parser.cpp
-    gee-utils.cpp
-    qindividual.cpp
-    source.cpp
-    update-contact-request.cpp
-    view.cpp
-    view-adaptor.cpp
+set(CONTACTS_SERVICE_BIN address-book-service)
+
+set(CONTACTS_SERVICE_BIN_SRC
+    main.cpp
 )
 
-set(CONTACTS_SERVICE_LIB_HEADERS
-    addressbook.h
-    addressbook-adaptor.h
-    contacts-map.h
-    detail-context-parser.h
-    gee-utils.h
-    qindividual.h
-    source.h
-    update-contact-request.h
-    view.h
-    view-adaptor.h
+add_executable(${CONTACTS_SERVICE_BIN}
+    ${CONTACTS_SERVICE_BIN_SRC}
 )
 
-add_library(${CONTACTS_SERVICE_LIB} STATIC
-    ${CONTACTS_SERVICE_LIB_SRC}
-    ${CONTACTS_SERVICE_LIB_HEADERS}
-)
-
-target_link_libraries(${CONTACTS_SERVICE_LIB}
-    galera-common
+target_link_libraries(${CONTACTS_SERVICE_BIN}
+    address-book-service-lib
     ${GLIB_LIBRARIES}
     ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
 )
 
-qt5_use_modules(${CONTACTS_SERVICE_LIB} Core Contacts DBus Versit)
-
-set(CONTACTS_SERVICE address-book-service)
-
-add_executable(${CONTACTS_SERVICE}
-    main.cpp
-)
-
-target_link_libraries(${CONTACTS_SERVICE}
-    ${CONTACTS_SERVICE_LIB}
-)
-
-qt5_use_modules(${CONTACTS_SERVICE} Core Contacts DBus Versit)
+qt5_use_modules(${CONTACTS_SERVICE_BIN} Core Contacts)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
+    ${address-book-service-lib_SOURCE_DIR}
     ${GLIB_INCLUDE_DIRS}
     ${GIO_INCLUDE_DIRS}
     ${FOLKS_INCLUDE_DIRS}
 )
 
-install(TARGETS ${CONTACTS_SERVICE}
+install(TARGETS ${CONTACTS_SERVICE_BIN}
         RUNTIME DESTINATION ${CMAKE_INSTALL_FULL_LIBEXECDIR})
-
