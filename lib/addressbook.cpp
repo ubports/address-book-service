@@ -334,6 +334,7 @@ QString AddressBook::createContact(const QString &contact, const QString &source
         qWarning() << "Contact exists";
     } else {
         QContact qcontact = VCardParser::vcardToContact(contact);
+        qDebug() << "Phone" << qcontact.detail(QContactDetail::TypeName);
         if (!qcontact.isEmpty()) {
             GHashTable *details = QIndividual::parseDetails(qcontact);
             //TOOD: lookup for source and use the correct store

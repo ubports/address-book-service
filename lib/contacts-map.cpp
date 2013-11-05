@@ -41,7 +41,6 @@ QIndividual *ContactEntry::individual() const
     return m_individual;
 }
 
-
 //ContactMap
 ContactsMap::ContactsMap()
 {
@@ -50,12 +49,7 @@ ContactsMap::ContactsMap()
 
 ContactsMap::~ContactsMap()
 {
-    QList<ContactEntry*> entries = m_idToEntry.values();
-    m_idToEntry.clear();
-
-    Q_FOREACH(ContactEntry *entry, entries) {
-        delete entry;
-    }
+    clear();
 }
 
 ContactEntry *ContactsMap::value(FolksIndividual *individual) const
@@ -101,6 +95,17 @@ void ContactsMap::insert(ContactEntry *entry)
 int ContactsMap::size() const
 {
     return m_idToEntry.size();
+}
+
+void ContactsMap::clear()
+{
+    QList<ContactEntry*> entries = m_idToEntry.values();
+    m_idToEntry.clear();
+    m_individualsToEntry.clear();
+
+    Q_FOREACH(ContactEntry *entry, entries) {
+        delete entry;
+    }
 }
 
 QList<ContactEntry*> ContactsMap::values() const

@@ -19,11 +19,13 @@
 #include "base-client-test.h"
 #include "lib/source.h"
 #include "common/dbus-service-defs.h"
+#include "common/vcard-parser.h"
 
 #include <QObject>
 #include <QtDBus>
 #include <QtTest>
 #include <QDebug>
+#include <QtVersit>
 
 class AddressBookTest : public BaseClientTest
 {
@@ -79,6 +81,34 @@ private Q_SLOTS:
         QCOMPARE(list.count(), 1);
         galera::Source src = list[0];
         QCOMPARE(src.id(), QStringLiteral("dummy-store"));
+    }
+
+    void testCreateContact()
+    {
+        QString vcard = QStringLiteral("BEGIN:VCARD\n"
+                                       "VERSION:3.0\n"
+                                       "N:Tal;Fulano_;de;;\n"
+                                       "EMAIL:fulano_@ubuntu.com\n"
+                                       "TEL;TYPE=ISDN:33331410\n"
+                                       "END:VCARD");
+
+        QString vcardResult = QStringLiteral("BEGIN:VCARD\r\n"
+                                             "VERSION:3.0\r\n"
+                                             "UID:81ee878e531264bb4123a12ff7397dc44cb6ffd5\r\n"
+                                             "CLIENTPIDMAP:1;dummy:dummy-store:0\r\n"
+                                             "N;PID=1.1:Tal;Fulano_;de;;\r\n"
+                                             "FN;PID=1.1:Fulano_ Tal\r\n"
+                                             "X-QTPROJECT-FAVORITE;PID=1.1:false;0\r\n"
+                                             "EMAIL;PID=1.1:fulano_@ubuntu.com\r\n"
+                                             "TEL;TYPE=ISDN;PID=1.1:33331410\r\n"
+                                             "END:VCARD\r\n");
+
+        QDBusReply<QString> reply = m_serverIface->call("createContact", vcard, "dummy-store");
+        QCOMPARE(reply.value(), QStringLiteral("81ee878e531264bb4123a12ff7397dc44cb6ffd5"));
+        QDBusReply<QStringList> reply2 = m_dummyIface->call("listContacts");
+        QStringList vcards = reply2.value();
+        QCOMPARE(vcards.count(), 1);
+        QCOMPARE(vcards[0], vcardResult);
     }
 };
 

@@ -21,6 +21,8 @@
 
 #include "dummy-backend-defs.h"
 
+#include "lib/qindividual.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QEventLoop>
 #include <QtCore/QTemporaryDir>
@@ -44,9 +46,14 @@ public:
     bool isReady() const;
 
     QString createContact(const QtContacts::QContact &qcontact);
+    QList<QtContacts::QContact> contacts() const;
+    QList<galera::QIndividual*> individuals() const;
+
+    FolksIndividualAggregator *aggregator() const;
 
 public Q_SLOTS:
     void shutdown();
+    QStringList listContacts() const;
 
 Q_SIGNALS:
     void ready();
@@ -58,13 +65,17 @@ private:
     DummyfBackend *m_backend;
     DummyfPersonaStore *m_primaryPersonaStore;
     FolksBackendStore *m_backendStore;
-    bool m_isReady;
     QEventLoop *m_eventLoop;
+    FolksIndividualAggregator *m_aggregator;
+    bool m_isReady;
+    int m_individualsChangedDetailedId;
+    QHash<QString, galera::QIndividual*> m_contacts;
 
     bool registerObject();
     void initFolks();
     void configurePrimaryStore();
     void initEnviroment();
+    void prepareAggregator();
     static void mkpath(const QString &path);
     static void checkError(GError *error);
     static void backendEnabled(FolksBackendStore *backendStore,
@@ -79,6 +90,9 @@ private:
     static void individualAggregatorAddedPersona(FolksIndividualAggregator *fia,
                                                  GAsyncResult *res,
                                                  DummyBackendProxy *self);
+    static void individualsChangedCb(FolksIndividualAggregator *individualAggregator,
+                                     GeeMultiMap *changes,
+                                     DummyBackendProxy *self);
 };
 
 class DummyBackendAdaptor: public QDBusAbstractAdaptor
@@ -93,6 +107,12 @@ class DummyBackendAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
 "    <method name=\"quit\"/>\n"
+"    <method name=\"createContact\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"out\" type=\"s\"/>\n"
+"    </method>\n"
+"    <method name=\"listContacts\">\n"
+"      <arg direction=\"out\" type=\"as\"/>\n"
 "    </method>\n"
 "  </interface>\n"
         "")
@@ -105,6 +125,8 @@ public:
 public Q_SLOTS:
     bool ping();
     void quit();
+    QStringList listContacts();
+    QString createContact(const QString &vcard);
 
 Q_SIGNALS:
     void ready();

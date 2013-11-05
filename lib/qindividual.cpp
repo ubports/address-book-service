@@ -142,6 +142,7 @@ QIndividual::~QIndividual()
     if (m_contact) {
         delete m_contact;
     }
+    Q_ASSERT(m_individual);
     g_object_unref(m_individual);
 }
 
