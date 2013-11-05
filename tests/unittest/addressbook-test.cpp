@@ -32,8 +32,38 @@ class AddressBookTest : public BaseClientTest
     Q_OBJECT
 private:
     QEventLoop *m_eventLoop;
+    QString m_basicVcard;
+    QString m_resultBasicVcard;
+    QString m_basicContactId;
+    QList<QtContacts::QContact> m_contactsResult;
 
 private Q_SLOTS:
+    void initTestCase()
+    {
+        BaseClientTest::initTestCase();
+        m_basicContactId = QStringLiteral("81ee878e531264bb4123a12ff7397dc44cb6ffd5");
+        m_basicVcard = QStringLiteral("BEGIN:VCARD\n"
+                                      "VERSION:3.0\n"
+                                      "N:Tal;Fulano_;de;;\n"
+                                      "EMAIL:fulano_@ubuntu.com\n"
+                                      "TEL;TYPE=ISDN:33331410\n"
+                                      "TEL;TYPE=CELL:8888888\n"
+                                      "END:VCARD");
+
+        m_resultBasicVcard = QStringLiteral("BEGIN:VCARD\r\n"
+                                       "VERSION:3.0\r\n"
+                                       "UID:81ee878e531264bb4123a12ff7397dc44cb6ffd5\r\n"
+                                       "CLIENTPIDMAP:1;dummy:dummy-store:0\r\n"
+                                       "N;PID=1.1:Tal;Fulano_;de;;\r\n"
+                                       "FN;PID=1.1:Fulano_ Tal\r\n"
+                                       "X-QTPROJECT-FAVORITE;PID=1.1:false;0\r\n"
+                                       "EMAIL;PID=1.1:fulano_@ubuntu.com\r\n"
+                                       "TEL;PID=1.1;TYPE=ISDN:33331410\r\n"
+                                       "TEL;PID=1.2;TYPE=CELL:8888888\r\n"
+                                       "END:VCARD\r\n");
+
+        m_contactsResult = galera::VCardParser::vcardToContact(QStringList() << m_resultBasicVcard);
+    }
 
     void testSortFields()
     {
@@ -85,30 +115,31 @@ private Q_SLOTS:
 
     void testCreateContact()
     {
-        QString vcard = QStringLiteral("BEGIN:VCARD\n"
-                                       "VERSION:3.0\n"
-                                       "N:Tal;Fulano_;de;;\n"
-                                       "EMAIL:fulano_@ubuntu.com\n"
-                                       "TEL;TYPE=ISDN:33331410\n"
-                                       "END:VCARD");
+        // spy 'contactsAdded' signal
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(const QStringList &)));
 
-        QString vcardResult = QStringLiteral("BEGIN:VCARD\r\n"
-                                             "VERSION:3.0\r\n"
-                                             "UID:81ee878e531264bb4123a12ff7397dc44cb6ffd5\r\n"
-                                             "CLIENTPIDMAP:1;dummy:dummy-store:0\r\n"
-                                             "N;PID=1.1:Tal;Fulano_;de;;\r\n"
-                                             "FN;PID=1.1:Fulano_ Tal\r\n"
-                                             "X-QTPROJECT-FAVORITE;PID=1.1:false;0\r\n"
-                                             "EMAIL;PID=1.1:fulano_@ubuntu.com\r\n"
-                                             "TEL;TYPE=ISDN;PID=1.1:33331410\r\n"
-                                             "END:VCARD\r\n");
+        // call create contact
+        QDBusReply<QString> reply = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
 
-        QDBusReply<QString> reply = m_serverIface->call("createContact", vcard, "dummy-store");
-        QCOMPARE(reply.value(), QStringLiteral("81ee878e531264bb4123a12ff7397dc44cb6ffd5"));
+        // check if the returned id is valid
+        QCOMPARE(reply.value(), m_basicContactId);
+
+        // check if the cotact was created with the correct fields
         QDBusReply<QStringList> reply2 = m_dummyIface->call("listContacts");
-        QStringList vcards = reply2.value();
-        QCOMPARE(vcards.count(), 1);
-        QCOMPARE(vcards[0], vcardResult);
+        QCOMPARE(reply2.value().count(), 1);
+        QList<QtContacts::QContact> contactsCreated = galera::VCardParser::vcardToContact(reply2.value());
+        QCOMPARE(contactsCreated.count(), 1);
+        QCOMPARE(contactsCreated, m_contactsResult);
+
+        // wait for folks to emit the signal
+        QTest::qWait(500);
+
+        // check if the signal "contactAdded" was fired
+        QCOMPARE(addedContactSpy.count(), 1);
+        QList<QVariant> args = addedContactSpy.takeFirst();
+        QCOMPARE(args.count(), 1);
+        QStringList ids = args[0].toStringList();
+        QCOMPARE(ids[0], m_basicContactId);
     }
 };
 
