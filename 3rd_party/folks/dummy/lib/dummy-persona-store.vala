@@ -868,7 +868,6 @@ public class Dummyf.PersonaStore : Folks.PersonaStore
           if (persona != null)
             {
               removed_personas.add ((!) persona);
-              this._personas.unset (((!) persona).iid);
 
               /* Handle the case where a contact is removed before the persona
                * store has reached quiescence. */
@@ -878,6 +877,11 @@ public class Dummyf.PersonaStore : Folks.PersonaStore
                 }
             }
         }
+
+       foreach(var _persona in removed_personas)
+         {
+             this._personas.unset (((!) _persona).iid);
+         }
 
        if (removed_personas.size > 0)
          {

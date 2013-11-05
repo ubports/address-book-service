@@ -26,6 +26,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
 
+
 DummyBackendProxy::DummyBackendProxy()
     : m_adaptor(0),
       m_backend(0),
@@ -118,6 +119,16 @@ QStringList DummyBackendProxy::listContacts() const
     return galera::VCardParser::contactToVcard(contacts());
 }
 
+void DummyBackendProxy::reset()
+{
+    if (m_contacts.count()) {
+        GeeMap *map = folks_persona_store_get_personas((FolksPersonaStore*)m_primaryPersonaStore);
+        GeeCollection *personas = gee_map_get_values(map);
+        dummyf_persona_store_unregister_personas(m_primaryPersonaStore, (GeeSet*)personas);
+        g_object_unref(personas);
+    }
+}
+
 void DummyBackendProxy::initFolks()
 {
     ScopedEventLoop loop(&m_eventLoop);
@@ -168,7 +179,6 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
     ScopedEventLoop loop(&m_eventLoop);
 
     GHashTable *details = galera::QIndividual::parseDetails(qcontact);
-    qDebug() << "qcontact name>>>>>>>>>>>>>>>>>>>>>>>" << qcontact.detail(QtContacts::QContactDetail::TypeName);
     Q_ASSERT(details);
     folks_individual_aggregator_add_persona_from_details(m_aggregator,
                                                          NULL, //parent
@@ -359,7 +369,7 @@ void DummyBackendProxy::individualsChangedCb(FolksIndividualAggregator *individu
         FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
         if (individual) {
             QString id = QString::fromUtf8(folks_individual_get_id(individual));
-            if (!self->m_contacts.contains(id)) {
+            if (self->m_contacts.contains(id)) {
                 delete self->m_contacts.take(id);
             }
             g_object_unref(individual);
@@ -399,6 +409,11 @@ bool DummyBackendAdaptor::ping()
 void DummyBackendAdaptor::quit()
 {
     QMetaObject::invokeMethod(m_proxy, "shutdown", Qt::QueuedConnection);
+}
+
+void DummyBackendAdaptor::reset()
+{
+    m_proxy->reset();
 }
 
 QStringList DummyBackendAdaptor::listContacts()

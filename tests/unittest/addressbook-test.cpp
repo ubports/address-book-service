@@ -34,25 +34,84 @@ private:
     QEventLoop *m_eventLoop;
     QString m_basicVcard;
     QString m_resultBasicVcard;
-    QString m_basicContactId;
-    QList<QtContacts::QContact> m_contactsResult;
+
+    QtContacts::QContact basicContactWithId(const QString &id)
+    {
+        QString newVcard = m_resultBasicVcard.arg(id);
+        QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << newVcard);
+        return contacts[0];
+    }
+
+    void compareContact(const QtContacts::QContact &contact, const QtContacts::QContact &other)
+    {
+        // id
+        QCOMPARE(contact.id(), other.id());
+
+        // name
+        QCOMPARE(contact.detail(QtContacts::QContactDetail::TypeName),
+                 other.detail(QtContacts::QContactDetail::TypeName));
+
+        // phone - this is necessary because:
+        //    1 ) the QContactDetail::FieldDetailUri can change based on the detail order
+        //    2 ) the phone number can be returned in different order
+        QList<QtContacts::QContactDetail> phones = contact.details(QtContacts::QContactDetail::TypePhoneNumber);
+        QList<QtContacts::QContactDetail> otherPhones = other.details(QtContacts::QContactDetail::TypePhoneNumber);
+        QCOMPARE(phones.size(), otherPhones.size());
+        for(int i=0; i < phones.size(); i++) {
+            QtContacts::QContactDetail phone = phones[i];
+            bool found = false;
+            for(int x=0; x < otherPhones.size(); x++) {
+                QtContacts::QContactDetail otherPhone = otherPhones[x];
+                if (phone.value(QtContacts::QContactPhoneNumber::FieldNumber) ==
+                    otherPhone.value(QtContacts::QContactPhoneNumber::FieldNumber)) {
+                    found = true;
+                    QList<int> phoneTypes = phone.value(QtContacts::QContactPhoneNumber::FieldSubTypes).value< QList<int> >();
+                    QList<int> otherPhoneTypes = otherPhone.value(QtContacts::QContactPhoneNumber::FieldSubTypes).value< QList<int> >();
+                    QCOMPARE(phoneTypes, otherPhoneTypes);
+                    QCOMPARE(phone.value(QtContacts::QContactPhoneNumber::FieldContext),
+                         otherPhone.value(QtContacts::QContactPhoneNumber::FieldContext));
+                    break;
+                }
+            }
+            QVERIFY2(found, "Phone number is not equal");
+        }
+
+        // email same as phone number
+        QList<QtContacts::QContactDetail> emails = contact.details(QtContacts::QContactDetail::TypeEmailAddress);
+        QList<QtContacts::QContactDetail> otherEmails = other.details(QtContacts::QContactDetail::TypeEmailAddress);
+        QCOMPARE(emails.size(), otherEmails.size());
+        for(int i=0; i < emails.size(); i++) {
+            QtContacts::QContactDetail email = emails[i];
+            bool found = false;
+            for(int x=0; x < otherEmails.size(); x++) {
+                QtContacts::QContactDetail otherEmail = otherEmails[x];
+                if (email.value(QtContacts::QContactEmailAddress::FieldEmailAddress) ==
+                    otherEmail.value(QtContacts::QContactEmailAddress::FieldEmailAddress)) {
+                    found = true;
+                    QCOMPARE(email.value(QtContacts::QContactEmailAddress::FieldContext),
+                             otherEmail.value(QtContacts::QContactEmailAddress::FieldContext));
+                    break;
+                }
+            }
+            QVERIFY2(found, "Email is not equal");
+        }
+    }
 
 private Q_SLOTS:
     void initTestCase()
     {
         BaseClientTest::initTestCase();
-        m_basicContactId = QStringLiteral("81ee878e531264bb4123a12ff7397dc44cb6ffd5");
         m_basicVcard = QStringLiteral("BEGIN:VCARD\n"
                                       "VERSION:3.0\n"
                                       "N:Tal;Fulano_;de;;\n"
                                       "EMAIL:fulano_@ubuntu.com\n"
-                                      "TEL;TYPE=ISDN:33331410\n"
-                                      "TEL;TYPE=CELL:8888888\n"
+                                      "TEL;PID=1.1;TYPE=ISDN:33331410\n"
+                                      "TEL;PID=1.2;TYPE=CELL:8888888\n"
                                       "END:VCARD");
 
         m_resultBasicVcard = QStringLiteral("BEGIN:VCARD\r\n"
                                        "VERSION:3.0\r\n"
-                                       "UID:81ee878e531264bb4123a12ff7397dc44cb6ffd5\r\n"
+                                       "UID:%1\r\n"
                                        "CLIENTPIDMAP:1;dummy:dummy-store:0\r\n"
                                        "N;PID=1.1:Tal;Fulano_;de;;\r\n"
                                        "FN;PID=1.1:Fulano_ Tal\r\n"
@@ -61,8 +120,6 @@ private Q_SLOTS:
                                        "TEL;PID=1.1;TYPE=ISDN:33331410\r\n"
                                        "TEL;PID=1.2;TYPE=CELL:8888888\r\n"
                                        "END:VCARD\r\n");
-
-        m_contactsResult = galera::VCardParser::vcardToContact(QStringList() << m_resultBasicVcard);
     }
 
     void testSortFields()
@@ -122,14 +179,16 @@ private Q_SLOTS:
         QDBusReply<QString> reply = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
 
         // check if the returned id is valid
-        QCOMPARE(reply.value(), m_basicContactId);
+        QString newContactId = reply.value();
+        QVERIFY(!newContactId.isEmpty());
 
         // check if the cotact was created with the correct fields
+        QtContacts::QContact newContact = basicContactWithId(newContactId);
         QDBusReply<QStringList> reply2 = m_dummyIface->call("listContacts");
         QCOMPARE(reply2.value().count(), 1);
         QList<QtContacts::QContact> contactsCreated = galera::VCardParser::vcardToContact(reply2.value());
         QCOMPARE(contactsCreated.count(), 1);
-        QCOMPARE(contactsCreated, m_contactsResult);
+        compareContact(contactsCreated[0], newContact);
 
         // wait for folks to emit the signal
         QTest::qWait(500);
@@ -139,8 +198,52 @@ private Q_SLOTS:
         QList<QVariant> args = addedContactSpy.takeFirst();
         QCOMPARE(args.count(), 1);
         QStringList ids = args[0].toStringList();
-        QCOMPARE(ids[0], m_basicContactId);
+        QCOMPARE(ids[0], newContactId);
     }
+
+    void testDuplicateContact()
+    {
+        // spy 'contactsAdded' signal
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(const QStringList &)));
+
+        // call create contact first
+        QDBusReply<QString> reply = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
+
+        // wait for folks to emit the signal
+        QTest::qWait(500);
+
+        // user returned id to fill the new vcard
+        QString newContactId = reply.value();
+        QString newVcard = m_resultBasicVcard.arg(newContactId);
+
+        // try create a contact with the same id
+        QDBusReply<QString> reply2 = m_serverIface->call("createContact", newVcard, "dummy-store");
+
+        // wait for folks to emit the signal
+        QTest::qWait(500);
+
+        // result should be null
+        QVERIFY(reply2.value().isEmpty());
+
+        // contactsAdded should be fired only once
+        QCOMPARE(addedContactSpy.count(), 1);
+    }
+
+    void testCreateInvalidContact()
+    {
+        // spy 'contactsAdded' signal
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(const QStringList &)));
+
+        // call create contact with a invalid vcard string
+        QDBusReply<QString> reply = m_serverIface->call("createContact", "INVALID VCARD", "dummy-store");
+
+        // wait for folks to emit the signal
+        QTest::qWait(500);
+
+        QVERIFY(reply.value().isEmpty());
+        QCOMPARE(addedContactSpy.count(), 0);
+    }
+
 };
 
 QTEST_MAIN(AddressBookTest)

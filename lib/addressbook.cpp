@@ -334,19 +334,20 @@ QString AddressBook::createContact(const QString &contact, const QString &source
         qWarning() << "Contact exists";
     } else {
         QContact qcontact = VCardParser::vcardToContact(contact);
-        qDebug() << "Phone" << qcontact.detail(QContactDetail::TypeName);
         if (!qcontact.isEmpty()) {
-            GHashTable *details = QIndividual::parseDetails(qcontact);
-            //TOOD: lookup for source and use the correct store
-            QDBusMessage *cpy = new QDBusMessage(message);
-            folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
-                                                                 NULL, //parent
-                                                                 folks_individual_aggregator_get_primary_store(m_individualAggregator),
-                                                                 details,
-                                                                 (GAsyncReadyCallback) createContactDone,
-                                                                 (void*) cpy);
-            g_hash_table_destroy(details);
-            return "";
+            if (!qcontact.isEmpty()) {
+                GHashTable *details = QIndividual::parseDetails(qcontact);
+                //TOOD: lookup for source and use the correct store
+                QDBusMessage *cpy = new QDBusMessage(message);
+                folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
+                                                                     NULL, //parent
+                                                                     folks_individual_aggregator_get_primary_store(m_individualAggregator),
+                                                                     details,
+                                                                     (GAsyncReadyCallback) createContactDone,
+                                                                     (void*) cpy);
+                g_hash_table_destroy(details);
+                return "";
+            }
         }
     }
 

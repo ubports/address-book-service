@@ -54,6 +54,7 @@ public:
 public Q_SLOTS:
     void shutdown();
     QStringList listContacts() const;
+    void reset();
 
 Q_SIGNALS:
     void ready();
@@ -114,6 +115,7 @@ class DummyBackendAdaptor: public QDBusAbstractAdaptor
 "    <method name=\"listContacts\">\n"
 "      <arg direction=\"out\" type=\"as\"/>\n"
 "    </method>\n"
+"    <method name=\"reset\"/>\n"
 "  </interface>\n"
         "")
     Q_PROPERTY(bool isReady READ isReady NOTIFY ready)
@@ -125,6 +127,7 @@ public:
 public Q_SLOTS:
     bool ping();
     void quit();
+    void reset();
     QStringList listContacts();
     QString createContact(const QString &vcard);
 

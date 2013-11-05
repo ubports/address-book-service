@@ -89,13 +89,9 @@ private Q_SLOTS:
 
     void cleanupTestCase()
     {
-        qDebug() << "clear testcase";
         m_dummy->shutdown();
-        qDebug() << "clear testcase" << __LINE__;
         delete m_dummy;
-        qDebug() << "clear testcase" << __LINE__;
         m_map.clear();
-        qDebug() << "clear testcase" << __LINE__;
     }
 
     void testLookupByFolksIndividual()
