@@ -21,31 +21,33 @@
 #include "scoped-loop.h"
 
 #include "lib/qindividual.h"
+#include "common/vcard-parser.h"
 
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
+
 
 DummyBackendProxy::DummyBackendProxy()
     : m_adaptor(0),
       m_backend(0),
       m_primaryPersonaStore(0),
       m_backendStore(0),
-      m_isReady(false)
+      m_aggregator(0),
+      m_isReady(false),
+      m_individualsChangedDetailedId(0)
 {
 }
 
 DummyBackendProxy::~DummyBackendProxy()
 {
     shutdown();
-    g_object_unref(m_primaryPersonaStore);
-    g_object_unref(m_backend);
-    g_object_unref(m_backendStore);
 }
 
 void DummyBackendProxy::start(bool useDBus)
 {
     initEnviroment();
     initFolks();
+    prepareAggregator();
     if (useDBus) {
         registerObject();
     }
@@ -63,6 +65,67 @@ void DummyBackendProxy::shutdown()
         delete m_adaptor;
         m_adaptor = 0;
         Q_EMIT stopped();
+    }
+
+    Q_FOREACH(galera::QIndividual *i, m_contacts.values()) {
+        delete i;
+    }
+    m_contacts.clear();
+
+    if (m_aggregator) {
+        g_signal_handler_disconnect(m_aggregator,
+                                    m_individualsChangedDetailedId);
+
+        g_object_unref(m_aggregator);
+        m_aggregator = 0;
+    }
+
+    if (m_primaryPersonaStore) {
+        g_object_unref(m_primaryPersonaStore);
+        m_primaryPersonaStore = 0;
+    }
+
+    if (m_backend) {
+        g_object_unref(m_backend);
+        m_backend = 0;
+    }
+
+    if (m_backendStore) {
+        g_object_unref(m_backendStore);
+        m_backendStore = 0;
+    }
+}
+QList<QtContacts::QContact> DummyBackendProxy::contacts() const
+{
+    QList<QtContacts::QContact> contacts;
+    Q_FOREACH(galera::QIndividual *i, m_contacts.values()) {
+        contacts << i->contact();
+    }
+    return contacts;
+}
+
+QList<galera::QIndividual *> DummyBackendProxy::individuals() const
+{
+    return m_contacts.values();
+}
+
+FolksIndividualAggregator *DummyBackendProxy::aggregator() const
+{
+    return m_aggregator;
+}
+
+QStringList DummyBackendProxy::listContacts() const
+{
+    return galera::VCardParser::contactToVcard(contacts());
+}
+
+void DummyBackendProxy::reset()
+{
+    if (m_contacts.count()) {
+        GeeMap *map = folks_persona_store_get_personas((FolksPersonaStore*)m_primaryPersonaStore);
+        GeeCollection *personas = gee_map_get_values(map);
+        dummyf_persona_store_unregister_personas(m_primaryPersonaStore, (GeeSet*)personas);
+        g_object_unref(personas);
     }
 }
 
@@ -95,20 +158,29 @@ bool DummyBackendProxy::isReady() const
     return m_isReady;
 }
 
-QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
+void DummyBackendProxy::prepareAggregator()
 {
     ScopedEventLoop loop(&m_eventLoop);
 
-    FolksIndividualAggregator *fia = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
-    folks_individual_aggregator_prepare(fia,
+    m_aggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
+    m_individualsChangedDetailedId = g_signal_connect(m_aggregator,
+                                          "individuals-changed-detailed",
+                                          (GCallback) DummyBackendProxy::individualsChangedCb,
+                                          this);
+    folks_individual_aggregator_prepare(m_aggregator,
                                         (GAsyncReadyCallback) DummyBackendProxy::individualAggregatorPrepared,
                                         this);
 
     loop.exec();
+}
+
+QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
+{
+    ScopedEventLoop loop(&m_eventLoop);
 
     GHashTable *details = galera::QIndividual::parseDetails(qcontact);
-    loop.reset(&m_eventLoop);
-    folks_individual_aggregator_add_persona_from_details(fia,
+    Q_ASSERT(details);
+    folks_individual_aggregator_add_persona_from_details(m_aggregator,
                                                          NULL, //parent
                                                          FOLKS_PERSONA_STORE(m_primaryPersonaStore),
                                                          details,
@@ -116,14 +188,14 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
                                                          this);
 
     loop.exec();
-    g_object_unref(fia);
+    //g_object_unref(details);
     return QString();
 }
 
 void DummyBackendProxy::configurePrimaryStore()
 {
     static const char* writableProperties[] = {
-        folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_BIRTHDAY),
+        folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_FULL_NAME),
         folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_EMAIL_ADDRESSES),
         folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_PHONE_NUMBERS),
         0
@@ -273,6 +345,42 @@ void DummyBackendProxy::individualAggregatorAddedPersona(FolksIndividualAggregat
     self->m_eventLoop = 0;
 }
 
+void DummyBackendProxy::individualsChangedCb(FolksIndividualAggregator *individualAggregator,
+                                             GeeMultiMap *changes,
+                                             DummyBackendProxy *self)
+{
+    GeeIterator *iter;
+    GeeSet *removed = gee_multi_map_get_keys(changes);
+    GeeCollection *added = gee_multi_map_get_values(changes);
+
+    iter = gee_iterable_iterator(GEE_ITERABLE(added));
+    while(gee_iterator_next(iter)) {
+        FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
+        if (individual) {
+            galera::QIndividual *idv = new galera::QIndividual(individual, self->m_aggregator);
+            self->m_contacts.insert(idv->id(), idv);
+            g_object_unref(individual);
+        }
+    }
+    g_object_unref (iter);
+
+    iter = gee_iterable_iterator(GEE_ITERABLE(removed));
+    while(gee_iterator_next(iter)) {
+        FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
+        if (individual) {
+            QString id = QString::fromUtf8(folks_individual_get_id(individual));
+            if (self->m_contacts.contains(id)) {
+                delete self->m_contacts.take(id);
+            }
+            g_object_unref(individual);
+        }
+    }
+    g_object_unref (iter);
+
+    g_object_unref(added);
+    g_object_unref(removed);
+}
+
 DummyBackendAdaptor::DummyBackendAdaptor(const QDBusConnection &connection, DummyBackendProxy *parent)
     : QDBusAbstractAdaptor(parent),
       m_connection(connection),
@@ -303,4 +411,18 @@ void DummyBackendAdaptor::quit()
     QMetaObject::invokeMethod(m_proxy, "shutdown", Qt::QueuedConnection);
 }
 
+void DummyBackendAdaptor::reset()
+{
+    m_proxy->reset();
+}
 
+QStringList DummyBackendAdaptor::listContacts()
+{
+    return m_proxy->listContacts();
+}
+
+QString DummyBackendAdaptor::createContact(const QString &vcard)
+{
+    QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
+    return m_proxy->createContact(contacts[0]);
+}

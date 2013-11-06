@@ -260,8 +260,10 @@ QtContacts::QContact VCardParser::vcardToContact(const QString &vcard)
     if (importer.errorMap().size() > 0) {
         qWarning() << importer.errorMap();
         return QContact();
-    } else {
+    } else if (importer.contacts().size()){
         return importer.contacts()[0];
+    } else {
+        return QContact();
     }
 }
 

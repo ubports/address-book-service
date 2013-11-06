@@ -63,6 +63,7 @@ public:
     void remove(const QString &id);
     void insert(ContactEntry *entry);
     int size() const;
+    void clear();
 
 
     QList<ContactEntry*> values() const;

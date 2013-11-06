@@ -25,7 +25,7 @@
 #include "lib/source.h"
 
 #include <QtCore/QDebug>
-#include <QTest>
+#include <QtTest/QTest>
 
 void BaseClientTest::initTestCase()
 {
@@ -43,11 +43,13 @@ void BaseClientTest::initTestCase()
 
 void BaseClientTest::init()
 {
-
 }
 
 void BaseClientTest::cleanup()
 {
+    m_dummyIface->call("reset");
+    QDBusReply<QStringList> reply = m_dummyIface->call("listContacts");
+    QCOMPARE(reply.value().count(), 0);
 }
 
 void BaseClientTest::cleanupTestCase()

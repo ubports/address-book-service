@@ -32,52 +32,14 @@
 #include <glib.h>
 #include <gio/gio.h>
 
-using namespace QtContacts;
-using namespace galera;
-
 class ContactMapTest : public QObject
 {
     Q_OBJECT
 
 private:
     DummyBackendProxy *m_dummy;
-    FolksIndividualAggregator *m_individualAggregator;
-    QEventLoop *m_eventLoop;
-    ContactsMap m_map;
+    galera::ContactsMap m_map;
     QList<FolksIndividual*> m_individuals;
-
-    static void folksIndividualAggregatorPrepareDone(FolksIndividualAggregator *aggregator,
-                                                     GAsyncResult *res,
-                                                     ContactMapTest *self)
-    {
-
-        GError *error = NULL;
-        folks_individual_aggregator_prepare_finish(aggregator, res, &error);
-        QVERIFY(error == NULL);
-    }
-
-    static void folksIndividualAggregatorIndividualsChangedDetailed(FolksIndividualAggregator *individualAggregator,
-                                                                    GeeMultiMap *changes,
-                                                                    ContactMapTest *self)
-    {
-        GeeIterator *iter;
-        GeeSet *removed = gee_multi_map_get_keys(changes);
-        iter = gee_iterable_iterator(GEE_ITERABLE(removed));
-
-        GeeCollection *added = gee_multi_map_get_values(changes);
-        iter = gee_iterable_iterator(GEE_ITERABLE(added));
-        while(gee_iterator_next(iter)) {
-            FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
-            if (individual) {
-                self->m_map.insert(new ContactEntry(new QIndividual(individual, individualAggregator)));
-                self->m_individuals << individual;
-                g_object_unref(individual);
-            }
-        }
-        g_object_unref (iter);
-        self->m_eventLoop->quit();
-        self->m_eventLoop = 0;
-    }
 
     int randomIndex() const
     {
@@ -119,26 +81,17 @@ private Q_SLOTS:
         createContactWithSuffix("2");
         createContactWithSuffix("3");
 
-        ScopedEventLoop loop(&m_eventLoop);
-        m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
-
-        g_signal_connect(m_individualAggregator,
-                         "individuals-changed-detailed",
-                         (GCallback) ContactMapTest::folksIndividualAggregatorIndividualsChangedDetailed,
-                         this);
-
-        folks_individual_aggregator_prepare(m_individualAggregator,
-                                            (GAsyncReadyCallback) ContactMapTest::folksIndividualAggregatorPrepareDone,
-                                            this);
-
-        loop.exec();
+        Q_FOREACH(galera::QIndividual *i, m_dummy->individuals()) {
+            m_map.insert(new galera::ContactEntry(new galera::QIndividual(i->individual(), m_dummy->aggregator())));
+            m_individuals << i->individual();
+        }
     }
 
     void cleanupTestCase()
     {
-        delete m_eventLoop;
-        g_object_unref(m_individualAggregator);
+        m_dummy->shutdown();
         delete m_dummy;
+        m_map.clear();
     }
 
     void testLookupByFolksIndividual()
@@ -148,7 +101,7 @@ private Q_SLOTS:
 
         QVERIFY(m_map.contains(fIndividual));
 
-        ContactEntry *entry = m_map.value(fIndividual);
+        galera::ContactEntry *entry = m_map.value(fIndividual);
         QVERIFY(entry->individual()->individual() == fIndividual);
     }
 
@@ -156,13 +109,13 @@ private Q_SLOTS:
     {
         FolksIndividual *fIndividual = randomIndividual();
         QString id = QString::fromUtf8(folks_individual_get_id(fIndividual));
-        ContactEntry *entry = m_map.value(id);
+        galera::ContactEntry *entry = m_map.value(id);
         QVERIFY(entry->individual()->individual() == fIndividual);
     }
 
     void testValues()
     {
-        QList<ContactEntry*> entries = m_map.values();
+        QList<galera::ContactEntry*> entries = m_map.values();
         QCOMPARE(entries.size(), m_map.size());
         QCOMPARE(m_individuals.size(), m_map.size());
 
@@ -181,7 +134,7 @@ private Q_SLOTS:
         g_object_unref(individual);
 
         individual = randomIndividual();
-        ContactEntry *entry = m_map.take(individual);
+        galera::ContactEntry *entry = m_map.take(individual);
         QVERIFY(entry->individual()->individual() == individual);
 
         //put it back
@@ -198,7 +151,7 @@ private Q_SLOTS:
                 "N:Gump;Forrest\r\n"
                 "FN:Forrest Gump\r\n"
                 "REV:2008-04-24T19:52:43Z\r\n").arg(id);
-        ContactEntry *entry = m_map.valueFromVCard(vcard);
+        galera::ContactEntry *entry = m_map.valueFromVCard(vcard);
         QVERIFY(entry);
         QVERIFY(entry->individual()->individual() == individual);
     }
