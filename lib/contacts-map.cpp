@@ -103,9 +103,7 @@ void ContactsMap::clear()
     m_idToEntry.clear();
     m_individualsToEntry.clear();
 
-    Q_FOREACH(ContactEntry *entry, entries) {
-        delete entry;
-    }
+    qDeleteAll(entries);
 }
 
 QList<ContactEntry*> ContactsMap::values() const
