@@ -56,6 +56,13 @@ add_custom_target(uninstall "${CMAKE_COMMAND}"
 
 enable_testing()
 
+add_custom_target(check)
+add_custom_command(TARGET check
+    COMMAND ctest -V
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+
+
 add_subdirectory(3rd_party)
 add_subdirectory(common)
 add_subdirectory(lib)
