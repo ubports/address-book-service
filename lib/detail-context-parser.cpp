@@ -331,7 +331,7 @@ void DetailContextParser::parsePhoneParameters(QtContacts::QContactDetail &phone
     Q_FOREACH(const QString &param, params) {
         if (mapTypes.contains(param.toLower())) {
             subTypes << mapTypes[param.toLower()];
-        } else {
+        } else if (!param.isEmpty()) {
             qWarning() << "Invalid phone parameter:" << param;
         }
     }

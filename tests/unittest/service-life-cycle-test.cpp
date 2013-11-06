@@ -47,6 +47,8 @@ private Q_SLOTS:
     void testServiceShutdown()
     {
         m_dummyIface->call("quit");
+        // wait service quits
+        QTest::qSleep(100);
         QDBusReply<bool> result = m_serverIface->call("ping");
         QVERIFY(result.error().isValid());
 
