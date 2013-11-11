@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Philip Withnall
+ * Copyright (C) 2013 Collabora Ltd.
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -23,16 +24,31 @@ using Gee;
 using GLib;
 
 /**
- * A persona subclass which represents a single contact. TODO
+ * A persona subclass representing a single contact.
  *
- * Each {@link Dummy.Persona} instance represents a single EDS {@link E.Contact}.
- * When the contact is modified (either by this folks client, or a different
- * client), the {@link Dummy.Persona} remains the same, but is assigned a new
- * {@link E.Contact}. It then updates its properties from this new contact.
+ * This mocks up a ‘thin’ persona which implements none of the available
+ * property interfaces provided by libfolks, and is designed as a base class to
+ * be subclassed by personas which will implement one or more of these
+ * interfaces. For example, {@link FolksDummy.FatPersona} is one such subclass
+ * which implements all available interfaces.
+ *
+ * There are two sides to this class’ interface: the normal methods required by
+ * {@link Folks.Persona}, such as
+ * {@link Folks.Persona.linkable_property_to_links},
+ * and the backend methods which should be called by test driver code to
+ * simulate changes in the backing store providing this persona, such as
+ * {@link FolksDummy.Persona.update_writeable_properties}.
+ *
+ * All property changes for contact details of subclasses of
+ * {@link FolksDummy.Persona} have a configurable delay before taking effect,
+ * which can be controlled by {@link FolksDummy.Persona.property_change_delay}.
+ *
+ * The API in {@link FolksDummy} is unstable and may change wildly. It is
+ * designed mostly for use by libfolks unit tests.
  *
  * @since UNRELEASED
  */
-public class Dummyf.Persona : Folks.Persona
+public class FolksDummy.Persona : Folks.Persona
 {
   private string[] _linkable_properties = new string[0];
 
@@ -61,12 +77,20 @@ public class Dummyf.Persona : Folks.Persona
   /**
    * Create a new persona.
    *
-   * Create a new persona for the {@link PersonaStore} ``store``, representing
-   * the EDS contact given by ``contact``. TODO
+   * Create a new persona for the {@link FolksDummy.PersonaStore} ``store``,
+   * with the given construct-only properties.
+   *
+   * The persona’s {@link Folks.Persona.writeable_properties} are initialised to
+   * the given ``store``’s
+   * {@link Folks.PersonaStore.always_writeable_properties}. They may be updated
+   * afterwards using {@link FolksDummy.Persona.update_writeable_properties}.
    *
    * @param store the store which will contain the persona
-   * @param contact_id TODO
-   * @param is_user TODO
+   * @param contact_id a unique free-form string identifier for the persona
+   * @param is_user ``true`` if the persona represents the user, ``false``
+   * otherwise
+   * @param linkable_properties an array of names of the properties which should
+   * be used for linking this persona to others
    *
    * @since UNRELEASED
    */
@@ -94,7 +118,6 @@ public class Dummyf.Persona : Folks.Persona
   public override void linkable_property_to_links (string prop_name,
       Folks.Persona.LinkablePropertyCallback callback)
     {
-      /* TODO */
       if (prop_name == "im-addresses")
         {
           var persona = this as ImDetails;
@@ -162,45 +185,93 @@ public class Dummyf.Persona : Folks.Persona
 
 
   /**
-   * TODO
+   * Update the persona’s set of writeable properties.
+   *
+   * Update the {@link Folks.Persona.writeable_properties} property to contain
+   * the union of {@link Folks.PersonaStore.always_writeable_properties} from
+   * the persona’s store, and the given ``writeable_properties``.
+   *
+   * This should be used to simulate a change in the backing store for the
+   * persona which affects the writeability of one or more of its properties.
    *
    * @since UNRELEASED
    */
   public void update_writeable_properties (string[] writeable_properties)
     {
-      /* TODO: Don't update if there's no change. */
-      var new_length = this.store.always_writeable_properties.length +
-          writeable_properties.length;
-      this._writeable_properties = new string[new_length];
-      int i = 0;
+      var new_writeable_properties = new HashSet<string> ();
 
       foreach (var p in this.store.always_writeable_properties)
-        {
-          this._writeable_properties[i++] = p;
-        }
+          new_writeable_properties.add (p);
       foreach (var p in writeable_properties)
+          new_writeable_properties.add (p);
+
+      /* Check for changes. */
+      var changed = false;
+
+      if (this._writeable_properties.length != new_writeable_properties.size)
         {
-          this._writeable_properties[i++] = p;
+          changed = true;
+        }
+      else
+        {
+          foreach (var p in this._writeable_properties)
+            {
+              if (new_writeable_properties.contains (p) == false)
+                {
+                  changed = true;
+                  break;
+                }
+            }
         }
 
-      this.notify_property ("writeable-properties");
+      if (changed == true)
+        {
+          this._writeable_properties = new_writeable_properties.to_array ();
+          this.notify_property ("writeable-properties");
+        }
     }
 
   /**
-   * TODO (in milliseconds)
+   * Delay between property changes and notifications.
+   *
+   * This sets an optional delay between client code requesting a property
+   * change (e.g. by calling {@link Folks.NameDetails.change_nickname}) and the
+   * property change taking place and a {@link Object.notify} signal being
+   * emitted for it.
+   *
+   * Delays are in milliseconds. Negative delays mean that property change
+   * notifications happen synchronously in the change method. A delay of 0
+   * means that property change notifications happen in an idle callback
+   * immediately after the change method. A positive delay means that property
+   * change notifications happen that many milliseconds after the change method
+   * is called.
    *
    * @since UNRELEASED
    */
   protected int property_change_delay { get; set; }
 
-  /* TODO */
+  /**
+   * Callback to effect a property change in a backing store.
+   *
+   * This is called by {@link FolksDummy.Persona.change_property} after the
+   * {@link FolksDummy.Persona.property_change_delay} has expired. It must
+   * effect the property change in the simulated backing store, for example by
+   * calling an ‘update’ method such as
+   * {@link FolksDummy.FatPersona.update_nickname}.
+   *
+   * @since UNRELEASED
+   */
   protected delegate void ChangePropertyCallback ();
 
   /**
-   * TODO
+   * Change a property in the simulated backing store.
    *
-   * @param property_name TODO
-   * @param callback TODO
+   * This triggers a property change in the simulated backing store, applying
+   * the current {@link FolksDummy.Persona.property_change_delay} before calling
+   * the given ``callback`` which should actually effect the property change.
+   *
+   * @param property_name name of the property being changed
+   * @param callback callback to call once the change delay has passed
    * @since UNRELEASED
    */
   protected async void change_property (string property_name,
