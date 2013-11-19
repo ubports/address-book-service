@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Philip Withnall
+ * Copyright (C) 2013 Collabora Ltd.
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -26,16 +27,32 @@ using Gee;
 using GLib;
 
 /**
- * A persona subclass which represents a single EDS contact. TODO
+ * A persona subclass representing a single ‘fat’ contact.
  *
- * Each {@link Dummy.Persona} instance represents a single EDS {@link E.Contact}.
- * When the contact is modified (either by this folks client, or a different
- * client), the {@link Dummy.Persona} remains the same, but is assigned a new
- * {@link E.Contact}. It then updates its properties from this new contact.
+ * This mocks up a ‘fat’ persona which implements all the available property
+ * interfaces provided by libfolks. This is in contrast with
+ * {@link FolksDummy.Persona}, which provides a base class implementing none of
+ * libfolks’ interfaces.
+ *
+ * The fat dummy persona can be used to simulate a persona from most libfolks
+ * backends, if writing a custom {@link FolksDummy.Persona} subclass is not an
+ * option.
+ *
+ * There are two sides to this class’ interface: the normal methods required by
+ * the libfolks ‘details’ interfaces, such as
+ * {@link Folks.GenderDetails.change_gender},
+ * and the backend methods which should be called by test driver code to
+ * simulate changes in the backing store providing this persona, such as
+ * {@link FatPersona.update_gender}. For example, test driver code should call
+ * {@link FatPersona.update_nickname} to simulate the user editing a contact’s
+ * nickname in an online address book which is being exposed to libfolks.
+ *
+ * The API in {@link FolksDummy} is unstable and may change wildly. It is
+ * designed mostly for use by libfolks unit tests.
  *
  * @since UNRELEASED
  */
-public class Dummyf.FatPersona : Dummyf.Persona,
+public class FolksDummy.FatPersona : FolksDummy.Persona,
     AntiLinkable,
     AvatarDetails,
     BirthdayDetails,
@@ -54,14 +71,17 @@ public class Dummyf.FatPersona : Dummyf.Persona,
     WebServiceDetails
 {
   /**
-   * Create a new persona.
+   * Create a new ‘fat’ persona.
    *
-   * Create a new persona for the {@link PersonaStore} ``store``, representing
-   * the EDS contact given by ``contact``. TODO
+   * Create a new persona for the {@link FolksDummy.PersonaStore} ``store``,
+   * with the given construct-only properties.
    *
    * @param store the store which will contain the persona
-   * @param contact_id TODO
-   * @param is_user TODO
+   * @param contact_id a unique free-form string identifier for the persona
+   * @param is_user ``true`` if the persona represents the user, ``false``
+   * otherwise
+   * @param linkable_properties an array of names of the properties which should
+   * be used for linking this persona to others
    *
    * @since UNRELEASED
    */
@@ -559,6 +579,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
     }
 
   private DateTime? _birthday = null;
+
   /**
    * {@inheritDoc}
    *
@@ -581,7 +602,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
     {
       yield this.change_property ("birthday", () =>
         {
-          this.update_birthday (birthday);
+          this.update_birthday (bday);
         });
     }
 
@@ -690,14 +711,9 @@ public class Dummyf.FatPersona : Dummyf.Persona,
     {
       var output_multi_map = new HashMultiMap<S, T> ();
 
-      foreach (var k in input_multi_map.get_keys ())
-        {
-          var values = input_multi_map.get (k);
-          foreach (var v in values)
-            {
-              output_multi_map.set (k, v);
-            }
-        }
+      var iter = input_multi_map.map_iterator ();
+      while (iter.next () == true)
+          output_multi_map.set (iter.get_key (), iter.get_value ());
 
       return output_multi_map;
     }
@@ -706,7 +722,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's gender.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link GenderDetails.gender} property. It is intended to be used for
+   * {@link Folks.GenderDetails.gender} property. It is intended to be used for
    * testing code which consumes this property. If the property value changes,
    * this results in a property change notification on the persona.
    *
@@ -726,9 +742,10 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's birthday calendar event ID.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link BirthdayDetails.calendar_event_id} property. It is intended to be
-   * used for testing code which consumes this property. If the property value
-   * changes, this results in a property change notification on the persona.
+   * {@link Folks.BirthdayDetails.calendar_event_id} property. It is intended to
+   * be used for testing code which consumes this property. If the property
+   * value changes, this results in a property change notification on the
+   * persona.
    *
    * @param calendar_event_id persona's new birthday calendar event ID
    * @since UNRELEASED
@@ -746,9 +763,9 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's birthday.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link BirthdayDetails.birthday} property. It is intended to be used for
-   * testing code which consumes this property. If the property value changes,
-   * this results in a property change notification on the persona.
+   * {@link Folks.BirthdayDetails.birthday} property. It is intended to be used
+   * for testing code which consumes this property. If the property value
+   * changes, this results in a property change notification on the persona.
    *
    * @param birthday persona's new birthday
    * @since UNRELEASED
@@ -768,7 +785,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's roles.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link RoleDetails.roles} property. It is intended to be used for
+   * {@link Folks.RoleDetails.roles} property. It is intended to be used for
    * testing code which consumes this property. If the property value changes,
    * this results in a property change notification on the persona.
    *
@@ -789,7 +806,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's groups.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link GroupDetails.groups} property. It is intended to be used for
+   * {@link Folks.GroupDetails.groups} property. It is intended to be used for
    * testing code which consumes this property. If the property value changes,
    * this results in a property change notification on the persona.
    *
@@ -810,10 +827,10 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's web service addresses.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link WebServiceDetails.web_service_addresses} property. It is intended to
-   * be used for testing code which consumes this property. If the property
-   * value changes, this results in a property change notification on the
-   * persona.
+   * {@link Folks.WebServiceDetails.web_service_addresses} property. It is
+   * intended to be used for testing code which consumes this property. If the
+   * property value changes, this results in a property change notification on
+   * the persona.
    *
    * @param web_service_addresses persona's new web service addresses
    * @since UNRELEASED
@@ -835,8 +852,8 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's e-mail addresses.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link EmailDetails.email_addresses} property. It is intended to be used
-   * for testing code which consumes this property. If the property value
+   * {@link Folks.EmailDetails.email_addresses} property. It is intended to be
+   * used for testing code which consumes this property. If the property value
    * changes, this results in a property change notification on the persona.
    *
    * @param email_addresses persona's new e-mail addresses
@@ -858,7 +875,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's notes.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link NoteDetails.notes} property. It is intended to be used for
+   * {@link Folks.NoteDetails.notes} property. It is intended to be used for
    * testing code which consumes this property. If the property value changes,
    * this results in a property change notification on the persona.
    *
@@ -879,7 +896,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's full name.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link NameDetails.full_name} property. It is intended to be used for
+   * {@link Folks.NameDetails.full_name} property. It is intended to be used for
    * testing code which consumes this property. If the property value changes,
    * this results in a property change notification on the persona.
    *
@@ -899,7 +916,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's nickname.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link NameDetails.nickname} property. It is intended to be used for
+   * {@link Folks.NameDetails.nickname} property. It is intended to be used for
    * testing code which consumes this property. If the property value changes,
    * this results in a property change notification on the persona.
    *
@@ -919,9 +936,9 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's structured name.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link NameDetails.structured_name} property. It is intended to be used for
-   * testing code which consumes this property. If the property value changes,
-   * this results in a property change notification on the persona.
+   * {@link Folks.NameDetails.structured_name} property. It is intended to be
+   * used for testing code which consumes this property. If the property value
+   * changes, this results in a property change notification on the persona.
    *
    * @param structured_name persona's new structured name
    * @since UNRELEASED
@@ -944,7 +961,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's avatar.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link AvatarDetails.avatar} property. It is intended to be used for
+   * {@link Folks.AvatarDetails.avatar} property. It is intended to be used for
    * testing code which consumes this property. If the property value changes,
    * this results in a property change notification on the persona.
    *
@@ -966,7 +983,7 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's URIs.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link UrlDetails.urls} property. It is intended to be used for
+   * {@link Folks.UrlDetails.urls} property. It is intended to be used for
    * testing code which consumes this property. If the property value changes,
    * this results in a property change notification on the persona.
    *
@@ -987,9 +1004,9 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's IM addresses.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link ImDetails.im_addresses} property. It is intended to be used for
-   * testing code which consumes this property. If the property value changes,
-   * this results in a property change notification on the persona.
+   * {@link Folks.ImDetails.im_addresses} property. It is intended to be used
+   * for testing code which consumes this property. If the property value
+   * changes, this results in a property change notification on the persona.
    *
    * @param im_addresses persona's new IM addresses
    * @since UNRELEASED
@@ -1011,9 +1028,9 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's phone numbers.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link PhoneDetails.phone_numbers} property. It is intended to be used for
-   * testing code which consumes this property. If the property value changes,
-   * this results in a property change notification on the persona.
+   * {@link Folks.PhoneDetails.phone_numbers} property. It is intended to be
+   * used for testing code which consumes this property. If the property value
+   * changes, this results in a property change notification on the persona.
    *
    * @param phone_numbers persona's new phone numbers
    * @since UNRELEASED
@@ -1034,10 +1051,10 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's postal addresses.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link PostalAddressDetails.postal_addresses} property. It is intended to
-   * be used for testing code which consumes this property. If the property
-   * value changes, this results in a property change notification on the
-   * persona.
+   * {@link Folks.PostalAddressDetails.postal_addresses} property. It is
+   * intended to be used for testing code which consumes this property. If the
+   * property value changes, this results in a property change notification on
+   * the persona.
    *
    * @param postal_addresses persona's new postal addresses
    * @since UNRELEASED
@@ -1060,18 +1077,15 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's local IDs.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link LocalIdDetails.local_ids} property. It is intended to be used for
-   * testing code which consumes this property. If the property value changes,
-   * this results in a property change notification on the persona.
+   * {@link Folks.LocalIdDetails.local_ids} property. It is intended to be used
+   * for testing code which consumes this property. If the property value
+   * changes, this results in a property change notification on the persona.
    *
    * @param local_ids persona's new local IDs
    * @since UNRELEASED
    */
   public void update_local_ids (Set<string> local_ids)
     {
-      /* Make sure it includes our local ID. */
-      local_ids.add (this.iid);
-
       if (!Folks.Internal.equal_sets<string> (local_ids, this.local_ids))
         {
           this._local_ids = this._dup_to_hash_set<string> (local_ids);
@@ -1084,8 +1098,8 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's status as a favourite.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link FavouriteDetails.is_favourite} property. It is intended to be used
-   * for testing code which consumes this property. If the property value
+   * {@link Folks.FavouriteDetails.is_favourite} property. It is intended to be
+   * used for testing code which consumes this property. If the property value
    * changes, this results in a property change notification on the persona.
    *
    * @param is_favourite persona's new status as a favourite
@@ -1104,9 +1118,9 @@ public class Dummyf.FatPersona : Dummyf.Persona,
    * Update persona's anti-links.
    *
    * This simulates a backing-store-side update of the persona's
-   * {@link AntiLinkable.anti_links} property. It is intended to be used for
-   * testing code which consumes this property. If the property value changes,
-   * this results in a property change notification on the persona.
+   * {@link Folks.AntiLinkable.anti_links} property. It is intended to be used
+   * for testing code which consumes this property. If the property value
+   * changes, this results in a property change notification on the persona.
    *
    * @param anti_links persona's new anti-links
    * @since UNRELEASED

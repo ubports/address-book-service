@@ -124,7 +124,7 @@ void DummyBackendProxy::reset()
     if (m_contacts.count()) {
         GeeMap *map = folks_persona_store_get_personas((FolksPersonaStore*)m_primaryPersonaStore);
         GeeCollection *personas = gee_map_get_values(map);
-        dummyf_persona_store_unregister_personas(m_primaryPersonaStore, (GeeSet*)personas);
+        folks_dummy_persona_store_unregister_personas(m_primaryPersonaStore, (GeeSet*)personas);
         g_object_unref(personas);
     }
 }
@@ -145,7 +145,7 @@ void DummyBackendProxy::initFolks()
                                        this);
     loop.exec();
 
-    m_backend = DUMMYF_BACKEND(folks_backend_store_dup_backend_by_name(m_backendStore, "dummy"));
+    m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(m_backendStore, "dummy"));
 
     Q_ASSERT(m_backend != 0);
     configurePrimaryStore();
@@ -201,18 +201,18 @@ void DummyBackendProxy::configurePrimaryStore()
         0
     };
 
-    m_primaryPersonaStore = dummyf_persona_store_new("dummy-store",
-                                                     "Dummy personas",
-                                                     const_cast<char**>(writableProperties), 4);
-    dummyf_persona_store_set_persona_type(m_primaryPersonaStore, DUMMYF_TYPE_FAT_PERSONA);
+    m_primaryPersonaStore = folks_dummy_persona_store_new("dummy-store",
+                                                          "Dummy personas",
+                                                          const_cast<char**>(writableProperties), 4);
+    folks_dummy_persona_store_set_persona_type(m_primaryPersonaStore, FOLKS_DUMMY_TYPE_FAT_PERSONA);
 
     GeeHashSet *personaStores = gee_hash_set_new(FOLKS_TYPE_PERSONA_STORE,
                                                  (GBoxedCopyFunc) g_object_ref, g_object_unref,
                                                  NULL, NULL, NULL, NULL, NULL, NULL);
 
     gee_abstract_collection_add(GEE_ABSTRACT_COLLECTION(personaStores), m_primaryPersonaStore);
-    dummyf_backend_register_persona_stores(m_backend, GEE_SET(personaStores), true);
-    dummyf_persona_store_reach_quiescence(m_primaryPersonaStore);
+    folks_dummy_backend_register_persona_stores(m_backend, GEE_SET(personaStores), true);
+    folks_dummy_persona_store_reach_quiescence(m_primaryPersonaStore);
     g_object_unref(personaStores);
 }
 

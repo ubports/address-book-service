@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Philip Withnall
+ * Copyright (C) 2013 Collabora Ltd.
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -25,27 +26,32 @@ using Folks;
 extern const string BACKEND_NAME;
 
 /**
- * A backend which allows {@link Dummyf.PersonaStore}s and
- * {@link Dummyf.Persona}s to be programmatically created and manipulated, for
- * the purposes of testing the core of libfolks itself.
+ * A backend which allows {@link FolksDummy.PersonaStore}s and
+ * {@link FolksDummy.Persona}s to be programmatically created and manipulated,
+ * for the purposes of testing the core of libfolks itself.
  *
  * This backend is not meant to be enabled in production use. The methods on
- * {@link Dummyf.Backend} (and other classes) for programmatically manipulating
- * the backend's state are considered internal to libfolks and are not stable.
+ * {@link FolksDummy.Backend} (and other classes) for programmatically
+ * manipulating the backend's state are considered internal to libfolks and are
+ * not stable.
  *
  * This backend maintains two sets of persona stores: the set of all persona
  * stores, and the set of enabled persona stores (which must be a subset of the
- * former). {@link Dummyf.Backend.register_persona_stores} adds persona stores
- * to the set of all stores. Optionally it also enables them, adding them to the
- * set of enabled stores. The set of persona stores advertised by the backend as
- * {@link Backend.persona_stores} is the set of enabled stores. libfolks may
- * internally enable or disable stores using
- * {@link Backend.enable_persona_store}, {@link Backend.disable_persona_store}
- * and {@link Backend.set_persona_stores}.
+ * former). {@link FolksDummy.Backend.register_persona_stores} adds persona
+ * stores to the set of all stores. Optionally it also enables them, adding them
+ * to the set of enabled stores. The set of persona stores advertised by the
+ * backend as {@link Folks.Backend.persona_stores} is the set of enabled stores.
+ * libfolks may internally enable or disable stores using
+ * {@link Folks.Backend.enable_persona_store},
+ * {@link Folks.Backend.disable_persona_store}
+ * and {@link Folks.Backend.set_persona_stores}.
+ *
+ * The API in {@link FolksDummy} is unstable and may change wildly. It is
+ * designed mostly for use by libfolks unit tests.
  *
  * @since UNRELEASED
  */
-public class Dummyf.Backend : Folks.Backend
+public class FolksDummy.Backend : Folks.Backend
 {
   private bool _is_prepared = false;
   private bool _prepare_pending = false; /* used for unprepare() too */
@@ -131,7 +137,7 @@ public class Dummyf.Backend : Folks.Backend
    */
   public override void enable_persona_store (Folks.PersonaStore store)
     {
-      this._enable_persona_store ((Dummyf.PersonaStore) store);
+      this._enable_persona_store ((FolksDummy.PersonaStore) store);
     }
 
   /**
@@ -302,21 +308,21 @@ public class Dummyf.Backend : Folks.Backend
 
 
   /**
-   * Register and enable some {@link Dummyf.PersonaStore}s.
+   * Register and enable some {@link FolksDummy.PersonaStore}s.
    *
    * For each of the persona stores in ``stores``, register it with this
    * backend. If ``enable_stores`` is ``true``, added stores will also be
-   * enabled, emitting {@link Backend.persona_store_added} for each
+   * enabled, emitting {@link Folks.Backend.persona_store_added} for each
    * newly-enabled store. After all addition signals are emitted, a change
-   * notification for {@link Backend.persona_stores} will be emitted (but only
-   * if at least one addition signal is emitted).
+   * notification for {@link Folks.Backend.persona_stores} will be emitted (but
+   * only if at least one addition signal is emitted).
    *
-   * Persona stores are identified by their {@link PersonaStore.id}; if a store
-   * in ``stores`` has the same ID as a store previously registered through this
-   * method, the duplicate will be ignored (so
-   * {@link Backend.persona_store_added} won't be emitted for that store).
+   * Persona stores are identified by their {@link Folks.PersonaStore.id}; if a
+   * store in ``stores`` has the same ID as a store previously registered
+   * through this method, the duplicate will be ignored (so
+   * {@link Folks.Backend.persona_store_added} won't be emitted for that store).
    *
-   * Persona stores must be instances of {@link Dummyf.PersonaStore} or
+   * Persona stores must be instances of {@link FolksDummy.PersonaStore} or
    * subclasses of it, allowing for different persona store implementations to
    * be tested.
    *
@@ -348,18 +354,18 @@ public class Dummyf.Backend : Folks.Backend
     }
 
   /**
-   * Disable and unregister some {@link Dummyf.PersonaStores}.
+   * Disable and unregister some {@link FolksDummy.PersonaStore}s.
    *
    * For each of the persona stores in ``stores``, disable it (if it was
    * enabled) and unregister it from the backend so that it cannot be re-enabled
-   * using {@link Backend.enable_persona_store} or
-   * {@link Backend.set_persona_stores}.
+   * using {@link Folks.Backend.enable_persona_store} or
+   * {@link Folks.Backend.set_persona_stores}.
    *
-   * {@link Backend.persona_store_removed} will be emitted for all persona
+   * {@link Folks.Backend.persona_store_removed} will be emitted for all persona
    * stores in ``stores`` which were previously enabled. After all removal
    * signals are emitted, a change notification for
-   * {@link Backend.persona_stores} will be emitted (but only if at least one
-   * removal signal is emitted).
+   * {@link Folks.Backend.persona_stores} will be emitted (but only if at least
+   * one removal signal is emitted).
    *
    * @since UNRELEASED
    */

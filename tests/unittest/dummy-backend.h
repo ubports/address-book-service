@@ -63,8 +63,8 @@ Q_SIGNALS:
 private:
     QTemporaryDir m_tmpDir;
     DummyBackendAdaptor *m_adaptor;
-    DummyfBackend *m_backend;
-    DummyfPersonaStore *m_primaryPersonaStore;
+    FolksDummyBackend *m_backend;
+    FolksDummyPersonaStore *m_primaryPersonaStore;
     FolksBackendStore *m_backendStore;
     QEventLoop *m_eventLoop;
     FolksIndividualAggregator *m_aggregator;
