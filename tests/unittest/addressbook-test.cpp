@@ -31,7 +31,6 @@ class AddressBookTest : public BaseClientTest
 {
     Q_OBJECT
 private:
-    QEventLoop *m_eventLoop;
     QString m_basicVcard;
     QString m_resultBasicVcard;
 
@@ -244,6 +243,30 @@ private Q_SLOTS:
         QCOMPARE(addedContactSpy.count(), 0);
     }
 
+    void testRemoveContact()
+    {
+        // create a basic contact
+        QDBusReply<QString> replyAdd = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
+        QString newContactId = replyAdd.value();
+
+        // spy 'contactsRemoved' signal
+        QSignalSpy removedContactSpy(m_serverIface, SIGNAL(contactsRemoved(const QStringList &)));
+
+        // try remove the contact created
+        QDBusReply<int> replyRemove = m_serverIface->call("removeContacts", QStringList() << newContactId);
+        QCOMPARE(replyRemove.value(), 1);
+
+        // check if the 'contactsRemoved' signal was fired with the correct args
+        QTRY_COMPARE(removedContactSpy.count(), 1);
+        QList<QVariant> args = removedContactSpy.takeFirst();
+        QCOMPARE(args.count(), 1);
+        QStringList ids = args[0].toStringList();
+        QCOMPARE(ids[0], newContactId);
+
+        // check if the contact was removed from the backend
+        QDBusReply<QStringList> replyList = m_dummyIface->call("listContacts");
+        QCOMPARE(replyList.value().count(), 0);
+    }
 };
 
 QTEST_MAIN(AddressBookTest)

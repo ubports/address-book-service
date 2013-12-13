@@ -27,14 +27,14 @@ using Gee;
 using GLib;
 
 /**
- * A persona subclass representing a single ‘fat’ contact.
+ * A persona subclass representing a single ‘full’ contact.
  *
- * This mocks up a ‘fat’ persona which implements all the available property
+ * This mocks up a ‘full’ persona which implements all the available property
  * interfaces provided by libfolks. This is in contrast with
  * {@link FolksDummy.Persona}, which provides a base class implementing none of
  * libfolks’ interfaces.
  *
- * The fat dummy persona can be used to simulate a persona from most libfolks
+ * The full dummy persona can be used to simulate a persona from most libfolks
  * backends, if writing a custom {@link FolksDummy.Persona} subclass is not an
  * option.
  *
@@ -43,16 +43,18 @@ using GLib;
  * {@link Folks.GenderDetails.change_gender},
  * and the backend methods which should be called by test driver code to
  * simulate changes in the backing store providing this persona, such as
- * {@link FatPersona.update_gender}. For example, test driver code should call
- * {@link FatPersona.update_nickname} to simulate the user editing a contact’s
- * nickname in an online address book which is being exposed to libfolks.
+ * {@link FullPersona.update_gender}. For example, test driver code should call
+ * {@link FullPersona.update_nickname} to simulate the user editing a contact’s
+ * nickname in an online address book which is being exposed to libfolks. The
+ * ``update_``, ``register_`` and ``unregister_`` prefixes are commonly used for
+ * backend methods.
  *
  * The API in {@link FolksDummy} is unstable and may change wildly. It is
  * designed mostly for use by libfolks unit tests.
  *
  * @since UNRELEASED
  */
-public class FolksDummy.FatPersona : FolksDummy.Persona,
+public class FolksDummy.FullPersona : FolksDummy.Persona,
     AntiLinkable,
     AvatarDetails,
     BirthdayDetails,
@@ -71,7 +73,7 @@ public class FolksDummy.FatPersona : FolksDummy.Persona,
     WebServiceDetails
 {
   /**
-   * Create a new ‘fat’ persona.
+   * Create a new ‘full’ persona.
    *
    * Create a new persona for the {@link FolksDummy.PersonaStore} ``store``,
    * with the given construct-only properties.
@@ -85,7 +87,7 @@ public class FolksDummy.FatPersona : FolksDummy.Persona,
    *
    * @since UNRELEASED
    */
-  public FatPersona (PersonaStore store, string contact_id,
+  public FullPersona (PersonaStore store, string contact_id,
       bool is_user = false, string[] linkable_properties = {})
     {
       base (store, contact_id, is_user, linkable_properties);

@@ -44,7 +44,8 @@ extern const string BACKEND_NAME;
  * libfolks may internally enable or disable stores using
  * {@link Folks.Backend.enable_persona_store},
  * {@link Folks.Backend.disable_persona_store}
- * and {@link Folks.Backend.set_persona_stores}.
+ * and {@link Folks.Backend.set_persona_stores}.  The ``register_`` and
+ * ``unregister_`` prefixes are commonly used for backend methods.
  *
  * The API in {@link FolksDummy} is unstable and may change wildly. It is
  * designed mostly for use by libfolks unit tests.
@@ -337,6 +338,8 @@ public class FolksDummy.Backend : Folks.Backend
 
       foreach (var store in stores)
         {
+          assert (store is FolksDummy.PersonaStore);
+
           if (this._all_persona_stores.has_key (store.id))
             {
               continue;
@@ -375,6 +378,8 @@ public class FolksDummy.Backend : Folks.Backend
 
       foreach (var store in stores)
         {
+          assert (store is FolksDummy.PersonaStore);
+
           if (!this._all_persona_stores.has_key (store.id))
             {
               continue;
