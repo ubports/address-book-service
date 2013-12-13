@@ -256,20 +256,16 @@ private Q_SLOTS:
         QDBusReply<int> replyRemove = m_serverIface->call("removeContacts", QStringList() << newContactId);
         QCOMPARE(replyRemove.value(), 1);
 
-        while(removedContactSpy.count() == 0) {
-            QTest::qWait(100);
-        }
-
-        // check if the contact was removed from the backend
-        QDBusReply<QStringList> replyList = m_dummyIface->call("listContacts");
-        QCOMPARE(replyList.value().count(), 0);
-
         // check if the 'contactsRemoved' signal was fired with the correct args
-        QCOMPARE(removedContactSpy.count(), 1);
+        QTRY_COMPARE(removedContactSpy.count(), 1);
         QList<QVariant> args = removedContactSpy.takeFirst();
         QCOMPARE(args.count(), 1);
         QStringList ids = args[0].toStringList();
         QCOMPARE(ids[0], newContactId);
+
+        // check if the contact was removed from the backend
+        QDBusReply<QStringList> replyList = m_dummyIface->call("listContacts");
+        QCOMPARE(replyList.value().count(), 0);
     }
 };
 
