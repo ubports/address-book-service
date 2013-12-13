@@ -37,7 +37,9 @@ using GLib;
  * {@link FolksDummy.PersonaStore.add_persona_from_details_mock}) which are
  * intended to be used by test driver code to simulate the behaviour of a real
  * backing store. Calls to these mock methods effect state changes in the store
- * which are visible in the normal libfolks API.
+ * which are visible in the normal libfolks API. The ``update_``, ``register_``
+ * and ``unregister_`` prefixes and the ``mock`` suffix are commonly used for
+ * backing store methods.
  *
  * The main action performed with a dummy persona store is to change its set of
  * personas, adding and removing them dynamically to test client-side behaviour.
@@ -316,234 +318,167 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
       assert (persona != null);
       persona.update_writeable_properties (this.always_writeable_properties);
 
-      var iter = HashTableIter<string, Value?> (details);
-      unowned string k;
-      unowned Value? _v;
+      unowned Value? v;
 
       try
         {
-          while (iter.next (out k, out _v) == true)
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.FULL_NAME));
+          var p_name = persona as NameDetails;
+          if (p_name != null && v != null)
             {
-              if (_v == null)
-                {
-                  continue;
-                }
-              unowned Value v = (!) _v;
+              string full_name = ((!) v).get_string () ?? "";
+              yield p_name.change_full_name (full_name);
+            }
 
-              if (k == Folks.PersonaStore.detail_key (
-                    PersonaDetail.FULL_NAME))
-                {
-                  var _persona = persona as NameDetails;
-                  if (_persona != null) 
-                    {
-                      string? full_name = v.get_string ();
-                      string _full_name = "";
-                      if (full_name != null)
-                        {
-                          _full_name = (!) full_name;
-                        }
-                      yield _persona.change_full_name (_full_name);
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                    PersonaDetail.EMAIL_ADDRESSES))
-                {
-                  var _persona = persona as EmailDetails;
-                  if (_persona != null)
-                    {
-                      Set<EmailFieldDetails> email_addresses =
-                          (Set<EmailFieldDetails>) v.get_object ();
-                      if (email_addresses != null)
-                        {
-                          yield _persona.change_email_addresses (
-                              email_addresses);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                  PersonaDetail.AVATAR))
-                {
-                  var _persona = persona as AvatarDetails;
-                  if (_persona != null)
-                    {
-                      var avatar = (LoadableIcon?) v.get_object ();
-                      if (avatar != null)
-                        {
-                          yield _persona.change_avatar (avatar);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                    PersonaDetail.IM_ADDRESSES))
-                {
-                  var _persona = persona as ImDetails;
-                  if (_persona != null)
-                    {
-                      MultiMap<string,ImFieldDetails> im_addresses =
-                        (MultiMap<string,ImFieldDetails>) v.get_object ();
-                      if (im_addresses != null)
-                        {
-                          yield _persona.change_im_addresses (im_addresses);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                    PersonaDetail.PHONE_NUMBERS))
-                {
-                  var _persona = persona as PhoneDetails;
-                  if (_persona != null)
-                    {
-                      Set<PhoneFieldDetails> phone_numbers =
-                        (Set<PhoneFieldDetails>) v.get_object ();
-                      if (phone_numbers != null)
-                        {
-                          yield _persona.change_phone_numbers (phone_numbers);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                    PersonaDetail.POSTAL_ADDRESSES))
-                {
-                  var _persona = persona as PostalAddressDetails;
-                  if (_persona != null)
-                    {
-                      Set<PostalAddressFieldDetails> postal_fds =
-                        (Set<PostalAddressFieldDetails>) v.get_object ();
-                      if (postal_fds != null)
-                        {
-                          yield _persona.change_postal_addresses (postal_fds);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                    PersonaDetail.STRUCTURED_NAME))
-                {
-                  var _persona = persona as NameDetails;
-                  if (_persona != null) 
-                    {
-                      StructuredName sname = (StructuredName) v.get_object ();
-                      if (sname != null)
-                        {
-                          yield _persona.change_structured_name (sname);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                  PersonaDetail.LOCAL_IDS))
-                {
-                  var _persona = persona as LocalIdDetails;
-                  if (_persona != null)
-                    {
-                      Set<string> local_ids = (Set<string>) v.get_object ();
-                      if (local_ids != null)
-                        {
-                          yield _persona.change_local_ids (local_ids);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key
-                  (PersonaDetail.WEB_SERVICE_ADDRESSES))
-                {
-                  var _persona = persona as WebServiceDetails;
-                  if (_persona != null)
-                    {
-                      var web_service_addresses =
-                          (HashMultiMap<string, WebServiceFieldDetails>)
-                              v.get_object ();
-                      if (web_service_addresses != null)
-                        {
-                          yield _persona.change_web_service_addresses (
-                              web_service_addresses);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (PersonaDetail.NOTES))
-                {
-                  var _persona = persona as NoteDetails;
-                  if (_persona != null)
-                    {
-                      var notes =
-                          (Gee.HashSet<NoteFieldDetails>) v.get_object ();
-                      if (notes != null)
-                        {
-                          yield _persona.change_notes (notes);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                  PersonaDetail.GENDER))
-                {
-                  var _persona = persona as GenderDetails;
-                  if (_persona != null)
-                    {
-                      var gender = (Gender) v.get_enum ();
-                      yield _persona.change_gender (gender);
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (PersonaDetail.URLS))
-                {
-                  var _persona = persona as UrlDetails;
-                  if (_persona != null)
-                    {
-                      Set<UrlFieldDetails> urls =
-                          (Set<UrlFieldDetails>) v.get_object ();
-                      if (urls != null)
-                        {
-                          yield _persona.change_urls (urls);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                  PersonaDetail.BIRTHDAY))
-                {
-                  var _persona = persona as BirthdayDetails;
-                  if (_persona != null)
-                    {
-                      var birthday = (DateTime?) v.get_boxed ();
-                      if (birthday != null)
-                        {
-                          yield _persona.change_birthday (birthday);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (PersonaDetail.ROLES))
-                {
-                  var _persona = persona as RoleDetails;
-                  if (_persona != null)
-                    {
-                      Set<RoleFieldDetails> roles =
-                          (Set<RoleFieldDetails>) v.get_object ();
-                      if (roles != null)
-                        {
-                          yield _persona.change_roles (roles);
-                        }
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                      PersonaDetail.IS_FAVOURITE))
-                {
-                  var _persona = persona as FavouriteDetails;
-                  if (_persona != null)
-                    {
-                      bool is_fav = v.get_boolean ();
-                      yield _persona.change_is_favourite (is_fav);
-                    }
-                }
-              else if (k == Folks.PersonaStore.detail_key (
-                       PersonaDetail.NICKNAME))
-                {
-                  var _persona = persona as NameDetails;
-                  if (_persona != null)
-                    {
-                      string? nickname = v.get_string ();
-                      string _nickname = "";
-                      if (nickname != null)
-                        {
-                          _nickname = (!) nickname;
-                        }
-                      yield _persona.change_nickname (_nickname);
-                    }
-                }
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.STRUCTURED_NAME));
+          if (p_name != null && v != null)
+            {
+              var sname = (StructuredName) ((!) v).get_object ();
+              if (sname != null)
+                  yield p_name.change_structured_name (sname);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.NICKNAME));
+          if (p_name != null && v != null)
+            {
+              string nickname = ((!) v).get_string () ?? "";
+              yield p_name.change_nickname (nickname);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.EMAIL_ADDRESSES));
+          var p_email = persona as EmailDetails;
+          if (p_email != null && v != null)
+            {
+              var email_addresses = (Set<EmailFieldDetails>) ((!) v).get_object ();
+              if (email_addresses != null)
+                  yield p_email.change_email_addresses (email_addresses);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.AVATAR));
+          var p_avatar = persona as AvatarDetails;
+          if (p_avatar != null && v != null)
+            {
+              var avatar = (LoadableIcon?) ((!) v).get_object ();
+              if (avatar != null)
+                  yield p_avatar.change_avatar (avatar);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.IM_ADDRESSES));
+          var p_im = persona as ImDetails;
+          if (p_im != null && v != null)
+            {
+              var im_addresses =
+                  (MultiMap<string,ImFieldDetails>) ((!) v).get_object ();
+              if (im_addresses != null)
+                  yield p_im.change_im_addresses (im_addresses);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.PHONE_NUMBERS));
+          var p_phone = persona as PhoneDetails;
+          if (p_phone != null && v != null)
+            {
+              var phone_numbers = (Set<PhoneFieldDetails>) ((!) v).get_object ();
+              if (phone_numbers != null)
+                  yield p_phone.change_phone_numbers (phone_numbers);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.POSTAL_ADDRESSES));
+          var p_postal = persona as PostalAddressDetails;
+          if (p_postal != null && v != null)
+            {
+              var postal_fds =
+                  (Set<PostalAddressFieldDetails>) ((!) v).get_object ();
+              if (postal_fds != null)
+                  yield p_postal.change_postal_addresses (postal_fds);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.LOCAL_IDS));
+          var p_local = persona as LocalIdDetails;
+          if (p_local != null && v != null)
+            {
+              var local_ids = (Set<string>) ((!) v).get_object ();
+              if (local_ids != null)
+                  yield p_local.change_local_ids (local_ids);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (
+                  PersonaDetail.WEB_SERVICE_ADDRESSES));
+          var p_web = persona as WebServiceDetails;
+          if (p_web != null && v != null)
+            {
+              var addrs =
+                  (HashMultiMap<string, WebServiceFieldDetails>)
+                      ((!) v).get_object ();
+              if (addrs != null)
+                  yield p_web.change_web_service_addresses (addrs);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.NOTES));
+          var p_note = persona as NoteDetails;
+          if (p_note != null && v != null)
+            {
+              var notes = (Gee.HashSet<NoteFieldDetails>) ((!) v).get_object ();
+              if (notes != null)
+                  yield p_note.change_notes (notes);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.GENDER));
+          var p_gender = persona as GenderDetails;
+          if (p_gender != null && v != null)
+            {
+              var gender = (Gender) ((!) v).get_enum ();
+              yield p_gender.change_gender (gender);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.URLS));
+          var p_url = persona as UrlDetails;
+          if (p_url != null && v != null)
+            {
+              var urls = (Set<UrlFieldDetails>) ((!) v).get_object ();
+              if (urls != null)
+                  yield p_url.change_urls (urls);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.BIRTHDAY));
+          var p_birthday = persona as BirthdayDetails;
+          if (p_birthday != null && v != null)
+            {
+              var birthday = (DateTime?) ((!) v).get_boxed ();
+              if (birthday != null)
+                  yield p_birthday.change_birthday (birthday);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.ROLES));
+          var p_role = persona as RoleDetails;
+          if (p_role != null && v != null)
+            {
+              var roles = (Set<RoleFieldDetails>) ((!) v).get_object ();
+              if (roles != null)
+                  yield p_role.change_roles (roles);
+            }
+
+          v = details.lookup (
+              Folks.PersonaStore.detail_key (PersonaDetail.IS_FAVOURITE));
+          var p_favourite = persona as FavouriteDetails;
+          if (p_favourite != null && v != null)
+            {
+              bool is_fav = ((!) v).get_boolean ();
+              yield p_favourite.change_is_favourite (is_fav);
             }
         }
       catch (PropertyError e1)
@@ -605,9 +540,11 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
           yield this._implement_mock_delay (delay);
         }
 
-      Persona? _persona = null;
-      if (this._personas.unset (persona.iid, out _persona) == true)
+      Persona? _persona = this._personas.get (persona.iid);
+      if (_persona != null)
         {
+          this._personas.unset (persona.iid);
+
           /* Handle the case where a contact is removed while persona changes
            * are frozen. */
           this._pending_persona_registrations.remove ((!) _persona);
@@ -615,7 +552,7 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
 
           /* Notify of the removal. */
           var removed_personas = new HashSet<Folks.Persona> ();
-          removed_personas.add ((!) _persona);
+          removed_personas.add ((!) persona);
           this._emit_personas_changed (null, removed_personas);
         }
     }
@@ -756,7 +693,7 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
    *
    * The value returned by this function gives a delay which is imposed for
    * completion of the {@link Folks.PersonaStore.add_persona_from_details} call.
-   * Negative delays result in the call completing synchronously, zero delays
+   * Negative or zero delays
    * result in completion in an idle callback, and positive delays result in
    * completion after that many milliseconds.
    *
@@ -781,8 +718,8 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
    * @param persona the persona being removed from the store
    * @throws PersonaStoreError to be thrown from
    * {@link Folks.PersonaStore.remove_persona}
-   * @return delay to apply to the remove persona operation (negative delays
-   * complete synchronously; zero delays complete in an idle callback; positive
+   * @return delay to apply to the remove persona operation (negative and zero
+   * delays complete in an idle callback; positive
    * delays complete after that many milliseconds)
    *
    * @since UNRELEASED
@@ -801,14 +738,7 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
    * testing error handling of calls to
    * {@link Folks.PersonaStore.remove_persona}.
    *
-   * The value returned by this function gives a delay which is imposed for
-   * completion of the {@link Folks.PersonaStore.remove_persona} call.
-   * Negative delays result in the call completing synchronously, zero delays
-   * result in completion in an idle callback, and positive delays result in
-   * completion after that many milliseconds.
-   *
-   * If this is ``null``, all calls to {@link Folks.PersonaStore.remove_persona}
-   * will succeed.
+   * See {@link FolksDummy.PersonaStore.add_persona_from_details_mock}.
    *
    * This mock function may be changed at any time; changes will take effect for
    * the next call to {@link Folks.PersonaStore.remove_persona}.
@@ -827,8 +757,8 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
    *
    * @throws PersonaStoreError to be thrown from
    * {@link Folks.PersonaStore.prepare}
-   * @return delay to apply to the prepare operation (negative delays
-   * complete synchronously; zero delays complete in an idle callback; positive
+   * @return delay to apply to the prepare operation (negative and zero delays
+   * complete in an idle callback; positive
    * delays complete after that many milliseconds)
    *
    * @since UNRELEASED
@@ -847,14 +777,7 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
    * this mock function). This is useful for testing error handling of calls to
    * {@link Folks.PersonaStore.prepare}.
    *
-   * The value returned by this function gives a delay which is imposed for
-   * completion of the {@link Folks.PersonaStore.prepare} call.
-   * Negative delays result in the call completing synchronously, zero delays
-   * result in completion in an idle callback, and positive delays result in
-   * completion after that many milliseconds.
-   *
-   * If this is ``null``, all calls to {@link Folks.PersonaStore.prepare} will
-   * succeed.
+   * See {@link FolksDummy.PersonaStore.add_persona_from_details_mock}.
    *
    * This mock function may be changed at any time; changes will take effect for
    * the next call to {@link Folks.PersonaStore.prepare}.
@@ -911,7 +834,7 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
    *
    * @since UNRELEASED
    */
-  public void set_capabilities (MaybeBool can_add_personas,
+  public void update_capabilities (MaybeBool can_add_personas,
       MaybeBool can_alias_personas, MaybeBool can_remove_personas)
     {
       this.freeze_notify ();
@@ -1097,6 +1020,8 @@ public class FolksDummy.PersonaStore : Folks.PersonaStore
    * immediately. If the store has not yet been prepared, this will set a flag
    * to ensure that quiescence is reached as soon as
    * {@link Folks.PersonaStore.prepare} is called.
+   *
+   * This must be called before the store will reach quiescence.
    *
    * @since UNRELEASED
    */

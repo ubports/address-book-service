@@ -4,7 +4,7 @@ vala_precompile(LIB_DUMMY_VALA_C
 SOURCES
     internal_0_9_2.vala
     dummy-backend.vala
-    dummy-fat-persona.vala
+    dummy-full-persona.vala
     dummy-persona-store.vala
     dummy-persona.vala
 GENERATE_VAPI

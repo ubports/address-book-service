@@ -29,7 +29,7 @@ using GLib;
  * This mocks up a ‘thin’ persona which implements none of the available
  * property interfaces provided by libfolks, and is designed as a base class to
  * be subclassed by personas which will implement one or more of these
- * interfaces. For example, {@link FolksDummy.FatPersona} is one such subclass
+ * interfaces. For example, {@link FolksDummy.FullPersona} is one such subclass
  * which implements all available interfaces.
  *
  * There are two sides to this class’ interface: the normal methods required by
@@ -37,7 +37,9 @@ using GLib;
  * {@link Folks.Persona.linkable_property_to_links},
  * and the backend methods which should be called by test driver code to
  * simulate changes in the backing store providing this persona, such as
- * {@link FolksDummy.Persona.update_writeable_properties}.
+ * {@link FolksDummy.Persona.update_writeable_properties}. The ``update_``,
+ * ``register_`` and ``unregister_`` prefixes are commonly used for backend
+ * methods.
  *
  * All property changes for contact details of subclasses of
  * {@link FolksDummy.Persona} have a configurable delay before taking effect,
@@ -257,7 +259,7 @@ public class FolksDummy.Persona : Folks.Persona
    * {@link FolksDummy.Persona.property_change_delay} has expired. It must
    * effect the property change in the simulated backing store, for example by
    * calling an ‘update’ method such as
-   * {@link FolksDummy.FatPersona.update_nickname}.
+   * {@link FolksDummy.FullPersona.update_nickname}.
    *
    * @since UNRELEASED
    */
