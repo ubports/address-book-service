@@ -139,11 +139,10 @@ private:
                                  AddressBook *self);
     static void createContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *res,
-                                  QDBusMessage *msg);
+                                  void *data);
     static void removeContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *result,
                                   void *data);
-
     friend class DirtyContactsNotify;
 };
 
