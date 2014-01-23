@@ -120,13 +120,12 @@ namespace galera
 {
 
 QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator)
-    : m_individual(individual),
-      m_primaryPersona(0),
+    : m_individual(0),
       m_aggregator(aggregator),
-      m_contact(0)
+      m_contact(0),
+      m_editing(false)
 {
-    g_object_ref(m_individual);
-    updateContact();
+    setIndividual(individual);
 }
 
 void QIndividual::notifyUpdate()
@@ -139,20 +138,18 @@ void QIndividual::notifyUpdate()
 
 QIndividual::~QIndividual()
 {
+    clear();
     if (m_contact) {
         delete m_contact;
     }
+
     Q_ASSERT(m_individual);
     g_object_unref(m_individual);
 }
 
 QString QIndividual::id() const
 {
-    if (m_individual) {
-        return QString::fromUtf8(folks_individual_get_id(m_individual));
-    } else {
-        return "";
-    }
+    return m_id;
 }
 
 QtContacts::QContactDetail QIndividual::getUid() const
@@ -167,25 +164,17 @@ QtContacts::QContactDetail QIndividual::getUid() const
 
 QList<QtContacts::QContactDetail> QIndividual::getClientPidMap() const
 {
-    QList<QtContacts::QContactDetail> details;
     int index = 1;
-    GeeSet *personas = folks_individual_get_personas(m_individual);
-    if (!personas) {
-        return details;
-    }
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+    QList<QContactDetail> details;
 
-    while(gee_iterator_next(iter)) {
+    Q_FOREACH(const QString id, m_personas.keys()) {
         QContactExtendedDetail detail;
-        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+
         detail.setName("CLIENTPIDMAP");
         detail.setValue(QContactExtendedDetail::FieldData, index++);
-        detail.setValue(QContactExtendedDetail::FieldData + 1, QString::fromUtf8(folks_persona_get_uid(persona)));
+        detail.setValue(QContactExtendedDetail::FieldData + 1, id);
         details << detail;
-        g_object_unref(persona);
     }
-
-    g_object_unref(iter);
     return details;
 }
 
@@ -315,8 +304,8 @@ void QIndividual::folksPersonaChanged(FolksPersona *persona,
                                       GParamSpec *pspec,
                                       QIndividual *self)
 {
-    const gchar* paramName = g_param_spec_get_name(pspec);
-    if (QString::fromUtf8(paramName) == QStringLiteral("avatar")) {
+    QString paramName = QString::fromUtf8(g_param_spec_get_name(pspec));
+    if (paramName == QStringLiteral("avatar")) {
         QContactDetail newAvatar = self->getPersonaPhoto(persona, 1);
 
         QContactAvatar avatar = self->m_contact->detail(QContactAvatar::Type);
@@ -334,7 +323,6 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, i
     if (!FOLKS_IS_AVATAR_DETAILS(persona)) {
         return avatar;
     }
-
     GLoadableIcon *avatarIcon = folks_avatar_details_get_avatar(FOLKS_AVATAR_DETAILS(persona));
     if (avatarIcon) {
         QString url;
@@ -360,9 +348,12 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, i
             g_free(uri);
             g_object_unref(cache);
         }
+        if (url.isEmpty()) {
+            return avatar;
+        }
         avatar.setImageUrl(QUrl(url));
+        avatar.setDetailUri(QString("%1.1").arg(index));
     }
-    avatar.setDetailUri(QString("%1.1").arg(index));
     return avatar;
 }
 
@@ -745,39 +736,65 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
 QtContacts::QContact &QIndividual::contact()
 {
     if (!m_contact) {
+        updatePersonas();
         updateContact();
     }
+
     return *m_contact;
+}
+
+void QIndividual::updatePersonas()
+{
+    Q_FOREACH(FolksPersona *p, m_personas.values()) {
+        g_object_unref(p);
+    }
+
+    m_personas.clear();
+    GeeSet *personas = folks_individual_get_personas(m_individual);
+    if (!personas) {
+        return;
+    }
+
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+    while(gee_iterator_next(iter)) {
+        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+
+        g_signal_connect(G_OBJECT(persona), "notify::avatar",
+                         (GCallback) QIndividual::folksPersonaChanged,
+                         const_cast<QIndividual*>(this));
+        m_personas.insert(QString::fromUtf8(folks_persona_get_iid(persona)), persona);
+    }
+
+    g_object_unref(iter);
 }
 
 void QIndividual::updateContact()
 {
-    Q_ASSERT(m_individual);
+    // disconnect any previous handler
+    Q_FOREACH(FolksPersona *p, m_notifyConnections.keys()) {
+        Q_FOREACH(int handlerId, m_notifyConnections.value(p)) {
+            g_signal_handler_disconnect(p, handlerId);
+        }
+        m_notifyConnections.remove(p);
+    }
+
+    if (m_contact) {
+        delete m_contact;
+        m_contact = 0;
+    }
 
     m_contact = new QContact();
+    if (!m_individual) {
+        return;
+    }
+
     m_contact->appendDetail(getUid());
     Q_FOREACH(QContactDetail detail, getClientPidMap()) {
         m_contact->appendDetail(detail);
     }
 
     int personaIndex = 1;
-    GeeSet *personas = folks_individual_get_personas(m_individual);
-    Q_ASSERT(personas);
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
-
-    FolksPersona *persona;
-
-    // disconnect any previous handler
-    Q_FOREACH(gpointer persona, m_notifyConnections.keys()) {
-        Q_FOREACH(int handlerId, m_notifyConnections[persona]) {
-            g_signal_handler_disconnect(persona, handlerId);
-        }
-    }
-
-    m_notifyConnections.clear();
-
-    while(gee_iterator_next(iter)) {
-         persona = FOLKS_PERSONA(gee_iterator_get(iter));
+    Q_FOREACH(FolksPersona *persona, m_personas.values()) {
          Q_ASSERT(FOLKS_IS_PERSONA(persona));
 
         int wsize = 0;
@@ -790,25 +807,27 @@ void QIndividual::updateContact()
             wPropList << wproperties[i];
         }
 
-        appendDetailsForPersona(m_contact,
-                                getPersonaName(persona, personaIndex),
-                                !wPropList.contains("structured-name"));
-        appendDetailsForPersona(m_contact,
-                                getPersonaFullName(persona, personaIndex),
-                                !wPropList.contains("full-name"));
-        appendDetailsForPersona(m_contact,
-                                getPersonaNickName(persona, personaIndex),
-                                !wPropList.contains("structured-name"));
-        appendDetailsForPersona(m_contact,
-                                getPersonaBirthday(persona, personaIndex),
-                                !wPropList.contains("birthday"));
-        appendDetailsForPersona(m_contact,
-                                getPersonaPhoto(persona, personaIndex),
-                                !wPropList.contains("avatar"));
-        appendDetailsForPersona(m_contact,
-                                getPersonaFavorite(persona, personaIndex),
-                                !wPropList.contains("is-favourite"));
-
+        // vcard only support one of these details by contact
+        if (personaIndex == 1) {
+            appendDetailsForPersona(m_contact,
+                                    getPersonaName(persona, personaIndex),
+                                    !wPropList.contains("structured-name"));
+            appendDetailsForPersona(m_contact,
+                                    getPersonaFullName(persona, personaIndex),
+                                    !wPropList.contains("full-name"));
+            appendDetailsForPersona(m_contact,
+                                    getPersonaNickName(persona, personaIndex),
+                                    !wPropList.contains("structured-name"));
+            appendDetailsForPersona(m_contact,
+                                    getPersonaBirthday(persona, personaIndex),
+                                    !wPropList.contains("birthday"));
+            appendDetailsForPersona(m_contact,
+                                    getPersonaPhoto(persona, personaIndex),
+                                    !wPropList.contains("avatar"));
+            appendDetailsForPersona(m_contact,
+                                    getPersonaFavorite(persona, personaIndex),
+                                    !wPropList.contains("is-favourite"));
+        }
 
         QList<QContactDetail> details;
         QContactDetail prefDetail;
@@ -855,18 +874,14 @@ void QIndividual::updateContact()
                                 !wPropList.contains("urls"));
         personaIndex++;
 
+        QList<int> ids = m_notifyConnections.value(persona);
+
         // for now we are getting updated only about avatar changes
-        int handlerId = g_signal_connect(G_OBJECT(persona), "notify::avatar",
-                                         (GCallback) QIndividual::folksPersonaChanged,
-                                         const_cast<QIndividual*>(this));
-        QList<int> ids = m_notifyConnections[persona];
-        ids << handlerId;
+        ids << g_signal_connect(G_OBJECT(persona), "notify::avatar",
+                               (GCallback) QIndividual::folksPersonaChanged,
+                               const_cast<QIndividual*>(this));
         m_notifyConnections[persona] = ids;
-
-        g_object_unref(persona);
     }
-
-    g_object_unref(iter);
 }
 
 bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object, const char *slot)
@@ -874,12 +889,13 @@ bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object
     QContact &originalContact = contact();
     if (newContact != originalContact) {
         UpdateContactRequest *request = new UpdateContactRequest(newContact, this, object, slot);
-
+        m_editing = true;
         QObject::connect(request, &UpdateContactRequest::done, [request, this] (const QString &errorMessage) {
             if (errorMessage.isEmpty()) {
                 this->updateContact();
             }
             request->deleteLater();
+            m_editing = false;
         });
         request->start();
         return true;
@@ -895,31 +911,34 @@ bool QIndividual::update(const QString &vcard, QObject *object, const char *slot
     return update(contact, object, slot);
 }
 
-
 FolksIndividual *QIndividual::individual() const
 {
     return m_individual;
 }
 
-FolksPersona *QIndividual::getPersona(int index) const
+QList<FolksPersona *> QIndividual::personas() const
 {
-    int size = 0;
-    FolksPersona *persona = 0;
-    GeeSet *personas = folks_individual_get_personas(m_individual);
-    gpointer* values = gee_collection_to_array(GEE_COLLECTION(personas), &size);
-
-    if ((index > 0) && (index <= size)) {
-        persona = FOLKS_PERSONA(values[index - 1]);
-    }
-
-    g_free(values);
-    return persona;
+    return m_personas.values();
 }
 
-int QIndividual::personaCount() const
+void QIndividual::clear()
 {
-    GeeSet *personas = folks_individual_get_personas(m_individual);
-    return gee_collection_get_size(GEE_COLLECTION(personas));
+    if (m_individual) {
+        g_object_unref(m_individual);
+    }
+
+    Q_FOREACH(FolksPersona *p, m_personas.values()) {
+        Q_FOREACH(int handlerId, m_notifyConnections.value(p)) {
+            g_signal_handler_disconnect(p, handlerId);
+        }
+        m_notifyConnections.remove(p);
+        g_object_unref(p);
+    }
+
+    if (m_contact) {
+        delete m_contact;
+        m_contact = 0;
+    }
 }
 
 void QIndividual::addListener(QObject *object, const char *slot)
@@ -932,13 +951,28 @@ void QIndividual::addListener(QObject *object, const char *slot)
     }
 }
 
+bool QIndividual::isValid() const
+{
+    return (m_individual != 0);
+}
+
 void QIndividual::setIndividual(FolksIndividual *individual)
 {
     if (m_individual != individual) {
-        if (m_individual) {
-            g_object_unref(m_individual);
+        clear();
+
+        if (individual) {
+            QString newId = QString::fromUtf8(folks_individual_get_id(individual));
+            if (!m_id.isEmpty()) {
+                // we can only update to individual with the same id
+                Q_ASSERT(newId == m_id);
+            } else {
+                m_id = newId;
+            }
         }
+
         m_individual = individual;
+
         if (m_individual) {
             g_object_ref(m_individual);
         }
@@ -948,10 +982,13 @@ void QIndividual::setIndividual(FolksIndividual *individual)
             delete m_contact;
             m_contact = 0;
         }
-        updateContact();
+
+        if (m_contact) {
+            updatePersonas();
+            updateContact();
+        }
     }
 }
-
 
 GHashTable *QIndividual::parseAddressDetails(GHashTable *details,
                                              const QList<QtContacts::QContactDetail> &cDetails,
@@ -982,13 +1019,15 @@ GHashTable *QIndividual::parseAddressDetails(GHashTable *details,
                 g_value_take_object(value, collection);
             }
 
-            FolksPostalAddressFieldDetails *pafd = folks_postal_address_field_details_new(postalAddress, NULL);
-            DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(pafd),
-                                              address,
-                                              detail == prefDetail);
-            gee_collection_add(collection, pafd);
+            if (!folks_postal_address_is_empty(postalAddress)) {
+                FolksPostalAddressFieldDetails *pafd = folks_postal_address_field_details_new(postalAddress, NULL);
+                DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(pafd),
+                                                  address,
+                                                  detail == prefDetail);
+                gee_collection_add(collection, pafd);
+                g_object_unref(pafd);
+            }
 
-            g_object_unref(pafd);
             g_object_unref(postalAddress);
         }
         GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_POSTAL_ADDRESSES, value);
@@ -1293,7 +1332,6 @@ GHashTable *QIndividual::parseUrlDetails(GHashTable *details,
     return details;
 }
 
-
 GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
 {
     GHashTable *details = g_hash_table_new_full(g_str_hash,
@@ -1308,7 +1346,6 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
     parseNameDetails(details, contact.details(QContactName::Type));
     parseFullNameDetails(details, contact.details(QContactDisplayLabel::Type));
     parseNicknameDetails(details, contact.details(QContactNickname::Type));
-
 
     parseAddressDetails(details,
                         contact.details(QContactAddress::Type),
@@ -1337,27 +1374,11 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
 
 FolksPersona* QIndividual::primaryPersona()
 {
-    Q_ASSERT(m_individual);
-
-    if (m_primaryPersona) {
-        return m_primaryPersona;
+    if (m_personas.size() > 0) {
+        return m_personas.begin().value();
+    } else {
+        return 0;
     }
-
-    GeeSet *personas = folks_individual_get_personas(m_individual);
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
-    FolksPersonaStore *primaryStore = folks_individual_aggregator_get_primary_store(m_aggregator);
-
-    while(m_primaryPersona == NULL && gee_iterator_next(iter)) {
-        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
-        if(folks_persona_get_store(persona) == primaryStore) {
-            m_primaryPersona = persona;
-            g_object_ref (persona);
-        }
-        g_object_unref(persona);
-    }
-    g_object_unref(iter);
-
-    return m_primaryPersona;
 }
 
 QtContacts::QContactDetail QIndividual::detailFromUri(QtContacts::QContactDetail::DetailType type, const QString &uri) const

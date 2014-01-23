@@ -45,13 +45,17 @@ Q_SIGNALS:
     void done(const QString &errorMessage);
 
 private:
-    QtContacts::QContact m_newContact;
-    int m_currentDetailType;
-    int m_currentPersonaIndex;
-    int m_maxPersona;
     QIndividual *m_parent;
     QObject *m_object;
+    FolksPersona *m_currentPersona;
+
+    QList<FolksPersona*> m_personas;
+    QtContacts::QContact m_originalContact;
+    QtContacts::QContact m_newContact;
+    int m_currentDetailType;
     QMetaMethod m_slot;
+    int m_currentPersonaIndex;
+
 
     void invokeSlot(const QString &errorMessage = QString());
 
@@ -61,6 +65,8 @@ private:
                         const QtContacts::QContactDetail &prefB);
     static bool isEqual(QList<QtContacts::QContactDetail> listA,
                         QList<QtContacts::QContactDetail> listB);
+    static bool isEqual(const QtContacts::QContactDetail &detailA,
+                        const QtContacts::QContactDetail &detailB);
     static bool checkPersona(QtContacts::QContactDetail &det, int persona);
     static QList<QtContacts::QContactDetail> detailsFromPersona(const QtContacts::QContact &contact,
                                                                 QtContacts::QContactDetail::DetailType type,
@@ -74,7 +80,8 @@ private:
                                                          int persona,
                                                          QtContacts::QContactDetail *pref) const;
 
-    void updatePersona(int index);
+
+    void updatePersona();
     void updateAddress();
     void updateAvatar();
     void updateBirthday();
@@ -94,7 +101,7 @@ private:
                                    GAsyncResult *result);
 
     static void updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata);
-
+    static void folksAddAntiLinksDone(FolksAntiLinkable *antilinkable, GAsyncResult *result, UpdateContactRequest *self);
 };
 
 }

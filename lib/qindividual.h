@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2013 Canonical Ltd.
  *
  * This file is part of contact-service-app.
@@ -46,20 +46,20 @@ public:
     bool update(const QtContacts::QContact &contact, QObject *object, const char *slot);
     void setIndividual(FolksIndividual *individual);
     FolksIndividual *individual() const;
-
-    FolksPersona *getPersona(int index) const;
-    int personaCount() const;
+    QList<FolksPersona*> personas() const;
     void addListener(QObject *object, const char *slot);
+    bool isValid() const;
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
 private:
     FolksIndividual *m_individual;
-    FolksPersona *m_primaryPersona;
     FolksIndividualAggregator *m_aggregator;
     QtContacts::QContact *m_contact;
-    QMap<QString, QPair<QtContacts::QContactDetail, FolksAbstractFieldDetails*> > m_fieldsMap;
     QList<QPair<QObject*, QMetaMethod> > m_listeners;
-    QMap<gpointer, QList<int> > m_notifyConnections;
+    QMap<QString, FolksPersona*> m_personas;
+    QMap<FolksPersona*, QList<int> > m_notifyConnections;
+    QString m_id;
+    bool m_editing;
 
     QIndividual();
     QIndividual(const QIndividual &);
@@ -68,6 +68,8 @@ private:
 
     QMultiHash<QString, QString> parseDetails(FolksAbstractFieldDetails *details) const;
     void updateContact();
+    void updatePersonas();
+    void clear();
 
     FolksPersona *primaryPersona();
     QtContacts::QContactDetail detailFromUri(QtContacts::QContactDetail::DetailType type, const QString &uri) const;
@@ -148,6 +150,7 @@ private:
     static void folksPersonaChanged             (FolksPersona *persona,
                                                  GParamSpec *pspec,
                                                  QIndividual *self);
+
 };
 
 } //namespace
