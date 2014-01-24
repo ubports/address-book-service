@@ -739,7 +739,6 @@ QtContacts::QContact &QIndividual::contact()
         updatePersonas();
         updateContact();
     }
-
     return *m_contact;
 }
 
@@ -970,9 +969,7 @@ void QIndividual::setIndividual(FolksIndividual *individual)
                 m_id = newId;
             }
         }
-
         m_individual = individual;
-
         if (m_individual) {
             g_object_ref(m_individual);
         }
@@ -982,7 +979,6 @@ void QIndividual::setIndividual(FolksIndividual *individual)
             delete m_contact;
             m_contact = 0;
         }
-
         if (m_contact) {
             updatePersonas();
             updateContact();

@@ -648,27 +648,6 @@ void AddressBook::prepareFolksDone(GObject *source,
                                       GAsyncResult *res,
                                       AddressBook *self)
 {
-    FolksBackendStore *bStore = folks_backend_store_dup();
-    qDebug() << "Backend is ready" << folks_backend_store_get_is_prepared(bStore);
-
-#if 0
-    // disable auto link for EDS
-    FolksBackend *b = folks_backend_store_dup_backend_by_name(bStore, "eds");
-    GeeMap *storesMap = folks_backend_get_persona_stores(b);
-    GeeCollection *stores = gee_map_get_values(storesMap);
-    GeeIterator *i = gee_iterable_iterator(GEE_ITERABLE(stores));
-
-    while(gee_iterator_next(i)) {
-        FolksPersonaStore *b = FOLKS_PERSONA_STORE(gee_iterator_get(i));
-        g_object_set(G_OBJECT(b), "auto_trust_level", false, NULL);
-        //folks_persona_store_set_trust_level(b, FOLKS_PERSONA_STORE_TRUST_NONE);
-        g_object_unref(b);
-    }
-
-    g_object_unref(i);
-    g_object_unref(stores);
-#endif
-
     Q_UNUSED(source);
     Q_UNUSED(res);
     Q_UNUSED(self);
