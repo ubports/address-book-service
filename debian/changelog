@@ -12,7 +12,7 @@ address-book-service (0.1.1) UNRELEASED; urgency=medium
   * Check if query was destroyed on client side before delete it on the server
     side.
 
- - Renato Araujo Oliveira Filho <renato@ubuntu>  Fri, 24 Jan 2014 08:04:56 -0300
+ -- Renato Araujo Oliveira Filho <renato@ubuntu>  Fri, 24 Jan 2014 08:04:56 -0300
 
 address-book-service (0.1.0+13.10.20131011-0ubuntu1) saucy; urgency=low
 
