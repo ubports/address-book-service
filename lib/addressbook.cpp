@@ -453,10 +453,6 @@ void AddressBook::addAntiLinksDone(FolksAntiLinkable *antilinkable, GAsyncResult
     } else {
         FolksIndividual *individual = folks_persona_get_individual(FOLKS_PERSONA(antilinkable));
 
-        // notify about the contact creation
-        QString contactId = createData->m_addressbook->addContact(individual);
-        Q_EMIT createData->m_addressbook->m_adaptor->contactsAdded(QStringList() << contactId);
-
         // return the result/contactId to the client
         reply = createData->m_message.createReply(QString::fromUtf8(folks_individual_get_id(individual)));
     }
@@ -562,8 +558,7 @@ QString AddressBook::removeContact(FolksIndividual *individual)
 
 QString AddressBook::addContact(FolksIndividual *individual)
 {
-    QString id = QString::fromUtf8(folks_individual_get_id(individual));
-    ContactEntry *entry = m_contacts->value(id);
+    ContactEntry *entry = m_contacts->value(individual);
     if (entry) {
         entry->individual()->setIndividual(individual);
     } else {
@@ -573,7 +568,7 @@ QString AddressBook::addContact(FolksIndividual *individual)
         m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
     }
-    return id;
+    return QString::fromUtf8(folks_individual_get_id(individual));
 }
 
 void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggregator,
@@ -581,13 +576,14 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
                                        AddressBook *self)
 {
     qDebug() << Q_FUNC_INFO;
-    QStringList removedIds;
-    QStringList addedIds;
-    QStringList updatedIds;
+    Q_UNUSED(individualAggregator);
 
-    GeeIterator *iter;
+    QSet<QString> removedIds;
+    QSet<QString> addedIds;
+    QSet<QString> updatedIds;
+
     GeeSet *keys = gee_multi_map_get_keys(changes);
-    iter = gee_iterable_iterator(GEE_ITERABLE(keys));
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(keys));
 
     while(gee_iterator_next(iter)) {
         FolksIndividual *individualKey = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
@@ -600,16 +596,20 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
 
             // contact added
             if (individualKey == 0) {
-                qDebug() << "Add a new contact+++";
                 addedIds << self->addContact(individualValue);
             } else if (individualValue == 0){
                 QString id = QString::fromUtf8(folks_individual_get_id(individualKey));
-                if (!addedIds.contains(id)) {
-                    // delete from contact map
+                if (!addedIds.contains(id) &&
+                    !updatedIds.contains(id)) {
                     removedIds << self->removeContact(individualKey);
                 }
             } else {
-                // ignore link events this will be handled as a contact change
+                QString idValue = QString::fromUtf8(folks_individual_get_id(individualValue));
+                if (self->m_contacts->value(idValue)) {
+                    updatedIds << self->addContact(individualValue);
+                } else {
+                    addedIds << self->addContact(individualValue);
+                }
             }
 
             if (individualValue) {
@@ -628,15 +628,15 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     g_object_unref(keys);
 
     if (!removedIds.isEmpty() && self->m_ready) {
-        Q_EMIT self->m_adaptor->contactsRemoved(removedIds);
+        Q_EMIT self->m_adaptor->contactsRemoved(removedIds.toList());
     }
 
     if (!addedIds.isEmpty() && self->m_ready) {
-        Q_EMIT self->m_adaptor->contactsAdded(addedIds);
+        Q_EMIT self->m_adaptor->contactsAdded(addedIds.toList());
     }
 
     if (!updatedIds.isEmpty() && self->m_ready) {
-        Q_EMIT self->m_adaptor->contactsUpdated(updatedIds);
+        Q_EMIT self->m_adaptor->contactsUpdated(updatedIds.toList());
     }
 
     qDebug() << "Added" << addedIds;
