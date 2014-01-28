@@ -195,9 +195,17 @@ void QIndividual::appendDetailsForPersona(QtContacts::QContact *contact,
 {
     if (!detail.isEmpty()) {
         QtContacts::QContactDetail cpy(detail);
-        if (readOnly) {
-            QContactManagerEngine::setDetailAccessConstraints(&cpy, QContactDetail::ReadOnly);
+        QtContacts::QContactDetail::AccessConstraints access;
+        if (readOnly ||
+            detail.accessConstraints().testFlag(QContactDetail::ReadOnly)) {
+            access |= QContactDetail::ReadOnly;
         }
+
+        if (detail.accessConstraints().testFlag(QContactDetail::Irremovable)) {
+            access |= QContactDetail::Irremovable;
+        }
+
+        QContactManagerEngine::setDetailAccessConstraints(&cpy, access);
         contact->appendDetail(cpy);
     }
 }
@@ -808,7 +816,6 @@ void QIndividual::updateContact()
         appendDetailsForPersona(m_contact,
                                 getPersonaFavorite(persona, personaIndex),
                                 !wPropList.contains("is-favourite"));
-
 
         QList<QContactDetail> details;
         QContactDetail prefDetail;
