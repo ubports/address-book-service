@@ -848,6 +848,26 @@ void QIndividual::updateContact()
                                 !wPropList.contains("postal-addresses"));
 
         details = getPersonaIms(persona, &prefDetail, personaIndex);
+
+        // mark folks automatically created online accounts as read-only and irremovable
+        Q_FOREACH(const QContactEmailAddress &emailDetail, m_contact->details(QContactEmailAddress::Type)) {
+            QString email = emailDetail.emailAddress();
+            if (email.contains("@msn.") ||
+                email.contains("@hotmail.") ||
+                email.contains("@live.") ||
+                email.contains("@gmail.") ||
+                email.contains("@googlemail.") ||
+                email.contains("@yahoo.")) {
+                for(int i=0; i < details.size(); i++) {
+                    QContactOnlineAccount acc = static_cast<QContactOnlineAccount>(details[i]);
+                    if (acc.accountUri() == emailDetail.emailAddress()) {
+                        QContactManagerEngine::setDetailAccessConstraints(&details[i],
+                                                                          QContactDetail::ReadOnly |
+                                                                          QContactDetail::Irremovable);
+                    }
+                }
+            }
+        }
         appendDetailsForPersona(m_contact,
                                 details,
                                 VCardParser::PreferredActionNames[QContactOnlineAccount::Type],
