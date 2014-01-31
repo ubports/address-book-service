@@ -139,12 +139,6 @@ void QIndividual::notifyUpdate()
 QIndividual::~QIndividual()
 {
     clear();
-    if (m_contact) {
-        delete m_contact;
-    }
-
-    Q_ASSERT(m_individual);
-    g_object_unref(m_individual);
 }
 
 QString QIndividual::id() const
@@ -735,7 +729,7 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
 
 QtContacts::QContact &QIndividual::contact()
 {
-    if (!m_contact) {
+    if (!m_contact && m_individual) {
         updatePersonas();
         updateContact();
     }
@@ -748,7 +742,6 @@ void QIndividual::updatePersonas()
         g_object_unref(p);
     }
 
-    m_personas.clear();
     GeeSet *personas = folks_individual_get_personas(m_individual);
     if (!personas) {
         return;
@@ -757,10 +750,10 @@ void QIndividual::updatePersonas()
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
     while(gee_iterator_next(iter)) {
         FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
-
         g_signal_connect(G_OBJECT(persona), "notify::avatar",
                          (GCallback) QIndividual::folksPersonaChanged,
                          const_cast<QIndividual*>(this));
+
         m_personas.insert(QString::fromUtf8(folks_persona_get_iid(persona)), persona);
     }
 
@@ -920,18 +913,24 @@ QList<FolksPersona *> QIndividual::personas() const
     return m_personas.values();
 }
 
-void QIndividual::clear()
+void QIndividual::clearPersonas()
 {
-    if (m_individual) {
-        g_object_unref(m_individual);
-    }
-
     Q_FOREACH(FolksPersona *p, m_personas.values()) {
         Q_FOREACH(int handlerId, m_notifyConnections.value(p)) {
             g_signal_handler_disconnect(p, handlerId);
         }
         m_notifyConnections.remove(p);
         g_object_unref(p);
+    }
+    m_personas.clear();
+}
+
+void QIndividual::clear()
+{
+    clearPersonas();
+    if (m_individual) {
+        g_object_unref(m_individual);
+        m_individual = 0;
     }
 
     if (m_contact) {

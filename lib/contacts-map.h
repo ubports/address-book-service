@@ -22,6 +22,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QHash>
+#include <QtCore/QMutex>
 
 #include <folks/folks.h>
 #include <glib.h>
@@ -57,20 +58,25 @@ public:
     ContactEntry *valueFromVCard(const QString &vcard) const;
 
     bool contains(FolksIndividual *individual) const;
+    bool contains(const QString &id) const;
+
     ContactEntry *value(FolksIndividual *individual) const;
     ContactEntry *value(const QString &id) const;
+
     ContactEntry *take(FolksIndividual *individual);
+    ContactEntry *take(const QString &id);
+
     void remove(const QString &id);
     void insert(ContactEntry *entry);
     int size() const;
     void clear();
-
-
+    void lock();
+    void unlock();
     QList<ContactEntry*> values() const;
 
 private:
-    QHash<FolksIndividual *, ContactEntry*> m_individualsToEntry;
     QHash<QString, ContactEntry*> m_idToEntry;
+    QMutex m_mutex;
 };
 
 } //namespace

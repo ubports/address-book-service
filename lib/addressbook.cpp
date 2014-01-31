@@ -544,31 +544,28 @@ void AddressBook::updateContactsDone(const QString &contactId,
 
 QString AddressBook::removeContact(FolksIndividual *individual)
 {
-    if (m_contacts->contains(individual)) {
-        ContactEntry *ci = m_contacts->take(individual);
-        if (ci) {
-            QString id = QString::fromUtf8(folks_individual_get_id(individual));
-            qDebug() << "Remove contact" << id;
-            delete ci;
-            return id;
-        }
+    QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
+    ContactEntry *ci = m_contacts->take(contactId);
+    if (ci) {
+        delete ci;
+        return contactId;
     }
     return QString();
 }
 
 QString AddressBook::addContact(FolksIndividual *individual)
 {
-    ContactEntry *entry = m_contacts->value(individual);
+    QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
+    ContactEntry *entry = m_contacts->value(contactId);
     if (entry) {
         entry->individual()->setIndividual(individual);
     } else {
-        Q_ASSERT(!m_contacts->contains(individual));
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
         m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
     }
-    return QString::fromUtf8(folks_individual_get_id(individual));
+    return contactId;
 }
 
 void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggregator,

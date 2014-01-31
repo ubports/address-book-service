@@ -69,6 +69,7 @@ private:
     QMultiHash<QString, QString> parseDetails(FolksAbstractFieldDetails *details) const;
     void updateContact();
     void updatePersonas();
+    void clearPersonas();
     void clear();
 
     FolksPersona *primaryPersona();

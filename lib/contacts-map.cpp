@@ -52,11 +52,6 @@ ContactsMap::~ContactsMap()
     clear();
 }
 
-ContactEntry *ContactsMap::value(FolksIndividual *individual) const
-{
-    return m_individualsToEntry[individual];
-}
-
 ContactEntry *ContactsMap::value(const QString &id) const
 {
     return m_idToEntry[id];
@@ -64,32 +59,33 @@ ContactEntry *ContactsMap::value(const QString &id) const
 
 ContactEntry *ContactsMap::take(FolksIndividual *individual)
 {
-    if (m_individualsToEntry.remove(individual)) {
-        return m_idToEntry.take(folks_individual_get_id(individual));
-    }
-    return 0;
+    QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
+    return take(contactId);
+}
+
+ContactEntry *ContactsMap::take(const QString &id)
+{
+    QMutexLocker locker(&m_mutex);
+    return m_idToEntry.take(id);
 }
 
 void ContactsMap::remove(const QString &id)
 {
-    ContactEntry *entry = m_idToEntry[id];
+    QMutexLocker locker(&m_mutex);
+    ContactEntry *entry = m_idToEntry.value(id,0);
     if (entry) {
-        m_individualsToEntry.remove(entry->individual()->individual());
         m_idToEntry.remove(id);
         delete entry;
     }
 }
 
-bool ContactsMap::contains(FolksIndividual *individual) const
-{
-    return m_individualsToEntry.contains(individual);
-}
-
 void ContactsMap::insert(ContactEntry *entry)
 {
+    QMutexLocker locker(&m_mutex);
     FolksIndividual *fIndividual = entry->individual()->individual();
-    m_idToEntry.insert(folks_individual_get_id(fIndividual), entry);
-    m_individualsToEntry.insert(fIndividual, entry);
+    if (fIndividual) {
+        m_idToEntry.insert(folks_individual_get_id(fIndividual), entry);
+    }
 }
 
 int ContactsMap::size() const
@@ -99,16 +95,25 @@ int ContactsMap::size() const
 
 void ContactsMap::clear()
 {
+    QMutexLocker locker(&m_mutex);
     QList<ContactEntry*> entries = m_idToEntry.values();
     m_idToEntry.clear();
-    m_individualsToEntry.clear();
-
     qDeleteAll(entries);
+}
+
+void ContactsMap::lock()
+{
+    m_mutex.lock();
+}
+
+void ContactsMap::unlock()
+{
+    m_mutex.unlock();
 }
 
 QList<ContactEntry*> ContactsMap::values() const
 {
-    return m_individualsToEntry.values();
+    return m_idToEntry.values();
 }
 
 ContactEntry *ContactsMap::valueFromVCard(const QString &vcard) const
@@ -123,6 +128,23 @@ ContactEntry *ContactsMap::valueFromVCard(const QString &vcard) const
         return m_idToEntry[id];
     }
     return 0;
+}
+
+bool ContactsMap::contains(FolksIndividual *individual) const
+{
+    QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
+    return contains(contactId);
+}
+
+bool ContactsMap::contains(const QString &id) const
+{
+    return m_idToEntry.contains(id);
+}
+
+ContactEntry *ContactsMap::value(FolksIndividual *individual) const
+{
+    QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
+    return m_idToEntry.value(contactId, 0);
 }
 
 } //namespace
