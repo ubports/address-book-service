@@ -250,7 +250,6 @@ bool View::registerObject(QDBusConnection &connection)
 void View::unregisterObject(QDBusConnection &connection)
 {
     if (m_adaptor) {
-        qDebug() << "Object UN-registered:" << objectPath();
         connection.unregisterObject(dynamicObjectPath());
     }
 }

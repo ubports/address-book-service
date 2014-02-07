@@ -123,6 +123,7 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
     : m_individual(0),
       m_aggregator(aggregator),
       m_contact(0),
+      m_currentUpdate(0),
       m_editing(false)
 {
     setIndividual(individual);
@@ -880,16 +881,22 @@ bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object
 {
     QContact &originalContact = contact();
     if (newContact != originalContact) {
-        UpdateContactRequest *request = new UpdateContactRequest(newContact, this, object, slot);
+        // only suppport one update by time
+        Q_ASSERT(m_currentUpdate == 0);
+        m_currentUpdate = new UpdateContactRequest(newContact, this, object, slot);
         m_editing = true;
-        QObject::connect(request, &UpdateContactRequest::done, [request, this] (const QString &errorMessage) {
+        m_updateConnection = QObject::connect(m_currentUpdate,
+                                              &UpdateContactRequest::done,
+                                              [this] (const QString &errorMessage) {
+
             if (errorMessage.isEmpty()) {
                 this->updateContact();
             }
-            request->deleteLater();
+            m_currentUpdate->deleteLater();
+            m_currentUpdate = 0;
             m_editing = false;
         });
-        request->start();
+        m_currentUpdate->start();
         return true;
     } else {
         qDebug() << "Contact is equal";
@@ -927,6 +934,15 @@ void QIndividual::clearPersonas()
 
 void QIndividual::clear()
 {
+    if (m_currentUpdate) {
+        m_currentUpdate->disconnect(m_updateConnection);
+        // this will leave the update object to destroy itself
+        // this is necessary because the individual can be destroyed during a update
+        // Eg. If the individual get linked
+        m_currentUpdate->deatach();
+        m_currentUpdate = 0;
+    }
+
     clearPersonas();
     if (m_individual) {
         g_object_unref(m_individual);
@@ -952,6 +968,12 @@ void QIndividual::addListener(QObject *object, const char *slot)
 bool QIndividual::isValid() const
 {
     return (m_individual != 0);
+}
+
+void QIndividual::reload()
+{
+    updatePersonas();
+    updateContact();
 }
 
 void QIndividual::setIndividual(FolksIndividual *individual)

@@ -33,6 +33,8 @@ namespace galera
 {
 typedef GHashTable* (*ParseDetailsFunc)(GHashTable*, const QList<QtContacts::QContactDetail> &);
 
+class UpdateContactRequest;
+
 class QIndividual
 {
 public:
@@ -49,17 +51,20 @@ public:
     QList<FolksPersona*> personas() const;
     void addListener(QObject *object, const char *slot);
     bool isValid() const;
+    void reload();
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
 private:
     FolksIndividual *m_individual;
     FolksIndividualAggregator *m_aggregator;
     QtContacts::QContact *m_contact;
+    UpdateContactRequest *m_currentUpdate;
     QList<QPair<QObject*, QMetaMethod> > m_listeners;
     QMap<QString, FolksPersona*> m_personas;
     QMap<FolksPersona*, QList<int> > m_notifyConnections;
     QString m_id;
     bool m_editing;
+    QMetaObject::Connection m_updateConnection;
 
     QIndividual();
     QIndividual(const QIndividual &);

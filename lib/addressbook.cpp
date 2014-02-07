@@ -156,8 +156,6 @@ bool AddressBook::registerObject(QDBusConnection &connection)
                 delete m_notifyContactUpdate;
                 m_notifyContactUpdate = 0;
             }
-        } else {
-            qDebug() << "Object registered:" << objectPath();
         }
     }
     if (m_adaptor) {
@@ -487,7 +485,6 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
     m_updateCommandPendingContacts << VCardParser::vcardToContact(contacts);
 
     updateContactsDone("", "");
-
     return QStringList();
 }
 
@@ -495,7 +492,6 @@ void AddressBook::updateContactsDone(const QString &contactId,
                                      const QString &error)
 {
     qDebug() << Q_FUNC_INFO;
-
     int currentContactIndex = m_updateCommandResult.size() - m_updateCommandPendingContacts.size() - 1;
 
     if (!error.isEmpty()) {
@@ -503,14 +499,13 @@ void AddressBook::updateContactsDone(const QString &contactId,
         m_updateCommandResult[currentContactIndex] = error;
     } else if (!contactId.isEmpty()){
         // update the result with the new contact info
-        ContactEntry *entry = m_contacts->value(contactId);
         m_updatedIds << contactId;
-        Q_ASSERT(entry);
 
+        ContactEntry *entry = m_contacts->value(contactId);
+        Q_ASSERT(entry);
         QContact contact = entry->individual()->contact();
         QStringList newContacts = VCardParser::contactToVcard(QList<QContact>() << contact);
         if (newContacts.size() == 1) {
-            qDebug() << "Updated contacts" << newContacts[0];
             m_updateCommandResult[currentContactIndex] = newContacts[0];
         } else {
             m_updateCommandResult[currentContactIndex] = "";
@@ -528,8 +523,6 @@ void AddressBook::updateContactsDone(const QString &contactId,
     } else {
         // TODO: update all related store
         folks_persona_store_flush(folks_individual_aggregator_get_primary_store(m_individualAggregator), 0, 0);
-        QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
-        QDBusConnection::sessionBus().send(reply);
 
         // notify about the changes
         m_notifyContactUpdate->append(m_updatedIds);
@@ -538,6 +531,9 @@ void AddressBook::updateContactsDone(const QString &contactId,
         m_updatedIds.clear();
         m_updateCommandResult.clear();
         m_updateCommandReplyMessage = QDBusMessage();
+
+        QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
+        QDBusConnection::sessionBus().send(reply);
     }
 }
 
@@ -558,8 +554,10 @@ QString AddressBook::addContact(FolksIndividual *individual)
     QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
     ContactEntry *entry = m_contacts->value(contactId);
     if (entry) {
+        qDebug() << "contact already exists";
         entry->individual()->setIndividual(individual);
     } else {
+        qDebug() << "register new contact";
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
         m_contacts->insert(new ContactEntry(i));
@@ -594,13 +592,8 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             // contact added
             if (individualKey == 0) {
                 addedIds << self->addContact(individualValue);
-            } else if (individualValue == 0){
-                QString id = QString::fromUtf8(folks_individual_get_id(individualKey));
-                if (!addedIds.contains(id) &&
-                    !updatedIds.contains(id)) {
-                    removedIds << self->removeContact(individualKey);
-                }
-            } else {
+            } else if (individualValue != 0){
+                qDebug() << "Link changes";
                 QString idValue = QString::fromUtf8(folks_individual_get_id(individualValue));
                 if (self->m_contacts->value(idValue)) {
                     updatedIds << self->addContact(individualValue);
@@ -618,6 +611,11 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
         g_object_unref(values);
 
         if (individualKey) {
+            QString id = QString::fromUtf8(folks_individual_get_id(individualKey));
+            if (!addedIds.contains(id) &&
+                !updatedIds.contains(id)) {
+                removedIds << self->removeContact(individualKey);
+            }
             g_object_unref(individualKey);
         }
     }

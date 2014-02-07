@@ -33,7 +33,7 @@ ContactEntry::ContactEntry(QIndividual *individual)
 
 ContactEntry::~ContactEntry()
 {
-     delete m_individual;
+    delete m_individual;
 }
 
 QIndividual *ContactEntry::individual() const

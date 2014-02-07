@@ -34,6 +34,7 @@ UpdateContactRequest::UpdateContactRequest(QtContacts::QContact newContact, QInd
       m_parent(parent),
       m_object(listener),
       m_currentPersona(0),
+      m_eventLoop(0),
       m_newContact(newContact),
       m_currentPersonaIndex(0)
 {
@@ -45,12 +46,28 @@ UpdateContactRequest::UpdateContactRequest(QtContacts::QContact newContact, QInd
     }
 }
 
+UpdateContactRequest::~UpdateContactRequest()
+{
+    // check if there is a operation running
+    if (m_currentPersona != 0) {
+        wait();
+    }
+}
+
 void UpdateContactRequest::invokeSlot(const QString &errorMessage)
 {
-    if (m_slot.isValid()) {
+    if (m_slot.isValid() && m_parent) {
         QString id = m_parent->id();
         m_slot.invoke(m_object, Q_ARG(QString, id),
                                 Q_ARG(QString, errorMessage));
+    } else if (m_parent == 0) {
+        // the object was detached we need to destroy it
+        deleteLater();
+    }
+
+    if (m_eventLoop) {
+        qDebug() << "QUIT WAITING";
+        m_eventLoop->quit();
     }
 
     Q_EMIT done(errorMessage);
@@ -63,6 +80,20 @@ void UpdateContactRequest::start()
     m_originalContact = m_parent->contact();
     m_currentPersonaIndex = 0;
     updatePersona();
+}
+
+void UpdateContactRequest::wait()
+{
+    Q_ASSERT(m_eventLoop == 0);
+    QEventLoop eventLoop;
+    m_eventLoop = &eventLoop;
+    eventLoop.exec();
+    m_eventLoop = 0;
+}
+
+void UpdateContactRequest::deatach()
+{
+    m_parent = 0;
 }
 
 bool UpdateContactRequest::isEqual(const QtContacts::QContactDetail &detailA,
@@ -660,6 +691,7 @@ void UpdateContactRequest::updateFavorite()
 void UpdateContactRequest::updatePersona()
 {
     if (m_personas.size() <= m_currentPersonaIndex) {
+        m_currentPersona = 0;
         invokeSlot();
     } else {
         m_currentPersona = m_personas[m_currentPersonaIndex];
@@ -812,7 +844,11 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
     case QContactDetail::TypeVersion:
     {
         FolksIndividual *i = folks_persona_get_individual(self->m_currentPersona);
-        if (i != self->m_parent->individual()) {
+        FolksIndividual *originalIndividual = self->m_parent ? self->m_parent->individual() : 0;
+        if (!originalIndividual ||
+            strcmp(folks_individual_get_id(i),
+                   folks_individual_get_id(originalIndividual)) == 0) {
+            qDebug() << "Break the link";
             GeeSet *otherPersonas = folks_individual_get_personas(i);
             folks_anti_linkable_add_anti_links(FOLKS_ANTI_LINKABLE(self->m_currentPersona),
                                                otherPersonas,
@@ -832,7 +868,9 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
     }
 }
 
-void UpdateContactRequest::folksAddAntiLinksDone(FolksAntiLinkable *antilinkable, GAsyncResult *result, UpdateContactRequest *self)
+void UpdateContactRequest::folksAddAntiLinksDone(FolksAntiLinkable *antilinkable,
+                                                 GAsyncResult *result,
+                                                 UpdateContactRequest *self)
 {
     GError *error = 0;
     folks_anti_linkable_add_anti_links_finish(antilinkable, result, &error);
@@ -840,9 +878,11 @@ void UpdateContactRequest::folksAddAntiLinksDone(FolksAntiLinkable *antilinkable
         qWarning() << "Error during the anti link operation:" << error->message;
         g_error_free(error);
     }
+
     g_object_unref(self->m_currentPersona);
     self->m_currentPersona = 0;
     self->updatePersona();
+    qDebug() << "ANTI LINK DONE";
 }
 
 } // namespace

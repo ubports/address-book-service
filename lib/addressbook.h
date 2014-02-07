@@ -125,6 +125,7 @@ private:
                                                    QDBusMessage *msg);
     static void availableSourcesDoneListDefaultSource(FolksBackendStore *backendStore,
                                                       GAsyncResult *res,
+
                                                       QDBusMessage *msg);
     static SourceList availableSourcesDoneImpl(FolksBackendStore *backendStore,
                                                GAsyncResult *res);

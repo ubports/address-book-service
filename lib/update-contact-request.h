@@ -23,6 +23,7 @@
 #include <QtCore/QString>
 #include <QtCore/QList>
 #include <QtCore/QMetaMethod>
+#include <QtCore/QEventLoop>
 
 #include <QtContacts/QContact>
 
@@ -38,8 +39,10 @@ class UpdateContactRequest : public QObject
 
 public:
     UpdateContactRequest(QtContacts::QContact newContact, QIndividual *parent, QObject *listener, const char *slot);
-
+    ~UpdateContactRequest();
     void start();
+    void wait();
+    void deatach();
 
 Q_SIGNALS:
     void done(const QString &errorMessage);
@@ -48,6 +51,7 @@ private:
     QIndividual *m_parent;
     QObject *m_object;
     FolksPersona *m_currentPersona;
+    QEventLoop *m_eventLoop;
 
     QList<FolksPersona*> m_personas;
     QtContacts::QContact m_originalContact;
@@ -55,7 +59,6 @@ private:
     int m_currentDetailType;
     QMetaMethod m_slot;
     int m_currentPersonaIndex;
-
 
     void invokeSlot(const QString &errorMessage = QString());
 
