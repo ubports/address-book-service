@@ -437,20 +437,21 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
     }
 }
 
-void AddressBook::addAntiLinksDone(FolksAntiLinkable *antilinkable, GAsyncResult *result, void *data)
+void AddressBook::addAntiLinksDone(FolksAntiLinkable *antilinkable,
+                                   GAsyncResult *result,
+                                   void *data)
 {
     CreateContactData *createData = static_cast<CreateContactData*>(data);
-
     QDBusMessage reply;
+
     GError *error = 0;
-    folks_anti_linkable_add_anti_links_finish(antilinkable, result, &error);
+    folks_anti_linkable_change_anti_links_finish(antilinkable, result, &error);
     if (error) {
         qWarning() << "Fail to anti link pesona" << folks_persona_get_display_id(FOLKS_PERSONA(antilinkable)) << error->message;
         reply = createData->m_message.createErrorReply("Fail to anti link pesona:", error->message);
         g_error_free(error);
     } else {
         FolksIndividual *individual = folks_persona_get_individual(FOLKS_PERSONA(antilinkable));
-
         // return the result/contactId to the client
         reply = createData->m_message.createReply(QString::fromUtf8(folks_individual_get_id(individual)));
     }
@@ -516,7 +517,8 @@ void AddressBook::updateContactsDone(const QString &contactId,
         QContact newContact = m_updateCommandPendingContacts.takeFirst();
         ContactEntry *entry = m_contacts->value(newContact.detail<QContactGuid>().guid());
         if (entry) {
-            entry->individual()->update(newContact, this, SLOT(updateContactsDone(QString,QString)));
+            entry->individual()->update(newContact, this,
+                                        SLOT(updateContactsDone(QString,QString)));
         } else {
             updateContactsDone("", "Contact not found!");
         }
@@ -527,16 +529,15 @@ void AddressBook::updateContactsDone(const QString &contactId,
         // notify about the changes
         m_notifyContactUpdate->append(m_updatedIds);
 
+        QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
+        QDBusConnection::sessionBus().send(reply);
+
         // clear command data
         m_updatedIds.clear();
         m_updateCommandResult.clear();
         m_updateCommandReplyMessage = QDBusMessage();
-
-        QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
-        QDBusConnection::sessionBus().send(reply);
     }
 }
-
 
 QString AddressBook::removeContact(FolksIndividual *individual)
 {
@@ -666,19 +667,18 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         qWarning() << "Failed to create individual from contact: Persona already exists";
         reply = createData->m_message.createErrorReply("Failed to create individual from contact", "Contact already exists");
     } else {
-        FolksIndividual *individual = folks_persona_get_individual(persona);
-
         // avoid the new persona get linked
-        GeeSet *otherPersonas = folks_individual_get_personas(individual);
-        if (gee_collection_get_size(GEE_COLLECTION(otherPersonas)) > 1) {
-            folks_anti_linkable_add_anti_links(FOLKS_ANTI_LINKABLE(persona),
-                                               otherPersonas,
-                                               (GAsyncReadyCallback) AddressBook::addAntiLinksDone,
-                                               data);
-            return;
-        } else {
-            reply = createData->m_message.createReply(QString::fromUtf8(folks_individual_get_id(individual)));
-        }
+        GeeHashSet *antiLinks = gee_hash_set_new(G_TYPE_STRING,
+                                                 (GBoxedCopyFunc) g_strdup,
+                                                 g_free,
+                                                 NULL, NULL, NULL, NULL, NULL, NULL);
+        gee_collection_add(GEE_COLLECTION(antiLinks), "*");
+        folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(persona),
+                                              GEE_SET(antiLinks),
+                                              (GAsyncReadyCallback) addAntiLinksDone,
+                                              data);
+        g_object_unref(antiLinks);
+        return;
     }
     //TODO: use dbus connection
     QDBusConnection::sessionBus().send(reply);

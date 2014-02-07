@@ -239,7 +239,6 @@ bool View::registerObject(QDBusConnection &connection)
             delete m_adaptor;
             m_adaptor = 0;
         } else {
-            qDebug() << "Object registered:" << objectPath();
             connect(this, SIGNAL(countChanged(int)), m_adaptor, SIGNAL(countChanged(int)));
         }
     }

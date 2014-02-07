@@ -66,7 +66,6 @@ void UpdateContactRequest::invokeSlot(const QString &errorMessage)
     }
 
     if (m_eventLoop) {
-        qDebug() << "QUIT WAITING";
         m_eventLoop->quit();
     }
 
@@ -697,7 +696,26 @@ void UpdateContactRequest::updatePersona()
         m_currentPersona = m_personas[m_currentPersonaIndex];
         m_currentDetailType = QContactDetail::TypeUndefined;
         m_currentPersonaIndex++;
-        updateDetailsDone(0, 0, this);
+
+        // all personas edited by the user will have the auto link disabled
+        GeeSet *antiLinks;
+        antiLinks = GEE_SET(gee_hash_set_new(G_TYPE_STRING,
+                                             (GBoxedCopyFunc) g_strdup,
+                                             g_free,
+                                             NULL, NULL, NULL, NULL, NULL, NULL));
+
+        GeeSet *oldLinks = folks_anti_linkable_get_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona));
+        if (oldLinks &&
+            gee_collection_contains(GEE_COLLECTION(antiLinks), "*")) {
+            updateDetailsDone(0, 0, this);
+        } else if (oldLinks) {
+            gee_collection_add_all(GEE_COLLECTION(antiLinks), GEE_COLLECTION(oldLinks));
+        }
+        gee_collection_add(GEE_COLLECTION(antiLinks), "*");
+        folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona),
+                                              antiLinks,
+                                              (GAsyncReadyCallback) folksAddAntiLinksDone,
+                                              this);
     }
 }
 
@@ -843,22 +861,9 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         break;
     case QContactDetail::TypeVersion:
     {
-        FolksIndividual *i = folks_persona_get_individual(self->m_currentPersona);
-        FolksIndividual *originalIndividual = self->m_parent ? self->m_parent->individual() : 0;
-        if (!originalIndividual ||
-            strcmp(folks_individual_get_id(i),
-                   folks_individual_get_id(originalIndividual)) == 0) {
-            qDebug() << "Break the link";
-            GeeSet *otherPersonas = folks_individual_get_personas(i);
-            folks_anti_linkable_add_anti_links(FOLKS_ANTI_LINKABLE(self->m_currentPersona),
-                                               otherPersonas,
-                                               (GAsyncReadyCallback) UpdateContactRequest::folksAddAntiLinksDone,
-                                               self);
-        } else {
-            g_object_unref(self->m_currentPersona);
-            self->m_currentPersona = 0;
-            self->updatePersona();
-        }
+        g_object_unref(self->m_currentPersona);
+        self->m_currentPersona = 0;
+        self->updatePersona();
         break;
     }
     default:
@@ -873,16 +878,12 @@ void UpdateContactRequest::folksAddAntiLinksDone(FolksAntiLinkable *antilinkable
                                                  UpdateContactRequest *self)
 {
     GError *error = 0;
-    folks_anti_linkable_add_anti_links_finish(antilinkable, result, &error);
+    folks_anti_linkable_change_anti_links_finish(antilinkable, result, &error);
     if (error) {
         qWarning() << "Error during the anti link operation:" << error->message;
         g_error_free(error);
     }
-
-    g_object_unref(self->m_currentPersona);
-    self->m_currentPersona = 0;
-    self->updatePersona();
-    qDebug() << "ANTI LINK DONE";
+    updateDetailsDone(0, 0, self);
 }
 
 } // namespace
