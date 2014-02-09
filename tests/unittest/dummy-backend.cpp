@@ -192,6 +192,24 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
     return QString();
 }
 
+void DummyBackendProxy::contactUpdated(const QString &contactId,
+                                       const QString &errorMsg)
+{
+    m_contactUpdated = true;
+}
+
+QString DummyBackendProxy::updateContact(const QString &contactId,
+                                         const QtContacts::QContact &qcontact)
+{
+    galera::QIndividual *i = m_contacts.value(contactId);
+    Q_ASSERT(i);
+    ScopedEventLoop loop(&m_eventLoop);
+    m_contactUpdated = false;
+    i->update(qcontact, this, SLOT(contactUpdated(QString,QString)));
+    loop.exec();
+    return i->id();
+}
+
 void DummyBackendProxy::configurePrimaryStore()
 {
     static const char* writableProperties[] = {
@@ -426,3 +444,10 @@ QString DummyBackendAdaptor::createContact(const QString &vcard)
     QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
     return m_proxy->createContact(contacts[0]);
 }
+
+QString DummyBackendAdaptor::updateContact(const QString &contactId, const QString &vcard)
+{
+    QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
+    return m_proxy->updateContact(contactId, contacts[0]);
+}
+
