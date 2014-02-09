@@ -118,6 +118,7 @@ static void gValueGeeSetAddStringFieldDetails(GValue *value,
 
 namespace galera
 {
+bool QIndividual::m_autoLink = false;
 
 QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator)
     : m_individual(0),
@@ -299,8 +300,8 @@ void QIndividual::folksPersonaChanged(FolksPersona *persona,
                                       GParamSpec *pspec,
                                       QIndividual *self)
 {
-    QString paramName = QString::fromUtf8(g_param_spec_get_name(pspec));
-    if (paramName == QStringLiteral("avatar")) {
+    const gchar* paramName = g_param_spec_get_name(pspec);
+    if (QString::fromUtf8(paramName) == QStringLiteral("avatar")) {
         QContactDetail newAvatar = self->getPersonaPhoto(persona, 1);
 
         QContactAvatar avatar = self->m_contact->detail(QContactAvatar::Type);
@@ -318,6 +319,7 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, i
     if (!FOLKS_IS_AVATAR_DETAILS(persona)) {
         return avatar;
     }
+
     GLoadableIcon *avatarIcon = folks_avatar_details_get_avatar(FOLKS_AVATAR_DETAILS(persona));
     if (avatarIcon) {
         QString url;
@@ -343,6 +345,7 @@ QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, i
             g_free(uri);
             g_object_unref(cache);
         }
+        // Avoid to set a empty url
         if (url.isEmpty()) {
             return avatar;
         }
@@ -970,12 +973,6 @@ bool QIndividual::isValid() const
     return (m_individual != 0);
 }
 
-void QIndividual::reload()
-{
-    updatePersonas();
-    updateContact();
-}
-
 void QIndividual::setIndividual(FolksIndividual *individual)
 {
     if (m_individual != individual) {
@@ -1387,6 +1384,16 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
                     contact.preferredDetail(VCardParser::PreferredActionNames[QContactUrl::Type]));
 
     return details;
+}
+
+void QIndividual::enableAutoLink(bool flag)
+{
+    m_autoLink = flag;
+}
+
+bool QIndividual::autoLinkEnabled()
+{
+    return m_autoLink;
 }
 
 FolksPersona* QIndividual::primaryPersona()

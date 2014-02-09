@@ -51,9 +51,13 @@ public:
     QList<FolksPersona*> personas() const;
     void addListener(QObject *object, const char *slot);
     bool isValid() const;
-    void reload();
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
+
+    // enable or disable auto-link
+    static void enableAutoLink(bool flag);
+    static bool autoLinkEnabled();
+
 private:
     FolksIndividual *m_individual;
     FolksIndividualAggregator *m_aggregator;
@@ -65,6 +69,7 @@ private:
     QString m_id;
     bool m_editing;
     QMetaObject::Connection m_updateConnection;
+    static bool m_autoLink;
 
     QIndividual();
     QIndividual(const QIndividual &);
@@ -156,7 +161,6 @@ private:
     static void folksPersonaChanged             (FolksPersona *persona,
                                                  GParamSpec *pspec,
                                                  QIndividual *self);
-
 };
 
 } //namespace

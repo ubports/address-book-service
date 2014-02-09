@@ -57,8 +57,7 @@ UpdateContactRequest::~UpdateContactRequest()
 void UpdateContactRequest::invokeSlot(const QString &errorMessage)
 {
     if (m_slot.isValid() && m_parent) {
-        QString id = m_parent->id();
-        m_slot.invoke(m_object, Q_ARG(QString, id),
+        m_slot.invoke(m_object, Q_ARG(QString, m_parent->id()),
                                 Q_ARG(QString, errorMessage));
     } else if (m_parent == 0) {
         // the object was detached we need to destroy it
@@ -116,7 +115,6 @@ bool UpdateContactRequest::isEqual(QList<QtContacts::QContactDetail> listA,
     if (listA.size() != listB.size()) {
         return false;
     }
-
 
     for(int i=0; i < listA.size(); i++) {
         if (!isEqual(listA[i], listB[i])) {
@@ -697,25 +695,29 @@ void UpdateContactRequest::updatePersona()
         m_currentDetailType = QContactDetail::TypeUndefined;
         m_currentPersonaIndex++;
 
-        // all personas edited by the user will have the auto link disabled
-        GeeSet *antiLinks;
-        antiLinks = GEE_SET(gee_hash_set_new(G_TYPE_STRING,
-                                             (GBoxedCopyFunc) g_strdup,
-                                             g_free,
-                                             NULL, NULL, NULL, NULL, NULL, NULL));
-
-        GeeSet *oldLinks = folks_anti_linkable_get_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona));
-        if (oldLinks &&
-            gee_collection_contains(GEE_COLLECTION(antiLinks), "*")) {
+        if (QIndividual::autoLinkEnabled()) {
             updateDetailsDone(0, 0, this);
-        } else if (oldLinks) {
-            gee_collection_add_all(GEE_COLLECTION(antiLinks), GEE_COLLECTION(oldLinks));
+        } else {
+            // all personas edited by the user will have the auto link disabled
+            GeeSet *antiLinks;
+            antiLinks = GEE_SET(gee_hash_set_new(G_TYPE_STRING,
+                                                 (GBoxedCopyFunc) g_strdup,
+                                                 g_free,
+                                                 NULL, NULL, NULL, NULL, NULL, NULL));
+
+            GeeSet *oldLinks = folks_anti_linkable_get_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona));
+            if (oldLinks &&
+                gee_collection_contains(GEE_COLLECTION(antiLinks), "*")) {
+                updateDetailsDone(0, 0, this);
+            } else if (oldLinks) {
+                gee_collection_add_all(GEE_COLLECTION(antiLinks), GEE_COLLECTION(oldLinks));
+            }
+            gee_collection_add(GEE_COLLECTION(antiLinks), "*");
+            folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona),
+                                                  antiLinks,
+                                                  (GAsyncReadyCallback) folksAddAntiLinksDone,
+                                                  this);
         }
-        gee_collection_add(GEE_COLLECTION(antiLinks), "*");
-        folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona),
-                                              antiLinks,
-                                              (GAsyncReadyCallback) folksAddAntiLinksDone,
-                                              this);
     }
 }
 
@@ -860,12 +862,10 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         updateDetailsDone(0, 0, self);
         break;
     case QContactDetail::TypeVersion:
-    {
         g_object_unref(self->m_currentPersona);
         self->m_currentPersona = 0;
         self->updatePersona();
         break;
-    }
     default:
         qWarning() << "Update not implemented for" << self->m_currentDetailType;
         updateDetailsDone(0, 0, self);

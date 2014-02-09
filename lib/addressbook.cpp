@@ -156,6 +156,8 @@ bool AddressBook::registerObject(QDBusConnection &connection)
                 delete m_notifyContactUpdate;
                 m_notifyContactUpdate = 0;
             }
+        } else {
+            qDebug() << "Object registered:" << objectPath();
         }
     }
     if (m_adaptor) {
@@ -216,7 +218,6 @@ void AddressBook::shutdown()
 void AddressBook::prepareFolks()
 {
     qDebug() << "Prepare folks";
-
     m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
     if (m_ready) {
@@ -418,6 +419,7 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
         }
     }
 
+
     if (!removeData->m_request.isEmpty()) {
         QString contactId = removeData->m_request.takeFirst();
         ContactEntry *entry = removeData->m_addressbook->m_contacts->value(contactId);
@@ -506,7 +508,7 @@ void AddressBook::updateContactsDone(const QString &contactId,
         Q_ASSERT(entry);
         QContact contact = entry->individual()->contact();
         QStringList newContacts = VCardParser::contactToVcard(QList<QContact>() << contact);
-        if (newContacts.size() == 1) {
+        if (newContacts.length() == 1) {
             m_updateCommandResult[currentContactIndex] = newContacts[0];
         } else {
             m_updateCommandResult[currentContactIndex] = "";
@@ -523,14 +525,12 @@ void AddressBook::updateContactsDone(const QString &contactId,
             updateContactsDone("", "Contact not found!");
         }
     } else {
-        // TODO: update all related store
         folks_persona_store_flush(folks_individual_aggregator_get_primary_store(m_individualAggregator), 0, 0);
+        QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
+        QDBusConnection::sessionBus().send(reply);
 
         // notify about the changes
         m_notifyContactUpdate->append(m_updatedIds);
-
-        QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
-        QDBusConnection::sessionBus().send(reply);
 
         // clear command data
         m_updatedIds.clear();
@@ -552,19 +552,17 @@ QString AddressBook::removeContact(FolksIndividual *individual)
 
 QString AddressBook::addContact(FolksIndividual *individual)
 {
-    QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
-    ContactEntry *entry = m_contacts->value(contactId);
+    QString id = QString::fromUtf8(folks_individual_get_id(individual));
+    ContactEntry *entry = m_contacts->value(id);
     if (entry) {
-        qDebug() << "contact already exists";
         entry->individual()->setIndividual(individual);
     } else {
-        qDebug() << "register new contact";
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
         m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
     }
-    return contactId;
+    return id;
 }
 
 void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggregator,
@@ -666,6 +664,9 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
     } else if (persona == NULL) {
         qWarning() << "Failed to create individual from contact: Persona already exists";
         reply = createData->m_message.createErrorReply("Failed to create individual from contact", "Contact already exists");
+    } else if (QIndividual::autoLinkEnabled()){
+        FolksIndividual *individual = folks_persona_get_individual(persona);
+        reply = createData->m_message.createReply(QString::fromUtf8(folks_individual_get_id(individual)));
     } else {
         // avoid the new persona get linked
         GeeHashSet *antiLinks = gee_hash_set_new(G_TYPE_STRING,
