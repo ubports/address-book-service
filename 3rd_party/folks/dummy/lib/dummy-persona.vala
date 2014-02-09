@@ -52,7 +52,14 @@ using GLib;
  */
 public class FolksDummy.Persona : Folks.Persona
 {
-  private string[] _linkable_properties = new string[0];
+  private const string[] _linkable_properties =
+    {
+      "im-addresses",
+      "email-addresses",
+      "local-ids",
+      "web-service-addresses",
+      null /* FIXME: https://bugzilla.gnome.org/show_bug.cgi?id=682698 */
+    };
 
   /**
    * {@inheritDoc}
@@ -61,7 +68,7 @@ public class FolksDummy.Persona : Folks.Persona
    */
   public override string[] linkable_properties
     {
-      get { return this._linkable_properties; }
+      get { return Persona._linkable_properties; }
     }
 
   private string[] _writeable_properties = new string[0];
@@ -96,8 +103,7 @@ public class FolksDummy.Persona : Folks.Persona
    *
    * @since UNRELEASED
    */
-  public Persona (PersonaStore store, string contact_id, bool is_user = false,
-      string[] linkable_properties = {})
+  public Persona (PersonaStore store, string contact_id, bool is_user = false)
     {
       var uid = Folks.Persona.build_uid (BACKEND_NAME, store.id, contact_id);
       var iid = store.id + ":" + contact_id;
@@ -108,7 +114,6 @@ public class FolksDummy.Persona : Folks.Persona
               store: store,
               is_user: is_user);
 
-      this._linkable_properties = linkable_properties;
       this._writeable_properties = this.store.always_writeable_properties;
     }
 

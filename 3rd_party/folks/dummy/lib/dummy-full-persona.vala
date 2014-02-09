@@ -88,9 +88,9 @@ public class FolksDummy.FullPersona : FolksDummy.Persona,
    * @since UNRELEASED
    */
   public FullPersona (PersonaStore store, string contact_id,
-      bool is_user = false, string[] linkable_properties = {})
+      bool is_user = false)
     {
-      base (store, contact_id, is_user, linkable_properties);
+      base (store, contact_id, is_user);
     }
 
   construct
