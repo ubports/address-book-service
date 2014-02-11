@@ -111,6 +111,9 @@ class DummyBackendAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
 "    <method name=\"quit\"/>\n"
+"    <method name=\"enableAutoLink\">\n"
+"      <arg direction=\"in\" type=\"b\"/>\n"
+"    </method>\n"
 "    <method name=\"createContact\">\n"
 "      <arg direction=\"in\" type=\"s\"/>\n"
 "      <arg direction=\"out\" type=\"s\"/>\n"
@@ -139,6 +142,7 @@ public Q_SLOTS:
     QStringList listContacts();
     QString createContact(const QString &vcard);
     QString updateContact(const QString &contactId, const QString &vcard);
+    void enableAutoLink(bool flag);
 
 Q_SIGNALS:
     void ready();

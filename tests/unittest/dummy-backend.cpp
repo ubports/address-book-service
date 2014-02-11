@@ -367,9 +367,12 @@ void DummyBackendProxy::individualsChangedCb(FolksIndividualAggregator *individu
                                              GeeMultiMap *changes,
                                              DummyBackendProxy *self)
 {
+    Q_UNUSED(individualAggregator);
+
     GeeIterator *iter;
     GeeSet *removed = gee_multi_map_get_keys(changes);
     GeeCollection *added = gee_multi_map_get_values(changes);
+    QStringList addedIds;
 
     iter = gee_iterable_iterator(GEE_ITERABLE(added));
     while(gee_iterator_next(iter)) {
@@ -377,6 +380,7 @@ void DummyBackendProxy::individualsChangedCb(FolksIndividualAggregator *individu
         if (individual) {
             galera::QIndividual *idv = new galera::QIndividual(individual, self->m_aggregator);
             self->m_contacts.insert(idv->id(), idv);
+            addedIds << idv->id();
             g_object_unref(individual);
         }
     }
@@ -387,7 +391,7 @@ void DummyBackendProxy::individualsChangedCb(FolksIndividualAggregator *individu
         FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
         if (individual) {
             QString id = QString::fromUtf8(folks_individual_get_id(individual));
-            if (self->m_contacts.contains(id)) {
+            if (!addedIds.contains(id) && self->m_contacts.contains(id)) {
                 delete self->m_contacts.take(id);
             }
             g_object_unref(individual);
@@ -449,5 +453,10 @@ QString DummyBackendAdaptor::updateContact(const QString &contactId, const QStri
 {
     QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
     return m_proxy->updateContact(contactId, contacts[0]);
+}
+
+void DummyBackendAdaptor::enableAutoLink(bool flag)
+{
+    galera::QIndividual::enableAutoLink(flag);
 }
 
