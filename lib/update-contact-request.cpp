@@ -709,6 +709,7 @@ void UpdateContactRequest::updatePersona()
             if (oldLinks &&
                 gee_collection_contains(GEE_COLLECTION(antiLinks), "*")) {
                 updateDetailsDone(0, 0, this);
+                return;
             } else if (oldLinks) {
                 gee_collection_add_all(GEE_COLLECTION(antiLinks), GEE_COLLECTION(oldLinks));
             }

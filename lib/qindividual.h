@@ -67,7 +67,6 @@ private:
     QMap<QString, FolksPersona*> m_personas;
     QMap<FolksPersona*, QList<int> > m_notifyConnections;
     QString m_id;
-    bool m_editing;
     QMetaObject::Connection m_updateConnection;
     static bool m_autoLink;
 

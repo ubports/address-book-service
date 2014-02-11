@@ -124,8 +124,7 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
     : m_individual(0),
       m_aggregator(aggregator),
       m_contact(0),
-      m_currentUpdate(0),
-      m_editing(false)
+      m_currentUpdate(0)
 {
     setIndividual(individual);
 }
@@ -140,6 +139,14 @@ void QIndividual::notifyUpdate()
 
 QIndividual::~QIndividual()
 {
+    if (m_currentUpdate) {
+        m_currentUpdate->disconnect(m_updateConnection);
+        // this will leave the update object to destroy itself
+        // this is necessary because the individual can be destroyed during a update
+        // Eg. If the individual get linked
+        m_currentUpdate->deatach();
+        m_currentUpdate = 0;
+    }
     clear();
 }
 
@@ -887,7 +894,6 @@ bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object
         // only suppport one update by time
         Q_ASSERT(m_currentUpdate == 0);
         m_currentUpdate = new UpdateContactRequest(newContact, this, object, slot);
-        m_editing = true;
         m_updateConnection = QObject::connect(m_currentUpdate,
                                               &UpdateContactRequest::done,
                                               [this] (const QString &errorMessage) {
@@ -897,7 +903,6 @@ bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object
             }
             m_currentUpdate->deleteLater();
             m_currentUpdate = 0;
-            m_editing = false;
         });
         m_currentUpdate->start();
         return true;
@@ -937,15 +942,6 @@ void QIndividual::clearPersonas()
 
 void QIndividual::clear()
 {
-    if (m_currentUpdate) {
-        m_currentUpdate->disconnect(m_updateConnection);
-        // this will leave the update object to destroy itself
-        // this is necessary because the individual can be destroyed during a update
-        // Eg. If the individual get linked
-        m_currentUpdate->deatach();
-        m_currentUpdate = 0;
-    }
-
     clearPersonas();
     if (m_individual) {
         g_object_unref(m_individual);
