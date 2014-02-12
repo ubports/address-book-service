@@ -77,8 +77,7 @@ public class FolksDummy.FullPersona : FolksDummy.Persona,
       "im-addresses",
       "email-addresses",
       "local-ids",
-      "web-service-addresses",
-      null /* FIXME: https://bugzilla.gnome.org/show_bug.cgi?id=682698 */
+      "web-service-addresses"
     };
 
 
