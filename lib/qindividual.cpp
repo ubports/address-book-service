@@ -969,6 +969,18 @@ bool QIndividual::isValid() const
     return (m_individual != 0);
 }
 
+void QIndividual::flush()
+{
+    // flush the folks persona store
+    folks_persona_store_flush(folks_individual_aggregator_get_primary_store(m_aggregator), 0, 0);
+
+    // cause the contact info to be reload
+    if (m_contact) {
+        delete m_contact;
+        m_contact = 0;
+    }
+}
+
 void QIndividual::setIndividual(FolksIndividual *individual)
 {
     if (m_individual != individual) {
@@ -983,19 +995,10 @@ void QIndividual::setIndividual(FolksIndividual *individual)
                 m_id = newId;
             }
         }
+
         m_individual = individual;
         if (m_individual) {
             g_object_ref(m_individual);
-        }
-
-        // initialize qcontact
-        if (m_contact) {
-            delete m_contact;
-            m_contact = 0;
-        }
-        if (m_contact) {
-            updatePersonas();
-            updateContact();
         }
     }
 }

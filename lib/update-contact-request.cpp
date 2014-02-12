@@ -689,6 +689,9 @@ void UpdateContactRequest::updatePersona()
 {
     if (m_personas.size() <= m_currentPersonaIndex) {
         m_currentPersona = 0;
+        if (m_parent) {
+            m_parent->flush();
+        }
         invokeSlot();
     } else {
         m_currentPersona = m_personas[m_currentPersonaIndex];
@@ -714,6 +717,7 @@ void UpdateContactRequest::updatePersona()
                 gee_collection_add_all(GEE_COLLECTION(antiLinks), GEE_COLLECTION(oldLinks));
             }
             gee_collection_add(GEE_COLLECTION(antiLinks), "*");
+
             folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona),
                                                   antiLinks,
                                                   (GAsyncReadyCallback) folksAddAntiLinksDone,

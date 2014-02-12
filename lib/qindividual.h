@@ -51,6 +51,7 @@ public:
     QList<FolksPersona*> personas() const;
     void addListener(QObject *object, const char *slot);
     bool isValid() const;
+    void flush();
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
 

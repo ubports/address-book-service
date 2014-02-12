@@ -503,7 +503,6 @@ void AddressBook::updateContactsDone(const QString &contactId,
     } else if (!contactId.isEmpty()){
         // update the result with the new contact info
         m_updatedIds << contactId;
-
         ContactEntry *entry = m_contacts->value(contactId);
         Q_ASSERT(entry);
         QContact contact = entry->individual()->contact();
@@ -525,7 +524,7 @@ void AddressBook::updateContactsDone(const QString &contactId,
             updateContactsDone("", "Contact not found!");
         }
     } else {
-        folks_persona_store_flush(folks_individual_aggregator_get_primary_store(m_individualAggregator), 0, 0);
+
         QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
         QDBusConnection::sessionBus().send(reply);
 
