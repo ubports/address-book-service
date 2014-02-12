@@ -223,6 +223,7 @@ void DummyBackendProxy::configurePrimaryStore()
                                                           "Dummy personas",
                                                           const_cast<char**>(writableProperties), 4);
     folks_dummy_persona_store_set_persona_type(m_primaryPersonaStore, FOLKS_DUMMY_TYPE_FULL_PERSONA);
+    folks_dummy_persona_store_update_trust_level(m_primaryPersonaStore, FOLKS_PERSONA_STORE_TRUST_FULL);
 
     GeeHashSet *personaStores = gee_hash_set_new(FOLKS_TYPE_PERSONA_STORE,
                                                  (GBoxedCopyFunc) g_object_ref, g_object_unref,
