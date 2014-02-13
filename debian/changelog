@@ -1,3 +1,20 @@
+address-book-service (0.1.0+14.04.20140213-0ubuntu1) trusty; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Check if query was destroyed on client side before delete it on the
+    server side.
+  * fork dummy backend from folks tree as a temporary solution before
+    its get release on folks.
+  * Moved static address-book-service-lib to a different directory.
+    Fixed lcov target.
+  * Rewrite unit test to work in a server/client way.
+  * Created test for add contacts.
+  * Updated dummy backend code.
+  * Create test to remove contacts functionality.
+  * Fixed missing includes. (Fixes Qt 5.2 build)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 13 Feb 2014 16:49:03 +0000
+
 address-book-service (0.1.0+13.10.20131011-0ubuntu1) saucy; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
