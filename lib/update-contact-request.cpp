@@ -27,19 +27,16 @@
 
 using namespace QtContacts;
 
-namespace {
-
-
-
-}
-
 namespace galera {
 
 UpdateContactRequest::UpdateContactRequest(QtContacts::QContact newContact, QIndividual *parent, QObject *listener, const char *slot)
     : QObject(),
-      m_newContact(newContact),
       m_parent(parent),
-      m_object(listener)
+      m_object(listener),
+      m_currentPersona(0),
+      m_eventLoop(0),
+      m_newContact(newContact),
+      m_currentPersonaIndex(0)
 {
     int slotIndex = listener->metaObject()->indexOfSlot(++slot);
     if (slotIndex == -1) {
@@ -49,18 +46,67 @@ UpdateContactRequest::UpdateContactRequest(QtContacts::QContact newContact, QInd
     }
 }
 
+UpdateContactRequest::~UpdateContactRequest()
+{
+    // check if there is a operation running
+    if (m_currentPersona != 0) {
+        wait();
+    }
+}
+
 void UpdateContactRequest::invokeSlot(const QString &errorMessage)
 {
-    if (m_slot.isValid()) {
-        m_slot.invoke(m_object, Q_ARG(galera::QIndividual*, m_parent), Q_ARG(QString, errorMessage));
+    if (m_slot.isValid() && m_parent) {
+        m_slot.invoke(m_object, Q_ARG(QString, m_parent->id()),
+                                Q_ARG(QString, errorMessage));
+    } else if (m_parent == 0) {
+        // the object was detached we need to destroy it
+        deleteLater();
     }
+
+    if (m_eventLoop) {
+        m_eventLoop->quit();
+    }
+
     Q_EMIT done(errorMessage);
 }
 
 void UpdateContactRequest::start()
 {
     m_currentDetailType = QContactDetail::TypeAddress;
-    updatePersona(1);
+    m_personas = m_parent->personas();
+    m_originalContact = m_parent->contact();
+    m_currentPersonaIndex = 0;
+    updatePersona();
+}
+
+void UpdateContactRequest::wait()
+{
+    Q_ASSERT(m_eventLoop == 0);
+    QEventLoop eventLoop;
+    m_eventLoop = &eventLoop;
+    eventLoop.exec();
+    m_eventLoop = 0;
+}
+
+void UpdateContactRequest::deatach()
+{
+    m_parent = 0;
+}
+
+bool UpdateContactRequest::isEqual(const QtContacts::QContactDetail &detailA,
+                                         const QtContacts::QContactDetail &detailB)
+{
+    if (detailA.type() != detailB.type()) {
+        return false;
+    }
+
+    switch(detailA.type()) {
+    case QContactDetail::TypeFavorite:
+        return detailA.value(QContactFavorite::FieldFavorite) == detailB.value(QContactFavorite::FieldFavorite);
+    default:
+        return (detailA == detailB);
+    }
 }
 
 bool UpdateContactRequest::isEqual(QList<QtContacts::QContactDetail> listA,
@@ -71,7 +117,7 @@ bool UpdateContactRequest::isEqual(QList<QtContacts::QContactDetail> listA,
     }
 
     for(int i=0; i < listA.size(); i++) {
-        if (listA[i] != listB[i]) {
+        if (!isEqual(listA[i], listB[i])) {
             return false;
         }
     }
@@ -116,7 +162,8 @@ QList<QtContacts::QContactDetail> UpdateContactRequest::detailsFromPersona(const
     }
 
     Q_FOREACH(QContactDetail det, contact.details(type)) {
-        if ((includeEmptyPersona && det.detailUri().isEmpty()) || checkPersona(det, persona)) {
+        if ((includeEmptyPersona && det.detailUri().isEmpty()) ||
+            checkPersona(det, persona)) {
             if (!det.isEmpty()) {
                 personaDetails << det;
                 if (pref && det == globalPref) {
@@ -132,19 +179,19 @@ QList<QtContacts::QContactDetail> UpdateContactRequest::originalDetailsFromPerso
                                                                                    int persona,
                                                                                    QtContacts::QContactDetail *pref) const
 {
-    return detailsFromPersona(m_parent->contact(), type, persona, false, pref);
+    return detailsFromPersona(m_originalContact, type, persona, false, pref);
 }
 
 QList<QtContacts::QContactDetail> UpdateContactRequest::detailsFromPersona(QtContacts::QContactDetail::DetailType type,
                                                                            int persona,
                                                                            QtContacts::QContactDetail *pref) const
 {
-    return detailsFromPersona(m_newContact, type, persona, true, pref);
+    // only return new details for the first persona, this will avoid to create the details for all personas
+    return detailsFromPersona(m_newContact, type, persona, (persona==1), pref);
 }
 
 void UpdateContactRequest::updateAddress()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QContactDetail originalPref;
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeAddress,
                                                                        m_currentPersonaIndex,
@@ -154,8 +201,8 @@ void UpdateContactRequest::updateAddress()
                                                           m_currentPersonaIndex,
                                                           &prefDetail);
 
-    if (persona &&
-        FOLKS_IS_POSTAL_ADDRESS_DETAILS(persona) &&
+    if (m_currentPersona &&
+        FOLKS_IS_POSTAL_ADDRESS_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, originalPref, newDetails, prefDetail)) {
         qDebug() << "Adderess diff";
         GeeSet *newSet = SET_AFD_NEW();
@@ -188,7 +235,7 @@ void UpdateContactRequest::updateAddress()
             g_object_unref(pa);
         }
 
-        folks_postal_address_details_change_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(persona),
+        folks_postal_address_details_change_postal_addresses(FOLKS_POSTAL_ADDRESS_DETAILS(m_currentPersona),
                                                              newSet,
                                                              (GAsyncReadyCallback) updateDetailsDone,
                                                              this);
@@ -200,12 +247,15 @@ void UpdateContactRequest::updateAddress()
 
 void UpdateContactRequest::updateAvatar()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeAvatar, m_currentPersonaIndex, 0);
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeAvatar, m_currentPersonaIndex, 0);
 
-    if (persona && FOLKS_IS_AVATAR_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
-        qDebug() << "avatar diff";
+    if (m_currentPersona &&
+        FOLKS_IS_AVATAR_DETAILS(m_currentPersona) &&
+        !isEqual(originalDetails, newDetails)) {
+        qDebug() << "avatar diff:"
+                 << "\n\t" << originalDetails.size() << (originalDetails.size() > 0 ? originalDetails[0] : QContactDetail()) << "\n"
+                 << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
         //Only supports one avatar
         QUrl avatarUri;
         if (newDetails.count()) {
@@ -225,7 +275,7 @@ void UpdateContactRequest::updateAvatar()
             }
         }
 
-        folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(persona),
+        folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(m_currentPersona),
                                            G_LOADABLE_ICON(avatarFileIcon),
                                            (GAsyncReadyCallback) updateDetailsDone,
                                            this);
@@ -239,11 +289,12 @@ void UpdateContactRequest::updateAvatar()
 
 void UpdateContactRequest::updateBirthday()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeBirthday, m_currentPersonaIndex, 0);
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeBirthday, m_currentPersonaIndex, 0);
 
-    if (persona && FOLKS_IS_BIRTHDAY_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
+    if (m_currentPersona &&
+        FOLKS_IS_BIRTHDAY_DETAILS(m_currentPersona) &&
+        !isEqual(originalDetails, newDetails)) {
         qDebug() << "birthday diff";
         //Only supports one birthday
         QDateTime dateTimeBirthday;
@@ -258,7 +309,7 @@ void UpdateContactRequest::updateBirthday()
         if (dateTimeBirthday.isValid()) {
             dateTime = g_date_time_new_from_unix_utc(dateTimeBirthday.toMSecsSinceEpoch() / 1000);
         }
-        folks_birthday_details_change_birthday(FOLKS_BIRTHDAY_DETAILS(persona),
+        folks_birthday_details_change_birthday(FOLKS_BIRTHDAY_DETAILS(m_currentPersona),
                                                dateTime,
                                                (GAsyncReadyCallback) updateDetailsDone,
                                                this);
@@ -272,12 +323,15 @@ void UpdateContactRequest::updateBirthday()
 
 void UpdateContactRequest::updateFullName()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeDisplayLabel, m_currentPersonaIndex, 0);
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeDisplayLabel, m_currentPersonaIndex, 0);
 
-    if (persona && FOLKS_IS_NAME_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
-        qDebug() << "Full Name diff";
+    if (m_currentPersona &&
+        FOLKS_IS_NAME_DETAILS(m_currentPersona) &&
+        !isEqual(originalDetails, newDetails)) {
+        qDebug() << "Full Name diff:"
+                 << "\n\t" << originalDetails.size() << (originalDetails.size() > 0 ? originalDetails[0] : QContactDetail()) << "\n"
+                 << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
         //Only supports one fullName
         QString fullName;
         if (newDetails.count()) {
@@ -286,7 +340,7 @@ void UpdateContactRequest::updateFullName()
         }
 
         QByteArray fullNameUtf8 = fullName.toUtf8();
-        folks_name_details_change_full_name(FOLKS_NAME_DETAILS(persona),
+        folks_name_details_change_full_name(FOLKS_NAME_DETAILS(m_currentPersona),
                                             fullNameUtf8.constData(),
                                             (GAsyncReadyCallback) updateDetailsDone,
                                             this);
@@ -297,7 +351,6 @@ void UpdateContactRequest::updateFullName()
 
 void UpdateContactRequest::updateEmail()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QContactDetail originalPref;
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeEmailAddress,
                                                                        m_currentPersonaIndex,
@@ -308,8 +361,8 @@ void UpdateContactRequest::updateEmail()
                                                           m_currentPersonaIndex,
                                                           &prefDetail);
 
-    if (persona &&
-        FOLKS_IS_EMAIL_DETAILS(persona) &&
+    if (m_currentPersona &&
+        FOLKS_IS_EMAIL_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, originalPref, newDetails, prefDetail)) {
         qDebug() << "email diff";
         GeeSet *newSet = SET_AFD_NEW();
@@ -325,7 +378,7 @@ void UpdateContactRequest::updateEmail()
             g_object_unref(field);
         }
 
-        folks_email_details_change_email_addresses(FOLKS_EMAIL_DETAILS(persona),
+        folks_email_details_change_email_addresses(FOLKS_EMAIL_DETAILS(m_currentPersona),
                                                    newSet,
                                                    (GAsyncReadyCallback) updateDetailsDone,
                                                    this);
@@ -337,11 +390,12 @@ void UpdateContactRequest::updateEmail()
 
 void UpdateContactRequest::updateName()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeName, m_currentPersonaIndex, 0);
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeName, m_currentPersonaIndex, 0);
 
-    if (persona && FOLKS_IS_NAME_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
+    if (m_currentPersona &&
+        FOLKS_IS_NAME_DETAILS(m_currentPersona) &&
+        !isEqual(originalDetails, newDetails)) {
         qDebug() << "Name diff";
         //Only supports one fullName
         FolksStructuredName *sn = 0;
@@ -360,7 +414,7 @@ void UpdateContactRequest::updateName()
                                            suffix.constData());
         }
 
-        folks_name_details_change_structured_name(FOLKS_NAME_DETAILS(persona),
+        folks_name_details_change_structured_name(FOLKS_NAME_DETAILS(m_currentPersona),
                                                   sn,
                                                   (GAsyncReadyCallback) updateDetailsDone,
                                                   this);
@@ -374,11 +428,12 @@ void UpdateContactRequest::updateName()
 
 void UpdateContactRequest::updateNickname()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeNickname, m_currentPersonaIndex, 0);
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeNickname, m_currentPersonaIndex, 0);
 
-    if (persona && FOLKS_IS_NAME_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
+    if (m_currentPersona &&
+        FOLKS_IS_NAME_DETAILS(m_currentPersona) &&
+        !isEqual(originalDetails, newDetails)) {
         qDebug() << "Nickname diff";
         //Only supports one fullName
         QString nicknameValue;
@@ -388,7 +443,7 @@ void UpdateContactRequest::updateNickname()
         }
 
         QByteArray nicknameValueUtf8 = nicknameValue.toUtf8();
-        folks_name_details_change_nickname(FOLKS_NAME_DETAILS(persona),
+        folks_name_details_change_nickname(FOLKS_NAME_DETAILS(m_currentPersona),
                                            nicknameValueUtf8.constData(),
                                            (GAsyncReadyCallback) updateDetailsDone,
                                            this);
@@ -399,14 +454,13 @@ void UpdateContactRequest::updateNickname()
 
 void UpdateContactRequest::updateNote()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QContactDetail originalPref;
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeNote, m_currentPersonaIndex, &originalPref);
     QContactDetail prefDetail;
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeNote, m_currentPersonaIndex, &prefDetail);
 
-    if (persona &&
-        FOLKS_IS_EMAIL_DETAILS(persona) &&
+    if (m_currentPersona &&
+        FOLKS_IS_EMAIL_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, originalPref, newDetails, prefDetail)) {
         qDebug() << "notes diff";
         GeeSet *newSet = SET_AFD_NEW();
@@ -422,7 +476,7 @@ void UpdateContactRequest::updateNote()
             g_object_unref(field);
         }
 
-        folks_note_details_change_notes(FOLKS_NOTE_DETAILS(persona),
+        folks_note_details_change_notes(FOLKS_NOTE_DETAILS(m_currentPersona),
                                         newSet,
                                         (GAsyncReadyCallback) updateDetailsDone,
                                         this);
@@ -434,7 +488,6 @@ void UpdateContactRequest::updateNote()
 
 void UpdateContactRequest::updateOnlineAccount()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QContactDetail originalPref;
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeOnlineAccount,
                                                                        m_currentPersonaIndex,
@@ -444,8 +497,8 @@ void UpdateContactRequest::updateOnlineAccount()
                                                           m_currentPersonaIndex,
                                                           &prefDetail);
 
-    if (persona &&
-        FOLKS_IS_IM_DETAILS(persona) &&
+    if (m_currentPersona &&
+        FOLKS_IS_IM_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, originalPref, newDetails, prefDetail)) {
         qDebug() << "OnlineAccounts diff";
         GeeMultiMap *imMap = GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE_IM_FIELD_DETAILS);
@@ -467,7 +520,7 @@ void UpdateContactRequest::updateOnlineAccount()
             }
         }
 
-       folks_im_details_change_im_addresses(FOLKS_IM_DETAILS(persona),
+       folks_im_details_change_im_addresses(FOLKS_IM_DETAILS(m_currentPersona),
                                             imMap,
                                             (GAsyncReadyCallback) updateDetailsDone,
                                             this);
@@ -480,7 +533,6 @@ void UpdateContactRequest::updateOnlineAccount()
 
 void UpdateContactRequest::updateOrganization()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QContactDetail originalPref;
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeOrganization,
                                                                        m_currentPersonaIndex,
@@ -490,8 +542,8 @@ void UpdateContactRequest::updateOrganization()
                                                           m_currentPersonaIndex,
                                                           &prefDetail);
 
-    if (persona &&
-        FOLKS_IS_ROLE_DETAILS(persona) &&
+    if (m_currentPersona &&
+        FOLKS_IS_ROLE_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, originalPref, newDetails, prefDetail)) {
         qDebug() << "Organization diff";
         GeeSet *newSet = SET_AFD_NEW();
@@ -515,7 +567,7 @@ void UpdateContactRequest::updateOrganization()
             g_object_unref(roleValue);
         }
 
-        folks_role_details_change_roles(FOLKS_ROLE_DETAILS(persona),
+        folks_role_details_change_roles(FOLKS_ROLE_DETAILS(m_currentPersona),
                                         newSet,
                                         (GAsyncReadyCallback) updateDetailsDone,
                                         this);
@@ -528,7 +580,6 @@ void UpdateContactRequest::updateOrganization()
 
 void UpdateContactRequest::updatePhone()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QContactDetail originalPref;
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypePhoneNumber,
                                                                        m_currentPersonaIndex,
@@ -538,10 +589,13 @@ void UpdateContactRequest::updatePhone()
                                                           m_currentPersonaIndex,
                                                           &prefDetail);
 
-    if (persona &&
-        FOLKS_IS_PHONE_DETAILS(persona) &&
+    if (m_currentPersona &&
+        FOLKS_IS_PHONE_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, originalPref, newDetails, prefDetail)) {
-        qDebug() << "Phone diff";
+        qDebug() << "Phone diff:"
+                 << "\n\t" << originalDetails.size() << (originalDetails.size() > 0 ? originalDetails[0] : QContactDetail()) << "\n"
+                 << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
+
         GeeSet *newSet = SET_AFD_NEW();
 
         Q_FOREACH(QContactDetail newDetail, newDetails) {
@@ -555,7 +609,7 @@ void UpdateContactRequest::updatePhone()
             g_object_unref(field);
         }
 
-        folks_phone_details_change_phone_numbers(FOLKS_PHONE_DETAILS(persona),
+        folks_phone_details_change_phone_numbers(FOLKS_PHONE_DETAILS(m_currentPersona),
                                                  newSet,
                                                  (GAsyncReadyCallback) updateDetailsDone,
                                                  this);
@@ -567,7 +621,6 @@ void UpdateContactRequest::updatePhone()
 
 void UpdateContactRequest::updateUrl()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QContactDetail originalPref;
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeUrl,
                                                                        m_currentPersonaIndex,
@@ -578,8 +631,8 @@ void UpdateContactRequest::updateUrl()
                                                           m_currentPersonaIndex,
                                                           &prefDetail);
 
-    if (persona &&
-        FOLKS_IS_PHONE_DETAILS(persona) &&
+    if (m_currentPersona &&
+        FOLKS_IS_URL_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, originalPref, newDetails, prefDetail)) {
         qDebug() << "Url diff";
         GeeSet *newSet = SET_AFD_NEW();
@@ -595,7 +648,7 @@ void UpdateContactRequest::updateUrl()
             g_object_unref(field);
         }
 
-        folks_url_details_change_urls(FOLKS_URL_DETAILS(persona),
+        folks_url_details_change_urls(FOLKS_URL_DETAILS(m_currentPersona),
                                       newSet,
                                       (GAsyncReadyCallback) updateDetailsDone,
                                       this);
@@ -607,19 +660,23 @@ void UpdateContactRequest::updateUrl()
 
 void UpdateContactRequest::updateFavorite()
 {
-    FolksPersona *persona = m_parent->getPersona(m_currentPersonaIndex);
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeFavorite, m_currentPersonaIndex, 0);
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeFavorite, m_currentPersonaIndex, 0);
 
-    if (persona && FOLKS_IS_FAVOURITE_DETAILS(persona) && !isEqual(originalDetails, newDetails)) {
-        qDebug() << "Favorite diff";
+    if (m_currentPersona &&
+        FOLKS_IS_FAVOURITE_DETAILS(m_currentPersona) &&
+        !isEqual(originalDetails, newDetails)) {
+        qDebug() << "Favorite diff:"
+                 << "\n\t" << originalDetails.size() << (originalDetails.size() > 0 ? originalDetails[0] : QContactDetail()) << "\n"
+                 << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
+
         //Only supports one fullName
         bool isFavorite = false;
         if (newDetails.count()) {
             QContactFavorite favorite = static_cast<QContactFavorite>(newDetails[0]);
             isFavorite = favorite.isFavorite();
         }
-        folks_favourite_details_change_is_favourite(FOLKS_FAVOURITE_DETAILS(persona),
+        folks_favourite_details_change_is_favourite(FOLKS_FAVOURITE_DETAILS(m_currentPersona),
                                                     isFavorite,
                                                     (GAsyncReadyCallback) updateDetailsDone,
                                                     this);
@@ -628,14 +685,44 @@ void UpdateContactRequest::updateFavorite()
     }
 }
 
-void UpdateContactRequest::updatePersona(int index)
+void UpdateContactRequest::updatePersona()
 {
-    if (index > m_parent->personaCount()) {
+    if (m_personas.size() <= m_currentPersonaIndex) {
+        m_currentPersona = 0;
+        if (m_parent) {
+            m_parent->flush();
+        }
         invokeSlot();
     } else {
-        m_currentPersonaIndex = index;
+        m_currentPersona = m_personas[m_currentPersonaIndex];
         m_currentDetailType = QContactDetail::TypeUndefined;
-        updateDetailsDone(0, 0, this);
+        m_currentPersonaIndex++;
+
+        if (QIndividual::autoLinkEnabled()) {
+            updateDetailsDone(0, 0, this);
+        } else {
+            // all personas edited by the user will have the auto link disabled
+            GeeSet *antiLinks;
+            antiLinks = GEE_SET(gee_hash_set_new(G_TYPE_STRING,
+                                                 (GBoxedCopyFunc) g_strdup,
+                                                 g_free,
+                                                 NULL, NULL, NULL, NULL, NULL, NULL));
+
+            GeeSet *oldLinks = folks_anti_linkable_get_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona));
+            if (oldLinks &&
+                gee_collection_contains(GEE_COLLECTION(antiLinks), "*")) {
+                updateDetailsDone(0, 0, this);
+                return;
+            } else if (oldLinks) {
+                gee_collection_add_all(GEE_COLLECTION(antiLinks), GEE_COLLECTION(oldLinks));
+            }
+            gee_collection_add(GEE_COLLECTION(antiLinks), "*");
+
+            folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona),
+                                                  antiLinks,
+                                                  (GAsyncReadyCallback) folksAddAntiLinksDone,
+                                                  this);
+        }
     }
 }
 
@@ -780,8 +867,9 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         updateDetailsDone(0, 0, self);
         break;
     case QContactDetail::TypeVersion:
-        self->m_currentPersonaIndex += 1;
-        self->updatePersona(self->m_currentPersonaIndex);
+        g_object_unref(self->m_currentPersona);
+        self->m_currentPersona = 0;
+        self->updatePersona();
         break;
     default:
         qWarning() << "Update not implemented for" << self->m_currentDetailType;
@@ -790,4 +878,17 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
     }
 }
 
+void UpdateContactRequest::folksAddAntiLinksDone(FolksAntiLinkable *antilinkable,
+                                                 GAsyncResult *result,
+                                                 UpdateContactRequest *self)
+{
+    GError *error = 0;
+    folks_anti_linkable_change_anti_links_finish(antilinkable, result, &error);
+    if (error) {
+        qWarning() << "Error during the anti link operation:" << error->message;
+        g_error_free(error);
+    }
+    updateDetailsDone(0, 0, self);
 }
+
+} // namespace
