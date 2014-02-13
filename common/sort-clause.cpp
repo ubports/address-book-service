@@ -18,6 +18,7 @@
 
 #include "sort-clause.h"
 
+#include <QtCore/QDebug>
 #include <QtContacts/qcontactdetails.h>
 #include <QtContacts/QContactSortOrder>
 #include <QtContacts/QContactManagerEngine>
