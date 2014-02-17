@@ -108,11 +108,13 @@ public:
 protected:
     void run()
     {
+        m_allContacts->lock();
         Q_FOREACH(ContactEntry *entry, m_allContacts->values())
         {
             m_stoppedLock.lockForRead();
             if (m_stopped) {
                 m_stoppedLock.unlock();
+                m_allContacts->unlock();
                 return;
             }
             m_stoppedLock.unlock();
@@ -121,8 +123,8 @@ protected:
                 m_contacts << entry;
             }
         }
-
         chageSort(m_sortClause);
+        m_allContacts->unlock();
     }
 
 private:
