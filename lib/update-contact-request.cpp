@@ -695,6 +695,7 @@ void UpdateContactRequest::updatePersona()
         invokeSlot();
     } else {
         m_currentPersona = m_personas[m_currentPersonaIndex];
+        g_object_ref(m_currentPersona);
         m_currentDetailType = QContactDetail::TypeUndefined;
         m_currentPersonaIndex++;
 
