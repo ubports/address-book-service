@@ -18,6 +18,8 @@
 
 #include "qcontact-engineid.h"
 
+#include <QtCore/QDebug>
+
 using namespace QtContacts;
 
 namespace galera

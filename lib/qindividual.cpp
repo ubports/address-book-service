@@ -755,6 +755,7 @@ void QIndividual::updatePersonas()
 
     GeeSet *personas = folks_individual_get_personas(m_individual);
     if (!personas) {
+        Q_ASSERT(false);
         return;
     }
 
@@ -975,6 +976,7 @@ void QIndividual::flush()
     folks_persona_store_flush(folks_individual_aggregator_get_primary_store(m_aggregator), 0, 0);
 
     // cause the contact info to be reload
+    clearPersonas();
     if (m_contact) {
         delete m_contact;
         m_contact = 0;
