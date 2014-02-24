@@ -53,7 +53,6 @@ using GLib;
 public class FolksDummy.Persona : Folks.Persona
 {
   private string[] _linkable_properties = new string[0];
-
   /**
    * {@inheritDoc}
    *
@@ -96,8 +95,8 @@ public class FolksDummy.Persona : Folks.Persona
    *
    * @since UNRELEASED
    */
-  public Persona (PersonaStore store, string contact_id, bool is_user = false,
-      string[] linkable_properties = {})
+  public Persona (PersonaStore store, string contact_id,
+      bool is_user = false, string[] linkable_properties = {})
     {
       var uid = Folks.Persona.build_uid (BACKEND_NAME, store.id, contact_id);
       var iid = store.id + ":" + contact_id;
@@ -230,6 +229,37 @@ public class FolksDummy.Persona : Folks.Persona
         {
           this._writeable_properties = new_writeable_properties.to_array ();
           this.notify_property ("writeable-properties");
+        }
+    }
+
+  public void update_linkable_properties (string[] linkable_properties)
+    {
+      var new_linkable_properties = new HashSet<string> ();
+      new_linkable_properties.add_all_array(linkable_properties);
+
+      /* Check for changes. */
+      var changed = false;
+      
+
+      if (this._linkable_properties.length != new_linkable_properties.size)
+        {
+          changed = true;
+        }
+      else
+        {
+          foreach (var p in this._linkable_properties)
+            {
+              if (new_linkable_properties.contains (p) == false)
+                {
+                  changed = true;
+                  break;
+                }
+            }
+        }
+      if (changed == true)
+        {
+          this._linkable_properties = new_linkable_properties.to_array ();
+          this.notify_property ("linkable-properties");
         }
     }
 
