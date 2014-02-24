@@ -44,7 +44,7 @@
 #include <QtVersit/QVersitContactExporter>
 #include <QtVersit/QVersitWriter>
 
-#define FETCH_PAGE_SIZE                 100
+#define FETCH_PAGE_SIZE                 20
 
 using namespace QtVersit;
 using namespace QtContacts;
@@ -59,7 +59,7 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
       m_iface(0)
 {
     RequestData::registerMetaType();
- 
+
     m_serviceWatcher = new QDBusServiceWatcher(CPIM_SERVICE_NAME,
                                                QDBusConnection::sessionBus(),
                                                QDBusServiceWatcher::WatchForOwnerChange,
@@ -143,15 +143,8 @@ void GaleraContactsService::deinitialize()
         rData->setError(QContactManager::UnspecifiedError);
     }
 
-    //clear contacts
-    Q_EMIT contactsRemoved(m_contactIds);
-
     if (!m_iface.isNull()) {
         m_id.clear();
-        m_contacts.clear();
-        m_contactIds.clear();
-        m_relationships.clear();
-        m_orderedRelationships.clear();
         Q_EMIT serviceChanged();
     }
 
@@ -320,8 +313,6 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
                     contactsIds << newId;
                 }
             }
-            m_contacts += contacts;
-            m_contactIds += contactsIds;
         }
     }
 
