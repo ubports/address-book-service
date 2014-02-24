@@ -543,9 +543,9 @@ void AddressBook::updateContactsDone(const QString &contactId,
         m_updateCommandResult[currentContactIndex] = error;
     } else if (!contactId.isEmpty()){
         // update the result with the new contact info
-        m_updatedIds << contactId;
         ContactEntry *entry = m_contacts->value(contactId);
         Q_ASSERT(entry);
+        m_updatedIds << contactId;
         QContact contact = entry->individual()->contact();
         QStringList newContacts = VCardParser::contactToVcard(QList<QContact>() << contact);
         if (newContacts.length() == 1) {
@@ -615,6 +615,7 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     QSet<QString> removedIds;
     QSet<QString> addedIds;
     QSet<QString> updatedIds;
+    QSet<QString> ignoreIds;
 
     GeeSet *keys = gee_multi_map_get_keys(changes);
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(keys));
@@ -634,10 +635,18 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             } else if (individualValue != 0){
                 qDebug() << "Link changes";
                 QString idValue = QString::fromUtf8(folks_individual_get_id(individualValue));
-                if (self->m_contacts->value(idValue)) {
-                    updatedIds << self->addContact(individualValue);
+                QString idKey = QString::fromUtf8(folks_individual_get_id(individualKey));
+                // after adding a anti link folks emit a signal with the same value in both key and value,
+                // we can ignore this
+                if (idValue == idKey) {
+                    // individual object has changed
+                    ignoreIds << self->addContact(individualValue);
                 } else {
-                    addedIds << self->addContact(individualValue);
+                    if (self->m_contacts->value(idValue)) {
+                        updatedIds << self->addContact(individualValue);
+                    } else {
+                        addedIds << self->addContact(individualValue);
+                    }
                 }
             }
 
@@ -651,7 +660,8 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
 
         if (individualKey) {
             QString id = QString::fromUtf8(folks_individual_get_id(individualKey));
-            if (!addedIds.contains(id) &&
+            if (!ignoreIds.contains(id) &&
+                !addedIds.contains(id) &&
                 !updatedIds.contains(id)) {
                 removedIds << self->removeContact(individualKey);
             }
