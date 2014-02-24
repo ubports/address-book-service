@@ -18,6 +18,7 @@
 
 #include "request-data.h"
 
+#include <QtCore/QDebug>
 #include <QtContacts/QContactManagerEngine>
 
 using namespace QtContacts;

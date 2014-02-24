@@ -18,6 +18,7 @@
 
 #include "fetch-hint.h"
 
+#include <QtCore/QDebug>
 #include <QtContacts/qcontactdetails.h>
 
 using namespace QtContacts;
