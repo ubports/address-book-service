@@ -102,8 +102,12 @@ private:
 
     // Unix signals
     static int m_sigQuitFd[2];
-
     QSocketNotifier *m_snQuit;
+
+    // dbus service name
+    QString m_serviceName;
+
+
     // Disable copy contructor
     AddressBook(const AddressBook&);
 

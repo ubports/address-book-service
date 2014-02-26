@@ -19,6 +19,7 @@
 #ifndef __DBUS_SERVICE_DEFS_H__
 #define __DBUS_SERVICE_DEFS_H__
 
+#define ALTERNATIVE_CPIM_SERVICE_NAME       "CANONICAL_PIN_SERVICE_NAME"
 #define CPIM_SERVICE_NAME                   "com.canonical.pim"
 #define CPIM_ADDRESSBOOK_OBJECT_PATH        "/com/canonical/pim/AddressBook"
 #define CPIM_ADDRESSBOOK_IFACE_NAME         "com.canonical.pim.AddressBook"

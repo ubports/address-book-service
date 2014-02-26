@@ -91,6 +91,7 @@ private:
     bool m_serviceIsReady;
 
     QSharedPointer<QDBusInterface> m_iface;
+    QString m_serviceName;
     QSet<RequestData*> m_runningRequests;
     QQueue<QPointer<QtContacts::QContactAbstractRequest> > m_pendingRequests;
 

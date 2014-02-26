@@ -59,8 +59,14 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
       m_iface(0)
 {
     RequestData::registerMetaType();
- 
-    m_serviceWatcher = new QDBusServiceWatcher(CPIM_SERVICE_NAME,
+
+    if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
+        m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
+    } else {
+        m_serviceName = CPIM_SERVICE_NAME;
+    }
+
+    m_serviceWatcher = new QDBusServiceWatcher(m_serviceName,
                                                QDBusConnection::sessionBus(),
                                                QDBusServiceWatcher::WatchForOwnerChange,
                                                this);
@@ -119,7 +125,7 @@ void GaleraContactsService::onServiceReady()
 void GaleraContactsService::initialize()
 {
     if (m_iface.isNull()) {
-        m_iface = QSharedPointer<QDBusInterface>(new QDBusInterface(CPIM_SERVICE_NAME,
+        m_iface = QSharedPointer<QDBusInterface>(new QDBusInterface(m_serviceName,
                                                                     CPIM_ADDRESSBOOK_OBJECT_PATH,
                                                                     CPIM_ADDRESSBOOK_IFACE_NAME));
         if (!m_iface->lastError().isValid()) {
@@ -188,7 +194,7 @@ void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdReque
         return;
     }
     QDBusObjectPath viewObjectPath = result.arguments()[0].value<QDBusObjectPath>();
-    QDBusInterface *view = new QDBusInterface(CPIM_SERVICE_NAME,
+    QDBusInterface *view = new QDBusInterface(m_serviceName,
                                              viewObjectPath.path(),
                                              CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
 
@@ -241,7 +247,7 @@ void GaleraContactsService::fetchContactsContinue(RequestData *request,
         destroyRequest(request);
     } else {
         QDBusObjectPath viewObjectPath = reply.value();
-        QDBusInterface *view = new QDBusInterface(CPIM_SERVICE_NAME,
+        QDBusInterface *view = new QDBusInterface(m_serviceName,
                                                   viewObjectPath.path(),
                                                   CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
         request->updateView(view);

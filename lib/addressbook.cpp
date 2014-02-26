@@ -109,6 +109,12 @@ AddressBook::AddressBook(QObject *parent)
       m_notifyIsQuiescentHandlerId(0),
       m_connection(QDBusConnection::sessionBus())
 {
+    if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
+        m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
+        qDebug() << "Using alternative service name:" << m_serviceName;
+    } else {
+        m_serviceName = CPIM_SERVICE_NAME;
+    }
     prepareUnixSignals();
 }
 
@@ -129,11 +135,11 @@ QString AddressBook::objectPath()
 
 bool AddressBook::registerObject(QDBusConnection &connection)
 {
-    if (connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
+    if (connection.interface()->isServiceRegistered(m_serviceName)) {
         qWarning() << "Galera pin service already registered";
         return false;
-    } else if (!connection.registerService(CPIM_SERVICE_NAME)) {
-        qWarning() << "Could not register service!" << CPIM_SERVICE_NAME;
+    } else if (!connection.registerService(m_serviceName)) {
+        qWarning() << "Could not register service!" << m_serviceName;
         return false;
     }
 
@@ -196,8 +202,8 @@ void AddressBook::shutdown()
             m_connection.interface()->isValid()) {
 
             m_connection.unregisterObject(objectPath());
-            if (m_connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
-                m_connection.unregisterService(CPIM_SERVICE_NAME);
+            if (m_connection.interface()->isServiceRegistered(m_serviceName)) {
+                m_connection.unregisterService(m_serviceName);
             }
         }
 
