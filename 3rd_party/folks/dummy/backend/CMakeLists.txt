@@ -39,5 +39,7 @@ target_link_libraries(dummy
     ${FOLKS_LIBRARIES}
 )
 
+install(TARGETS dummy LIBRARY DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR}/address-book-service/)
+
 
 
