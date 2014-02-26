@@ -74,7 +74,6 @@ private:
 
     bool registerObject();
     void initFolks();
-    void configurePrimaryStore();
     void initEnviroment();
     void prepareAggregator();
     static void mkpath(const QString &path);

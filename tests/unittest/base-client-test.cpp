@@ -30,7 +30,15 @@
 void BaseClientTest::initTestCase()
 {
     galera::Source::registerMetaType();
-    m_serverIface = new QDBusInterface(CPIM_SERVICE_NAME,
+
+    QString serviceName;
+    if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
+        serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
+    } else {
+        serviceName = CPIM_SERVICE_NAME;
+    }
+
+    m_serverIface = new QDBusInterface(serviceName,
                                        CPIM_ADDRESSBOOK_OBJECT_PATH,
                                        CPIM_ADDRESSBOOK_IFACE_NAME);
     QVERIFY(!m_serverIface->lastError().isValid());

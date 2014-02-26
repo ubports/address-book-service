@@ -147,8 +147,12 @@ void DummyBackendProxy::initFolks()
 
     m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(m_backendStore, "dummy"));
 
+    // get the primary store
+    GeeMap *stores = folks_backend_get_persona_stores(FOLKS_BACKEND(m_backend));
+    m_primaryPersonaStore = FOLKS_DUMMY_PERSONA_STORE(gee_map_get(stores, "dummy-store"));
+    qDebug() << "Primary store:" << (void*) m_primaryPersonaStore;
+
     Q_ASSERT(m_backend != 0);
-    configurePrimaryStore();
     m_isReady = true;
     Q_EMIT ready();
 }
@@ -192,35 +196,10 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
     return QString();
 }
 
-void DummyBackendProxy::configurePrimaryStore()
-{
-    static const char* writableProperties[] = {
-        folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_FULL_NAME),
-        folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_EMAIL_ADDRESSES),
-        folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_PHONE_NUMBERS),
-        0
-    };
-
-    m_primaryPersonaStore = folks_dummy_persona_store_new("dummy-store",
-                                                          "Dummy personas",
-                                                          const_cast<char**>(writableProperties), 4);
-    folks_dummy_persona_store_set_persona_type(m_primaryPersonaStore, FOLKS_DUMMY_TYPE_FULL_PERSONA);
-
-    GeeHashSet *personaStores = gee_hash_set_new(FOLKS_TYPE_PERSONA_STORE,
-                                                 (GBoxedCopyFunc) g_object_ref, g_object_unref,
-                                                 NULL, NULL, NULL, NULL, NULL, NULL);
-
-    gee_abstract_collection_add(GEE_ABSTRACT_COLLECTION(personaStores), m_primaryPersonaStore);
-    folks_dummy_backend_register_persona_stores(m_backend, GEE_SET(personaStores), true);
-    folks_dummy_persona_store_reach_quiescence(m_primaryPersonaStore);
-    g_object_unref(personaStores);
-}
-
 void DummyBackendProxy::backendEnabled(FolksBackendStore *backendStore,
                                        GAsyncResult *res,
                                        DummyBackendProxy *self)
 {
-    folks_backend_store_enable_backend_finish(backendStore, res);
     self->m_eventLoop->quit();
     self->m_eventLoop = 0;
 }
