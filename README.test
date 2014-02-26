@@ -1,0 +1,35 @@
+Running the test and qtcontacts in dummy mode.
+
+
+Running address-book-service
+===========================
+
+# export ALTERNATIVE_CPIM_SERVICE_NAME="com.canonical.test.pim"
+# export FOLKS_BACKEND_PATH="/usr/lib/address-book-service/dummy.so"
+# export FOLKS_BACKENDS_ALLOWED="dummy"
+# export FOLKS_PRIMARY_STORE="dummy"
+# /usr/libexec/address-book-service
+
+
+ALTERNATIVE_CPIM_SERVICE_NAME 
+	- Defines a new address book DBus service name
+
+FOLKS_BACKEND_PATH 
+	- Defines the path use by folks to find the backend
+
+FOLKS_BACKENDS_ALLOWED
+	- Defines which backend folks is allowed to load
+
+FOLKS_PRIMARY_STORE
+	- Defines which persona store should be used as primary store
+
+
+Running the any address-book client
+===================================
+
+# export ALTERNATIVE_CPIM_SERVICE_NAME="com.canonical.test.pim"
+
+ALTERNATIVE_CPIM_SERVICE_NAME 
+	- Defines a new address book DBus service name, should be the same as the server
+
+
