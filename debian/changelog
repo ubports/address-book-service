@@ -1,5 +1,6 @@
-address-book-service (0.1.1) UNRELEASED; urgency=medium
+address-book-service (0.1.1+14.04.20140227-0ubuntu1) trusty; urgency=medium
 
+  [ Renato Araujo Oliveira Filho ]
   * Avoid the persona to get linked automatically during the contact create or
     edit.
   * Create test to remove contacts functionality.
@@ -11,8 +12,12 @@ address-book-service (0.1.1) UNRELEASED; urgency=medium
     release on folks.
   * Check if query was destroyed on client side before delete it on the server
     side.
+  * Skip IM field if it was marked as folks automatic field. (LP:
+    #1233785)
+  * Reduce contact page size to optimize ui. Removed unused functions
+    and variable.
 
- -- Renato Araujo Oliveira Filho <renato@ubuntu>  Fri, 24 Jan 2014 08:04:56 -0300
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 27 Feb 2014 02:20:41 +0000
 
 address-book-service (0.1.0+14.04.20140213-0ubuntu1) trusty; urgency=low
 
