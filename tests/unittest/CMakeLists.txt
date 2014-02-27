@@ -70,8 +70,8 @@ if(DBUS_RUNNER)
 
     declare_test(addressbook-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(service-life-cycle-test True ${BASE_CLIENT_TEST_SRC})
+    declare_test(readonly-prop-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(contact-link-test True ${BASE_CLIENT_TEST_SRC})
-
 elseif()
     message(STATUS "DBus test runner not found. Some tests will be disabled")
 endif()

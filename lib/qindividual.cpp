@@ -187,9 +187,17 @@ void QIndividual::appendDetailsForPersona(QtContacts::QContact *contact,
 {
     if (!detail.isEmpty()) {
         QtContacts::QContactDetail cpy(detail);
-        if (readOnly) {
-            QContactManagerEngine::setDetailAccessConstraints(&cpy, QContactDetail::ReadOnly);
+        QtContacts::QContactDetail::AccessConstraints access;
+        if (readOnly ||
+            detail.accessConstraints().testFlag(QContactDetail::ReadOnly)) {
+            access |= QContactDetail::ReadOnly;
         }
+
+        if (detail.accessConstraints().testFlag(QContactDetail::Irremovable)) {
+            access |= QContactDetail::Irremovable;
+        }
+
+        QContactManagerEngine::setDetailAccessConstraints(&cpy, access);
         contact->appendDetail(cpy);
     }
 }
@@ -589,6 +597,10 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *perso
         while(gee_iterator_next(iterValues)) {
             FolksAbstractFieldDetails *fd = FOLKS_ABSTRACT_FIELD_DETAILS(gee_iterator_get(iterValues));
             const char *uri = (const char*) folks_abstract_field_details_get_value(fd);
+            GeeCollection *parameters = folks_abstract_field_details_get_parameter_values(fd, "X-FOLKS-FIELD");
+            if (parameters) {
+                continue;
+            }
 
             QContactOnlineAccount account;
             account.setAccountUri(QString::fromUtf8(uri));

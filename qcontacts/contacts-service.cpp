@@ -59,7 +59,7 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
       m_iface(0)
 {
     RequestData::registerMetaType();
- 
+
     m_serviceWatcher = new QDBusServiceWatcher(CPIM_SERVICE_NAME,
                                                QDBusConnection::sessionBus(),
                                                QDBusServiceWatcher::WatchForOwnerChange,

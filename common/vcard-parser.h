@@ -32,6 +32,8 @@ public:
     static const QString PidMapFieldName;
     static const QString PidFieldName;
     static const QString PrefParamName;
+    static const QString IrremovableFieldName;
+    static const QString ReadOnlyFieldName;
     static const QMap<QtContacts::QContactDetail::DetailType, QString> PreferredActionNames;
 
     static QStringList contactToVcard(QList<QtContacts::QContact> contacts);

@@ -213,15 +213,19 @@ QString DummyBackendProxy::updateContact(const QString &contactId,
 void DummyBackendProxy::configurePrimaryStore()
 {
     static const char* writableProperties[] = {
-        folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_FULL_NAME),
-        folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_EMAIL_ADDRESSES),
-        folks_persona_store_detail_key(FolksPersonaDetail::FOLKS_PERSONA_DETAIL_PHONE_NUMBERS),
+        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_FULL_NAME),
+        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_ALIAS),
+        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_NICKNAME),
+        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_STRUCTURED_NAME),
+        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_IS_FAVOURITE),
+        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_EMAIL_ADDRESSES),
+        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_PHONE_NUMBERS),
         0
     };
 
     m_primaryPersonaStore = folks_dummy_persona_store_new("dummy-store",
                                                           "Dummy personas",
-                                                          const_cast<char**>(writableProperties), 4);
+                                                          const_cast<char**>(writableProperties), 7);
     folks_dummy_persona_store_set_persona_type(m_primaryPersonaStore, FOLKS_DUMMY_TYPE_FULL_PERSONA);
     folks_dummy_persona_store_update_trust_level(m_primaryPersonaStore, FOLKS_PERSONA_STORE_TRUST_FULL);
 
