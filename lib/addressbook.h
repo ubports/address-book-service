@@ -72,7 +72,7 @@ public Q_SLOTS:
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
-    void updateContactsDone(galera::QIndividual *individual, const QString &error);
+    void updateContactsDone(const QString &contactId, const QString &error);
 
 private Q_SLOTS:
     void viewClosed();
@@ -139,11 +139,13 @@ private:
                                  AddressBook *self);
     static void createContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *res,
-                                  QDBusMessage *msg);
+                                  void *data);
     static void removeContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *result,
                                   void *data);
-
+    static void addAntiLinksDone(FolksAntiLinkable *antilinkable,
+                                  GAsyncResult *result,
+                                  void *data);
     friend class DirtyContactsNotify;
 };
 

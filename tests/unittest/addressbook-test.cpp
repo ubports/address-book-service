@@ -111,7 +111,7 @@ private Q_SLOTS:
         m_resultBasicVcard = QStringLiteral("BEGIN:VCARD\r\n"
                                        "VERSION:3.0\r\n"
                                        "UID:%1\r\n"
-                                       "CLIENTPIDMAP:1;dummy:dummy-store:0\r\n"
+                                       "CLIENTPIDMAP:1;dummy:dummy-store:%2\r\n"
                                        "N;PID=1.1:Tal;Fulano_;de;;\r\n"
                                        "FN;PID=1.1:Fulano_ Tal\r\n"
                                        "X-QTPROJECT-FAVORITE;PID=1.1:false;0\r\n"
@@ -213,7 +213,7 @@ private Q_SLOTS:
 
         // user returned id to fill the new vcard
         QString newContactId = reply.value();
-        QString newVcard = m_resultBasicVcard.arg(newContactId);
+        QString newVcard = m_resultBasicVcard.arg(newContactId).arg(0);
 
         // try create a contact with the same id
         QDBusReply<QString> reply2 = m_serverIface->call("createContact", newVcard, "dummy-store");
@@ -266,6 +266,46 @@ private Q_SLOTS:
         // check if the contact was removed from the backend
         QDBusReply<QStringList> replyList = m_dummyIface->call("listContacts");
         QCOMPARE(replyList.value().count(), 0);
+    }
+
+    void testUpdateContact()
+    {
+        // create a basic contact
+        QDBusReply<QString> replyAdd = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
+        QString newContactId = replyAdd.value();
+
+        // update the contact phone number
+        QString vcard = m_resultBasicVcard.arg(newContactId).arg(3);
+        vcard = vcard.replace("8888888", "0000000");
+        QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
+        QtContacts::QContact contactUpdated = contacts[0];
+
+        // spy 'contactsUpdated' signal
+        QSignalSpy updateContactSpy(m_serverIface, SIGNAL(contactsUpdated(const QStringList &)));
+        QDBusReply<QStringList> replyUpdate = m_serverIface->call("updateContacts", QStringList() << vcard);
+        QStringList result = replyUpdate.value();
+        QCOMPARE(result.size(), 1);
+
+        // check if contact returned by update function contains the new data
+        contacts = galera::VCardParser::vcardToContact(result);
+        QtContacts::QContact contactUpdatedResult = contacts[0];
+        compareContact(contactUpdatedResult, contactUpdated);
+
+        // check if the 'contactsUpdated' signal was fired with the correct args
+        QTRY_COMPARE(updateContactSpy.count(), 1);
+        QList<QVariant> args = updateContactSpy.takeFirst();
+        QCOMPARE(args.count(), 1);
+        QStringList ids = args[0].toStringList();
+        QCOMPARE(ids[0], newContactId);
+
+        // check if the contact was updated into the backend
+        QDBusReply<QStringList> replyList = m_dummyIface->call("listContacts");
+        result = replyList.value();
+        QCOMPARE(result.count(), 1);
+
+        contacts = galera::VCardParser::vcardToContact(result);
+        contactUpdatedResult = contacts[0];
+        compareContact(contactUpdatedResult, contactUpdated);
     }
 };
 
