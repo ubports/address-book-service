@@ -1,3 +1,24 @@
+address-book-service (0.1.1+14.04.20140227-0ubuntu1) trusty; urgency=medium
+
+  [ Renato Araujo Oliveira Filho ]
+  * Avoid the persona to get linked automatically during the contact create or
+    edit.
+  * Create test to remove contacts functionality.
+  * Updated dummy backend code.
+  * Created test for add contacts.
+  * Rewrite unit test to work in a server/client way.
+  * Moved static address-book-service-lib to a different directory.
+  * Fork dummy backend from folks tree as a temporary solution before its get
+    release on folks.
+  * Check if query was destroyed on client side before delete it on the server
+    side.
+  * Skip IM field if it was marked as folks automatic field. (LP:
+    #1233785)
+  * Reduce contact page size to optimize ui. Removed unused functions
+    and variable.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 27 Feb 2014 02:20:41 +0000
+
 address-book-service (0.1.0+14.04.20140213-0ubuntu1) trusty; urgency=low
 
   [ Renato Araujo Oliveira Filho ]

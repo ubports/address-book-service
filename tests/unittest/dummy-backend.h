@@ -46,6 +46,7 @@ public:
     bool isReady() const;
 
     QString createContact(const QtContacts::QContact &qcontact);
+    QString updateContact(const QString &contactId, const QtContacts::QContact &qcontact);
     QList<QtContacts::QContact> contacts() const;
     QList<galera::QIndividual*> individuals() const;
 
@@ -55,6 +56,7 @@ public Q_SLOTS:
     void shutdown();
     QStringList listContacts() const;
     void reset();
+    void contactUpdated(const QString &contactId, const QString &errorMsg);
 
 Q_SIGNALS:
     void ready();
@@ -71,6 +73,7 @@ private:
     bool m_isReady;
     int m_individualsChangedDetailedId;
     QHash<QString, galera::QIndividual*> m_contacts;
+    bool m_contactUpdated;
 
     bool registerObject();
     void initFolks();
@@ -107,7 +110,15 @@ class DummyBackendAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
 "    <method name=\"quit\"/>\n"
+"    <method name=\"enableAutoLink\">\n"
+"      <arg direction=\"in\" type=\"b\"/>\n"
+"    </method>\n"
 "    <method name=\"createContact\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"out\" type=\"s\"/>\n"
+"    </method>\n"
+"    <method name=\"updateContact\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
 "      <arg direction=\"in\" type=\"s\"/>\n"
 "      <arg direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
@@ -129,6 +140,8 @@ public Q_SLOTS:
     void reset();
     QStringList listContacts();
     QString createContact(const QString &vcard);
+    QString updateContact(const QString &contactId, const QString &vcard);
+    void enableAutoLink(bool flag);
 
 Q_SIGNALS:
     void ready();

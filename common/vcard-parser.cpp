@@ -80,6 +80,22 @@ namespace
                 prop.setParameters(params);
             }
 
+            // export read-only info
+            if (detail.accessConstraints().testFlag(QContactDetail::ReadOnly)) {
+                QVersitProperty &prop = toBeAdded->last();
+                QMultiHash<QString, QString> params = prop.parameters();
+                params.insert(galera::VCardParser::ReadOnlyFieldName, "YES");
+                prop.setParameters(params);
+            }
+
+            // export Irremovable info
+            if (detail.accessConstraints().testFlag(QContactDetail::Irremovable)) {
+                QVersitProperty &prop = toBeAdded->last();
+                QMultiHash<QString, QString> params = prop.parameters();
+                params.insert(galera::VCardParser::IrremovableFieldName, "YES");
+                prop.setParameters(params);
+            }
+
             switch (detail.type()) {
                 case QContactDetail::TypeAvatar:
                 {
@@ -151,6 +167,23 @@ namespace
                 det.setDetailUri(pid);
             }
 
+            bool ro = (property.parameters().value(galera::VCardParser::ReadOnlyFieldName, "NO") == "YES");
+            bool irremovable = (property.parameters().value(galera::VCardParser::IrremovableFieldName, "NO") == "YES");
+            if (ro && irremovable) {
+                QContactDetail &det = updatedDetails->last();
+                QContactManagerEngine::setDetailAccessConstraints(&det,
+                                                                  QContactDetail::ReadOnly |
+                                                                  QContactDetail::Irremovable);
+            } else if (ro) {
+                QContactDetail &det = updatedDetails->last();
+                QContactManagerEngine::setDetailAccessConstraints(&det,
+                                                                  QContactDetail::ReadOnly);
+            } else if (irremovable) {
+                QContactDetail &det = updatedDetails->last();
+                QContactManagerEngine::setDetailAccessConstraints(&det,
+                                                                  QContactDetail::Irremovable);
+            }
+
             if (updatedDetails->size() == 0) {
                 return;
             }
@@ -204,6 +237,8 @@ namespace galera
 const QString VCardParser::PidMapFieldName = QStringLiteral("CLIENTPIDMAP");
 const QString VCardParser::PidFieldName = QStringLiteral("PID");
 const QString VCardParser::PrefParamName = QStringLiteral("PREF");
+const QString VCardParser::IrremovableFieldName = QStringLiteral("IRREMOVABLE");
+const QString VCardParser::ReadOnlyFieldName = QStringLiteral("READ-ONLY");
 
 static QMap<QtContacts::QContactDetail::DetailType, QString> prefferedActions()
 {
