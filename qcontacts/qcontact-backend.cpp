@@ -105,19 +105,14 @@ int GaleraManagerEngine::managerVersion() const
 /* Filtering */
 QList<QContactId> GaleraManagerEngine::contactIds(const QtContacts::QContactFilter &filter, const QList<QtContacts::QContactSortOrder> &sortOrders, QtContacts::QContactManager::Error *error) const
 {
-    /* Special case the fast case */
-    if (filter.type() == QtContacts::QContactFilter::DefaultFilter && sortOrders.count() == 0) {
-        return m_service->contactIds();
-    } else {
-        QList<QtContacts::QContact> clist = contacts(filter, sortOrders, QtContacts::QContactFetchHint(), error);
+    QList<QtContacts::QContact> clist = contacts(filter, sortOrders, QtContacts::QContactFetchHint(), error);
 
-        /* Extract the ids */
-        QList<QtContacts::QContactId> ids;
-        Q_FOREACH(const QContact &c, clist)
-            ids.append(c.id());
+    /* Extract the ids */
+    QList<QtContacts::QContactId> ids;
+    Q_FOREACH(const QContact &c, clist)
+        ids.append(c.id());
 
-        return ids;
-    }
+    return ids;
 }
 
 QList<QtContacts::QContact> GaleraManagerEngine::contacts(const QtContacts::QContactFilter &filter, const QList<QtContacts::QContactSortOrder>& sortOrders, const QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const
