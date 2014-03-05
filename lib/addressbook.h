@@ -19,7 +19,7 @@
 #ifndef __GALERA_ADDRESSBOOK_H__
 #define __GALERA_ADDRESSBOOK_H__
 
-#include "source.h"
+#include "common/source.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QSet>

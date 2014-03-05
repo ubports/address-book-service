@@ -17,7 +17,7 @@
  */
 
 #include "base-client-test.h"
-#include "lib/source.h"
+#include "common/source.h"
 #include "common/dbus-service-defs.h"
 #include "common/vcard-parser.h"
 
@@ -167,6 +167,8 @@ private Q_SLOTS:
         QCOMPARE(list.count(), 1);
         galera::Source src = list[0];
         QCOMPARE(src.id(), QStringLiteral("dummy-store"));
+        QCOMPARE(src.displayLabel(), QStringLiteral("Dummy personas"));
+        QCOMPARE(src.isReadOnly(), false);
     }
 
     void testCreateContact()

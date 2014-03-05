@@ -27,14 +27,17 @@ Source::Source()
 
 Source::Source(const Source &other)
     : m_id(other.id()),
+      m_displayName(other.displayLabel()),
       m_isReadOnly(other.isReadOnly())
 {
 }
 
-Source::Source(QString id, bool isReadOnly)
+Source::Source(QString id, const QString &displayName, bool isReadOnly)
     : m_id(id),
+      m_displayName(displayName),
       m_isReadOnly(isReadOnly)
 {
+    Q_ASSERT(displayName.isEmpty() == false);
 }
 
 bool Source::isValid() const
@@ -45,6 +48,11 @@ bool Source::isValid() const
 QString Source::id() const
 {
     return m_id;
+}
+
+QString Source::displayLabel() const
+{
+    return m_displayName;
 }
 
 bool Source::isReadOnly() const
@@ -64,6 +72,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Source &source)
 {
     argument.beginStructure();
     argument << source.m_id;
+    argument << source.m_displayName;
     argument << source.m_isReadOnly;
     argument.endStructure();
 
@@ -74,6 +83,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Source &source)
 {
     argument.beginStructure();
     argument >> source.m_id;
+    argument >> source.m_displayName;
     argument >> source.m_isReadOnly;
     argument.endStructure();
 

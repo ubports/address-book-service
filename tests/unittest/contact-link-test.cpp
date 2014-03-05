@@ -17,8 +17,8 @@
  */
 
 #include "base-client-test.h"
-#include "lib/source.h"
 #include "lib/qindividual.h"
+#include "common/source.h"
 #include "common/dbus-service-defs.h"
 #include "common/vcard-parser.h"
 

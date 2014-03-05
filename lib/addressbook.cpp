@@ -321,8 +321,10 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
 
             QString id = QString::fromUtf8(folks_persona_store_get_id(store));
-            bool canWrite = folks_persona_store_get_is_writeable(store);
-            result << Source(id, !canWrite);
+            QString displayName = QString::fromUtf8(folks_persona_store_get_display_name(store));
+            bool canWrite = folks_persona_store_get_can_add_personas(store) &&
+                            folks_persona_store_get_can_remove_personas(store);
+            result << Source(id, displayName, !canWrite);
 
             g_object_unref(store);
         }

@@ -67,7 +67,7 @@ add_subdirectory(3rd_party)
 add_subdirectory(common)
 add_subdirectory(lib)
 add_subdirectory(src)
-add_subdirectory(qcontacts)
+add_subdirectory(contacts)
 add_subdirectory(tests)
 add_subdirectory(data)
 
