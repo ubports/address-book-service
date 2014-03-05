@@ -53,7 +53,8 @@ public void module_init (BackendStore backend_store)
       Folks.PersonaStore.detail_key (PersonaDetail.LOCATION),
       Folks.PersonaStore.detail_key (PersonaDetail.WEB_SERVICE_ADDRESSES),
       Folks.PersonaStore.detail_key (PersonaDetail.NOTES),
-      Folks.PersonaStore.detail_key (PersonaDetail.URLS),
+      // Keep URLS as read-only fields for testing purpose
+      //Folks.PersonaStore.detail_key (PersonaDetail.URLS),
       Folks.PersonaStore.detail_key (PersonaDetail.GROUPS),
       null
     };
