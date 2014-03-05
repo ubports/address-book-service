@@ -119,6 +119,7 @@ private:
     bool registerObject(QDBusConnection &connection);
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
+    FolksPersonaStore *getFolksStore(const QString &source);
 
     static void availableSourcesDoneListAllSources(FolksBackendStore *backendStore,
                                                    GAsyncResult *res,

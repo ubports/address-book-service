@@ -384,6 +384,11 @@ void GaleraContactsService::fetchContactsGroupsContinue(RequestData *request,
             QContactId newId = QContactId(engineId);
             contact.setId(newId);
 
+            // guid
+            QContactGuid guid;
+            guid.setGuid(source.id());
+            contact.saveDetail(&guid);
+
             // display name
             QContactDisplayLabel displayLabel;
             displayLabel.setLabel(source.displayLabel());
@@ -415,10 +420,14 @@ void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request
 
     QStringList oldContacts;
     QStringList newContacts;
+    QStringList sources;
 
     for(int i=0, iMax=contacts.size(); i < iMax; i++) {
         if (contacts.at(i).id().isNull()) {
             newContacts << vcards[i];
+
+            QContactSyncTarget syncTarget = contacts.at(i).detail<QContactSyncTarget>();
+            sources << syncTarget.syncTarget();
         } else {
             oldContacts << vcards[i];
         }
@@ -429,10 +438,10 @@ void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request
     }
 
     if (!newContacts.isEmpty()) {
-        createContacts(request, newContacts);
+        createContacts(request, newContacts, sources);
     }
 }
-void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts)
+void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *request, QStringList contacts, QStringList sources)
 {
     if (!isOnline()) {
         qWarning() << "Server is not online";
@@ -445,8 +454,9 @@ void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *requ
         return;
     }
 
+    int i = 0;
     Q_FOREACH(QString contact, contacts) {
-        QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, "");
+        QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, sources[i++]);
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
         RequestData *requestData = new RequestData(request, watcher);
         m_runningRequests << requestData;
@@ -538,7 +548,7 @@ void GaleraContactsService::removeContactDone(RequestData *request, QDBusPending
     destroyRequest(request);
 }
 
-void GaleraContactsService::updateContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts)
+void GaleraContactsService::updateContacts(QtContacts::QContactSaveRequest *request, QStringList contacts)
 {
     if (!isOnline()) {
         qWarning() << "Server is not online";

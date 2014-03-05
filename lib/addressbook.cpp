@@ -305,6 +305,15 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
     if (res) {
         folks_backend_store_prepare_finish(backendStore, res);
     }
+    static QStringList backendBlackList;
+
+    // these backends are not fully supported yet
+    if (backendBlackList.isEmpty()) {
+        backendBlackList << "telepathy"
+                         << "bluez"
+                         << "ofono"
+                         << "key-file";
+    }
 
     GeeCollection *backends = folks_backend_store_list_backends(backendStore);
     SourceList result;
@@ -312,6 +321,10 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(backends));
     while(gee_iterator_next(iter)) {
         FolksBackend *backend = FOLKS_BACKEND(gee_iterator_get(iter));
+        QString backendName = QString::fromUtf8(folks_backend_get_name(backend));
+        if (backendBlackList.contains(backendName)) {
+            continue;
+        }
 
         GeeMap *stores = folks_backend_get_persona_stores(backend);
         GeeCollection *values =  gee_map_get_values(stores);
@@ -351,13 +364,15 @@ QString AddressBook::createContact(const QString &contact, const QString &source
                 CreateContactData *data = new CreateContactData;
                 data->m_message = message;
                 data->m_addressbook = this;
+                FolksPersonaStore *store = getFolksStore(source);
                 folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
                                                                      NULL, //parent
-                                                                     folks_individual_aggregator_get_primary_store(m_individualAggregator),
+                                                                     store,
                                                                      details,
                                                                      (GAsyncReadyCallback) createContactDone,
                                                                      (void*) data);
                 g_hash_table_destroy(details);
+                g_object_unref(store);
                 return "";
             }
         }
@@ -366,6 +381,47 @@ QString AddressBook::createContact(const QString &contact, const QString &source
     QDBusMessage reply = message.createReply(QString());
     QDBusConnection::sessionBus().send(reply);
     return "";
+}
+
+FolksPersonaStore * AddressBook::getFolksStore(const QString &source)
+{
+    FolksPersonaStore *result = 0;
+
+    if (!source.isEmpty()) {
+        FolksBackendStore *backendStore = folks_backend_store_dup();
+        GeeCollection *backends = folks_backend_store_list_backends(backendStore);
+
+        GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(backends));
+        while((result == 0) && gee_iterator_next(iter)) {
+            FolksBackend *backend = FOLKS_BACKEND(gee_iterator_get(iter));
+            GeeMap *stores = folks_backend_get_persona_stores(backend);
+            GeeCollection *values =  gee_map_get_values(stores);
+            GeeIterator *backendIter = gee_iterable_iterator(GEE_ITERABLE(values));
+
+            while(gee_iterator_next(backendIter)) {
+                FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
+
+                QString id = QString::fromUtf8(folks_persona_store_get_id(store));
+                if (id == source) {
+                    result = store;
+                    break;
+                }
+                g_object_unref(store);
+            }
+
+            g_object_unref(backendIter);
+            g_object_unref(backend);
+            g_object_unref(values);
+        }
+        g_object_unref(iter);
+        g_object_unref(backendStore);
+    }
+
+    if (!result)  {
+        result = folks_individual_aggregator_get_primary_store(m_individualAggregator);
+        g_object_ref(result);
+    }
+    return result;
 }
 
 QString AddressBook::linkContacts(const QStringList &contacts)

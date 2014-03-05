@@ -98,8 +98,8 @@ private:
     void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
 
     void saveContact(QtContacts::QContactSaveRequest *request);
-    void createContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts);
-    void updateContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts);
+    void createContacts(QtContacts::QContactSaveRequest *request, QStringList contacts, QStringList sources);
+    void updateContacts(QtContacts::QContactSaveRequest *request, QStringList contacts);
     void updateContactDone(RequestData *request, QDBusPendingCallWatcher *call);
     void createContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
 
