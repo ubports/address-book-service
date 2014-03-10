@@ -256,63 +256,32 @@ static QMap<QtContacts::QContactDetail::DetailType, QString> prefferedActions()
 }
 const QMap<QtContacts::QContactDetail::DetailType, QString> VCardParser::PreferredActionNames = prefferedActions();
 
-
-QStringList VCardParser::contactToVcard(QList<QtContacts::QContact> contacts)
+VCardParser::VCardParser(QObject *parent)
+    : QObject(parent),
+      m_versitWriter(0),
+      m_versitReader(0)
 {
-    QStringList result;
-    QVersitContactExporter contactExporter;
-    contactExporter.setDetailHandler(new ContactExporterDetailHandler);
-    if (!contactExporter.exportContacts(contacts, QVersitDocument::VCard30Type)) {
-        qDebug() << "Fail to export contacts" << contactExporter.errors();
-        return result;
-    }
-
-    QByteArray vcard;
-    Q_FOREACH(QVersitDocument doc, contactExporter.documents()) {
-        vcard.clear();
-        QVersitWriter writer(&vcard);
-        if (!writer.startWriting(doc)) {
-            qWarning() << "Fail to write contacts" << doc;
-        } else {
-            writer.waitForFinished();
-            result << QString::fromUtf8(vcard);
-        }
-    }
-
-    // TODO: check if is possible to write all contacts and split the result in a stringlist
-    return result;
 }
 
-
-QtContacts::QContact VCardParser::vcardToContact(const QString &vcard)
+VCardParser::~VCardParser()
 {
-    QVersitReader reader(vcard.toUtf8());
-    reader.startReading();
-    reader.waitForFinished();
-
-    QVersitContactImporter importer;
-    importer.importDocuments(reader.results());
-    if (importer.errorMap().size() > 0) {
-        qWarning() << importer.errorMap();
-        return QContact();
-    } else if (importer.contacts().size()){
-        return importer.contacts()[0];
-    } else {
-        return QContact();
+    if (m_versitReader) {
+        m_versitReader->waitForFinished();
+    }
+    if (m_versitWriter) {
+        m_versitWriter->waitForFinished();
     }
 }
 
-QList<QtContacts::QContact> VCardParser::vcardToContact(const QStringList &vcardList)
+QList<QContact> VCardParser::vcardToContactSync(const QStringList &vcardList)
 {
-    QString vcards = vcardList.join("\n");
+    QString vcards = vcardList.join("\r\n");
     QVersitReader reader(vcards.toUtf8());
     if (!reader.startReading()) {
-        qWarning() << "Fail to read docs";
         return QList<QtContacts::QContact>();
     } else {
         reader.waitForFinished();
         QList<QVersitDocument> documents = reader.results();
-
         QVersitContactImporter contactImporter;
         contactImporter.setPropertyHandler(new ContactImporterPropertyHandler);
         if (!contactImporter.importDocuments(documents)) {
@@ -321,6 +290,130 @@ QList<QtContacts::QContact> VCardParser::vcardToContact(const QStringList &vcard
         }
 
         return contactImporter.contacts();
+    }
+}
+
+QtContacts::QContact VCardParser::vcardToContact(const QString &vcard)
+{
+    QList<QContact> contacts = vcardToContactSync(QStringList() << vcard);
+    if (contacts.size()) {
+        return contacts[0];
+    } else {
+        return QContact();
+    }
+}
+
+void VCardParser::vcardToContact(const QStringList &vcardList)
+{
+    if (m_versitReader) {
+        qWarning() << "Import operation in progress.";
+        return;
+    }
+    QString vcards = vcardList.join("\r\n");
+    m_versitReader = new QVersitReader(vcards.toUtf8());
+    connect(m_versitReader,
+            &QVersitReader::resultsAvailable,
+            this,
+            &VCardParser::onReaderResultsAvailable);
+    connect(m_versitReader,
+            &QVersitReader::stateChanged,
+            this,
+            &VCardParser::onReaderStateChanged);
+    m_versitReader->startReading();
+}
+
+void VCardParser::onReaderResultsAvailable()
+{
+    //NOTHING FOR NOW
+}
+
+QStringList VCardParser::splitVcards(const QByteArray &vcardList)
+{
+    QStringList result;
+    int start = 0;
+    static const int size = QString("END:VCARD\r\n").size();
+
+    while(start < vcardList.size()) {
+        int pos = vcardList.indexOf("END:VCARD\r\n", start);
+        result << vcardList.mid(start, (pos - start) + size);
+        start += (pos + size + 1);
+    }
+
+    return result;
+}
+
+void VCardParser::onReaderStateChanged(QVersitReader::State state)
+{
+    if (state == QVersitReader::FinishedState) {
+        QList<QVersitDocument> documents = m_versitReader->results();
+
+        QVersitContactImporter contactImporter;
+        contactImporter.setPropertyHandler(new ContactImporterPropertyHandler);
+        if (!contactImporter.importDocuments(documents)) {
+            qWarning() << "Fail to import contacts";
+            return;
+        }
+        Q_EMIT contactsParsed(contactImporter.contacts());
+
+        delete m_versitReader;
+        m_versitReader = 0;
+    }
+}
+
+void VCardParser::contactToVcard(QList<QtContacts::QContact> contacts)
+{
+    QStringList result;
+    if (m_versitWriter) {
+        qWarning() << "Export operation in progress.";
+        return;
+    }
+
+    QVersitContactExporter exporter;
+    exporter.setDetailHandler(new ContactExporterDetailHandler);
+    if (!exporter.exportContacts(contacts, QVersitDocument::VCard30Type)) {
+        qDebug() << "Fail to export contacts" << exporter.errors();
+        return;
+    }
+
+    m_versitWriter = new QVersitWriter(&m_vcardData);
+    connect(m_versitWriter, &QVersitWriter::stateChanged, this, &VCardParser::onWriterStateChanged);
+    m_versitWriter->startWriting(exporter.documents());
+}
+
+void VCardParser::onWriterStateChanged(QVersitWriter::State state)
+{
+    if (state == QVersitWriter::FinishedState) {
+        QStringList vcards = VCardParser::splitVcards(m_vcardData);
+        Q_EMIT vcardParsed(vcards);
+        delete m_versitWriter;
+        m_versitWriter = 0;
+    }
+}
+
+QStringList VCardParser::contactToVcardSync(QList<QContact> contacts)
+{
+    QVersitContactExporter exporter;
+    exporter.setDetailHandler(new ContactExporterDetailHandler);
+    if (!exporter.exportContacts(contacts, QVersitDocument::VCard30Type)) {
+        qDebug() << "Fail to export contacts" << exporter.errors();
+        return QStringList();
+    }
+
+    QByteArray vcardData;
+    QVersitWriter versitWriter(&vcardData);
+    versitWriter.startWriting(exporter.documents());
+    versitWriter.waitForFinished();
+
+    return VCardParser::splitVcards(vcardData);
+}
+
+QString VCardParser::contactToVcard(const QContact &contact)
+{
+    QStringList vcards = VCardParser::contactToVcardSync(QList<QContact>() << contact);
+    if (vcards.size()) {
+        return vcards[0];
+    } else {
+        return QString();
     }
 }
 

@@ -98,7 +98,7 @@ private:
     QDBusMessage m_updateCommandReplyMessage;
     QStringList m_updateCommandResult;
     QStringList m_updatedIds;
-    QList<QtContacts::QContact> m_updateCommandPendingContacts;
+    QStringList m_updateCommandPendingContacts;
 
     // Unix signals
     static int m_sigQuitFd[2];

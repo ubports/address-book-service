@@ -140,14 +140,10 @@ void RequestData::updateOffset(int offset)
     m_offset += offset;
 }
 
-QList<QContact> RequestData::result() const
-{
-    return m_result;
-}
-
 void RequestData::setError(QContactManager::Error error)
 {
     m_result.clear();
+    m_fullResult.clear();
     update(QContactAbstractRequest::FinishedState, error);
     if (m_eventLoop) {
         m_eventLoop->quit();
@@ -159,6 +155,7 @@ void RequestData::update(QList<QContact> result,
                          QContactManager::Error error,
                          QMap<int, QContactManager::Error> errorMap)
 {
+    m_fullResult += result;
     m_result = result;
     update(state, error, errorMap);
 }
@@ -171,16 +168,25 @@ void RequestData::update(QContactAbstractRequest::State state,
         return;
     }
 
+    QList<QContact> result;
+
+    // only send the full contact list at the finish state
+    if (state == QContactAbstractRequest::FinishedState) {
+        result = m_fullResult;
+    } else {
+        result = m_result;
+    }
+
     switch (m_request->type()) {
         case QContactAbstractRequest::ContactFetchRequest:
             QContactManagerEngine::updateContactFetchRequest(static_cast<QContactFetchRequest*>(m_request.data()),
-                                                             m_result,
+                                                             m_fullResult,
                                                              error,
                                                              state);
             break;
         case QContactAbstractRequest::ContactFetchByIdRequest:
             QContactManagerEngine::updateContactFetchByIdRequest(static_cast<QContactFetchByIdRequest*>(m_request.data()),
-                                                                 m_result,
+                                                                 m_fullResult,
                                                                  error,
                                                                  errorMap,
                                                                  state);

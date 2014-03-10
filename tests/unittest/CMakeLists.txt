@@ -53,6 +53,7 @@ endif()
 declare_test(clause-test False)
 declare_test(sort-clause-test False)
 declare_test(fetch-hint-test False)
+declare_test(vcardparser-test False)
 
 set(DUMMY_BACKEND_SRC
     scoped-loop.h
