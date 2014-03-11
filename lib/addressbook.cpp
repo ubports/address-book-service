@@ -144,6 +144,11 @@ private:
 
     void emitSignals()
     {
+        qDebug() << "EMIT CACHE";
+        qDebug() << "\n\tCHANGE:" << m_contactsChanged;
+        qDebug() << "\n\tADDED:" << m_contactsAdded;
+        qDebug() << "\n\tREMOVED:" << m_contactsRemoved;
+
         if (!m_contactsRemoved.isEmpty()) {
             Q_EMIT m_adaptor->contactsRemoved(m_contactsRemoved.toList());
             m_contactsRemoved.clear();
@@ -726,6 +731,10 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     if (!updatedIds.isEmpty() && self->m_ready) {
         self->m_notifyContactUpdate->insertChangedContacts(updatedIds);
     }
+    qDebug() << "individualsChangedCb";
+    qDebug() << "\n\t CHANGED:" << updatedIds;
+    qDebug() << "\n\t ADDED:" << addedIds;
+    qDebug() << "\n\t REMOVED:" << removedIds;
 }
 
 void AddressBook::prepareFolksDone(GObject *source,
