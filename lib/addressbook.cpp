@@ -100,6 +100,10 @@ public:
 
     void insertAddedContacts(QSet<QString> ids)
     {
+        if (!m_adaptor->isReady()) {
+            return;
+        }
+
         // if the contact was removed before ignore the removal signal, and send a update signal
         QSet<QString> addedIds = ids;
         Q_FOREACH(QString added, ids) {
@@ -116,6 +120,10 @@ public:
 
     void insertRemovedContacts(QSet<QString> ids)
     {
+        if (!m_adaptor->isReady()) {
+            return;
+        }
+
         // if the contact was added before ignore the added and removed signal
         QSet<QString> removedIds = ids;
         Q_FOREACH(QString removed, ids) {
@@ -131,6 +139,10 @@ public:
 
     void insertChangedContacts(QSet<QString> ids)
     {
+        if (!m_adaptor->isReady()) {
+            return;
+        }
+
         m_contactsChanged += ids;
         m_timer.start();
     }
@@ -277,9 +289,9 @@ void AddressBook::shutdown()
 
 void AddressBook::prepareFolks()
 {
-    qDebug() << "Prepare folks";
     m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
+    qDebug() << "Prepare folks: IS READY" << m_ready;
     if (m_ready) {
         AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
     }
@@ -465,6 +477,11 @@ QString AddressBook::linkContacts(const QStringList &contacts)
 
 View *AddressBook::query(const QString &clause, const QString &sort, const QStringList &sources)
 {
+    // wait for the service be ready for queries
+    while(!m_ready) {
+        QCoreApplication::processEvents();
+    }
+
     View *view = new View(clause, sort, sources, m_contacts, this);
     m_views << view;
     connect(view, SIGNAL(closed()), this, SLOT(viewClosed()));
@@ -720,21 +737,24 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
 
     g_object_unref(keys);
 
-    if (!removedIds.isEmpty() && self->m_ready) {
+    if (!removedIds.isEmpty()) {
         self->m_notifyContactUpdate->insertRemovedContacts(removedIds);
     }
 
-    if (!addedIds.isEmpty() && self->m_ready) {
+    if (!addedIds.isEmpty()) {
         self->m_notifyContactUpdate->insertAddedContacts(addedIds);
     }
 
-    if (!updatedIds.isEmpty() && self->m_ready) {
+    if (!updatedIds.isEmpty()) {
         self->m_notifyContactUpdate->insertChangedContacts(updatedIds);
     }
-    qDebug() << "individualsChangedCb";
-    qDebug() << "\n\t CHANGED:" << updatedIds;
-    qDebug() << "\n\t ADDED:" << addedIds;
-    qDebug() << "\n\t REMOVED:" << removedIds;
+
+    qDebug() << "individualsChangedCb: isReady" << self->m_ready;
+    if (self->m_ready) {
+        qDebug() << "\n\t CHANGED:" << updatedIds;
+        qDebug() << "\n\t ADDED:" << addedIds;
+        qDebug() << "\n\t REMOVED:" << removedIds;
+    }
 }
 
 void AddressBook::prepareFolksDone(GObject *source,
