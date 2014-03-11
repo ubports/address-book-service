@@ -31,6 +31,8 @@
 #include <signal.h>
 #include <sys/socket.h>
 
+#include <folks/folks-eds.h>
+
 //this timeout represents how long the server will wait for changes on the contact before notify the client
 #define NOTIFY_CONTACTS_TIMEOUT 500
 
@@ -64,6 +66,14 @@ public:
     galera::AddressBook *m_addressbook;
     QDBusMessage m_message;
     int m_sucessCount;
+};
+
+class CreateSourceData
+{
+public:
+    QString sourceName;
+    galera::AddressBook *m_addressbook;
+    QDBusMessage m_message;
 };
 
 }
@@ -293,6 +303,37 @@ Source AddressBook::source(const QDBusMessage &message)
 {
     getSource(message, true);
     return Source();
+}
+
+Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &message)
+{
+    CreateSourceData *data = new CreateSourceData;
+    data->m_addressbook = this;
+    data->m_message = message;
+    data->sourceName = sourceId;
+    edsf_persona_store_create_address_book(sourceId.toUtf8().data(),
+                                           (GAsyncReadyCallback) AddressBook::createSourceDone,
+                                           data);
+    return Source();
+}
+
+void AddressBook::createSourceDone(GObject *source,
+                                   GAsyncResult *res,
+                                   void *data)
+{
+    CreateSourceData *cData = static_cast<CreateSourceData*>(data);
+    GError *error = 0;
+    Source src;
+    edsf_persona_store_create_address_book_finish(res, &error);
+    if (error) {
+        qWarning() << "Fail to create source" << error->message;
+        g_error_free(error);
+    } else {
+        src = Source(cData->sourceName, false);
+    }
+    QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
+    QDBusConnection::sessionBus().send(reply);
+    delete cData;
 }
 
 void AddressBook::getSource(const QDBusMessage &message, bool onlyTheDefault)

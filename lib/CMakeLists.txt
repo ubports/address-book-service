@@ -38,6 +38,7 @@ target_link_libraries(${CONTACTS_SERVICE_LIB}
     ${GLIB_LIBRARIES}
     ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
+    ${FOLKS_EDS_LIBRARIES}
 )
 
 qt5_use_modules(${CONTACTS_SERVICE_LIB} Core Contacts DBus Versit)
@@ -48,4 +49,5 @@ include_directories(
     ${GLIB_INCLUDE_DIRS}
     ${GIO_INCLUDE_DIRS}
     ${FOLKS_INCLUDE_DIRS}
+    ${FOLKS_EDS_INCLUDE_DIRS}
 )
