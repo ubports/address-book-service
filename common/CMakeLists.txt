@@ -4,6 +4,7 @@ set(GALERA_COMMON_LIB_SRC
     filter.cpp
     fetch-hint.cpp
     sort-clause.cpp
+    source.cpp
     vcard-parser.cpp
 )
 
@@ -11,6 +12,7 @@ set(GALERA_COMMON_LIB_HEADERS
     filter.h
     fetch-hint.h
     sort-clause.h
+    source.h
     vcard-parser.h
     dbus-service-defs.h
 )

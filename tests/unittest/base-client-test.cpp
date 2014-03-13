@@ -21,8 +21,8 @@
 #include "dummy-backend-defs.h"
 
 #include "common/dbus-service-defs.h"
+#include "common/source.h"
 #include "lib/qindividual.h"
-#include "lib/source.h"
 
 #include <QtCore/QDebug>
 #include <QtTest/QTest>

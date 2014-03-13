@@ -35,6 +35,7 @@ public:
     QString toString() const;
     QtContacts::QContactFilter toContactFilter() const;
     bool test(const QtContacts::QContact &contact) const;
+    bool isValid() const;
 
 private:
     QtContacts::QContactFilter m_filter;

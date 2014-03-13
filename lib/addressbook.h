@@ -19,7 +19,7 @@
 #ifndef __GALERA_ADDRESSBOOK_H__
 #define __GALERA_ADDRESSBOOK_H__
 
-#include "source.h"
+#include "common/source.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QSet>
@@ -120,6 +120,7 @@ private:
     bool registerObject(QDBusConnection &connection);
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
+    FolksPersonaStore *getFolksStore(const QString &source);
 
     static void availableSourcesDoneListAllSources(FolksBackendStore *backendStore,
                                                    GAsyncResult *res,

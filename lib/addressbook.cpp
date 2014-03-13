@@ -346,7 +346,7 @@ void AddressBook::createSourceDone(GObject *source,
         qWarning() << "Fail to create source" << error->message;
         g_error_free(error);
     } else {
-        src = Source(cData->sourceName, false);
+        src = Source(cData->sourceName, cData->sourceName, false);
     }
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
     QDBusConnection::sessionBus().send(reply);
@@ -408,6 +408,15 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
     if (res) {
         folks_backend_store_prepare_finish(backendStore, res);
     }
+    static QStringList backendBlackList;
+
+    // these backends are not fully supported yet
+    if (backendBlackList.isEmpty()) {
+        backendBlackList << "telepathy"
+                         << "bluez"
+                         << "ofono"
+                         << "key-file";
+    }
 
     GeeCollection *backends = folks_backend_store_list_backends(backendStore);
     SourceList result;
@@ -415,6 +424,10 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(backends));
     while(gee_iterator_next(iter)) {
         FolksBackend *backend = FOLKS_BACKEND(gee_iterator_get(iter));
+        QString backendName = QString::fromUtf8(folks_backend_get_name(backend));
+        if (backendBlackList.contains(backendName)) {
+            continue;
+        }
 
         GeeMap *stores = folks_backend_get_persona_stores(backend);
         GeeCollection *values =  gee_map_get_values(stores);
@@ -424,8 +437,10 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
 
             QString id = QString::fromUtf8(folks_persona_store_get_id(store));
-            bool canWrite = folks_persona_store_get_is_writeable(store);
-            result << Source(id, !canWrite);
+            QString displayName = QString::fromUtf8(folks_persona_store_get_display_name(store));
+            bool canWrite = folks_persona_store_get_can_add_personas(store) &&
+                            folks_persona_store_get_can_remove_personas(store);
+            result << Source(id, displayName, !canWrite);
 
             g_object_unref(store);
         }
@@ -448,17 +463,18 @@ QString AddressBook::createContact(const QString &contact, const QString &source
         if (!qcontact.isEmpty()) {
             if (!qcontact.isEmpty()) {
                 GHashTable *details = QIndividual::parseDetails(qcontact);
-                //TOOD: lookup for source and use the correct store
                 CreateContactData *data = new CreateContactData;
                 data->m_message = message;
                 data->m_addressbook = this;
+                FolksPersonaStore *store = getFolksStore(source);
                 folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
                                                                      NULL, //parent
-                                                                     folks_individual_aggregator_get_primary_store(m_individualAggregator),
+                                                                     store,
                                                                      details,
                                                                      (GAsyncReadyCallback) createContactDone,
                                                                      (void*) data);
                 g_hash_table_destroy(details);
+                g_object_unref(store);
                 return "";
             }
         }
@@ -467,6 +483,47 @@ QString AddressBook::createContact(const QString &contact, const QString &source
     QDBusMessage reply = message.createReply(QString());
     QDBusConnection::sessionBus().send(reply);
     return "";
+}
+
+FolksPersonaStore * AddressBook::getFolksStore(const QString &source)
+{
+    FolksPersonaStore *result = 0;
+
+    if (!source.isEmpty()) {
+        FolksBackendStore *backendStore = folks_backend_store_dup();
+        GeeCollection *backends = folks_backend_store_list_backends(backendStore);
+
+        GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(backends));
+        while((result == 0) && gee_iterator_next(iter)) {
+            FolksBackend *backend = FOLKS_BACKEND(gee_iterator_get(iter));
+            GeeMap *stores = folks_backend_get_persona_stores(backend);
+            GeeCollection *values =  gee_map_get_values(stores);
+            GeeIterator *backendIter = gee_iterable_iterator(GEE_ITERABLE(values));
+
+            while(gee_iterator_next(backendIter)) {
+                FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
+
+                QString id = QString::fromUtf8(folks_persona_store_get_id(store));
+                if (id == source) {
+                    result = store;
+                    break;
+                }
+                g_object_unref(store);
+            }
+
+            g_object_unref(backendIter);
+            g_object_unref(backend);
+            g_object_unref(values);
+        }
+        g_object_unref(iter);
+        g_object_unref(backendStore);
+    }
+
+    if (!result)  {
+        result = folks_individual_aggregator_get_primary_store(m_individualAggregator);
+        g_object_ref(result);
+    }
+    return result;
 }
 
 QString AddressBook::linkContacts(const QStringList &contacts)

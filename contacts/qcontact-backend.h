@@ -52,7 +52,7 @@ public:
     ~GaleraManagerEngine();
 
     /* URI reporting */
-    QString managerName() const;   
+    QString managerName() const;
     QMap<QString, QString> managerParameters() const;
 
     /*! \reimp */
@@ -61,6 +61,7 @@ public:
     /* Filtering */
     virtual QList<QtContacts::QContactId> contactIds(const QtContacts::QContactFilter &filter, const QList<QtContacts::QContactSortOrder> &sortOrders, QtContacts::QContactManager::Error *error) const;
     virtual QList<QtContacts::QContact> contacts(const QtContacts::QContactFilter &filter, const QList<QtContacts::QContactSortOrder>& sortOrders, const QtContacts::QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const;
+    virtual QList<QtContacts::QContact> contacts(const QList<QtContacts::QContactId> &contactIds, const QtContacts::QContactFetchHint& fetchHint, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error) const;
     virtual QtContacts::QContact contact(const QtContacts::QContactId &contactId, const QtContacts::QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const;
 
     virtual bool saveContact(QtContacts::QContact *contact, QtContacts::QContactManager::Error *error);
@@ -98,7 +99,6 @@ public:
 private:
     GaleraManagerEngine();
 
-    QList<QtContacts::QContact> contacts() const;
     QList<QtContacts::QContactId> contactIds(const QList<QtContacts::QContact> &contacts) const;
 
     GaleraContactsService *m_service;

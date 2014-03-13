@@ -9,7 +9,6 @@ set(CONTACTS_SERVICE_LIB_SRC
     detail-context-parser.cpp
     gee-utils.cpp
     qindividual.cpp
-    source.cpp
     update-contact-request.cpp
     view.cpp
     view-adaptor.cpp
@@ -22,7 +21,6 @@ set(CONTACTS_SERVICE_LIB_HEADERS
     detail-context-parser.h
     gee-utils.h
     qindividual.h
-    source.h
     update-contact-request.h
     view.h
     view-adaptor.h
