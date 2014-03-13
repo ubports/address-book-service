@@ -328,9 +328,36 @@ Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &me
     data->m_addressbook = this;
     data->m_message = message;
     data->sourceName = sourceId;
-    edsf_persona_store_create_address_book(sourceId.toUtf8().data(),
-                                           (GAsyncReadyCallback) AddressBook::createSourceDone,
-                                           data);
+    FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
+    QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id (store));
+    if ( personaStoreTypeId == "dummy") {
+        FolksBackendStore *backendStore = folks_backend_store_dup();
+        FolksBackend *dummy = folks_backend_store_dup_backend_by_name(backendStore, "dummy");
+
+        GeeMap *stores = folks_backend_get_persona_stores(dummy);
+        GeeSet *storesKeys = gee_map_get_keys(stores);
+        GeeSet *storesIds = (GeeSet*) gee_hash_set_new(G_TYPE_STRING,
+                                                       (GBoxedCopyFunc) g_strdup, g_free,
+                                                       NULL, NULL, NULL, NULL, NULL, NULL);
+
+        gee_collection_add_all(GEE_COLLECTION(storesIds), GEE_COLLECTION(storesKeys));
+        gee_collection_add(GEE_COLLECTION(storesIds), sourceId.toUtf8().constData());
+        folks_backend_set_persona_stores(dummy, storesIds);
+
+        g_object_unref(storesIds);
+        g_object_unref(backendStore);
+        g_object_unref(dummy);
+
+        Source src(sourceId, sourceId, false);
+        QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(src));
+        QDBusConnection::sessionBus().send(reply);
+    } else if (personaStoreTypeId == "eds") {
+        edsf_persona_store_create_address_book(sourceId.toUtf8().data(),
+                                               (GAsyncReadyCallback) AddressBook::createSourceDone,
+                                               data);
+    } else {
+        qWarning() << "Not supported, create sources on persona store with type id:" << personaStoreTypeId;
+    }
     return Source();
 }
 

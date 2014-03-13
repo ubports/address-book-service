@@ -50,6 +50,43 @@
 using namespace QtVersit;
 using namespace QtContacts;
 
+
+namespace //private
+{
+
+static QContact parseSource(const galera::Source &source, const QString &managerUri)
+{
+    QContact contact;
+
+    // contact group type
+    contact.setType(QContactType::TypeGroup);
+
+    // id
+    galera::GaleraEngineId *engineId = new galera::GaleraEngineId(source.id(), managerUri);
+    QContactId newId = QContactId(engineId);
+    contact.setId(newId);
+
+    // guid
+    QContactGuid guid;
+    guid.setGuid(source.id());
+    contact.saveDetail(&guid);
+
+    // display name
+    QContactDisplayLabel displayLabel;
+    displayLabel.setLabel(source.displayLabel());
+    contact.saveDetail(&displayLabel);
+
+    // read-only
+    QContactExtendedDetail readOnly;
+    readOnly.setName("READ-ONLY");
+    readOnly.setData(source.isReadOnly());
+    contact.saveDetail(&readOnly);
+
+    return contact;
+}
+
+}
+
 namespace galera
 {
 
@@ -387,34 +424,8 @@ void GaleraContactsService::fetchContactsGroupsContinue(RequestData *request,
         qWarning() << reply.error().name() << reply.error().message();
         opError = QContactManager::UnspecifiedError;
     } else {
-        Q_FOREACH(Source source, reply.value()) {
-            QContact contact;
-
-            // contact group type
-            contact.setType(QContactType::TypeGroup);
-
-            // id
-            GaleraEngineId *engineId = new GaleraEngineId(source.id(), m_managerUri);
-            QContactId newId = QContactId(engineId);
-            contact.setId(newId);
-
-            // guid
-            QContactGuid guid;
-            guid.setGuid(source.id());
-            contact.saveDetail(&guid);
-
-            // display name
-            QContactDisplayLabel displayLabel;
-            displayLabel.setLabel(source.displayLabel());
-            contact.saveDetail(&displayLabel);
-
-            // read-only
-            QContactExtendedDetail readOnly;
-            readOnly.setName("READ-ONLY");
-            readOnly.setData(source.isReadOnly());
-            contact.saveDetail(&readOnly);
-
-            contacts << contact;
+        Q_FOREACH(const Source &source, reply.value()) {
+            contacts << parseSource(source, m_managerUri);
         }
     }
 
@@ -428,13 +439,19 @@ void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request
     QStringList oldContacts;
     QStringList newContacts;
     QStringList sources;
+    QStringList newSources;
 
     Q_FOREACH(const QContact &contact, contacts) {
         if (contact.id().isNull()) {
-            newContacts << VCardParser::contactToVcard(contact);
+            if (contact.type() == QContactType::TypeGroup) {
+                newSources << contact.detail<QContactDisplayLabel>().label();
+            } else {
+                newContacts << VCardParser::contactToVcard(contact);
 
-            QContactSyncTarget syncTarget = contact.detail<QContactSyncTarget>();
-            sources << syncTarget.syncTarget();
+                // sources where the new contacts will be saved
+                QContactSyncTarget syncTarget = contact.detail<QContactSyncTarget>();
+                sources << syncTarget.syncTarget();
+            }
         } else {
             oldContacts << VCardParser::contactToVcard(contact);
         }
@@ -446,6 +463,10 @@ void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request
 
     if (!newContacts.isEmpty()) {
         createContacts(request, newContacts, sources);
+    }
+
+    if (!newSources.isEmpty()) {
+        createSources(request, newSources);
     }
 }
 void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *request, QStringList contacts, QStringList sources)
@@ -503,6 +524,35 @@ void GaleraContactsService::createContactsDone(RequestData *request, QDBusPendin
 
     request->update(contacts, QContactAbstractRequest::FinishedState, opError);
     destroyRequest(request);
+}
+
+void GaleraContactsService::createSources(QtContacts::QContactSaveRequest *request, QStringList &sources)
+{
+    if (!isOnline()) {
+        qWarning() << "Server is not online";
+        RequestData::setError(request);
+        return;
+    }
+
+    QList<QContact> contacts;
+    QMap<int, QContactManager::Error> errorMap;
+
+    int index = 0;
+    Q_FOREACH(QString sourceName, sources) {
+        QDBusReply<Source> result = m_iface->call("createSource", sourceName);
+        if (result.isValid()) {
+            contacts << parseSource(result.value(), m_managerUri);
+        } else {
+            errorMap.insert(index, QContactManager::UnspecifiedError);
+        }
+        index++;
+    }
+
+    QContactManagerEngine::updateContactSaveRequest(request,
+                                                    contacts,
+                                                    QContactManager::NoError,
+                                                    errorMap,
+                                                    QContactAbstractRequest::FinishedState);
 }
 
 void GaleraContactsService::removeContact(QContactRemoveRequest *request)
@@ -691,7 +741,6 @@ QList<QContactId> GaleraContactsService::parseIds(QStringList ids) const
     }
     return contactIds;
 }
-
 
 void GaleraContactsService::onContactsAdded(QStringList ids)
 {

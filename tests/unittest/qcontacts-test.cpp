@@ -114,6 +114,39 @@ private Q_SLOTS:
         QCOMPARE(createdName.middleName(), name.middleName());
         QCOMPARE(createdName.lastName(), name.lastName());
     }
+
+    void testCreateGroup()
+    {
+        QContactManager manager("galera");
+
+        // create a contact
+        QContact contact;
+        contact.setType(QContactType::TypeGroup);
+
+        QContactDisplayLabel label;
+        label.setLabel("test group");
+        contact.saveDetail(&label);
+
+        bool result = manager.saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // query for new contacts
+        QContactDetailFilter filter;
+        filter.setDetailType(QContactDetail::TypeType, QContactType::FieldType);
+        filter.setValue(QContactType::TypeGroup);
+        QList<QContact> contacts = manager.contacts(filter);
+
+        // will be two sources since we have the main source already created
+        QCOMPARE(contacts.size(), 2);
+
+        QContact createdContact = contacts[0];
+        // id
+        QVERIFY(!createdContact.id().isNull());
+
+        // label
+        QContactDisplayLabel createdlabel = createdContact.detail<QContactDisplayLabel>();
+        QCOMPARE(createdlabel.label(), label.label());
+    }
 };
 
 QTEST_MAIN(QContactsTest)

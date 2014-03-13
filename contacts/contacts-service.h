@@ -103,6 +103,7 @@ private:
 
     void saveContact(QtContacts::QContactSaveRequest *request);
     void createContacts(QtContacts::QContactSaveRequest *request, QStringList contacts, QStringList sources);
+    void createSources(QtContacts::QContactSaveRequest *request, QStringList &sources);
     void updateContacts(QtContacts::QContactSaveRequest *request, QStringList contacts);
     void updateContactDone(RequestData *request, QDBusPendingCallWatcher *call);
     void createContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
@@ -113,8 +114,6 @@ private:
     void destroyRequest(RequestData *request);
 
     QList<QContactId> parseIds(QStringList ids) const;
-
-    static QElapsedTimer m_speed;
 };
 
 }
