@@ -69,6 +69,7 @@ public Q_SLOTS:
     void shutdown();
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
+    Source createSource(const QString &sourceId, const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
@@ -98,7 +99,7 @@ private:
     QDBusMessage m_updateCommandReplyMessage;
     QStringList m_updateCommandResult;
     QStringList m_updatedIds;
-    QList<QtContacts::QContact> m_updateCommandPendingContacts;
+    QStringList m_updateCommandPendingContacts;
 
     // Unix signals
     static int m_sigQuitFd[2];
@@ -146,6 +147,9 @@ private:
     static void addAntiLinksDone(FolksAntiLinkable *antilinkable,
                                   GAsyncResult *result,
                                   void *data);
+    static void createSourceDone(GObject *source,
+                                 GAsyncResult *res,
+                                 void *data);
     friend class DirtyContactsNotify;
 };
 

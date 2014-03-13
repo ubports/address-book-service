@@ -31,6 +31,8 @@
 #include <signal.h>
 #include <sys/socket.h>
 
+#include <folks/folks-eds.h>
+
 //this timeout represents how long the server will wait for changes on the contact before notify the client
 #define NOTIFY_CONTACTS_TIMEOUT 500
 
@@ -66,6 +68,14 @@ public:
     int m_sucessCount;
 };
 
+class CreateSourceData
+{
+public:
+    QString sourceName;
+    galera::AddressBook *m_addressbook;
+    QDBusMessage m_message;
+};
+
 }
 
 namespace galera
@@ -80,30 +90,92 @@ class DirtyContactsNotify
 {
 public:
     DirtyContactsNotify(AddressBookAdaptor *adaptor)
+        : m_adaptor(adaptor)
     {
         m_timer.setInterval(NOTIFY_CONTACTS_TIMEOUT);
         m_timer.setSingleShot(true);
         QObject::connect(&m_timer, &QTimer::timeout,
-                         [=]() {
-                            Q_EMIT adaptor->contactsUpdated(m_ids);
-                            m_ids.clear();
-                         });
+                         [=]() { emitSignals(); });
     }
 
-    void append(QStringList ids)
+    void insertAddedContacts(QSet<QString> ids)
     {
-        Q_FOREACH(QString id, ids) {
-            if (!m_ids.contains(id)) {
-                m_ids << id;
+        if (!m_adaptor->isReady()) {
+            return;
+        }
+
+        // if the contact was removed before ignore the removal signal, and send a update signal
+        QSet<QString> addedIds = ids;
+        Q_FOREACH(QString added, ids) {
+            if (m_contactsRemoved.contains(added)) {
+                m_contactsRemoved.remove(added);
+                addedIds.remove(added);
+                m_contactsChanged.insert(added);
             }
         }
 
+        m_contactsAdded += addedIds;
+        m_timer.start();
+    }
+
+    void insertRemovedContacts(QSet<QString> ids)
+    {
+        if (!m_adaptor->isReady()) {
+            return;
+        }
+
+        // if the contact was added before ignore the added and removed signal
+        QSet<QString> removedIds = ids;
+        Q_FOREACH(QString removed, ids) {
+            if (m_contactsAdded.contains(removed)) {
+                m_contactsAdded.remove(removed);
+                removedIds.remove(removed);
+            }
+        }
+
+        m_contactsRemoved += removedIds;
+        m_timer.start();
+    }
+
+    void insertChangedContacts(QSet<QString> ids)
+    {
+        if (!m_adaptor->isReady()) {
+            return;
+        }
+
+        m_contactsChanged += ids;
         m_timer.start();
     }
 
 private:
+    AddressBookAdaptor *m_adaptor;
     QTimer m_timer;
-    QStringList m_ids;
+    QSet<QString> m_contactsChanged;
+    QSet<QString> m_contactsAdded;
+    QSet<QString> m_contactsRemoved;
+
+    void emitSignals()
+    {
+        qDebug() << "EMIT CACHE";
+        qDebug() << "\n\tCHANGE:" << m_contactsChanged;
+        qDebug() << "\n\tADDED:" << m_contactsAdded;
+        qDebug() << "\n\tREMOVED:" << m_contactsRemoved;
+
+        if (!m_contactsRemoved.isEmpty()) {
+            Q_EMIT m_adaptor->contactsRemoved(m_contactsRemoved.toList());
+            m_contactsRemoved.clear();
+        }
+
+        if (!m_contactsAdded.isEmpty()) {
+            Q_EMIT m_adaptor->contactsAdded(m_contactsAdded.toList());
+            m_contactsAdded.clear();
+        }
+
+        if (!m_contactsChanged.isEmpty()) {
+            Q_EMIT m_adaptor->contactsUpdated(m_contactsChanged.toList());
+            m_contactsChanged.clear();
+        }
+    }
 };
 
 AddressBook::AddressBook(QObject *parent)
@@ -217,9 +289,9 @@ void AddressBook::shutdown()
 
 void AddressBook::prepareFolks()
 {
-    qDebug() << "Prepare folks";
     m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
+    qDebug() << "Prepare folks: IS READY" << m_ready;
     if (m_ready) {
         AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
     }
@@ -248,6 +320,37 @@ Source AddressBook::source(const QDBusMessage &message)
 {
     getSource(message, true);
     return Source();
+}
+
+Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &message)
+{
+    CreateSourceData *data = new CreateSourceData;
+    data->m_addressbook = this;
+    data->m_message = message;
+    data->sourceName = sourceId;
+    edsf_persona_store_create_address_book(sourceId.toUtf8().data(),
+                                           (GAsyncReadyCallback) AddressBook::createSourceDone,
+                                           data);
+    return Source();
+}
+
+void AddressBook::createSourceDone(GObject *source,
+                                   GAsyncResult *res,
+                                   void *data)
+{
+    CreateSourceData *cData = static_cast<CreateSourceData*>(data);
+    GError *error = 0;
+    Source src;
+    edsf_persona_store_create_address_book_finish(res, &error);
+    if (error) {
+        qWarning() << "Fail to create source" << error->message;
+        g_error_free(error);
+    } else {
+        src = Source(cData->sourceName, false);
+    }
+    QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
+    QDBusConnection::sessionBus().send(reply);
+    delete cData;
 }
 
 void AddressBook::getSource(const QDBusMessage &message, bool onlyTheDefault)
@@ -374,6 +477,11 @@ QString AddressBook::linkContacts(const QStringList &contacts)
 
 View *AddressBook::query(const QString &clause, const QString &sort, const QStringList &sources)
 {
+    // wait for the service be ready for queries
+    while(!m_ready) {
+        QCoreApplication::processEvents();
+    }
+
     View *view = new View(clause, sort, sources, m_contacts, this);
     m_views << view;
     connect(view, SIGNAL(closed()), this, SLOT(viewClosed()));
@@ -387,7 +495,7 @@ void AddressBook::viewClosed()
 
 void AddressBook::individualChanged(QIndividual *individual)
 {
-    m_notifyContactUpdate->append(QStringList() << individual->id());
+    m_notifyContactUpdate->insertChangedContacts(QSet<QString>() << individual->id());
 }
 
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
@@ -485,7 +593,7 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
     m_updatedIds.clear();
     m_updateCommandReplyMessage = message;
     m_updateCommandResult = contacts;
-    m_updateCommandPendingContacts << VCardParser::vcardToContact(contacts);
+    m_updateCommandPendingContacts = contacts;
 
     updateContactsDone("", "");
     return QStringList();
@@ -506,16 +614,16 @@ void AddressBook::updateContactsDone(const QString &contactId,
         Q_ASSERT(entry);
         m_updatedIds << contactId;
         QContact contact = entry->individual()->contact();
-        QStringList newContacts = VCardParser::contactToVcard(QList<QContact>() << contact);
-        if (newContacts.length() == 1) {
-            m_updateCommandResult[currentContactIndex] = newContacts[0];
+        QString vcard = VCardParser::contactToVcard(contact);
+        if (!vcard.isEmpty()) {
+            m_updateCommandResult[currentContactIndex] = vcard;
         } else {
             m_updateCommandResult[currentContactIndex] = "";
         }
     }
 
     if (!m_updateCommandPendingContacts.isEmpty()) {
-        QContact newContact = m_updateCommandPendingContacts.takeFirst();
+        QContact newContact = VCardParser::vcardToContact(m_updateCommandPendingContacts.takeFirst());
         ContactEntry *entry = m_contacts->value(newContact.detail<QContactGuid>().guid());
         if (entry) {
             entry->individual()->update(newContact, this,
@@ -524,12 +632,11 @@ void AddressBook::updateContactsDone(const QString &contactId,
             updateContactsDone("", "Contact not found!");
         }
     } else {
-
         QDBusMessage reply = m_updateCommandReplyMessage.createReply(m_updateCommandResult);
         QDBusConnection::sessionBus().send(reply);
 
         // notify about the changes
-        m_notifyContactUpdate->append(m_updatedIds);
+        m_notifyContactUpdate->insertChangedContacts(m_updatedIds.toSet());
 
         // clear command data
         m_updatedIds.clear();
@@ -630,21 +737,24 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
 
     g_object_unref(keys);
 
-    if (!removedIds.isEmpty() && self->m_ready) {
-        Q_EMIT self->m_adaptor->contactsRemoved(removedIds.toList());
+    if (!removedIds.isEmpty()) {
+        self->m_notifyContactUpdate->insertRemovedContacts(removedIds);
     }
 
-    if (!addedIds.isEmpty() && self->m_ready) {
-        Q_EMIT self->m_adaptor->contactsAdded(addedIds.toList());
+    if (!addedIds.isEmpty()) {
+        self->m_notifyContactUpdate->insertAddedContacts(addedIds);
     }
 
-    if (!updatedIds.isEmpty() && self->m_ready) {
-        Q_EMIT self->m_adaptor->contactsUpdated(updatedIds.toList());
+    if (!updatedIds.isEmpty()) {
+        self->m_notifyContactUpdate->insertChangedContacts(updatedIds);
     }
 
-    qDebug() << "Added" << addedIds;
-    qDebug() << "Removed" << removedIds;
-    qDebug() << "Changed" << updatedIds;
+    qDebug() << "individualsChangedCb: isReady" << self->m_ready;
+    if (self->m_ready) {
+        qDebug() << "\n\t CHANGED:" << updatedIds;
+        qDebug() << "\n\t ADDED:" << addedIds;
+        qDebug() << "\n\t REMOVED:" << removedIds;
+    }
 }
 
 void AddressBook::prepareFolksDone(GObject *source,

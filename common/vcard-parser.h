@@ -19,16 +19,28 @@
 #ifndef __GALERA_VCARD_PARSER_H__
 #define __GALERA_VCARD_PARSER_H__
 
+#include <QtCore/QObject>
 #include <QtCore/QStringList>
 #include <QtCore/QList>
+
 #include <QtContacts/QtContacts>
+
+#include <QtVersit/QVersitWriter>
+#include <QtVersit/QVersitReader>
 
 namespace galera
 {
 
-class VCardParser
+class VCardParser : public QObject
 {
+    Q_OBJECT
 public:
+    VCardParser(QObject *parent=0);
+    ~VCardParser();
+
+    void contactToVcard(QList<QtContacts::QContact> contacts);
+    void vcardToContact(const QStringList &vcardList);
+
     static const QString PidMapFieldName;
     static const QString PidFieldName;
     static const QString PrefParamName;
@@ -36,11 +48,32 @@ public:
     static const QString ReadOnlyFieldName;
     static const QMap<QtContacts::QContactDetail::DetailType, QString> PreferredActionNames;
 
-    static QStringList contactToVcard(QList<QtContacts::QContact> contacts);
     static QtContacts::QContact vcardToContact(const QString &vcard);
-    static QList<QtContacts::QContact> vcardToContact(const QStringList &vcardList);
+    static QList<QtContacts::QContact> vcardToContactSync(const QStringList &vcardList);
+    static QString contactToVcard(const QtContacts::QContact &contact);
+    static QStringList contactToVcardSync(QList<QtContacts::QContact> contacts);
+
+Q_SIGNALS:
+    void vcardParsed(QStringList vcards);
+    void contactsParsed(QList<QtContacts::QContact> contacts);
+    void finished();
+
+private Q_SLOTS:
+    void onWriterStateChanged(QtVersit::QVersitWriter::State state);
+    void onReaderStateChanged(QtVersit::QVersitReader::State state);
+    void onReaderResultsAvailable();
+
+private:
+    QtVersit::QVersitWriter *m_versitWriter;
+    QtVersit::QVersitReader *m_versitReader;
+
+    QByteArray m_vcardData;
+
+    static QStringList splitVcards(const QByteArray &vcardList);
 };
 
 }
+
+Q_DECLARE_METATYPE(QList<QtContacts::QContact>)
 
 #endif
