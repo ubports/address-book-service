@@ -360,7 +360,6 @@ QString AddressBook::createContact(const QString &contact, const QString &source
         if (!qcontact.isEmpty()) {
             if (!qcontact.isEmpty()) {
                 GHashTable *details = QIndividual::parseDetails(qcontact);
-                //TOOD: lookup for source and use the correct store
                 CreateContactData *data = new CreateContactData;
                 data->m_message = message;
                 data->m_addressbook = this;
