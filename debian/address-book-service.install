@@ -1,2 +1,3 @@
+usr/lib/*/address-book-service/address-book-service
 usr/share/dbus-1/services/com.canonical.pim.service
 upstart/address-book-service.conf /usr/share/upstart/sessions
