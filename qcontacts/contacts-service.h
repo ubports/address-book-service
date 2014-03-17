@@ -25,7 +25,6 @@
 #include <QtCore/QSet>
 #include <QtCore/QMutex>
 #include <QtCore/QQueue>
-#include <QtCore/QElapsedTimer>
 
 #include <QtContacts/QContact>
 #include <QtContacts/QContactManagerEngine>
@@ -111,8 +110,6 @@ private:
     void destroyRequest(RequestData *request);
 
     QList<QContactId> parseIds(QStringList ids) const;
-
-    static QElapsedTimer m_speed;
 };
 
 }

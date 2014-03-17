@@ -44,15 +44,13 @@
 #include <QtVersit/QVersitContactExporter>
 #include <QtVersit/QVersitWriter>
 
-#define FETCH_PAGE_SIZE                 20
+#define FETCH_PAGE_SIZE                 100
 
 using namespace QtVersit;
 using namespace QtContacts;
 
 namespace galera
 {
-QElapsedTimer GaleraContactsService::m_speed;
-
 GaleraContactsService::GaleraContactsService(const QString &managerUri)
     : m_selfContactId(),
       m_managerUri(managerUri),
@@ -193,8 +191,6 @@ void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdReque
 
 void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *request)
 {
-    m_speed.restart();
-    qDebug() << "START FETCH CONTACTS[BEGIN]" << m_speed.elapsed();
     if (!isOnline()) {
         qWarning() << "Server is not online";
         RequestData::setError(request);
@@ -218,15 +214,13 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                      [=](QDBusPendingCallWatcher *call) {
                         this->fetchContactsContinue(requestData, call);
-                     });
-    qDebug() << "START FETCH CONTACTS[END]" << m_speed.elapsed();
+                     });    
 }
 
 
 void GaleraContactsService::fetchContactsContinue(RequestData *request,
                                                   QDBusPendingCallWatcher *call)
 {
-    qDebug() << "fetchContactsContinue[BEGIN]" << m_speed.elapsed();
     if (!request->isLive()) {
         destroyRequest(request);
         return;
@@ -243,15 +237,12 @@ void GaleraContactsService::fetchContactsContinue(RequestData *request,
                                                   viewObjectPath.path(),
                                                   CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
         request->updateView(view);
-        qDebug() << "WILL FETCH PAGE";
         QMetaObject::invokeMethod(this, "fetchContactsPage", Qt::QueuedConnection, Q_ARG(galera::RequestData*, request));
     }
-    qDebug() << "fetchContactsContinue[END]" << m_speed.elapsed();
 }
 
 void GaleraContactsService::fetchContactsPage(RequestData *request)
 {
-    qDebug() << "fetchContactsPage[BEGIN]" << m_speed.elapsed();
     if (!isOnline() || !request->isLive()) {
         qWarning() << "Server is not online";
         destroyRequest(request);
@@ -276,21 +267,17 @@ void GaleraContactsService::fetchContactsPage(RequestData *request)
                      [=](QDBusPendingCallWatcher *call) {
                         this->fetchContactsDone(request, call);
                      });
-    qDebug() << "fetchContactsPage[END]" << m_speed.elapsed();
 }
 
 void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call)
 {
-    qDebug() << "fetchContactsDone[BEGIN]" << m_speed.elapsed();
     if (!request->isLive()) {
         destroyRequest(request);
         return;
     }
 
     QDBusPendingReply<QStringList> reply = *call;
-    qDebug() << "fetchContactsDone[" << __LINE__ << "]" << m_speed.elapsed();
     if (reply.isError()) {
-        qDebug() << "fetchContactsDone[" << __LINE__ << "]" << m_speed.elapsed();
         qWarning() << reply.error().name() << reply.error().message();
 
         request->update(QList<QContact>(),
@@ -298,10 +285,7 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
                         QContactManager::UnspecifiedError);
         destroyRequest(request);
     } else {
-        qDebug() << "fetchContactsDone[" << __LINE__ << "]" << m_speed.elapsed();
         const QStringList vcards = reply.value();
-        qDebug() << "fetchContactsDone[" << __LINE__ << "]" << m_speed.elapsed();
-        qDebug() << "VCARDS SIZE:" << vcards.size();
         if (vcards.size()) {
             VCardParser *parser = new VCardParser(this);
             parser->setProperty("DATA", QVariant::fromValue<void*>(request));
@@ -309,18 +293,14 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
                     this, &GaleraContactsService::onVCardsParsed);
             parser->vcardToContact(vcards);
         } else {
-            qDebug() << "fetchContactsDone[" << __LINE__ << "]" << m_speed.elapsed();
             request->update(QList<QContact>(), QContactAbstractRequest::FinishedState);
             destroyRequest(request);
-            qDebug() << "fetchContactsDone[" << __LINE__ << "]" << m_speed.elapsed();
         }
     }
-    qDebug() << "fetchContactsDone[END]" << m_speed.elapsed();
 }
 
 void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
 {
-    qDebug() << "onVCardsParsed[BEGIN]" << m_speed.elapsed();
     QObject *sender = QObject::sender();
     RequestData *request = static_cast<RequestData*>(sender->property("DATA").value<void*>());
 
@@ -354,7 +334,6 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
     }
 
     sender->deleteLater();
-    qDebug() << "onVCardsParsed[END]" << m_speed.elapsed();
 }
 
 void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request)
@@ -582,7 +561,7 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
             fetchContactsById(static_cast<QContactFetchByIdRequest*>(request));
             break;
         case QContactAbstractRequest::ContactIdFetchRequest:
-            qDebug() << "Not implemented: ContactIdFetchRequest";
+            qWarning() << "Not implemented: ContactIdFetchRequest";
             break;
         case QContactAbstractRequest::ContactSaveRequest:
             saveContact(static_cast<QContactSaveRequest*>(request));
@@ -591,13 +570,13 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
             removeContact(static_cast<QContactRemoveRequest*>(request));
             break;
         case QContactAbstractRequest::RelationshipFetchRequest:
-            qDebug() << "Not implemented: RelationshipFetchRequest";
+            qWarning() << "Not implemented: RelationshipFetchRequest";
             break;
         case QContactAbstractRequest::RelationshipRemoveRequest:
-            qDebug() << "Not implemented: RelationshipRemoveRequest";
+            qWarning() << "Not implemented: RelationshipRemoveRequest";
             break;
         case QContactAbstractRequest::RelationshipSaveRequest:
-            qDebug() << "Not implemented: RelationshipSaveRequest";
+            qWarning() << "Not implemented: RelationshipSaveRequest";
             break;
         break;
 
