@@ -57,6 +57,7 @@ void QContactSaveRequestData::prepareContacts(QMap<int, QtContacts::QContact> co
         int i = 0;
         Q_FOREACH(int index, contacts.keys()) {
             m_pendingContacts.insert(index, vcards[i]);
+            i++;
         }
     }
 }
@@ -86,7 +87,8 @@ QString QContactSaveRequestData::nextContact()
     qDebug() << "SIZEEEE" << m_pendingContacts.count() << "Has next:" << hasNext();
     m_currentContact = m_pendingContacts.begin();
 
-    qDebug() << "next contact" << m_currentContact.key() << m_currentContact.value();
+    qDebug() << "next contact" << m_currentContact.key()
+                               << m_currentContact.value();
     return m_currentContact.value();
 }
 
