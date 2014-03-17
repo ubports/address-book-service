@@ -156,11 +156,6 @@ private:
 
     void emitSignals()
     {
-        qDebug() << "EMIT CACHE";
-        qDebug() << "\n\tCHANGE:" << m_contactsChanged;
-        qDebug() << "\n\tADDED:" << m_contactsAdded;
-        qDebug() << "\n\tREMOVED:" << m_contactsRemoved;
-
         if (!m_contactsRemoved.isEmpty()) {
             Q_EMIT m_adaptor->contactsRemoved(m_contactsRemoved.toList());
             m_contactsRemoved.clear();
@@ -228,8 +223,6 @@ bool AddressBook::registerObject(QDBusConnection &connection)
                 delete m_notifyContactUpdate;
                 m_notifyContactUpdate = 0;
             }
-        } else {
-            qDebug() << "Object registered:" << objectPath();
         }
     }
     if (m_adaptor) {
@@ -291,7 +284,6 @@ void AddressBook::prepareFolks()
 {
     m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
-    qDebug() << "Prepare folks: IS READY" << m_ready;
     if (m_ready) {
         AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
     }
@@ -378,6 +370,32 @@ void AddressBook::createSourceDone(GObject *source,
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
     QDBusConnection::sessionBus().send(reply);
     delete cData;
+}
+
+void AddressBook::addGlobalAntilink(FolksPersona *persona, GAsyncReadyCallback antilinkReady, void *data)
+{
+    if (FOLKS_IS_ANTI_LINKABLE(persona)) {
+        GeeHashSet *antiLinks = gee_hash_set_new(G_TYPE_STRING,
+                                                 (GBoxedCopyFunc) g_strdup,
+                                                 g_free,
+                                                 NULL, NULL, NULL, NULL, NULL, NULL);
+        gee_collection_add(GEE_COLLECTION(antiLinks), "*");
+        folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(persona),
+                                              GEE_SET(antiLinks),
+                                              antilinkReady,
+                                              data);
+        g_object_unref(antiLinks);
+    }
+}
+
+void AddressBook::addGlobalAntilinkDone(FolksAntiLinkable *antilinkable, GAsyncResult *result, void *data)
+{
+    GError *error = 0;
+    folks_anti_linkable_change_anti_links_finish(antilinkable, result, &error);
+    if (error) {
+        qWarning() << "Fail to anti link pesona" << folks_persona_get_display_id(FOLKS_PERSONA(antilinkable)) << error->message;
+        g_error_free(error);
+    }
 }
 
 void AddressBook::getSource(const QDBusMessage &message, bool onlyTheDefault)
@@ -606,7 +624,6 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
             qWarning() << "Fail to remove contact:" << error->message;
             g_error_free(error);
         } else {
-            qDebug() << "contact removed";
             removeData->m_sucessCount++;
         }
     }
@@ -621,7 +638,6 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
                                                           (GAsyncReadyCallback) removeContactDone,
                                                           data);
         } else {
-            qWarning() << "ContactId not found:" << contactId;
             removeContactDone(individualAggregator, 0, data);
         }
     } else {
@@ -748,6 +764,19 @@ QString AddressBook::addContact(FolksIndividual *individual)
         entry->individual()->setIndividual(individual);
     } else {
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
+
+        // add anti lik for any new contact, if the contact is already linked ignore it
+        // because this could be manually linked before
+        GeeSet *personas = folks_individual_get_personas(individual);
+        if (gee_collection_get_size(GEE_COLLECTION(personas)) == 1) {
+            int size = 0;
+            FolksPersona **personasArray = (FolksPersona **) gee_collection_to_array(GEE_COLLECTION(personas), &size);
+            addGlobalAntilink(personasArray[0],
+                             (GAsyncReadyCallback) AddressBook::addGlobalAntilinkDone,
+                              0);
+            g_object_unref(personasArray[0]);
+            g_free(personasArray);
+        }
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
         m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
@@ -782,8 +811,7 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             // contact added
             if (individualKey == 0) {
                 addedIds << self->addContact(individualValue);
-            } else if (individualValue != 0){
-                qDebug() << "Link changes";
+            } else if (individualValue != 0) {
                 QString idValue = QString::fromUtf8(folks_individual_get_id(individualValue));
                 QString idKey = QString::fromUtf8(folks_individual_get_id(individualKey));
                 // after adding a anti link folks emit a signal with the same value in both key and value,
@@ -832,13 +860,6 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     if (!updatedIds.isEmpty()) {
         self->m_notifyContactUpdate->insertChangedContacts(updatedIds);
     }
-
-    qDebug() << "individualsChangedCb: isReady" << self->m_ready;
-    if (self->m_ready) {
-        qDebug() << "\n\t CHANGED:" << updatedIds;
-        qDebug() << "\n\t ADDED:" << addedIds;
-        qDebug() << "\n\t REMOVED:" << removedIds;
-    }
 }
 
 void AddressBook::prepareFolksDone(GObject *source,
@@ -872,16 +893,9 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         reply = createData->m_message.createReply(QString::fromUtf8(folks_individual_get_id(individual)));
     } else {
         // avoid the new persona get linked
-        GeeHashSet *antiLinks = gee_hash_set_new(G_TYPE_STRING,
-                                                 (GBoxedCopyFunc) g_strdup,
-                                                 g_free,
-                                                 NULL, NULL, NULL, NULL, NULL, NULL);
-        gee_collection_add(GEE_COLLECTION(antiLinks), "*");
-        folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(persona),
-                                              GEE_SET(antiLinks),
-                                              (GAsyncReadyCallback) addAntiLinksDone,
-                                              data);
-        g_object_unref(antiLinks);
+        addGlobalAntilink(persona,
+                          (GAsyncReadyCallback) addAntiLinksDone,
+                          data);
         return;
     }
     //TODO: use dbus connection
@@ -895,7 +909,6 @@ void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, Address
     Q_UNUSED(param);
 
     g_object_get(source, "is-quiescent", &self->m_ready, NULL);
-    qDebug() << "Folks is ready" << self->m_ready;
     if (self->m_ready && self->m_adaptor) {
         Q_EMIT self->m_adaptor->ready();
     }

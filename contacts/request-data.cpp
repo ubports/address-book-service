@@ -171,7 +171,7 @@ void RequestData::update(QContactAbstractRequest::State state,
     QList<QContact> result;
 
     // only send the full contact list at the finish state
-    if (state == QContactAbstractRequest::FinishedState) {
+    if (false) { //state == QContactAbstractRequest::FinishedState) {
         result = m_fullResult;
     } else {
         result = m_result;

@@ -35,7 +35,7 @@ int main(int argc, char** argv)
     QCoreApplication app(argc, argv);
 
     // disable debug message if variable not exported
-    if (qgetenv("ADDRESS_BOOK_SERVICE_DEBUG").isEmpty()) {
+    if (false) { //qgetenv("ADDRESS_BOOK_SERVICE_DEBUG").isEmpty()) {
         qInstallMessageHandler(contactServiceMessageOutput);
     }
 

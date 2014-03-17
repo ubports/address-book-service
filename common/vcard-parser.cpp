@@ -36,11 +36,6 @@ namespace
     class ContactExporterDetailHandler : public QVersitContactExporterDetailHandlerV2
     {
     public:
-        virtual ~ContactExporterDetailHandler()
-        {
-            //nothing
-        }
-
         virtual void detailProcessed(const QContact& contact,
                                      const QContactDetail& detail,
                                      const QVersitDocument& document,
@@ -133,11 +128,6 @@ namespace
     class  ContactImporterPropertyHandler : public QVersitContactImporterPropertyHandlerV2
     {
     public:
-        virtual ~ContactImporterPropertyHandler()
-        {
-            //nothing
-        }
-
         virtual void propertyProcessed(const QVersitDocument& document,
                                        const QVersitProperty& property,
                                        const QContact& contact,
@@ -331,12 +321,16 @@ QStringList VCardParser::splitVcards(const QByteArray &vcardList)
 {
     QStringList result;
     int start = 0;
-    static const int size = QString("END:VCARD\r\n").size();
 
     while(start < vcardList.size()) {
-        int pos = vcardList.indexOf("END:VCARD\r\n", start);
-        result << vcardList.mid(start, (pos - start) + size);
-        start += (pos + size + 1);
+        int pos = vcardList.indexOf("BEGIN:VCARD", start + 1);
+
+        if (pos == -1) {
+            pos = vcardList.length();
+        }
+        QByteArray vcard = vcardList.mid(start, (pos - start));
+        result << vcard;
+        start = pos;
     }
 
     return result;
@@ -371,7 +365,7 @@ void VCardParser::contactToVcard(QList<QtContacts::QContact> contacts)
     QVersitContactExporter exporter;
     exporter.setDetailHandler(new ContactExporterDetailHandler);
     if (!exporter.exportContacts(contacts, QVersitDocument::VCard30Type)) {
-        qDebug() << "Fail to export contacts" << exporter.errors();
+        qWarning() << "Fail to export contacts" << exporter.errors();
         return;
     }
 
@@ -395,7 +389,7 @@ QStringList VCardParser::contactToVcardSync(QList<QContact> contacts)
     QVersitContactExporter exporter;
     exporter.setDetailHandler(new ContactExporterDetailHandler);
     if (!exporter.exportContacts(contacts, QVersitDocument::VCard30Type)) {
-        qDebug() << "Fail to export contacts" << exporter.errors();
+        qWarning() << "Fail to export contacts" << exporter.errors();
         return QStringList();
     }
 

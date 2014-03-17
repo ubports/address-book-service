@@ -45,7 +45,7 @@
 #include <QtVersit/QVersitContactExporter>
 #include <QtVersit/QVersitWriter>
 
-#define FETCH_PAGE_SIZE                 20
+#define FETCH_PAGE_SIZE                 100
 
 using namespace QtVersit;
 using namespace QtContacts;
@@ -89,7 +89,6 @@ static QContact parseSource(const galera::Source &source, const QString &manager
 
 namespace galera
 {
-
 GaleraContactsService::GaleraContactsService(const QString &managerUri)
     : m_selfContactId(),
       m_managerUri(managerUri),
@@ -347,7 +346,6 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
     QContactManager::Error opError = QContactManager::NoError;
     QContactAbstractRequest::State opState = QContactAbstractRequest::FinishedState;
     QDBusPendingReply<QStringList> reply = *call;
-
     if (reply.isError()) {
         qWarning() << reply.error().name() << reply.error().message();
 
@@ -702,7 +700,7 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
             fetchContactsById(static_cast<QContactFetchByIdRequest*>(request));
             break;
         case QContactAbstractRequest::ContactIdFetchRequest:
-            qDebug() << "Not implemented: ContactIdFetchRequest";
+            qWarning() << "Not implemented: ContactIdFetchRequest";
             break;
         case QContactAbstractRequest::ContactSaveRequest:
             saveContact(static_cast<QContactSaveRequest*>(request));
@@ -711,13 +709,13 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
             removeContact(static_cast<QContactRemoveRequest*>(request));
             break;
         case QContactAbstractRequest::RelationshipFetchRequest:
-            qDebug() << "Not implemented: RelationshipFetchRequest";
+            qWarning() << "Not implemented: RelationshipFetchRequest";
             break;
         case QContactAbstractRequest::RelationshipRemoveRequest:
-            qDebug() << "Not implemented: RelationshipRemoveRequest";
+            qWarning() << "Not implemented: RelationshipRemoveRequest";
             break;
         case QContactAbstractRequest::RelationshipSaveRequest:
-            qDebug() << "Not implemented: RelationshipSaveRequest";
+            qWarning() << "Not implemented: RelationshipSaveRequest";
             break;
         break;
 

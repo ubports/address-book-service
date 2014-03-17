@@ -25,7 +25,6 @@
 #include <QtCore/QSet>
 #include <QtCore/QMutex>
 #include <QtCore/QQueue>
-#include <QtCore/QElapsedTimer>
 
 #include <QtContacts/QContact>
 #include <QtContacts/QContactManagerEngine>
