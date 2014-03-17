@@ -225,21 +225,37 @@ bool GaleraManagerEngine::removeRelationship(const QtContacts::QContactRelations
     return true;
 }
 
-
-bool GaleraManagerEngine::saveContacts(QList<QtContacts::QContact> *contacts, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
+bool GaleraManagerEngine::saveContacts(QList<QtContacts::QContact> *contacts,
+                                       QMap<int, QContactManager::Error> *errorMap,
+                                       QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
-
-    *error = QContactManager::NoError;
-    return true;
+    return saveContacts(contacts, QList<QContactDetail::DetailType>(), errorMap, error);
 }
 
-bool GaleraManagerEngine::saveContacts(QList<QtContacts::QContact> *contacts,  const QList<QtContacts::QContactDetail::DetailType> &typeMask, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
+bool GaleraManagerEngine::saveContacts(QList<QContact> *contacts,
+                                       const QList<QContactDetail::DetailType> &typeMask,
+                                       QMap<int, QContactManager::Error> *errorMap,
+                                       QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
+    Q_ASSERT(contacts != 0);
 
-    *error = QContactManager::NoError;
-    return true;
+    QContactSaveRequest request;
+    request.setContacts(*contacts);
+    request.setTypeMask(typeMask);
+
+    startRequest(&request);
+    waitForRequestFinished(&request, -1);
+    *contacts = request.contacts();
+
+    if (error) {
+        *error = request.error();
+    }
+    if (errorMap) {
+        *errorMap = request.errorMap();
+    }
+
+
+    return (request.error() == QContactManager::NoError);
 }
 
 bool GaleraManagerEngine::removeContacts(const QList<QtContacts::QContactId> &contactIds, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
