@@ -2,19 +2,27 @@ set(QCONTACTS_BACKEND qtcontacts_galera)
 
 set(QCONTACTS_BACKEND_SRCS
     qcontact-backend.cpp
-    qcontact-engineid.cpp
+    qcontact-engineid.cpp    
+    qcontactfetchrequest-data.cpp
+    qcontactfetchbyidrequest-data.cpp
+    qcontactremoverequest-data.cpp
+    qcontactrequest-data.cpp
+    qcontactsaverequest-data.cpp
     contacts-service.cpp
-    request-data.cpp
 )
 
 set(QCONTACTS_BACKEND_HDRS
     qcontact-backend.h
     qcontact-engineid.h
+    qcontactfetchrequest-data.h
+    qcontactfetchbyidrequest-data.h
+    qcontactremoverequest-data.h
+    qcontactrequest-data.h
+    qcontactsaverequest-data.h
     contacts-service.h
-    request-data.h
 )
 
-add_library(${QCONTACTS_BACKEND} MODULE
+add_library(${QCONTACTS_BACKEND} SHARED
     ${QCONTACTS_BACKEND_SRCS}
     ${QCONTACTS_BACKEND_HDRS}
 )
