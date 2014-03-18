@@ -150,6 +150,11 @@ bool AddressBook::start(QDBusConnection connection)
     return false;
 }
 
+bool AddressBook::start()
+{
+    return start(QDBusConnection::sessionBus());
+}
+
 void AddressBook::shutdown()
 {
     m_ready = false;

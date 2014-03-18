@@ -49,8 +49,8 @@ public:
     AddressBook(QObject *parent=0);
     virtual ~AddressBook();
 
-    static QString objectPath();
-    bool start(QDBusConnection connection = QDBusConnection::sessionBus());
+    static QString objectPath();    
+    bool start(QDBusConnection connection);
 
     // Adaptor
     QString linkContacts(const QStringList &contacts);
@@ -64,7 +64,8 @@ public:
 Q_SIGNALS:
     void stopped();
 
-public Q_SLOTS:
+public Q_SLOTS:    
+    bool start();
     void shutdown();
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);

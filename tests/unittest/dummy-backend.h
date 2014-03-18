@@ -74,6 +74,7 @@ private:
     int m_individualsChangedDetailedId;
     QHash<QString, galera::QIndividual*> m_contacts;
     bool m_contactUpdated;
+    bool m_useDBus;
 
     bool registerObject();
     void initFolks();

@@ -45,12 +45,9 @@ DummyBackendProxy::~DummyBackendProxy()
 
 void DummyBackendProxy::start(bool useDBus)
 {
+    m_useDBus = useDBus;
     initEnviroment();
     initFolks();
-    prepareAggregator();
-    if (useDBus) {
-        registerObject();
-    }
 }
 
 void DummyBackendProxy::shutdown()
@@ -60,7 +57,6 @@ void DummyBackendProxy::shutdown()
         QDBusConnection connection = QDBusConnection::sessionBus();
         connection.unregisterObject(DUMMY_OBJECT_PATH);
         connection.unregisterService(DUMMY_SERVICE_NAME);
-        qDebug() << "Unregister service; DUMMY";
 
         delete m_adaptor;
         m_adaptor = 0;
@@ -130,27 +126,11 @@ void DummyBackendProxy::reset()
 }
 
 void DummyBackendProxy::initFolks()
-{
-    ScopedEventLoop loop(&m_eventLoop);
+{    
     m_backendStore = folks_backend_store_dup();
     folks_backend_store_load_backends(m_backendStore,
                                       (GAsyncReadyCallback) DummyBackendProxy::backendStoreLoaded,
                                       this);
-
-    loop.exec();
-
-    loop.reset(&m_eventLoop);
-    folks_backend_store_enable_backend(m_backendStore, "dummy",
-                                       (GAsyncReadyCallback) DummyBackendProxy::backendEnabled,
-                                       this);
-    loop.exec();
-
-    m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(m_backendStore, "dummy"));
-
-    Q_ASSERT(m_backend != 0);
-    configurePrimaryStore();
-    m_isReady = true;
-    Q_EMIT ready();
 }
 
 bool DummyBackendProxy::isReady() const
@@ -160,8 +140,6 @@ bool DummyBackendProxy::isReady() const
 
 void DummyBackendProxy::prepareAggregator()
 {
-    ScopedEventLoop loop(&m_eventLoop);
-
     m_aggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     m_individualsChangedDetailedId = g_signal_connect(m_aggregator,
                                           "individuals-changed-detailed",
@@ -171,7 +149,6 @@ void DummyBackendProxy::prepareAggregator()
                                         (GAsyncReadyCallback) DummyBackendProxy::individualAggregatorPrepared,
                                         this);
 
-    loop.exec();
 }
 
 QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
@@ -237,6 +214,7 @@ void DummyBackendProxy::configurePrimaryStore()
     folks_dummy_backend_register_persona_stores(m_backend, GEE_SET(personaStores), true);
     folks_dummy_persona_store_reach_quiescence(m_primaryPersonaStore);
     g_object_unref(personaStores);
+    prepareAggregator();
 }
 
 void DummyBackendProxy::backendEnabled(FolksBackendStore *backendStore,
@@ -257,8 +235,9 @@ void DummyBackendProxy::backendStoreLoaded(FolksBackendStore *backendStore,
     folks_backend_store_load_backends_finish(backendStore, res, &error);
     checkError(error);
 
-    self->m_eventLoop->quit();
-    self->m_eventLoop = 0;
+    self->m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(self->m_backendStore, "dummy"));
+    Q_ASSERT(self->m_backend != 0);
+    self->configurePrimaryStore();
 }
 
 void DummyBackendProxy::checkError(GError *error)
@@ -354,9 +333,12 @@ void DummyBackendProxy::individualAggregatorPrepared(FolksIndividualAggregator *
 
     folks_individual_aggregator_prepare_finish(fia, res, &error);
     checkError(error);
+    if (self->m_useDBus) {
+        self->registerObject();
+    }
 
-    self->m_eventLoop->quit();
-    self->m_eventLoop = 0;
+    self->m_isReady = true;
+    Q_EMIT self->ready();
 }
 
 void DummyBackendProxy::individualAggregatorAddedPersona(FolksIndividualAggregator *fia,
