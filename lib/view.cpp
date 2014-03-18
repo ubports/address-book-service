@@ -148,7 +148,6 @@ View::View(QString clause, QString sort, QStringList sources, ContactsMap *allCo
       m_filterThread(new FilterThread(clause, sort, allContacts)),
       m_adaptor(0)
 {
-    qDebug() << "View created with:" << allContacts->size();
     m_filterThread->start();
 
     connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
@@ -192,9 +191,6 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     }
 
     QList<ContactEntry*> entries = m_filterThread->result();
-    qDebug() << "after filter:" << entries.size();
-    qDebug() << "page requested:" << startIndex << pageSize;
-
     if (startIndex < 0) {
         startIndex = 0;
     }
@@ -202,8 +198,6 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     if ((pageSize < 0) || ((startIndex + pageSize) >= entries.count())) {
         pageSize = entries.count() - startIndex;
     }
-
-    qDebug() << "page returned:" << startIndex << pageSize;
 
     QList<QContact> contacts;
     for(int i = startIndex, iMax = (startIndex + pageSize); i < iMax; i++) {
@@ -214,7 +208,6 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     parser->setProperty("DATA", QVariant::fromValue<QDBusMessage>(message));
     connect(parser, &VCardParser::vcardParsed,
             this, &View::onVCardParsed);
-    qDebug() << "Will parse" << contacts.size();
     parser->contactToVcard(contacts);
 
     return QStringList();
@@ -223,7 +216,6 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
 void View::onVCardParsed(QStringList vcards)
 {
     QObject *sender = QObject::sender();
-    qDebug() << "Return vcards:" << vcards.size();
     QDBusMessage reply = sender->property("DATA").value<QDBusMessage>().createReply(vcards);
     QDBusConnection::sessionBus().send(reply);
     sender->deleteLater();
