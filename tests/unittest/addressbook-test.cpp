@@ -189,11 +189,8 @@ private Q_SLOTS:
         QCOMPARE(contactsCreated.count(), 1);
         compareContact(contactsCreated[0], newContact);
 
-        // wait for folks to emit the signal
-        QTest::qWait(500);
-
         // check if the signal "contactAdded" was fired
-        QCOMPARE(addedContactSpy.count(), 1);
+        QTRY_COMPARE(addedContactSpy.count(), 1);
         QList<QVariant> args = addedContactSpy.takeFirst();
         QCOMPARE(args.count(), 1);
         QStringList ids = args[0].toStringList();
@@ -225,7 +222,7 @@ private Q_SLOTS:
         QVERIFY(reply2.value().isEmpty());
 
         // contactsAdded should be fired only once
-        QCOMPARE(addedContactSpy.count(), 1);
+        QTRY_COMPARE(addedContactSpy.count(), 1);
     }
 
     void testCreateInvalidContact()
