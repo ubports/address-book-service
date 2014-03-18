@@ -196,12 +196,12 @@ void AddressBook::shutdown()
 
 void AddressBook::prepareFolks()
 {
-    qDebug() << "Prepare folks";
     m_individualAggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
     if (m_ready) {
         AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
     }
+    qDebug() << "Prepare folks" << m_ready;
     m_notifyIsQuiescentHandlerId = g_signal_connect(m_individualAggregator,
                                           "notify::is-quiescent",
                                           (GCallback)AddressBook::isQuiescentChanged,
@@ -215,6 +215,11 @@ void AddressBook::prepareFolks()
     folks_individual_aggregator_prepare(m_individualAggregator,
                                         (GAsyncReadyCallback) AddressBook::prepareFolksDone,
                                         this);
+    g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
+    if (m_ready) {
+        AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
+    }
+    qDebug() << "Prepare folks2" << m_ready;
 }
 
 SourceList AddressBook::availableSources(const QDBusMessage &message)
@@ -661,6 +666,9 @@ void AddressBook::prepareFolksDone(GObject *source,
                                       GAsyncResult *res,
                                       AddressBook *self)
 {
+    g_object_get(self->m_individualAggregator, "is-quiescent", &self->m_ready, NULL);
+    qDebug() << "Folks is ready" << self->m_ready;
+
     Q_UNUSED(source);
     Q_UNUSED(res);
     Q_UNUSED(self);
