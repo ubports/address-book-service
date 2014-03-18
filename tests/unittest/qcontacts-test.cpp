@@ -48,25 +48,9 @@ private Q_SLOTS:
         QVERIFY(QContactManager::availableManagers().contains("galera"));
     }
 
-    void testQueryGroups()
-    {
-        QContactManager manager("galera");
-
-        // filter all contact groups/addressbook
-        QContactDetailFilter filter;
-        filter.setDetailType(QContactDetail::TypeType, QContactType::FieldType);
-        filter.setValue(QContactType::TypeGroup);
-
-        // check result
-        QList<QContact> contacts = manager.contacts(filter);
-        QCOMPARE(contacts.size(), 1);
-        QCOMPARE(contacts[0].id().toString(), QStringLiteral("qtcontacts:galera::dummy-store"));
-        QCOMPARE(contacts[0].type(), QContactType::TypeGroup);
-
-        QContactDisplayLabel label = contacts[0].detail(QContactDisplayLabel::Type);
-        QCOMPARE(label.label(), QStringLiteral("Dummy personas"));
-    }
-
+    /*
+     * Test create a new contact
+     */
     void testCreateContact()
     {
         QContactManager manager("galera");
@@ -115,6 +99,9 @@ private Q_SLOTS:
         QCOMPARE(createdName.lastName(), name.lastName());
     }
 
+    /*
+     * Test create a contact source using the contact group
+     */
     void testCreateGroup()
     {
         QContactManager manager("galera");
@@ -146,6 +133,28 @@ private Q_SLOTS:
         // label
         QContactDisplayLabel createdlabel = createdContact.detail<QContactDisplayLabel>();
         QCOMPARE(createdlabel.label(), label.label());
+    }
+
+    /*
+     * Test query a contact source using the contact group
+     */
+    void testQueryGroups()
+    {
+        QContactManager manager("galera");
+
+        // filter all contact groups/addressbook
+        QContactDetailFilter filter;
+        filter.setDetailType(QContactDetail::TypeType, QContactType::FieldType);
+        filter.setValue(QContactType::TypeGroup);
+
+        // check result
+        QList<QContact> contacts = manager.contacts(filter);
+        QCOMPARE(contacts.size(), 1);
+        QCOMPARE(contacts[0].id().toString(), QStringLiteral("qtcontacts:galera::dummy-store"));
+        QCOMPARE(contacts[0].type(), QContactType::TypeGroup);
+
+        QContactDisplayLabel label = contacts[0].detail(QContactDisplayLabel::Type);
+        QCOMPARE(label.label(), QStringLiteral("Dummy personas"));
     }
 };
 
