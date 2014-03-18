@@ -270,28 +270,31 @@ void DummyBackendProxy::checkError(GError *error)
     Q_ASSERT(error == 0);
 }
 
-void DummyBackendProxy::mkpath(const QString &path)
+void DummyBackendProxy::mkpath(const QString &path) const
 {
     QDir dir;
+    if (!dir.mkpath(path)) {
+        qWarning() << "Fail to create path" << path;
+    }
     Q_ASSERT(dir.mkpath(path));
 }
 
 void DummyBackendProxy::initEnviroment()
 {
     Q_ASSERT(m_tmpDir.isValid());
-    QString tmpFullPath = QString("%1/folks-test").arg(m_tmpDir.path());
+    QString tmpFullPath = QString("%1").arg(m_tmpDir.path());
 
     qputenv("FOLKS_BACKENDS_ALLOWED", "dummy");
     qputenv("FOLKS_PRIMARY_STORE", "dummy");
 
+    mkpath(tmpFullPath);
     qDebug() << "setting up in transient directory:" << tmpFullPath;
 
     // home
     qputenv("HOME", tmpFullPath.toUtf8().data());
 
-    // cache
-    QString cacheDir = QString("%1/.cache").arg(tmpFullPath);
-
+    // cache    
+    QString cacheDir = QString("%1/.cache/").arg(tmpFullPath);
     mkpath(cacheDir);
     qputenv("XDG_CACHE_HOME", cacheDir.toUtf8().data());
 
@@ -307,7 +310,7 @@ void DummyBackendProxy::initEnviroment()
     mkpath(QString("%1/folks").arg(dataDir));
 
     // runtime
-    QString runtimeDir = QString("%1/XDG_RUNTIME_DIR").arg(tmpFullPath);
+    QString runtimeDir = QString("%1/run").arg(tmpFullPath);
     mkpath(runtimeDir);
     qputenv("XDG_RUNTIME_DIR", runtimeDir.toUtf8().data());
 
