@@ -25,7 +25,6 @@
 #include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
-#include <QtCore/QTimer>
 
 #include <QtDBus/QtDBus>
 

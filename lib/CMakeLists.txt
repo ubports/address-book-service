@@ -7,6 +7,7 @@ set(CONTACTS_SERVICE_LIB_SRC
     addressbook-adaptor.cpp
     contacts-map.cpp
     detail-context-parser.cpp
+    dirtycontact-notify.cpp
     gee-utils.cpp
     qindividual.cpp
     source.cpp
@@ -20,6 +21,7 @@ set(CONTACTS_SERVICE_LIB_HEADERS
     addressbook-adaptor.h
     contacts-map.h
     detail-context-parser.h
+    dirtycontact-notify.h
     gee-utils.h
     qindividual.h
     source.h

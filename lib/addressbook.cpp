@@ -22,6 +22,7 @@
 #include "view.h"
 #include "contacts-map.h"
 #include "qindividual.h"
+#include "dirtycontact-notify.h"
 
 #include "common/vcard-parser.h"
 
@@ -32,9 +33,6 @@
 #include <sys/socket.h>
 
 #include <folks/folks-eds.h>
-
-//this timeout represents how long the server will wait for changes on the contact before notify the client
-#define NOTIFY_CONTACTS_TIMEOUT 500
 
 using namespace QtContacts;
 
@@ -81,40 +79,6 @@ public:
 namespace galera
 {
 int AddressBook::m_sigQuitFd[2] = {0, 0};
-
-// this is a helper class uses a timer with a small timeout to notify the client about
-// any contact change notification. This class should be used instead of emit the signal directly
-// this will avoid notify about the contact update several times when updating different fields simultaneously
-// With that we can reduce the dbus traffic and skip some client calls to query about the new contact info.
-class DirtyContactsNotify
-{
-public:
-    DirtyContactsNotify(AddressBookAdaptor *adaptor)
-    {
-        m_timer.setInterval(NOTIFY_CONTACTS_TIMEOUT);
-        m_timer.setSingleShot(true);
-        QObject::connect(&m_timer, &QTimer::timeout,
-                         [=]() {
-                            Q_EMIT adaptor->contactsUpdated(m_ids);
-                            m_ids.clear();
-                         });
-    }
-
-    void append(QStringList ids)
-    {
-        Q_FOREACH(QString id, ids) {
-            if (!m_ids.contains(id)) {
-                m_ids << id;
-            }
-        }
-
-        m_timer.start();
-    }
-
-private:
-    QTimer m_timer;
-    QStringList m_ids;
-};
 
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
@@ -428,7 +392,7 @@ void AddressBook::viewClosed()
 
 void AddressBook::individualChanged(QIndividual *individual)
 {
-    m_notifyContactUpdate->append(QStringList() << individual->id());
+    m_notifyContactUpdate->append(QSet<QString>() << individual->id());
 }
 
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
@@ -570,7 +534,7 @@ void AddressBook::updateContactsDone(const QString &contactId,
         QDBusConnection::sessionBus().send(reply);
 
         // notify about the changes
-        m_notifyContactUpdate->append(m_updatedIds);
+        m_notifyContactUpdate->append(m_updatedIds.toSet());
 
         // clear command data
         m_updatedIds.clear();
