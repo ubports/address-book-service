@@ -148,7 +148,7 @@ View::View(QString clause, QString sort, QStringList sources, ContactsMap *allCo
       m_filterThread(new FilterThread(clause, sort, allContacts)),
       m_adaptor(0)
 {
-    m_filterThread->start();
+        m_filterThread->start();
 
     connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
 }

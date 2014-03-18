@@ -172,7 +172,7 @@ private Q_SLOTS:
     void testCreateContact()
     {
         // spy 'contactsAdded' signal
-        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(const QStringList &)));
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(QStringList)));
 
         // call create contact
         QDBusReply<QString> reply = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
@@ -201,12 +201,12 @@ private Q_SLOTS:
     void testDuplicateContact()
     {
         // spy 'contactsAdded' signal
-        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(const QStringList &)));
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(QStringList)));
 
         // call create contact first
         QDBusReply<QString> reply = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
 
-        // wait for signal
+        // wait for folks to emit the signal
         QTRY_COMPARE(addedContactSpy.count(), 1);
 
         // user returned id to fill the new vcard
@@ -226,7 +226,7 @@ private Q_SLOTS:
     void testCreateInvalidContact()
     {
         // spy 'contactsAdded' signal
-        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(const QStringList &)));
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(QStringList)));
 
         // call create contact with a invalid vcard string
         QDBusReply<QString> reply = m_serverIface->call("createContact", "INVALID VCARD", "dummy-store");
@@ -241,15 +241,16 @@ private Q_SLOTS:
     void testRemoveContact()
     {
         // create a basic contact
-        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(const QStringList &)));
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(QStringList)));
         QDBusReply<QString> replyAdd = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
         QString newContactId = replyAdd.value();
+        QTRY_COMPARE(addedContactSpy.count(), 1);
 
         // wait for added signal
         QTRY_COMPARE(addedContactSpy.count(), 1);
 
         // spy 'contactsRemoved' signal
-        QSignalSpy removedContactSpy(m_serverIface, SIGNAL(contactsRemoved(const QStringList &)));
+        QSignalSpy removedContactSpy(m_serverIface, SIGNAL(contactsRemoved(QStringList)));
 
         // try remove the contact created
         QDBusReply<int> replyRemove = m_serverIface->call("removeContacts", QStringList() << newContactId);
@@ -280,7 +281,7 @@ private Q_SLOTS:
         QtContacts::QContact contactUpdated = galera::VCardParser::vcardToContact(vcard);
 
         // spy 'contactsUpdated' signal
-        QSignalSpy updateContactSpy(m_serverIface, SIGNAL(contactsUpdated(const QStringList &)));
+        QSignalSpy updateContactSpy(m_serverIface, SIGNAL(contactsUpdated(QStringList)));
         QDBusReply<QStringList> replyUpdate = m_serverIface->call("updateContacts", QStringList() << vcard);
         QStringList result = replyUpdate.value();
         QCOMPARE(result.size(), 1);
