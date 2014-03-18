@@ -31,8 +31,8 @@ private Q_SLOTS:
 
     void testServiceReady()
     {
-        QCOMPARE(m_serverIface->property("isReady").toBool(), true);
-        QCOMPARE(m_dummyIface->property("isReady").toBool(), true);
+        QTRY_COMPARE(m_serverIface->property("isReady").toBool(), true);
+        QTRY_COMPARE(m_dummyIface->property("isReady").toBool(), true);
     }
 
     void testCallServiceFunction()
@@ -43,6 +43,7 @@ private Q_SLOTS:
         result = m_dummyIface->call("ping");
         QCOMPARE(result.value(), true);
     }
+
 
     void testServiceShutdown()
     {

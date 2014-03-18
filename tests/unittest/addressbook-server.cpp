@@ -19,6 +19,8 @@
 #include "lib/addressbook.h"
 #include "dummy-backend.h"
 
+#include <QtCore/QTimer>
+
 int main(int argc, char** argv)
 {
     galera::AddressBook::init();
@@ -30,9 +32,10 @@ int main(int argc, char** argv)
 
     // addressbook
     galera::AddressBook book;
-    book.start();
 
+    book.connect(&dummy, SIGNAL(ready()), SLOT(start()));
     book.connect(&dummy, SIGNAL(stopped()), SLOT(shutdown()));
+
     app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
     return app.exec();
 }

@@ -25,7 +25,6 @@
 #include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
-#include <QtCore/QTimer>
 
 #include <QtDBus/QtDBus>
 
@@ -50,8 +49,8 @@ public:
     AddressBook(QObject *parent=0);
     virtual ~AddressBook();
 
-    static QString objectPath();
-    bool start(QDBusConnection connection = QDBusConnection::sessionBus());
+    static QString objectPath();    
+    bool start(QDBusConnection connection);
 
     // Adaptor
     QString linkContacts(const QStringList &contacts);
@@ -65,10 +64,12 @@ public:
 Q_SIGNALS:
     void stopped();
 
-public Q_SLOTS:
+public Q_SLOTS:    
+    bool start();
     void shutdown();
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
+    Source createSource(const QString &sourceId, const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
@@ -146,6 +147,9 @@ private:
     static void addAntiLinksDone(FolksAntiLinkable *antilinkable,
                                   GAsyncResult *result,
                                   void *data);
+    static void createSourceDone(GObject *source,
+                                 GAsyncResult *res,
+                                 void *data);
     friend class DirtyContactsNotify;
 };
 

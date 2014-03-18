@@ -34,11 +34,15 @@ void BaseClientTest::initTestCase()
                                        CPIM_ADDRESSBOOK_OBJECT_PATH,
                                        CPIM_ADDRESSBOOK_IFACE_NAME);
     QVERIFY(!m_serverIface->lastError().isValid());
+    // wait for service to be ready
+    QTRY_COMPARE_WITH_TIMEOUT(m_serverIface->property("isReady").toBool(), true, 10000);
 
     m_dummyIface = new QDBusInterface(DUMMY_SERVICE_NAME,
                                       DUMMY_OBJECT_PATH,
                                       DUMMY_IFACE_NAME);
     QVERIFY(!m_dummyIface->lastError().isValid());
+    // wait for service to be ready
+    QTRY_COMPARE_WITH_TIMEOUT(m_dummyIface->property("isReady").toBool(), true, 10000);
 }
 
 void BaseClientTest::init()
