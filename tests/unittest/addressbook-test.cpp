@@ -206,7 +206,7 @@ private Q_SLOTS:
         QDBusReply<QString> reply = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
 
         // wait for folks to emit the signal
-        QTest::qWait(500);
+        QTRY_COMPARE(addedContactSpy.count(), 1);
 
         // user returned id to fill the new vcard
         QString newContactId = reply.value();
@@ -243,8 +243,10 @@ private Q_SLOTS:
     void testRemoveContact()
     {
         // create a basic contact
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(const QStringList &)));
         QDBusReply<QString> replyAdd = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
         QString newContactId = replyAdd.value();
+        QTRY_COMPARE(addedContactSpy.count(), 1);
 
         // spy 'contactsRemoved' signal
         QSignalSpy removedContactSpy(m_serverIface, SIGNAL(contactsRemoved(const QStringList &)));
