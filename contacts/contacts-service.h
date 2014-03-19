@@ -103,11 +103,11 @@ private:
     void fetchContactsDone(QContactFetchRequestData *data, QDBusPendingCallWatcher *call);
 
     void saveContact(QtContacts::QContactSaveRequest *request);
-	void createSources(QtContacts::QContactSaveRequest *request, QStringList &sources);
     void createContactsStart(QContactSaveRequestData *data);
     void updateContacts(QContactSaveRequestData *data);
     void updateContactDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call);
     void createContactsDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call);
+    void createGroupDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call);
 
     void removeContact(QtContacts::QContactRemoveRequest *request);
     void removeContactDone(QContactRemoveRequestData *data, QDBusPendingCallWatcher *call);

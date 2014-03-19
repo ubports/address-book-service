@@ -149,10 +149,7 @@ void DummyBackendProxy::reset()
 
     g_object_unref(extraStores);
     g_object_unref(keys);
-    g_object_unref (iter);
-
-    configurePrimaryStore();
-
+    g_object_unref(iter);
 }
 
 void DummyBackendProxy::initFolks()
@@ -178,7 +175,6 @@ void DummyBackendProxy::prepareAggregator()
     folks_individual_aggregator_prepare(m_aggregator,
                                         (GAsyncReadyCallback) DummyBackendProxy::individualAggregatorPrepared,
                                         this);
-
 }
 
 QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
@@ -195,7 +191,6 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
                                                          this);
 
     loop.exec();
-    //g_object_unref(details);
     return QString();
 }
 
@@ -267,6 +262,7 @@ void DummyBackendProxy::backendStoreLoaded(FolksBackendStore *backendStore,
 
     self->m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(self->m_backendStore, "dummy"));
     Q_ASSERT(self->m_backend != 0);
+    qDebug() << "Got backend" << (void*)self->m_backend;
     self->configurePrimaryStore();
 }
 
@@ -285,7 +281,6 @@ void DummyBackendProxy::mkpath(const QString &path) const
     if (!dir.mkpath(path)) {
         qWarning() << "Fail to create path" << path;
     }
-    Q_ASSERT(dir.mkpath(path));
 }
 
 void DummyBackendProxy::initEnviroment()
@@ -367,6 +362,7 @@ void DummyBackendProxy::individualAggregatorPrepared(FolksIndividualAggregator *
         self->registerObject();
     }
 
+    qDebug() << "READDDDY";
     self->m_isReady = true;
     Q_EMIT self->ready();
 }

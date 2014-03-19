@@ -459,16 +459,27 @@ void GaleraContactsService::createContactsStart(QContactSaveRequestData *data)
     }
 
     QString syncSource;
-    QString contact = data->nextContact(&syncSource);
+    bool isGroup = false;
+    QString contact = data->nextContact(&syncSource, &isGroup);
 
-    QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, syncSource);
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-    data->updateWatcher(watcher);
-    QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
-                     [=](QDBusPendingCallWatcher *call) {
-                        this->createContactsDone(data, call);
-                     });
+    if (isGroup) {
+       QDBusPendingCall pcall = m_iface->asyncCall("createSource", contact);
+       QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+       data->updateWatcher(watcher);
+       QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                        [=](QDBusPendingCallWatcher *call) {
+                           this->createGroupDone(data, call);
+                        });
 
+    } else {
+        QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, syncSource);
+        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+        data->updateWatcher(watcher);
+        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                         [=](QDBusPendingCallWatcher *call) {
+                            this->createContactsDone(data, call);
+                         });
+    }
 }
 
 void GaleraContactsService::createContactsDone(QContactSaveRequestData *data,
@@ -498,33 +509,25 @@ void GaleraContactsService::createContactsDone(QContactSaveRequestData *data,
     createContactsStart(data);
 }
 
-void GaleraContactsService::createSources(QtContacts::QContactSaveRequest *request, QStringList &sources)
+void GaleraContactsService::createGroupDone(QContactSaveRequestData *data,
+                                            QDBusPendingCallWatcher *call)
 {
-    if (!isOnline()) {
-        qWarning() << "Server is not online";
-        QContactSaveRequestData::notifyError(request, QContactManager::UnspecifiedError);
+    if (!data->isLive()) {
+        data->finish(QContactManager::UnspecifiedError);
+        destroyRequest(data);
         return;
     }
 
-    QList<QContact> contacts;
-    QMap<int, QContactManager::Error> errorMap;
-
-    int index = 0;
-    Q_FOREACH(QString sourceName, sources) {
-        QDBusReply<Source> result = m_iface->call("createSource", sourceName);
-        if (result.isValid()) {
-            contacts << parseSource(result.value(), m_managerUri);
-        } else {
-            errorMap.insert(index, QContactManager::UnspecifiedError);
-        }
-        index++;
+    QDBusPendingReply<Source> reply = *call;
+    if (reply.isError()) {
+        qWarning() << reply.error().name() << reply.error().message();
+        data->notifyUpdateError(QContactManager::UnspecifiedError);
+    } else {
+        data->updateCurrentContact(parseSource(reply.value(), m_managerUri));
     }
 
-    QContactManagerEngine::updateContactSaveRequest(request,
-                                                    contacts,
-                                                    QContactManager::NoError,
-                                                    errorMap,
-                                                    QContactAbstractRequest::FinishedState);
+    // go to next contact
+    createContactsStart(data);
 }
 
 void GaleraContactsService::removeContact(QContactRemoveRequest *request)

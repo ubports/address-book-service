@@ -70,7 +70,6 @@ add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(contacts)
 add_subdirectory(data)
-
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
     # Some tests fail when running on PPPC check bug #1294229
     message(STATUS "Tests disable for ppc")

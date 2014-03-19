@@ -208,7 +208,7 @@ private Q_SLOTS:
         // call create contact first
         QDBusReply<QString> reply = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
 
-        // wait for signal
+        // wait for folks to emit the signal
         QTRY_COMPARE(addedContactSpy.count(), 1);
 
         // user returned id to fill the new vcard
@@ -246,9 +246,6 @@ private Q_SLOTS:
         QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(QStringList)));
         QDBusReply<QString> replyAdd = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
         QString newContactId = replyAdd.value();
-        QTRY_COMPARE(addedContactSpy.count(), 1);
-
-        // wait for added signal
         QTRY_COMPARE(addedContactSpy.count(), 1);
 
         // wait for added signal

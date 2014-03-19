@@ -41,11 +41,12 @@ public:
 
     void prepareToCreate();
     void updateCurrentContactId(GaleraEngineId *engineId);
+    void updateCurrentContact(const QtContacts::QContact &contact);
 
     void notifyUpdateError(QtContacts::QContactManager::Error error);
 
     bool hasNext() const;
-    QString nextContact(QString *syncTargetName);
+    QString nextContact(QString *syncTargetName, bool *isGroup);
 
     void notifyError(QtContacts::QContactManager::Error error);
     QStringList allPendingContacts() const;

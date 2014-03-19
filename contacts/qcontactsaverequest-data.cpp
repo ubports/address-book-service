@@ -49,17 +49,14 @@ QContactSaveRequestData::QContactSaveRequestData(QContactSaveRequest *request)
 
 void QContactSaveRequestData::prepareContacts(QMap<int, QtContacts::QContact> contacts)
 {
-    if (!contacts.isEmpty()) {
-        QStringList vcards = VCardParser::contactToVcardSync(contacts.values());
-        if (vcards.count() != contacts.count()) {
-            qWarning() << "Fail to parse contacts to Update";
-            return;
-        }
-        int i = 0;
-        Q_FOREACH(int index, contacts.keys()) {
-            m_pendingContacts.insert(index, vcards[i]);
-            m_pendingContactsSyncTarget.insert(index, contacts[index].detail<QContactSyncTarget>().syncTarget());
-            i++;
+    Q_FOREACH(int index, contacts.keys()) {
+        QContact contact = contacts[index];
+        if (contact.type() == QContactType::TypeGroup) {
+            m_pendingContacts.insert(index, contact.detail<QContactDisplayLabel>().label());
+            m_pendingContactsSyncTarget.insert(index, "");
+        } else {
+            m_pendingContacts.insert(index, VCardParser::contactToVcard(contact));
+            m_pendingContactsSyncTarget.insert(index, contact.detail<QContactSyncTarget>().syncTarget());
         }
     }
 }
@@ -74,19 +71,22 @@ void QContactSaveRequestData::prepareToCreate()
 {
     Q_ASSERT(m_pendingContacts.count() == 0);
     prepareContacts(m_contactsToCreate);
-    qDebug() << "Contacts to create" << m_pendingContacts.count();
 }
-
 
 bool QContactSaveRequestData::hasNext() const
 {
     return (m_pendingContacts.count() > 0);
 }
 
-QString QContactSaveRequestData::nextContact(QString *syncTargetName)
+QString QContactSaveRequestData::nextContact(QString *syncTargetName, bool *isGroup)
 {
     Q_ASSERT(m_pendingContacts.count() > 0);
     m_currentContact = m_pendingContacts.begin();
+
+    if (isGroup) {
+        *isGroup = (m_contactsToCreate[m_currentContact.key()].type() == QContactType::TypeGroup);
+    }
+
     if (syncTargetName) {
         *syncTargetName = m_pendingContactsSyncTarget.begin().value();
     }
@@ -98,6 +98,13 @@ void QContactSaveRequestData::updateCurrentContactId(GaleraEngineId *engineId)
     QContactId contactId(engineId);
     QContact &contact = m_contactsToCreate[m_currentContact.key()];
     contact.setId(contactId);
+    m_pendingContacts.remove(m_currentContact.key());
+    m_pendingContactsSyncTarget.remove(m_currentContact.key());
+}
+
+void QContactSaveRequestData::updateCurrentContact(const QContact &contact)
+{
+    m_contactsToCreate[m_currentContact.key()] = contact;
     m_pendingContacts.remove(m_currentContact.key());
     m_pendingContactsSyncTarget.remove(m_currentContact.key());
 }
