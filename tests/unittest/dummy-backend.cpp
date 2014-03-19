@@ -191,7 +191,7 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
                                                          this);
 
     loop.exec();
-    g_object_unref(details);
+    //g_object_unref(details);
     return QString();
 }
 
