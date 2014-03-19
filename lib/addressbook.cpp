@@ -22,6 +22,7 @@
 #include "view.h"
 #include "contacts-map.h"
 #include "qindividual.h"
+#include "dirtycontact-notify.h"
 
 #include "common/vcard-parser.h"
 
@@ -32,9 +33,6 @@
 #include <sys/socket.h>
 
 #include <folks/folks-eds.h>
-
-//this timeout represents how long the server will wait for changes on the contact before notify the client
-#define NOTIFY_CONTACTS_TIMEOUT 500
 
 using namespace QtContacts;
 
@@ -81,99 +79,6 @@ public:
 namespace galera
 {
 int AddressBook::m_sigQuitFd[2] = {0, 0};
-
-// this is a helper class uses a timer with a small timeout to notify the client about
-// any contact change notification. This class should be used instead of emit the signal directly
-// this will avoid notify about the contact update several times when updating different fields simultaneously
-// With that we can reduce the dbus traffic and skip some client calls to query about the new contact info.
-class DirtyContactsNotify
-{
-public:
-    DirtyContactsNotify(AddressBookAdaptor *adaptor)
-        : m_adaptor(adaptor)
-    {
-        m_timer.setInterval(NOTIFY_CONTACTS_TIMEOUT);
-        m_timer.setSingleShot(true);
-        QObject::connect(&m_timer, &QTimer::timeout,
-                         [=]() { emitSignals(); });
-    }
-
-    void insertAddedContacts(QSet<QString> ids)
-    {
-        qDebug() << "contact added" << ids;
-        if (!m_adaptor->isReady()) {
-            return;
-        }
-
-        // if the contact was removed before ignore the removal signal, and send a update signal
-        QSet<QString> addedIds = ids;
-        Q_FOREACH(QString added, ids) {
-            if (m_contactsRemoved.contains(added)) {
-                qDebug() << "contact was removed";
-                m_contactsRemoved.remove(added);
-                addedIds.remove(added);
-                m_contactsChanged.insert(added);
-            }
-        }
-
-        m_contactsAdded += addedIds;
-        m_timer.start();
-    }
-
-    void insertRemovedContacts(QSet<QString> ids)
-    {
-        if (!m_adaptor->isReady()) {
-            return;
-        }
-
-        // if the contact was added before ignore the added and removed signal
-        QSet<QString> removedIds = ids;
-        Q_FOREACH(QString removed, ids) {
-            if (m_contactsAdded.contains(removed)) {
-                m_contactsAdded.remove(removed);
-                removedIds.remove(removed);
-            }
-        }
-
-        m_contactsRemoved += removedIds;
-        m_timer.start();
-    }
-
-    void insertChangedContacts(QSet<QString> ids)
-    {
-        if (!m_adaptor->isReady()) {
-            return;
-        }
-
-        m_contactsChanged += ids;
-        m_timer.start();
-    }
-
-private:
-    AddressBookAdaptor *m_adaptor;
-    QTimer m_timer;
-    QSet<QString> m_contactsChanged;
-    QSet<QString> m_contactsAdded;
-    QSet<QString> m_contactsRemoved;
-
-    void emitSignals()
-    {
-        if (!m_contactsRemoved.isEmpty()) {
-            Q_EMIT m_adaptor->contactsRemoved(m_contactsRemoved.toList());
-            m_contactsRemoved.clear();
-        }
-
-        if (!m_contactsAdded.isEmpty()) {
-            Q_EMIT m_adaptor->contactsAdded(m_contactsAdded.toList());
-            m_contactsAdded.clear();
-        }
-
-        if (!m_contactsChanged.isEmpty()) {
-            Q_EMIT m_adaptor->contactsUpdated(m_contactsChanged.toList());
-            m_contactsChanged.clear();
-        }
-    }
-};
 
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
@@ -241,6 +146,11 @@ bool AddressBook::start(QDBusConnection connection)
         return true;
     }
     return false;
+}
+
+bool AddressBook::start()
+{
+    return start(QDBusConnection::sessionBus());
 }
 
 void AddressBook::shutdown()
@@ -322,6 +232,7 @@ Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &me
     data->m_addressbook = this;
     data->m_message = message;
     data->sourceName = sourceId;
+
     FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
     QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id (store));
     if ( personaStoreTypeId == "dummy") {
