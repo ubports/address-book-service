@@ -287,16 +287,21 @@ void AddressBook::createSourceDone(GObject *source,
 void AddressBook::addGlobalAntilink(FolksPersona *persona, GAsyncReadyCallback antilinkReady, void *data)
 {
     if (FOLKS_IS_ANTI_LINKABLE(persona)) {
-        GeeHashSet *antiLinks = gee_hash_set_new(G_TYPE_STRING,
-                                                 (GBoxedCopyFunc) g_strdup,
-                                                 g_free,
-                                                 NULL, NULL, NULL, NULL, NULL, NULL);
-        gee_collection_add(GEE_COLLECTION(antiLinks), "*");
-        folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(persona),
-                                              GEE_SET(antiLinks),
-                                              antilinkReady,
-                                              data);
-        g_object_unref(antiLinks);
+        GeeSet *oldAntiLinks = folks_anti_linkable_get_anti_links(FOLKS_ANTI_LINKABLE(persona));
+        if (!gee_collection_contains(GEE_COLLECTION(oldAntiLinks), "*")) {
+            GeeHashSet *antiLinks = gee_hash_set_new(G_TYPE_STRING,
+                                                     (GBoxedCopyFunc) g_strdup,
+                                                     g_free,
+                                                     NULL, NULL, NULL, NULL, NULL, NULL);
+            gee_collection_add(GEE_COLLECTION(antiLinks), "*");
+            folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(persona),
+                                                  GEE_SET(antiLinks),
+                                                  antilinkReady,
+                                                  data);
+            g_object_unref(antiLinks);
+        }
+    } else {
+        g_object_unref(persona);
     }
 }
 
@@ -308,6 +313,7 @@ void AddressBook::addGlobalAntilinkDone(FolksAntiLinkable *antilinkable, GAsyncR
         qWarning() << "Fail to anti link pesona" << folks_persona_get_display_id(FOLKS_PERSONA(antilinkable)) << error->message;
         g_error_free(error);
     }
+    g_object_unref(antilinkable);
 }
 
 void AddressBook::getSource(const QDBusMessage &message, bool onlyTheDefault)
@@ -676,23 +682,23 @@ QString AddressBook::addContact(FolksIndividual *individual)
         entry->individual()->setIndividual(individual);
     } else {
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
-
-        // add anti lik for any new contact, if the contact is already linked ignore it
-        // because this could be manually linked before
-        GeeSet *personas = folks_individual_get_personas(individual);
-        if (gee_collection_get_size(GEE_COLLECTION(personas)) == 1) {
-            int size = 0;
-            FolksPersona **personasArray = (FolksPersona **) gee_collection_to_array(GEE_COLLECTION(personas), &size);
-            addGlobalAntilink(personasArray[0],
-                             (GAsyncReadyCallback) AddressBook::addGlobalAntilinkDone,
-                              0);
-            g_object_unref(personasArray[0]);
-            g_free(personasArray);
-        }
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
         m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
     }
+
+    // add anti lik for any new contact, if the contact is already linked ignore it
+    // because this could be manually linked before
+    GeeSet *personas = folks_individual_get_personas(individual);
+    int size = 0;
+    FolksPersona **personasArray = (FolksPersona **) gee_collection_to_array(GEE_COLLECTION(personas), &size);
+    if (gee_collection_get_size(GEE_COLLECTION(personas)) == 1) {
+        FolksPersona **personasArray = (FolksPersona **) gee_collection_to_array(GEE_COLLECTION(personas), &size);
+        addGlobalAntilink(personasArray[0],
+                         (GAsyncReadyCallback) AddressBook::addGlobalAntilinkDone,
+                          0);
+    }
+    g_free(personasArray);
     return id;
 }
 
@@ -800,15 +806,9 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
     } else if (persona == NULL) {
         qWarning() << "Failed to create individual from contact: Persona already exists";
         reply = createData->m_message.createErrorReply("Failed to create individual from contact", "Contact already exists");
-    } else if (QIndividual::autoLinkEnabled()){
+    } else {
         FolksIndividual *individual = folks_persona_get_individual(persona);
         reply = createData->m_message.createReply(QString::fromUtf8(folks_individual_get_id(individual)));
-    } else {
-        // avoid the new persona get linked
-        addGlobalAntilink(persona,
-                          (GAsyncReadyCallback) addAntiLinksDone,
-                          data);
-        return;
     }
     //TODO: use dbus connection
     QDBusConnection::sessionBus().send(reply);

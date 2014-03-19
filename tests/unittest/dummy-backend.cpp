@@ -175,7 +175,6 @@ void DummyBackendProxy::prepareAggregator()
     folks_individual_aggregator_prepare(m_aggregator,
                                         (GAsyncReadyCallback) DummyBackendProxy::individualAggregatorPrepared,
                                         this);
-
 }
 
 QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
@@ -192,7 +191,7 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
                                                          this);
 
     loop.exec();
-    //g_object_unref(details);
+    g_object_unref(details);
     return QString();
 }
 
