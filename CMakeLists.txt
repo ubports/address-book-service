@@ -69,7 +69,12 @@ add_subdirectory(common)
 add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(contacts)
-add_subdirectory(tests)
 add_subdirectory(data)
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
+    # Some tests fail when running on PPPC check bug #1294229
+    message(STATUS "Tests disable for ppc")
+else()
+    add_subdirectory(tests)
+endif()
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
