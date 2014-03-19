@@ -75,6 +75,7 @@ private Q_SLOTS:
     void onContactsUpdated(QStringList ids);
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
     void onServiceReady();
+    void onVCardsParsed(QList<QtContacts::QContact> contacts);
 
 private:
     QString m_id;
@@ -95,12 +96,14 @@ private:
     void fetchContacts(QtContacts::QContactFetchRequest *request);
     void fetchContactsContinue(QContactFetchRequestData *data,
                                QDBusPendingCallWatcher *call);
+    void fetchContactsGroupsContinue(QContactFetchRequestData *request,
+                                     QDBusPendingCallWatcher *call);
     void fetchContactsById(QtContacts::QContactFetchByIdRequest *request);
     void fetchContactsPage(QContactFetchRequestData *data);
     void fetchContactsDone(QContactFetchRequestData *data, QDBusPendingCallWatcher *call);
 
     void saveContact(QtContacts::QContactSaveRequest *request);
-    void createContacts(QContactSaveRequestData *data);
+	void createSources(QtContacts::QContactSaveRequest *request, QStringList &sources);
     void createContactsStart(QContactSaveRequestData *data);
     void updateContacts(QContactSaveRequestData *data);
     void updateContactDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call);
@@ -112,7 +115,6 @@ private:
     void destroyRequest(QContactRequestData *request);
 
     QList<QContactId> parseIds(QStringList ids) const;
-
 };
 
 }

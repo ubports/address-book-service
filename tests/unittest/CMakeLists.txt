@@ -53,6 +53,7 @@ endif()
 declare_test(clause-test False)
 declare_test(sort-clause-test False)
 declare_test(fetch-hint-test False)
+declare_test(vcardparser-test False)
 
 set(DUMMY_BACKEND_SRC
     scoped-loop.h
@@ -72,6 +73,7 @@ if(DBUS_RUNNER)
     declare_test(service-life-cycle-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(readonly-prop-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(contact-link-test True ${BASE_CLIENT_TEST_SRC})
+    declare_test(qcontacts-test True ${BASE_CLIENT_TEST_SRC})
 elseif()
     message(STATUS "DBus test runner not found. Some tests will be disabled")
 endif()

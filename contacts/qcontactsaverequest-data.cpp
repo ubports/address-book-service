@@ -23,6 +23,7 @@
 #include <QtCore/QDebug>
 
 #include <QtContacts/QContactManagerEngine>
+#include <QtContacts/QContactSyncTarget>
 
 #include <QtVersit/QVersitContactImporter>
 
@@ -49,7 +50,7 @@ QContactSaveRequestData::QContactSaveRequestData(QContactSaveRequest *request)
 void QContactSaveRequestData::prepareContacts(QMap<int, QtContacts::QContact> contacts)
 {
     if (!contacts.isEmpty()) {
-        QStringList vcards = VCardParser::contactToVcard(contacts.values());
+        QStringList vcards = VCardParser::contactToVcardSync(contacts.values());
         if (vcards.count() != contacts.count()) {
             qWarning() << "Fail to parse contacts to Update";
             return;
@@ -57,6 +58,7 @@ void QContactSaveRequestData::prepareContacts(QMap<int, QtContacts::QContact> co
         int i = 0;
         Q_FOREACH(int index, contacts.keys()) {
             m_pendingContacts.insert(index, vcards[i]);
+            m_pendingContactsSyncTarget.insert(index, contacts[index].detail<QContactSyncTarget>().syncTarget());
             i++;
         }
     }
@@ -81,14 +83,13 @@ bool QContactSaveRequestData::hasNext() const
     return (m_pendingContacts.count() > 0);
 }
 
-QString QContactSaveRequestData::nextContact()
+QString QContactSaveRequestData::nextContact(QString *syncTargetName)
 {
     Q_ASSERT(m_pendingContacts.count() > 0);
-    qDebug() << "SIZEEEE" << m_pendingContacts.count() << "Has next:" << hasNext();
     m_currentContact = m_pendingContacts.begin();
-
-    qDebug() << "next contact" << m_currentContact.key()
-                               << m_currentContact.value();
+    if (syncTargetName) {
+        *syncTargetName = m_pendingContactsSyncTarget.begin().value();
+    }
     return m_currentContact.value();
 }
 
@@ -98,13 +99,13 @@ void QContactSaveRequestData::updateCurrentContactId(GaleraEngineId *engineId)
     QContact &contact = m_contactsToCreate[m_currentContact.key()];
     contact.setId(contactId);
     m_pendingContacts.remove(m_currentContact.key());
-    qDebug() << "After update id" << m_pendingContacts.count();
+    m_pendingContactsSyncTarget.remove(m_currentContact.key());
 }
 
 void QContactSaveRequestData::updatePendingContacts(QStringList vcards)
 {
     if (!vcards.isEmpty()) {
-        QList<QContact> contacts = VCardParser::vcardToContact(vcards);
+        QList<QContact> contacts = VCardParser::vcardToContactSync(vcards);
         if (contacts.count() != m_pendingContacts.count()) {
             qWarning() << "Fail to parse vcards to contacts";
         }
@@ -122,11 +123,21 @@ void QContactSaveRequestData::notifyUpdateError(QContactManager::Error error)
     m_contactsToUpdate.remove(m_currentContact.key());
     m_errorMap.insert(m_currentContact.key(), error);
     m_pendingContacts.remove(m_currentContact.key());
+    m_pendingContactsSyncTarget.remove(m_currentContact.key());
 }
 
 QStringList QContactSaveRequestData::allPendingContacts() const
 {
     return m_pendingContacts.values();
+}
+
+void QContactSaveRequestData::notifyError(QContactSaveRequest *request, QContactManager::Error error)
+{
+    QContactManagerEngine::updateContactSaveRequest(request,
+                                                    QList<QContact>(),
+                                                    error,
+                                                    QMap<int, QContactManager::Error>(),
+                                                    QContactAbstractRequest::FinishedState);
 }
 
 void QContactSaveRequestData::updateRequest(QContactAbstractRequest::State state, QContactManager::Error error, QMap<int, QContactManager::Error> errorMap)

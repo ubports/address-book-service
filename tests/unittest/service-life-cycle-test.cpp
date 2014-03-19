@@ -28,7 +28,6 @@ class ServiceLifeCycleTest : public BaseClientTest
 {
     Q_OBJECT
 private Q_SLOTS:
-
     void testServiceReady()
     {
         QCOMPARE(m_serverIface->property("isReady").toBool(), true);

@@ -17,7 +17,7 @@
  */
 
 #include "base-client-test.h"
-#include "lib/source.h"
+#include "common/source.h"
 #include "common/dbus-service-defs.h"
 #include "common/vcard-parser.h"
 
@@ -62,7 +62,7 @@ private Q_SLOTS:
         QDBusReply<QStringList> reply2 = m_dummyIface->call("listContacts");
         QCOMPARE(reply2.value().count(), 1);
 
-        QList<QtContacts::QContact> contactsCreated = galera::VCardParser::vcardToContact(reply2.value());
+        QList<QtContacts::QContact> contactsCreated = galera::VCardParser::vcardToContactSync(reply2.value());
         QCOMPARE(contactsCreated.count(), 1);
         Q_FOREACH(QContactDetail det, contactsCreated[0].details()) {
             if (det.type() == QContactDetail::TypeUrl) {

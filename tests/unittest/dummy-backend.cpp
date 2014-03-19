@@ -116,7 +116,7 @@ FolksIndividualAggregator *DummyBackendProxy::aggregator() const
 
 QStringList DummyBackendProxy::listContacts() const
 {
-    return galera::VCardParser::contactToVcard(contacts());
+    return galera::VCardParser::contactToVcardSync(contacts());
 }
 
 void DummyBackendProxy::reset()
@@ -126,7 +126,37 @@ void DummyBackendProxy::reset()
         GeeCollection *personas = gee_map_get_values(map);
         folks_dummy_persona_store_unregister_personas(m_primaryPersonaStore, (GeeSet*)personas);
         g_object_unref(personas);
+        m_contacts.clear();
     }
+
+    // remove any extra collection/persona store
+    GeeHashSet *extraStores = gee_hash_set_new(FOLKS_TYPE_PERSONA_STORE,
+                                                 (GBoxedCopyFunc) g_object_ref, g_object_unref,
+                                                 NULL, NULL, NULL, NULL, NULL, NULL);
+
+    GeeMap *currentStores = folks_backend_get_persona_stores(FOLKS_BACKEND(m_backend));
+    GeeSet *keys = gee_map_get_keys(currentStores);
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(keys));
+
+    while(gee_iterator_next(iter)) {
+        const gchar *key = (const gchar*) gee_iterator_get(iter);
+        if (strcmp(key, "dummy-store") != 0) {
+            FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_map_get(currentStores, key));
+            gee_abstract_collection_add(GEE_ABSTRACT_COLLECTION(extraStores), store);
+            g_object_unref(store);
+        }
+    }
+
+    if (gee_collection_get_size(GEE_COLLECTION(extraStores)) > 0) {
+        folks_dummy_backend_unregister_persona_stores(m_backend, GEE_SET(extraStores));
+    }
+
+    g_object_unref(extraStores);
+    g_object_unref(keys);
+    g_object_unref (iter);
+
+    configurePrimaryStore();
+
 }
 
 void DummyBackendProxy::initFolks()
@@ -450,14 +480,14 @@ QStringList DummyBackendAdaptor::listContacts()
 
 QString DummyBackendAdaptor::createContact(const QString &vcard)
 {
-    QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
-    return m_proxy->createContact(contacts[0]);
+    QtContacts::QContact contact = galera::VCardParser::vcardToContact(vcard);
+    return m_proxy->createContact(contact);
 }
 
 QString DummyBackendAdaptor::updateContact(const QString &contactId, const QString &vcard)
 {
-    QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
-    return m_proxy->updateContact(contactId, contacts[0]);
+    QtContacts::QContact contact = galera::VCardParser::vcardToContact(vcard);
+    return m_proxy->updateContact(contactId, contact);
 }
 
 void DummyBackendAdaptor::enableAutoLink(bool flag)

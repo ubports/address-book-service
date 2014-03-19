@@ -45,10 +45,13 @@ public:
     void notifyUpdateError(QtContacts::QContactManager::Error error);
 
     bool hasNext() const;
-    QString nextContact();
+    QString nextContact(QString *syncTargetName);
 
     void notifyError(QtContacts::QContactManager::Error error);
     QStringList allPendingContacts() const;
+
+    static void notifyError(QtContacts::QContactSaveRequest *request,
+                            QtContacts::QContactManager::Error error = QtContacts::QContactManager::NotSupportedError);
 
 protected:
     virtual void updateRequest(QtContacts::QContactAbstractRequest::State state,
@@ -60,6 +63,7 @@ private:
     QMap<int, QtContacts::QContact> m_contactsToCreate;
 
     QMap<int, QString> m_pendingContacts;
+    QMap<int, QString> m_pendingContactsSyncTarget;
     QMap<int, QString>::Iterator m_currentContact;
 
     void prepareContacts(QMap<int, QtContacts::QContact> contacts);

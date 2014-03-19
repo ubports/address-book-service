@@ -19,7 +19,7 @@
 #ifndef __GALERA_ADDRESSBOOK_H__
 #define __GALERA_ADDRESSBOOK_H__
 
-#include "source.h"
+#include "common/source.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QSet>
@@ -69,6 +69,7 @@ public Q_SLOTS:
     void shutdown();
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
+    Source createSource(const QString &sourceId, const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
@@ -98,7 +99,7 @@ private:
     QDBusMessage m_updateCommandReplyMessage;
     QStringList m_updateCommandResult;
     QStringList m_updatedIds;
-    QList<QtContacts::QContact> m_updateCommandPendingContacts;
+    QStringList m_updateCommandPendingContacts;
 
     // Unix signals
     static int m_sigQuitFd[2];
@@ -119,6 +120,7 @@ private:
     bool registerObject(QDBusConnection &connection);
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
+    FolksPersonaStore *getFolksStore(const QString &source);
 
     static void availableSourcesDoneListAllSources(FolksBackendStore *backendStore,
                                                    GAsyncResult *res,
@@ -146,6 +148,17 @@ private:
     static void addAntiLinksDone(FolksAntiLinkable *antilinkable,
                                   GAsyncResult *result,
                                   void *data);
+    static void createSourceDone(GObject *source,
+                                 GAsyncResult *res,
+                                 void *data);
+
+    static void addGlobalAntilink(FolksPersona *persona,
+                                  GAsyncReadyCallback antilinkReady,
+                                  void *data);
+    static void addGlobalAntilinkDone(FolksAntiLinkable *antilinkable,
+                                      GAsyncResult *result,
+                                      void *data);
+
     friend class DirtyContactsNotify;
 };
 
