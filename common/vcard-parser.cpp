@@ -56,7 +56,8 @@ namespace
                     prop.setName(extendedDetail->name());
                     QStringList value;
                     value << extendedDetail->value(QContactExtendedDetail::FieldData).toString()
-                          << extendedDetail->value(QContactExtendedDetail::FieldData + 1).toString();
+                          << extendedDetail->value(QContactExtendedDetail::FieldData + 1).toString()
+                          << extendedDetail->value(QContactExtendedDetail::FieldData + 2).toString();
                     prop.setValueType(QVersitProperty::CompoundType);
                     prop.setValue(value);
                     *toBeAdded << prop;
@@ -111,7 +112,7 @@ namespace
                         prop.setParameters(params);
                     }
                     break;
-                }
+                }              
                 default:
                     break;
             }
@@ -143,7 +144,11 @@ namespace
                 QStringList value = property.value<QString>().split(";");
                 detail.setValue(QContactExtendedDetail::FieldData, value[0]);
                 detail.setValue(QContactExtendedDetail::FieldData + 1, value[1]);
-                *updatedDetails  << detail;
+                detail.setValue(QContactExtendedDetail::FieldData + 2, value[2]);
+
+                QContactSyncTarget target;
+                target.setSyncTarget(value[2]);
+                *updatedDetails  << detail << target;
                 *alreadyProcessed = true;
             }
 

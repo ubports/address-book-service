@@ -218,7 +218,6 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     connect(parser, &VCardParser::vcardParsed,
             this, &View::onVCardParsed);
     parser->contactToVcard(contacts);
-
     return QStringList();
 }
 

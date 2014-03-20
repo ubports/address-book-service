@@ -96,13 +96,14 @@ private:
 
     // QContact
     QtContacts::QContactDetail getUid() const;
-    QList<QtContacts::QContactDetail> getClientPidMap() const;
+    QList<QtContacts::QContactDetail> getClientPidMap() const;   
     QtContacts::QContactDetail getPersonaName           (FolksPersona *persona, int index) const;
+    QtContacts::QContactDetail getPersonaSyncTarget     (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaFullName       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaNickName       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaBirthday       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaPhoto          (FolksPersona *persona, int index) const;
-    QtContacts::QContactDetail getPersonaFavorite       (FolksPersona *persona, int index) const;
+    QtContacts::QContactDetail getPersonaFavorite       (FolksPersona *persona, int index) const;    
     QList<QtContacts::QContactDetail> getPersonaRoles   (FolksPersona *persona,
                                                          QtContacts::QContactDetail *preferredRole,
                                                          int index) const;

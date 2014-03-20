@@ -117,6 +117,9 @@ private Q_SLOTS:
         QCOMPARE(createdName.firstName(), name.firstName());
         QCOMPARE(createdName.middleName(), name.middleName());
         QCOMPARE(createdName.lastName(), name.lastName());
+
+        QContactSyncTarget target = contact.detail<QContactSyncTarget>();
+        QCOMPARE(target.syncTarget(), QString("Dummy personas"));
     }
 
     /*

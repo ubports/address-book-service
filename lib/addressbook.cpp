@@ -252,7 +252,7 @@ Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &me
         g_object_unref(backendStore);
         g_object_unref(dummy);
 
-        Source src(sourceId, sourceId, false);
+        Source src(sourceId, sourceId, false, false);
         QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(src));
         QDBusConnection::sessionBus().send(reply);
     } else if (personaStoreTypeId == "eds") {
@@ -277,7 +277,7 @@ void AddressBook::createSourceDone(GObject *source,
         qWarning() << "Fail to create source" << error->message;
         g_error_free(error);
     } else {
-        src = Source(cData->sourceName, cData->sourceName, false);
+        src = Source(cData->sourceName, cData->sourceName, false, false);
     }
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
     QDBusConnection::sessionBus().send(reply);
@@ -382,6 +382,7 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
     }
 
     GeeCollection *backends = folks_backend_store_list_backends(backendStore);
+
     SourceList result;
 
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(backends));
@@ -401,9 +402,12 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
 
             QString id = QString::fromUtf8(folks_persona_store_get_id(store));
             QString displayName = QString::fromUtf8(folks_persona_store_get_display_name(store));
+
             bool canWrite = folks_persona_store_get_can_add_personas(store) &&
                             folks_persona_store_get_can_remove_personas(store);
-            result << Source(id, displayName, !canWrite);
+            bool isPrimary = folks_persona_store_get_is_primary_store(store);
+
+            result << Source(id, displayName, !canWrite, isPrimary);
 
             g_object_unref(store);
         }
