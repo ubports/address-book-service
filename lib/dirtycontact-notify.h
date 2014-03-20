@@ -38,18 +38,22 @@ class DirtyContactsNotify : public QObject
     Q_OBJECT
 
 public:
-    DirtyContactsNotify(AddressBookAdaptor *adaptor, QObject *parent=0);
-
-    void append(QSet<QString> ids);
+    DirtyContactsNotify(AddressBookAdaptor *adaptor, QObject *parent=0);   
+    void insertChangedContacts(QSet<QString> ids);
+    void insertRemovedContacts(QSet<QString> ids);
+    void insertAddedContacts(QSet<QString> ids);
 
 private Q_SLOTS:
-    void onTimeout();
+    void emitSignals();
 
 private:
     AddressBookAdaptor *m_adaptor;
     QTimer m_timer;
-    QSet<QString> m_ids;
+    QSet<QString> m_contactsChanged;
+    QSet<QString> m_contactsAdded;
+    QSet<QString> m_contactsRemoved;
 };
+
 
 } //namespace
 
