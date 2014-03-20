@@ -193,7 +193,6 @@ public class FolksDummy.Backend : Folks.Backend
               var store = this._all_persona_stores.get (id);
               if (store == null)
                 {
-                  stdout.printf("Hello, World\n");
                   /* Create a new persona store. */
                   store = new FolksDummy.PersonaStore (id, id, FolksDummy.Backend._always_writable_properties);
                   store.persona_type = typeof (FolksDummy.FullPersona);
