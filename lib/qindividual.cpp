@@ -165,22 +165,19 @@ QtContacts::QContactDetail QIndividual::getUid() const
     return uid;
 }
 
-QList<QtContacts::QContactDetail> QIndividual::getClientPidMap() const
+QList<QtContacts::QContactDetail> QIndividual::getSyncTargets() const
 {
-    int index = 1;
     QList<QContactDetail> details;
-
     Q_FOREACH(const QString id, m_personas.keys()) {
-        QContactExtendedDetail detail;
+        QContactSyncTarget target;
+
         FolksPersona *p = m_personas[id];
         FolksPersonaStore *ps = folks_persona_get_store(p);
         QString displayName = folks_persona_store_get_display_name(ps);
 
-        detail.setName("CLIENTPIDMAP");
-        detail.setValue(QContactExtendedDetail::FieldData, index++);
-        detail.setValue(QContactExtendedDetail::FieldData + 1, id);
-        detail.setValue(QContactExtendedDetail::FieldData + 2, displayName);
-        details << detail;
+        target.setDetailUri(QString(id).replace(":","."));
+        target.setSyncTarget(displayName);
+        details << target;
     }
     return details;
 }
@@ -252,18 +249,6 @@ QContactDetail QIndividual::getPersonaName(FolksPersona *persona, int index) con
         detail.setDetailUri(QString("%1.1").arg(index));
     }
     return detail;
-}
-
-QContactDetail QIndividual::getPersonaSyncTarget(FolksPersona *persona, int index) const
-{
-    FolksPersonaStore *store = folks_persona_get_store(persona);
-    QString storeName = QString::fromUtf8(folks_persona_store_get_display_name(store));
-
-    QContactSyncTarget target;
-    target.setSyncTarget(storeName);
-    target.setDetailUri(QString("%1.1").arg(index));
-
-    return target;
 }
 
 QtContacts::QContactDetail QIndividual::getPersonaFullName(FolksPersona *persona, int index) const
@@ -707,6 +692,11 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
             details << det;
         }
 
+        // sync targets
+        Q_FOREACH(QContactDetail det, fullContact.details<QContactSyncTarget>()) {
+            details << det;
+        }
+
         if (fields.contains(QContactDetail::TypeName)) {
             details << fullContact.detail<QContactName>();
         }
@@ -754,12 +744,6 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
 
         if (fields.contains(QContactDetail::TypeUrl)) {
             Q_FOREACH(QContactDetail det, fullContact.details<QContactUrl>()) {
-                details << det;
-            }
-        }
-
-        if (fields.contains(QContactDetail::TypeSyncTarget)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactSyncTarget>()) {
                 details << det;
             }
         }
@@ -827,7 +811,7 @@ void QIndividual::updateContact()
     }
 
     m_contact->appendDetail(getUid());
-    Q_FOREACH(QContactDetail detail, getClientPidMap()) {
+    Q_FOREACH(QContactDetail detail, getSyncTargets()) {
         m_contact->appendDetail(detail);
     }
 
@@ -866,9 +850,6 @@ void QIndividual::updateContact()
                                     getPersonaFavorite(persona, personaIndex),
                                     !wPropList.contains("is-favourite"));
         }
-        appendDetailsForPersona(m_contact,
-                                getPersonaSyncTarget(persona, personaIndex),
-                                false);
 
         QList<QContactDetail> details;
         QContactDetail prefDetail;

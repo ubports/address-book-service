@@ -121,7 +121,7 @@ private Q_SLOTS:
         QContactSyncTarget target = contact.detail<QContactSyncTarget>();
         QCOMPARE(target.syncTarget(), QString("Dummy personas"));
     }
-
+#if 0
     /*
      * Test create a new contact
      */
@@ -216,6 +216,7 @@ private Q_SLOTS:
         QContactDisplayLabel label = contacts[0].detail(QContactDisplayLabel::Type);
         QCOMPARE(label.label(), QStringLiteral("Dummy personas"));
     }
+#endif
 };
 
 QTEST_MAIN(QContactsTest)
