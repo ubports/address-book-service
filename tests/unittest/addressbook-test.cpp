@@ -179,12 +179,12 @@ private Q_SLOTS:
         // call create contact
         QDBusReply<QString> reply = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
 
-        // check if the returned id is valid
-        QString newContactId = reply.value();
-        QVERIFY(!newContactId.isEmpty());
+        // check if the returned contact is valid
+        QString vcard = reply.value();
+        QVERIFY(!vcard.isEmpty());
 
         // check if the cotact was created with the correct fields
-        QtContacts::QContact newContact = basicContactWithId(newContactId);
+        QtContacts::QContact newContact = galera::VCardParser::vcardToContact(vcard);
         QDBusReply<QStringList> reply2 = m_dummyIface->call("listContacts");
         QCOMPARE(reply2.value().count(), 1);
         QList<QtContacts::QContact> contactsCreated = galera::VCardParser::vcardToContactSync(reply2.value());
@@ -196,7 +196,7 @@ private Q_SLOTS:
         QList<QVariant> args = addedContactSpy.takeFirst();
         QCOMPARE(args.count(), 1);
         QStringList ids = args[0].toStringList();
-        QCOMPARE(ids[0], newContactId);
+        QCOMPARE(ids[0], newContact.detail<QContactGuid>().guid());
     }
 
 
@@ -212,8 +212,7 @@ private Q_SLOTS:
         QTRY_COMPARE(addedContactSpy.count(), 1);
 
         // user returned id to fill the new vcard
-        QString newContactId = reply.value();
-        QString newVcard = m_resultBasicVcard.arg(newContactId).arg(0);
+        QString newVcard = reply.value();
 
         // try create a contact with the same id
         QDBusReply<QString> reply2 = m_serverIface->call("createContact", newVcard, "dummy-store");
@@ -245,8 +244,7 @@ private Q_SLOTS:
         // create a basic contact
         QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(QStringList)));
         QDBusReply<QString> replyAdd = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
-        QString newContactId = replyAdd.value();
-        QTRY_COMPARE(addedContactSpy.count(), 1);
+        QString vcard = replyAdd.value();
 
         // wait for added signal
         QTRY_COMPARE(addedContactSpy.count(), 1);
@@ -255,6 +253,8 @@ private Q_SLOTS:
         QSignalSpy removedContactSpy(m_serverIface, SIGNAL(contactsRemoved(QStringList)));
 
         // try remove the contact created
+        QContact newContact = galera::VCardParser::vcardToContact(vcard);
+        QString newContactId = newContact.detail<QContactGuid>().guid();
         QDBusReply<int> replyRemove = m_serverIface->call("removeContacts", QStringList() << newContactId);
         QCOMPARE(replyRemove.value(), 1);
 
@@ -274,11 +274,11 @@ private Q_SLOTS:
     {
         // create a basic contact
         QDBusReply<QString> replyAdd = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
-        QString newContactId = replyAdd.value();
-
+        QString vcard = replyAdd.value();
+        QContact newContact = galera::VCardParser::vcardToContact(vcard);
+        QString newContactId = newContact.detail<QContactGuid>().guid();
 
         // update the contact phone number
-        QString vcard = m_resultBasicVcard.arg(newContactId).arg(3);
         vcard = vcard.replace("8888888", "0000000");
         QtContacts::QContact contactUpdated = galera::VCardParser::vcardToContact(vcard);
 

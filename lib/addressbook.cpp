@@ -808,7 +808,13 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         reply = createData->m_message.createErrorReply("Failed to create individual from contact", "Contact already exists");
     } else {
         FolksIndividual *individual = folks_persona_get_individual(persona);
-        reply = createData->m_message.createReply(QString::fromUtf8(folks_individual_get_id(individual)));
+        ContactEntry *entry = createData->m_addressbook->m_contacts->value(QString::fromUtf8(folks_individual_get_id(individual)));
+        if (entry) {
+            QString vcard = VCardParser::contactToVcard(entry->individual()->contact());
+            reply = createData->m_message.createReply(vcard);
+        } else {
+            reply = createData->m_message.createErrorReply("Failed to retrieve the new contact", error->message);
+        }
     }
     //TODO: use dbus connection
     QDBusConnection::sessionBus().send(reply);

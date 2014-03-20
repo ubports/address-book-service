@@ -35,33 +35,10 @@ class QContactsTest : public BaseClientTest
 {
     Q_OBJECT
 private:
+    QContactManager *m_manager;
 
-private Q_SLOTS:
-    void initTestCase()
+    QContact testContact()
     {
-        BaseClientTest::initTestCase();
-        QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
-    }
-
-    void testAvailableManager()
-    {
-        QVERIFY(QContactManager::availableManagers().contains("galera"));
-    }
-
-    /*
-     * Test create a new contact
-     */
-    void testCreateContact()
-    {
-        QContactManager manager("galera");
-
-        // filter all contacts
-        QContactFilter filter;
-
-        // check result, must be empty
-        QList<QContact> contacts = manager.contacts(filter);
-        QCOMPARE(contacts.size(), 0);
-
         // create a contact
         QContact contact;
 
@@ -75,13 +52,54 @@ private Q_SLOTS:
         email.setEmailAddress("fulano@email.com");
         contact.saveDetail(&email);
 
-        QSignalSpy spyContactAdded(&manager, SIGNAL(contactsAdded(QList<QContactId>)));
-        bool result = manager.saveContact(&contact);
+        return contact;
+    }
+
+private Q_SLOTS:
+    void initTestCase()
+    {
+        BaseClientTest::initTestCase();
+        QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
+    }
+
+    void init()
+    {
+        BaseClientTest::init();
+        m_manager = new QContactManager("galera");
+    }
+
+    void cleanup()
+    {
+        delete m_manager;
+        BaseClientTest::cleanup();
+    }
+
+    void testAvailableManager()
+    {
+        QVERIFY(QContactManager::availableManagers().contains("galera"));
+    }
+
+    /*
+     * Test create a new contact
+     */
+    void testCreateContact()
+    {
+        // filter all contacts
+        QContactFilter filter;
+
+        // check result, must be empty
+        QList<QContact> contacts = m_manager->contacts(filter);
+        QCOMPARE(contacts.size(), 0);
+
+        // create a contact
+        QContact contact = testContact();
+        QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
+        bool result = m_manager->saveContact(&contact);
         QCOMPARE(result, true);
         QTRY_COMPARE(spyContactAdded.count(), 1);
 
         // query for new contacts
-        contacts = manager.contacts(filter);
+        contacts = m_manager->contacts(filter);
         QCOMPARE(contacts.size(), 1);
 
         QContact createdContact = contacts[0];
@@ -89,14 +107,53 @@ private Q_SLOTS:
         QVERIFY(!createdContact.id().isNull());
 
         // email
+        QContactEmailAddress email = contact.detail<QContactEmailAddress>();
         QContactEmailAddress createdEmail = createdContact.detail<QContactEmailAddress>();
         QCOMPARE(createdEmail.emailAddress(), email.emailAddress());
 
         // name
+        QContactName name = contact.detail<QContactName>();
         QContactName createdName = createdContact.detail<QContactName>();
         QCOMPARE(createdName.firstName(), name.firstName());
         QCOMPARE(createdName.middleName(), name.middleName());
         QCOMPARE(createdName.lastName(), name.lastName());
+    }
+
+    /*
+     * Test create a new contact
+     */
+    void testUpdateContact()
+    {
+        // filter all contacts
+        QContactFilter filter;
+
+        // create a contact
+        QContact contact = testContact();
+        QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+        QTRY_COMPARE(spyContactAdded.count(), 1);
+
+        QContactName name = contact.detail<QContactName>();
+        name.setMiddleName("da");
+        name.setLastName("Silva");
+        contact.saveDetail(&name);
+
+        QSignalSpy spyContactChanged(m_manager, SIGNAL(contactsChanged(QList<QContactId>)));
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+        QTRY_COMPARE(spyContactChanged.count(), 1);
+
+        // query for the contacts
+        QList<QContact> contacts = m_manager->contacts(filter);
+        QCOMPARE(contacts.size(), 1);
+        QContact updatedContact = contacts[0];
+
+        // name
+        QContactName updatedName = updatedContact.detail<QContactName>();
+        QCOMPARE(updatedName.firstName(), name.firstName());
+        QCOMPARE(updatedName.middleName(), name.middleName());
+        QCOMPARE(updatedName.lastName(), name.lastName());
     }
 
     /*

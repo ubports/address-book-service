@@ -509,12 +509,15 @@ void GaleraContactsService::createContactsDone(RequestData *request, QDBusPendin
         qWarning() << reply.error().name() << reply.error().message();
         opError = QContactManager::UnspecifiedError;
     } else {
-        const QString id = reply.value();
-        if (!id.isEmpty()) {
+        const QString vcard = reply.value();        
+        if (!vcard.isEmpty()) {
             contacts = static_cast<QtContacts::QContactSaveRequest *>(request->request())->contacts();
-            GaleraEngineId *engineId = new GaleraEngineId(id, m_managerUri);
-            QContactId contactId(engineId);
-            contacts[0].setId(QContactId(contactId));
+            QContact contact = VCardParser::vcardToContact(vcard);
+            QContactGuid detailId = contact.detail<QContactGuid>();
+            GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
+            QContactId newId = QContactId(engineId);
+            contact.setId(newId);
+            contacts.insert(0, contact);
         } else {
             opError = QContactManager::UnspecifiedError;
         }
