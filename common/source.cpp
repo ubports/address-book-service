@@ -32,10 +32,11 @@ Source::Source(const Source &other)
 {
 }
 
-Source::Source(QString id, const QString &displayName, bool isReadOnly)
+Source::Source(QString id, const QString &displayName, bool isReadOnly, bool isPrimary)
     : m_id(id),
       m_displayName(displayName),
-      m_isReadOnly(isReadOnly)
+      m_isReadOnly(isReadOnly),
+      m_isPrimary(isPrimary)
 {
     Q_ASSERT(displayName.isEmpty() == false);
 }
@@ -43,6 +44,11 @@ Source::Source(QString id, const QString &displayName, bool isReadOnly)
 bool Source::isValid() const
 {
     return !m_id.isEmpty();
+}
+
+bool Source::isPrimary() const
+{
+    return m_isPrimary;
 }
 
 QString Source::id() const

@@ -191,6 +191,7 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
                                                          this);
 
     loop.exec();
+    g_hash_table_destroy(details);
     return QString();
 }
 

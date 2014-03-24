@@ -292,7 +292,63 @@ private Q_SLOTS:
     }
 
 
+    /*
+     * Test parse a vcard with sync target into a Contact
+     */
+    void testVCardWithSyncTargetToContact()
+    {
+        QString vcard = QStringLiteral("BEGIN:VCARD\r\n"
+                                       "VERSION:3.0\r\n"
+                                       "CLIENTPIDMAP;PID=1.ADDRESSBOOKID0:ADDRESSBOOKNAME0\r\n"
+                                       "CLIENTPIDMAP;PID=2.ADDRESSBOOKID1:ADDRESSBOOKNAME1\r\n"
+                                       "N:Sauro;Dino;da Silva;;\r\n"
+                                       "EMAILPID=1.1;:dino@familiadinosauro.com.br\r\n"
+                                       "TEL;PID=1.1;TYPE=ISDN:33331410\r\n"
+                                       "TEL;PID=1.2;TYPE=CELL:8888888\r\n"
+                                       "END:VCARD\r\n");
+        QContact contact = VCardParser::vcardToContact(vcard);
+        QList<QContactSyncTarget> targets = contact.details<QContactSyncTarget>();
+        QCOMPARE(targets.size(), 2);
 
+        QContactSyncTarget target0;
+        QContactSyncTarget target1;
+
+        // put the target in order
+        if (targets[0].detailUri().startsWith("1.")) {
+            target0 = targets[0];
+            target1 = targets[1];
+        } else {
+            target0 = targets[1];
+            target1 = targets[2];
+        }
+
+        QCOMPARE(target0.detailUri(), QString("1.ADDRESSBOOKID0"));
+        QCOMPARE(target0.syncTarget(), QString("ADDRESSBOOKNAME0"));
+        QCOMPARE(target1.detailUri(), QString("2.ADDRESSBOOKID1"));
+        QCOMPARE(target1.syncTarget(), QString("ADDRESSBOOKNAME1"));
+    }
+
+    /*
+     * Test parse a Contact with sync target into a vcard
+     */
+    void testContactWithSyncTargetToVCard()
+    {
+        QContact c = m_contacts[0];
+
+        QContactSyncTarget target;
+        target.setDetailUri("1.ADDRESSBOOKID0");
+        target.setSyncTarget("ADDRESSBOOKNAME0");
+        c.saveDetail(&target);
+
+        QContactSyncTarget target1;
+        target1.setDetailUri("2.ADDRESSBOOKID1");
+        target1.setSyncTarget("ADDRESSBOOKNAME1");
+        c.saveDetail(&target1);
+
+        QString vcard = VCardParser::contactToVcard(c);
+        QVERIFY(vcard.contains("CLIENTPIDMAP;PID=1.ADDRESSBOOKID0:ADDRESSBOOKNAME0"));
+        QVERIFY(vcard.contains("CLIENTPIDMAP;PID=2.ADDRESSBOOKID1:ADDRESSBOOKNAME1"));
+    }
 };
 
 QTEST_MAIN(VCardParseTest)

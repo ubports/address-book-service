@@ -184,8 +184,9 @@ bool GaleraManagerEngine::saveContact(QtContacts::QContact *contact, QtContacts:
     *error = QContactManager::NoError;
 
     // FIXME: GaleraContactsService::updateContactDone doesn't return contacts
-    if (contact->id().isNull())
+    if (contact->id().isNull()) {
       *contact = request.contacts()[0];
+    }
 
     return true;
 }

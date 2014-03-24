@@ -86,6 +86,12 @@ static QContact parseSource(const galera::Source &source, const QString &manager
     readOnly.setData(source.isReadOnly());
     contact.saveDetail(&readOnly);
 
+    // Primary
+    QContactExtendedDetail primary;
+    readOnly.setName("primary");
+    readOnly.setData(source.isPrimary());
+    contact.saveDetail(&primary);
+
     return contact;
 }
 
@@ -425,7 +431,12 @@ void GaleraContactsService::fetchContactsGroupsContinue(QContactFetchRequestData
         opError = QContactManager::UnspecifiedError;
     } else {
         Q_FOREACH(const Source &source, reply.value()) {
-            contacts << parseSource(source, m_managerUri);
+            QContact c = parseSource(source, m_managerUri);
+            if (source.isPrimary()) {
+                contacts.prepend(c);
+            } else {
+                contacts << c;
+            }
         }
     }
 
@@ -496,10 +507,14 @@ void GaleraContactsService::createContactsDone(QContactSaveRequestData *data,
         qWarning() << reply.error().name() << reply.error().message();
         data->notifyUpdateError(QContactManager::UnspecifiedError);
     } else {
-        const QString id = reply.value();
-        if (!id.isEmpty()) {
-            GaleraEngineId *engineId = new GaleraEngineId(id, m_managerUri);
-            data->updateCurrentContactId(engineId);
+        const QString vcard = reply.value();
+        if (!vcard.isEmpty()) {
+            QContact contact = VCardParser::vcardToContact(vcard);
+            QContactGuid detailId = contact.detail<QContactGuid>();
+            GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
+            QContactId newId = QContactId(engineId);
+            contact.setId(newId);
+            data->updateCurrentContact(contact);
         } else {
             data->notifyUpdateError(QContactManager::UnspecifiedError);
         }
