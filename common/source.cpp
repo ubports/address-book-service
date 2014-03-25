@@ -28,7 +28,9 @@ Source::Source()
 Source::Source(const Source &other)
     : m_id(other.id()),
       m_displayName(other.displayLabel()),
-      m_isReadOnly(other.isReadOnly())
+      m_isReadOnly(other.isReadOnly()),
+      m_isPrimary(other.isPrimary())
+
 {
 }
 
@@ -80,6 +82,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Source &source)
     argument << source.m_id;
     argument << source.m_displayName;
     argument << source.m_isReadOnly;
+    argument << source.m_isPrimary;
     argument.endStructure();
 
     return argument;
@@ -91,6 +94,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Source &source)
     argument >> source.m_id;
     argument >> source.m_displayName;
     argument >> source.m_isReadOnly;
+    argument >> source.m_isPrimary;
     argument.endStructure();
 
     return argument;
