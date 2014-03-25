@@ -99,7 +99,7 @@ private:
     QDBusMessage m_updateCommandReplyMessage;
     QStringList m_updateCommandResult;
     QStringList m_updatedIds;
-    QList<QtContacts::QContact> m_updateCommandPendingContacts;
+    QStringList m_updateCommandPendingContacts;
 
     // Unix signals
     static int m_sigQuitFd[2];
@@ -150,6 +150,14 @@ private:
     static void createSourceDone(GObject *source,
                                  GAsyncResult *res,
                                  void *data);
+
+    static void addGlobalAntilink(FolksPersona *persona,
+                                  GAsyncReadyCallback antilinkReady,
+                                  void *data);
+    static void addGlobalAntilinkDone(FolksAntiLinkable *antilinkable,
+                                      GAsyncResult *result,
+                                      void *data);
+
     friend class DirtyContactsNotify;
 };
 

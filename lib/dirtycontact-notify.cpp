@@ -31,19 +31,74 @@ DirtyContactsNotify::DirtyContactsNotify(AddressBookAdaptor *adaptor, QObject *p
 {
     m_timer.setInterval(NOTIFY_CONTACTS_TIMEOUT);
     m_timer.setSingleShot(true);
-    connect(&m_timer, SIGNAL(timeout()), SLOT(onTimeout()));
+    connect(&m_timer, SIGNAL(timeout()), SLOT(emitSignals()));
 }
 
-void DirtyContactsNotify::append(QSet<QString> ids)
+void DirtyContactsNotify::insertAddedContacts(QSet<QString> ids)
 {
-    m_ids += ids;
+    if (!m_adaptor->isReady()) {
+        return;
+    }
+
+    // if the contact was removed before ignore the removal signal, and send a update signal
+    QSet<QString> addedIds = ids;
+    Q_FOREACH(QString added, ids) {
+        if (m_contactsRemoved.contains(added)) {
+            m_contactsRemoved.remove(added);
+            addedIds.remove(added);
+            m_contactsChanged.insert(added);
+        }
+    }
+
+    m_contactsAdded += addedIds;
     m_timer.start();
 }
 
-void DirtyContactsNotify::onTimeout()
+void DirtyContactsNotify::insertRemovedContacts(QSet<QString> ids)
 {
-    Q_EMIT m_adaptor->contactsUpdated(m_ids.toList());
-    m_ids.clear();
+    if (!m_adaptor->isReady()) {
+        return;
+    }
+
+    // if the contact was added before ignore the added and removed signal
+    QSet<QString> removedIds = ids;
+    Q_FOREACH(QString removed, ids) {
+        if (m_contactsAdded.contains(removed)) {
+            m_contactsAdded.remove(removed);
+            removedIds.remove(removed);
+        }
+    }
+
+    m_contactsRemoved += removedIds;
+    m_timer.start();
+}
+
+void DirtyContactsNotify::insertChangedContacts(QSet<QString> ids)
+{
+    if (!m_adaptor->isReady()) {
+        return;
+    }
+
+    m_contactsChanged += ids;
+    m_timer.start();
+}
+
+void DirtyContactsNotify::emitSignals()
+{
+    if (!m_contactsRemoved.isEmpty()) {
+        Q_EMIT m_adaptor->contactsRemoved(m_contactsRemoved.toList());
+        m_contactsRemoved.clear();
+    }
+
+    if (!m_contactsAdded.isEmpty()) {
+        Q_EMIT m_adaptor->contactsAdded(m_contactsAdded.toList());
+        m_contactsAdded.clear();
+    }
+
+    if (!m_contactsChanged.isEmpty()) {
+        Q_EMIT m_adaptor->contactsUpdated(m_contactsChanged.toList());
+        m_contactsChanged.clear();
+    }
 }
 
 } //namespace

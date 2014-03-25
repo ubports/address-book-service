@@ -112,7 +112,7 @@ FolksIndividualAggregator *DummyBackendProxy::aggregator() const
 
 QStringList DummyBackendProxy::listContacts() const
 {
-    return galera::VCardParser::contactToVcard(contacts());
+    return galera::VCardParser::contactToVcardSync(contacts());
 }
 
 void DummyBackendProxy::reset()
@@ -435,14 +435,14 @@ QStringList DummyBackendAdaptor::listContacts()
 
 QString DummyBackendAdaptor::createContact(const QString &vcard)
 {
-    QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
-    return m_proxy->createContact(contacts[0]);
+    QtContacts::QContact contact = galera::VCardParser::vcardToContact(vcard);
+    return m_proxy->createContact(contact);
 }
 
 QString DummyBackendAdaptor::updateContact(const QString &contactId, const QString &vcard)
 {
-    QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
-    return m_proxy->updateContact(contactId, contacts[0]);
+    QtContacts::QContact contact = galera::VCardParser::vcardToContact(vcard);
+    return m_proxy->updateContact(contactId, contact);
 }
 
 void DummyBackendAdaptor::enableAutoLink(bool flag)

@@ -71,6 +71,9 @@ private Q_SLOTS:
     void onContactsUpdated(QStringList ids);
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
     void onServiceReady();
+    void onVCardsParsed(QList<QtContacts::QContact> contacts);
+
+    void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
 
 private:
     QString m_id;
@@ -93,7 +96,7 @@ private:
                                QDBusPendingCallWatcher *call);
     void fetchContactsById(QtContacts::QContactFetchByIdRequest *request);
     Q_INVOKABLE void fetchContactsPage(galera::RequestData *request);
-    void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
+
 
     void saveContact(QtContacts::QContactSaveRequest *request);
     void createContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts);

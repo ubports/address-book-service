@@ -62,8 +62,6 @@ public:
     bool canceled() const;
     void wait();
 
-    QList<QtContacts::QContact> result() const;
-
     void setError(QtContacts::QContactManager::Error error);
     void update(QList<QtContacts::QContact> result,
                 QtContacts::QContactAbstractRequest::State state,
@@ -82,6 +80,7 @@ private:
     QSharedPointer<QDBusInterface> m_view;
     QSharedPointer<QDBusPendingCallWatcher> m_watcher;
     QList<QtContacts::QContact> m_result;
+    QList<QtContacts::QContact> m_fullResult;
     int m_offset;
     FetchHint m_hint;
     bool m_canceled;
