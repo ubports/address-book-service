@@ -88,8 +88,8 @@ static QContact parseSource(const galera::Source &source, const QString &manager
 
     // Primary
     QContactExtendedDetail primary;
-    readOnly.setName("primary");
-    readOnly.setData(source.isPrimary());
+    primary.setName("IS-PRIMARY");
+    primary.setData(source.isPrimary());
     contact.saveDetail(&primary);
 
     return contact;

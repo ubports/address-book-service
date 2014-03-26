@@ -408,7 +408,6 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             bool canWrite = folks_persona_store_get_can_add_personas(store) &&
                             folks_persona_store_get_can_remove_personas(store);
             bool isPrimary = folks_persona_store_get_is_primary_store(store);
-
             result << Source(id, displayName, !canWrite, isPrimary);
 
             g_object_unref(store);
