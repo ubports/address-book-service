@@ -748,7 +748,7 @@ void GaleraContactsService::destroyRequest(RequestData *request)
     delete request;
 }
 
-QList<QContactId> GaleraContactsService::parseIds(QStringList ids) const
+QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const
 {
     QList<QContactId> contactIds;
     Q_FOREACH(QString id, ids) {
@@ -758,17 +758,17 @@ QList<QContactId> GaleraContactsService::parseIds(QStringList ids) const
     return contactIds;
 }
 
-void GaleraContactsService::onContactsAdded(QStringList ids)
+void GaleraContactsService::onContactsAdded(const QStringList &ids)
 {
     Q_EMIT contactsAdded(parseIds(ids));
 }
 
-void GaleraContactsService::onContactsRemoved(QStringList ids)
+void GaleraContactsService::onContactsRemoved(const QStringList &ids)
 {
     Q_EMIT contactsRemoved(parseIds(ids));
 }
 
-void GaleraContactsService::onContactsUpdated(QStringList ids)
+void GaleraContactsService::onContactsUpdated(const QStringList &ids)
 {
     Q_EMIT contactsUpdated(parseIds(ids));
 }

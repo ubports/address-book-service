@@ -107,7 +107,7 @@ QMap<QString, QtContacts::QContactDetail::DetailType> FetchHint::contactFieldNam
     return map;
 }
 
-QList<QContactDetail::DetailType> FetchHint::parseFieldNames(QStringList fieldNames)
+QList<QContactDetail::DetailType> FetchHint::parseFieldNames(const QStringList &fieldNames)
 {
     QList<QContactDetail::DetailType> result;
     const QMap<QString, QtContacts::QContactDetail::DetailType> map = contactFieldNames();

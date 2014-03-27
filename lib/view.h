@@ -42,7 +42,7 @@ class View : public QObject
     Q_PROPERTY(int count READ count NOTIFY countChanged)
 
 public:
-    View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent);
+    View(const QString &clause, const QString &sort, const QStringList &sources, ContactsMap *allContacts, QObject *parent);
     ~View();
 
     static QString objectPath();
@@ -65,7 +65,7 @@ public Q_SLOTS:
     QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message);
 
 private Q_SLOTS:
-    void onVCardParsed(QStringList vcards);
+    void onVCardParsed(const QStringList &vcards);
 
 Q_SIGNALS:
     void closed();

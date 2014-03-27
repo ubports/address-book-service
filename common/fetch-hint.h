@@ -39,7 +39,7 @@ public:
     QStringList fields() const;
     QtContacts::QContactFetchHint toContactFetchHint() const;
     static QMap<QString, QtContacts::QContactDetail::DetailType> contactFieldNames();
-    static QList<QtContacts::QContactDetail::DetailType> parseFieldNames(QStringList fieldNames);
+    static QList<QtContacts::QContactDetail::DetailType> parseFieldNames(const QStringList &fieldNames);
 
 private:
     QtContacts::QContactFetchHint m_hint;
