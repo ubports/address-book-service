@@ -1,3 +1,12 @@
+address-book-service (0.1.1+14.04.20140327-0ubuntu1) trusty; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Implemented tests for qtcontacts plugin. Implemented support to
+    query for eds addressbook as contact group. Fixed crash on service
+    exit. Implemented support to create contacts in a target source.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 27 Mar 2014 18:16:39 +0000
+
 address-book-service (0.1.1+14.04.20140325.2-0ubuntu1) trusty; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
