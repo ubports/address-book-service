@@ -3,13 +3,14 @@ Running the address-book-service and qtcontacts in dummy mode.
 Running address-book-service
 ===========================
 
-# export CANONICAL_PIN_SERVICE_NAME="com.canonical.test.pim"
+# export ALTERNATIVE_CPIM_SERVICE_NAME="com.canonical.test.pim"
 # export FOLKS_BACKEND_PATH="/usr/lib/address-book-service/dummy.so"
 # export FOLKS_BACKENDS_ALLOWED="dummy"
 # export FOLKS_PRIMARY_STORE="dummy"
+# export ADDRESS_BOOK_SERVICE_DEMO_DATA=<some-vcard-file>
 # /usr/libexec/address-book-service
 
-CANONICAL_PIN_SERVICE_NAME
+ALTERNATIVE_CPIM_SERVICE_NAME
  - Defines a new address book DBus service name
 
 FOLKS_BACKEND_PATH
@@ -21,11 +22,15 @@ FOLKS_BACKENDS_ALLOWED
 FOLKS_PRIMARY_STORE
  - Defines which persona store should be used as primary store
 
+ADDRESS_BOOK_SERVICE_DEMO_DATA
+ - VCard file which will be used to populate the server
+
+
 Running any address-book client
 ===============================
 
-# export CANONICAL_PIN_SERVICE_NAME="com.canonical.test.pim"
+# export ALTERNATIVE_CPIM_SERVICE_NAME="com.canonical.test.pim"
 
-CANONICAL_PIN_SERVICE_NAME
+ALTERNATIVE_CPIM_SERVICE_NAME
  - Defines a new address book DBus service name, should be the same as the server
 

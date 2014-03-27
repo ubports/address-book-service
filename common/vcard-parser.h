@@ -53,6 +53,8 @@ public:
     static QString contactToVcard(const QtContacts::QContact &contact);
     static QStringList contactToVcardSync(QList<QtContacts::QContact> contacts);
 
+    static QStringList splitVcards(const QByteArray &vcardList);
+
 Q_SIGNALS:
     void vcardParsed(QStringList vcards);
     void contactsParsed(QList<QtContacts::QContact> contacts);
@@ -68,8 +70,6 @@ private:
     QtVersit::QVersitReader *m_versitReader;
 
     QByteArray m_vcardData;
-
-    static QStringList splitVcards(const QByteArray &vcardList);
 };
 
 }

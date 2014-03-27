@@ -29,6 +29,7 @@ AddressBookAdaptor::AddressBookAdaptor(const QDBusConnection &connection, Addres
       m_connection(connection)
 {
     setAutoRelaySignals(true);
+    connect(m_addressBook, SIGNAL(ready()), SIGNAL(ready()));
 }
 
 AddressBookAdaptor::~AddressBookAdaptor()

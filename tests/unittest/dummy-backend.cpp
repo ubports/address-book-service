@@ -118,9 +118,9 @@ QStringList DummyBackendProxy::listContacts() const
 void DummyBackendProxy::reset()
 {
     if (m_contacts.count()) {
-        GeeMap *map = folks_persona_store_get_personas((FolksPersonaStore*)m_primaryPersonaStore);
+        GeeMap *map = folks_persona_store_get_personas(m_primaryPersonaStore);
         GeeCollection *personas = gee_map_get_values(map);
-        folks_dummy_persona_store_unregister_personas(m_primaryPersonaStore, (GeeSet*)personas);
+        folks_dummy_persona_store_unregister_personas(FOLKS_DUMMY_PERSONA_STORE(m_primaryPersonaStore), (GeeSet*)personas);
         g_object_unref(personas);
         m_contacts.clear();
     }
@@ -154,38 +154,6 @@ void DummyBackendProxy::reset()
 
 void DummyBackendProxy::initFolks()
 {
-    m_backendStore = folks_backend_store_dup();
-    folks_backend_store_load_backends(m_backendStore,
-                                      (GAsyncReadyCallback) DummyBackendProxy::backendStoreLoaded,
-                                      this);
-
-    loop.exec();
-
-    loop.reset(&m_eventLoop);
-    folks_backend_store_enable_backend(m_backendStore, "dummy",
-                                       (GAsyncReadyCallback) DummyBackendProxy::backendEnabled,
-                                       this);
-    loop.exec();
-
-    m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(m_backendStore, "dummy"));
-
-    // get the primary store
-    GeeMap *stores = folks_backend_get_persona_stores(FOLKS_BACKEND(m_backend));
-    m_primaryPersonaStore = FOLKS_DUMMY_PERSONA_STORE(gee_map_get(stores, "dummy-store"));
-    qDebug() << "Primary store:" << (void*) m_primaryPersonaStore;
-
-    Q_ASSERT(m_backend != 0);
-    m_isReady = true;
-    Q_EMIT ready();
-}
-
-bool DummyBackendProxy::isReady() const
-{
-    return m_isReady;
-}
-
-void DummyBackendProxy::prepareAggregator()
-{
     m_aggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     m_individualsChangedDetailedId = g_signal_connect(m_aggregator,
                                           "individuals-changed-detailed",
@@ -196,15 +164,21 @@ void DummyBackendProxy::prepareAggregator()
                                         this);
 }
 
+bool DummyBackendProxy::isReady() const
+{
+    return m_isReady;
+}
+
 QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
 {
     ScopedEventLoop loop(&m_eventLoop);
 
     GHashTable *details = galera::QIndividual::parseDetails(qcontact);
     Q_ASSERT(details);
+    Q_ASSERT(m_aggregator);
     folks_individual_aggregator_add_persona_from_details(m_aggregator,
                                                          NULL, //parent
-                                                         FOLKS_PERSONA_STORE(m_primaryPersonaStore),
+                                                         m_primaryPersonaStore,
                                                          details,
                                                          (GAsyncReadyCallback) DummyBackendProxy::individualAggregatorAddedPersona,
                                                          this);
@@ -230,29 +204,6 @@ QString DummyBackendProxy::updateContact(const QString &contactId,
     i->update(qcontact, this, SLOT(contactUpdated(QString,QString)));
     loop.exec();
     return i->id();
-}
-
-void DummyBackendProxy::backendEnabled(FolksBackendStore *backendStore,
-                                       GAsyncResult *res,
-                                       DummyBackendProxy *self)
-{
-    self->m_eventLoop->quit();
-    self->m_eventLoop = 0;
-}
-
-
-void DummyBackendProxy::backendStoreLoaded(FolksBackendStore *backendStore,
-                                           GAsyncResult *res,
-                                           DummyBackendProxy *self)
-{
-    GError *error = 0;
-    folks_backend_store_load_backends_finish(backendStore, res, &error);
-    checkError(error);
-
-    self->m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(self->m_backendStore, "dummy"));
-    Q_ASSERT(self->m_backend != 0);
-    qDebug() << "Got backend" << (void*)self->m_backend;
-    self->configurePrimaryStore();
 }
 
 void DummyBackendProxy::checkError(GError *error)
@@ -347,11 +298,20 @@ void DummyBackendProxy::individualAggregatorPrepared(FolksIndividualAggregator *
 
     folks_individual_aggregator_prepare_finish(fia, res, &error);
     checkError(error);
+
+    self->m_backendStore = folks_backend_store_dup();
+    self->m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(self->m_backendStore, "dummy"));
+    if (!self->m_backend) {
+        qWarning() << "fail to load dummy backend";
+    }
+
+    self->m_primaryPersonaStore = folks_individual_aggregator_get_primary_store(fia);
+    g_object_ref(self->m_primaryPersonaStore);
+
     if (self->m_useDBus) {
         self->registerObject();
     }
 
-    qDebug() << "READDDDY";
     self->m_isReady = true;
     Q_EMIT self->ready();
 }

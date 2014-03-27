@@ -434,7 +434,7 @@ QString AddressBook::createContact(const QString &contact, const QString &source
         qWarning() << "Contact exists";
     } else {
         QContact qcontact = VCardParser::vcardToContact(contact);
-        if (!qcontact.isEmpty()) {            
+        if (!qcontact.isEmpty()) {
             GHashTable *details = QIndividual::parseDetails(qcontact);
             CreateContactData *data = new CreateContactData;
             data->m_message = message;
@@ -452,8 +452,10 @@ QString AddressBook::createContact(const QString &contact, const QString &source
         }
     }
 
-    QDBusMessage reply = message.createReply(QString());
-    QDBusConnection::sessionBus().send(reply);
+    if (message.type() != QDBusMessage::InvalidMessage) {
+        QDBusMessage reply = message.createReply(QString());
+        QDBusConnection::sessionBus().send(reply);
+    }
     return "";
 }
 
@@ -821,13 +823,17 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         ContactEntry *entry = createData->m_addressbook->m_contacts->value(QString::fromUtf8(folks_individual_get_id(individual)));
         if (entry) {
             QString vcard = VCardParser::contactToVcard(entry->individual()->contact());
-            reply = createData->m_message.createReply(vcard);
-        } else {
+            if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
+                reply = createData->m_message.createReply(vcard);
+            }
+        } else if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
             reply = createData->m_message.createErrorReply("Failed to retrieve the new contact", error->message);
         }
     }
     //TODO: use dbus connection
-    QDBusConnection::sessionBus().send(reply);
+    if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
+        QDBusConnection::sessionBus().send(reply);
+    }
     delete createData;
 }
 
@@ -838,7 +844,7 @@ void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, Address
 
     g_object_get(source, "is-quiescent", &self->m_ready, NULL);
     if (self->m_ready && self->m_adaptor) {
-        Q_EMIT self->m_adaptor->ready();
+        Q_EMIT self->ready();
     }
 }
 
