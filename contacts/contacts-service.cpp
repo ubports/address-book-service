@@ -379,6 +379,10 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
 {
     QObject *sender = QObject::sender();
     RequestData *request = static_cast<RequestData*>(sender->property("DATA").value<void*>());
+    if (!request->isLive()) {
+        destroyRequest(request);
+        return;
+    }
 
     QList<QContact>::iterator contact;
     for (contact = contacts.begin(); contact != contacts.end(); ++contact) {
@@ -520,7 +524,7 @@ void GaleraContactsService::createContactsDone(RequestData *request, QDBusPendin
         qWarning() << reply.error().name() << reply.error().message();
         opError = QContactManager::UnspecifiedError;
     } else {
-        const QString vcard = reply.value();        
+        const QString vcard = reply.value();
         if (!vcard.isEmpty()) {
             contacts = static_cast<QtContacts::QContactSaveRequest *>(request->request())->contacts();
             QContact contact = VCardParser::vcardToContact(vcard);
