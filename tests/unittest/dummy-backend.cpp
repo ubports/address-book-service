@@ -153,7 +153,7 @@ void DummyBackendProxy::reset()
 }
 
 void DummyBackendProxy::initFolks()
-{    
+{
     m_backendStore = folks_backend_store_dup();
     folks_backend_store_load_backends(m_backendStore,
                                       (GAsyncReadyCallback) DummyBackendProxy::backendStoreLoaded,
@@ -263,7 +263,6 @@ void DummyBackendProxy::backendStoreLoaded(FolksBackendStore *backendStore,
 
     self->m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(self->m_backendStore, "dummy"));
     Q_ASSERT(self->m_backend != 0);
-    qDebug() << "Got backend" << (void*)self->m_backend;
     self->configurePrimaryStore();
 }
 
@@ -298,7 +297,7 @@ void DummyBackendProxy::initEnviroment()
     // home
     qputenv("HOME", tmpFullPath.toUtf8().data());
 
-    // cache    
+    // cache
     QString cacheDir = QString("%1/.cache/").arg(tmpFullPath);
     mkpath(cacheDir);
     qputenv("XDG_CACHE_HOME", cacheDir.toUtf8().data());
@@ -363,7 +362,6 @@ void DummyBackendProxy::individualAggregatorPrepared(FolksIndividualAggregator *
         self->registerObject();
     }
 
-    qDebug() << "READDDDY";
     self->m_isReady = true;
     Q_EMIT self->ready();
 }
