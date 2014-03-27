@@ -110,20 +110,27 @@ protected:
     void run()
     {
         m_allContacts->lock();
-        Q_FOREACH(ContactEntry *entry, m_allContacts->values())
-        {
-            m_stoppedLock.lockForRead();
-            if (m_stopped) {
-                m_stoppedLock.unlock();
-                m_allContacts->unlock();
-                return;
-            }
-            m_stoppedLock.unlock();
 
-            if (checkContact(entry)) {
-                m_contacts << entry;
+        // filter contacts if necessary
+        if (m_filter.isValid()) {
+            Q_FOREACH(ContactEntry *entry, m_allContacts->values())
+            {
+                m_stoppedLock.lockForRead();
+                if (m_stopped) {
+                    m_stoppedLock.unlock();
+                    m_allContacts->unlock();
+                    return;
+                }
+                m_stoppedLock.unlock();
+
+                if (checkContact(entry)) {
+                    m_contacts << entry;
+                }
             }
+        } else {
+            m_contacts = m_allContacts->values();
         }
+
         chageSort(m_sortClause);
         m_allContacts->unlock();
     }
@@ -142,7 +149,7 @@ private:
     }
 };
 
-View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
+View::View(const QString &clause, const QString &sort, const QStringList &sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
       m_sources(sources),
       m_filterThread(new FilterThread(clause, sort, allContacts)),
@@ -170,17 +177,19 @@ void View::close()
         m_adaptor = 0;
     }
 
-    if (m_filterThread->isRunning()) {
-        m_filterThread->stop();
-        m_filterThread->wait();
+    if (m_filterThread) {
+        if (m_filterThread->isRunning()) {
+            m_filterThread->stop();
+            m_filterThread->wait();
+        }
+        delete m_filterThread;
+        m_filterThread = 0;
     }
-
-    delete m_filterThread;
-    m_filterThread = 0;
 }
 
 QString View::contactDetails(const QStringList &fields, const QString &id)
 {
+    Q_ASSERT(FALSE);
     return QString();
 }
 
@@ -209,11 +218,10 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     connect(parser, &VCardParser::vcardParsed,
             this, &View::onVCardParsed);
     parser->contactToVcard(contacts);
-
     return QStringList();
 }
 
-void View::onVCardParsed(QStringList vcards)
+void View::onVCardParsed(const QStringList &vcards)
 {
     QObject *sender = QObject::sender();
     QDBusMessage reply = sender->property("DATA").value<QDBusMessage>().createReply(vcards);

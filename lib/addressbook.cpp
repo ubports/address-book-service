@@ -232,9 +232,36 @@ Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &me
     data->m_addressbook = this;
     data->m_message = message;
     data->sourceName = sourceId;
-    edsf_persona_store_create_address_book(sourceId.toUtf8().data(),
-                                           (GAsyncReadyCallback) AddressBook::createSourceDone,
-                                           data);
+    FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
+    QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id (store));
+    if ( personaStoreTypeId == "dummy") {
+        FolksBackendStore *backendStore = folks_backend_store_dup();
+        FolksBackend *dummy = folks_backend_store_dup_backend_by_name(backendStore, "dummy");
+
+        GeeMap *stores = folks_backend_get_persona_stores(dummy);
+        GeeSet *storesKeys = gee_map_get_keys(stores);
+        GeeSet *storesIds = (GeeSet*) gee_hash_set_new(G_TYPE_STRING,
+                                                       (GBoxedCopyFunc) g_strdup, g_free,
+                                                       NULL, NULL, NULL, NULL, NULL, NULL);
+
+        gee_collection_add_all(GEE_COLLECTION(storesIds), GEE_COLLECTION(storesKeys));
+        gee_collection_add(GEE_COLLECTION(storesIds), sourceId.toUtf8().constData());
+        folks_backend_set_persona_stores(dummy, storesIds);
+
+        g_object_unref(storesIds);
+        g_object_unref(backendStore);
+        g_object_unref(dummy);
+
+        Source src(sourceId, sourceId, false, false);
+        QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(src));
+        QDBusConnection::sessionBus().send(reply);
+    } else if (personaStoreTypeId == "eds") {
+        edsf_persona_store_create_address_book(sourceId.toUtf8().data(),
+                                               (GAsyncReadyCallback) AddressBook::createSourceDone,
+                                               data);
+    } else {
+        qWarning() << "Not supported, create sources on persona store with type id:" << personaStoreTypeId;
+    }
     return Source();
 }
 
@@ -250,7 +277,7 @@ void AddressBook::createSourceDone(GObject *source,
         qWarning() << "Fail to create source" << error->message;
         g_error_free(error);
     } else {
-        src = Source(cData->sourceName, false);
+        src = Source(cData->sourceName, cData->sourceName, false, false);
     }
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
     QDBusConnection::sessionBus().send(reply);
@@ -260,16 +287,21 @@ void AddressBook::createSourceDone(GObject *source,
 void AddressBook::addGlobalAntilink(FolksPersona *persona, GAsyncReadyCallback antilinkReady, void *data)
 {
     if (FOLKS_IS_ANTI_LINKABLE(persona)) {
-        GeeHashSet *antiLinks = gee_hash_set_new(G_TYPE_STRING,
-                                                 (GBoxedCopyFunc) g_strdup,
-                                                 g_free,
-                                                 NULL, NULL, NULL, NULL, NULL, NULL);
-        gee_collection_add(GEE_COLLECTION(antiLinks), "*");
-        folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(persona),
-                                              GEE_SET(antiLinks),
-                                              antilinkReady,
-                                              data);
-        g_object_unref(antiLinks);
+        GeeSet *oldAntiLinks = folks_anti_linkable_get_anti_links(FOLKS_ANTI_LINKABLE(persona));
+        if (!gee_collection_contains(GEE_COLLECTION(oldAntiLinks), "*")) {
+            GeeHashSet *antiLinks = gee_hash_set_new(G_TYPE_STRING,
+                                                     (GBoxedCopyFunc) g_strdup,
+                                                     g_free,
+                                                     NULL, NULL, NULL, NULL, NULL, NULL);
+            gee_collection_add(GEE_COLLECTION(antiLinks), "*");
+            folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(persona),
+                                                  GEE_SET(antiLinks),
+                                                  antilinkReady,
+                                                  data);
+            g_object_unref(antiLinks);
+        }
+    } else {
+        g_object_unref(persona);
     }
 }
 
@@ -281,6 +313,7 @@ void AddressBook::addGlobalAntilinkDone(FolksAntiLinkable *antilinkable, GAsyncR
         qWarning() << "Fail to anti link pesona" << folks_persona_get_display_id(FOLKS_PERSONA(antilinkable)) << error->message;
         g_error_free(error);
     }
+    g_object_unref(antilinkable);
 }
 
 void AddressBook::getSource(const QDBusMessage &message, bool onlyTheDefault)
@@ -338,13 +371,27 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
     if (res) {
         folks_backend_store_prepare_finish(backendStore, res);
     }
+    static QStringList backendBlackList;
+
+    // these backends are not fully supported yet
+    if (backendBlackList.isEmpty()) {
+        backendBlackList << "telepathy"
+                         << "bluez"
+                         << "ofono"
+                         << "key-file";
+    }
 
     GeeCollection *backends = folks_backend_store_list_backends(backendStore);
+
     SourceList result;
 
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(backends));
     while(gee_iterator_next(iter)) {
         FolksBackend *backend = FOLKS_BACKEND(gee_iterator_get(iter));
+        QString backendName = QString::fromUtf8(folks_backend_get_name(backend));
+        if (backendBlackList.contains(backendName)) {
+            continue;
+        }
 
         GeeMap *stores = folks_backend_get_persona_stores(backend);
         GeeCollection *values =  gee_map_get_values(stores);
@@ -354,8 +401,12 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
 
             QString id = QString::fromUtf8(folks_persona_store_get_id(store));
-            bool canWrite = folks_persona_store_get_is_writeable(store);
-            result << Source(id, !canWrite);
+            QString displayName = QString::fromUtf8(folks_persona_store_get_display_name(store));
+
+            bool canWrite = folks_persona_store_get_can_add_personas(store) &&
+                            folks_persona_store_get_can_remove_personas(store);
+            bool isPrimary = folks_persona_store_get_is_primary_store(store);
+            result << Source(id, displayName, !canWrite, isPrimary);
 
             g_object_unref(store);
         }
@@ -378,17 +429,18 @@ QString AddressBook::createContact(const QString &contact, const QString &source
         if (!qcontact.isEmpty()) {
             if (!qcontact.isEmpty()) {
                 GHashTable *details = QIndividual::parseDetails(qcontact);
-                //TOOD: lookup for source and use the correct store
                 CreateContactData *data = new CreateContactData;
                 data->m_message = message;
                 data->m_addressbook = this;
+                FolksPersonaStore *store = getFolksStore(source);
                 folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
                                                                      NULL, //parent
-                                                                     folks_individual_aggregator_get_primary_store(m_individualAggregator),
+                                                                     store,
                                                                      details,
                                                                      (GAsyncReadyCallback) createContactDone,
                                                                      (void*) data);
                 g_hash_table_destroy(details);
+                g_object_unref(store);
                 return "";
             }
         }
@@ -397,6 +449,47 @@ QString AddressBook::createContact(const QString &contact, const QString &source
     QDBusMessage reply = message.createReply(QString());
     QDBusConnection::sessionBus().send(reply);
     return "";
+}
+
+FolksPersonaStore * AddressBook::getFolksStore(const QString &source)
+{
+    FolksPersonaStore *result = 0;
+
+    if (!source.isEmpty()) {
+        FolksBackendStore *backendStore = folks_backend_store_dup();
+        GeeCollection *backends = folks_backend_store_list_backends(backendStore);
+
+        GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(backends));
+        while((result == 0) && gee_iterator_next(iter)) {
+            FolksBackend *backend = FOLKS_BACKEND(gee_iterator_get(iter));
+            GeeMap *stores = folks_backend_get_persona_stores(backend);
+            GeeCollection *values =  gee_map_get_values(stores);
+            GeeIterator *backendIter = gee_iterable_iterator(GEE_ITERABLE(values));
+
+            while(gee_iterator_next(backendIter)) {
+                FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
+
+                QString id = QString::fromUtf8(folks_persona_store_get_id(store));
+                if (id == source) {
+                    result = store;
+                    break;
+                }
+                g_object_unref(store);
+            }
+
+            g_object_unref(backendIter);
+            g_object_unref(backend);
+            g_object_unref(values);
+        }
+        g_object_unref(iter);
+        g_object_unref(backendStore);
+    }
+
+    if (!result)  {
+        result = folks_individual_aggregator_get_primary_store(m_individualAggregator);
+        g_object_ref(result);
+    }
+    return result;
 }
 
 QString AddressBook::linkContacts(const QStringList &contacts)
@@ -592,23 +685,23 @@ QString AddressBook::addContact(FolksIndividual *individual)
         entry->individual()->setIndividual(individual);
     } else {
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
-
-        // add anti lik for any new contact, if the contact is already linked ignore it
-        // because this could be manually linked before
-        GeeSet *personas = folks_individual_get_personas(individual);
-        if (gee_collection_get_size(GEE_COLLECTION(personas)) == 1) {
-            int size = 0;
-            FolksPersona **personasArray = (FolksPersona **) gee_collection_to_array(GEE_COLLECTION(personas), &size);
-            addGlobalAntilink(personasArray[0],
-                             (GAsyncReadyCallback) AddressBook::addGlobalAntilinkDone,
-                              0);
-            g_object_unref(personasArray[0]);
-            g_free(personasArray);
-        }
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
         m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
     }
+
+    // add anti lik for any new contact, if the contact is already linked ignore it
+    // because this could be manually linked before
+    GeeSet *personas = folks_individual_get_personas(individual);
+    int size = 0;
+    FolksPersona **personasArray = (FolksPersona **) gee_collection_to_array(GEE_COLLECTION(personas), &size);
+    if (gee_collection_get_size(GEE_COLLECTION(personas)) == 1) {
+        FolksPersona **personasArray = (FolksPersona **) gee_collection_to_array(GEE_COLLECTION(personas), &size);
+        addGlobalAntilink(personasArray[0],
+                         (GAsyncReadyCallback) AddressBook::addGlobalAntilinkDone,
+                          0);
+    }
+    g_free(personasArray);
     return id;
 }
 
@@ -716,15 +809,15 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
     } else if (persona == NULL) {
         qWarning() << "Failed to create individual from contact: Persona already exists";
         reply = createData->m_message.createErrorReply("Failed to create individual from contact", "Contact already exists");
-    } else if (QIndividual::autoLinkEnabled()){
-        FolksIndividual *individual = folks_persona_get_individual(persona);
-        reply = createData->m_message.createReply(QString::fromUtf8(folks_individual_get_id(individual)));
     } else {
-        // avoid the new persona get linked
-        addGlobalAntilink(persona,
-                          (GAsyncReadyCallback) addAntiLinksDone,
-                          data);
-        return;
+        FolksIndividual *individual = folks_persona_get_individual(persona);
+        ContactEntry *entry = createData->m_addressbook->m_contacts->value(QString::fromUtf8(folks_individual_get_id(individual)));
+        if (entry) {
+            QString vcard = VCardParser::contactToVcard(entry->individual()->contact());
+            reply = createData->m_message.createReply(vcard);
+        } else {
+            reply = createData->m_message.createErrorReply("Failed to retrieve the new contact", error->message);
+        }
     }
     //TODO: use dbus connection
     QDBusConnection::sessionBus().send(reply);

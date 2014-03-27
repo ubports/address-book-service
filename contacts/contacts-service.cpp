@@ -25,6 +25,7 @@
 #include "common/fetch-hint.h"
 #include "common/sort-clause.h"
 #include "common/dbus-service-defs.h"
+#include "common/source.h"
 
 #include <QtCore/QSharedPointer>
 
@@ -49,6 +50,49 @@
 using namespace QtVersit;
 using namespace QtContacts;
 
+
+namespace //private
+{
+
+static QContact parseSource(const galera::Source &source, const QString &managerUri)
+{
+    QContact contact;
+
+    // contact group type
+    contact.setType(QContactType::TypeGroup);
+
+    // id
+    galera::GaleraEngineId *engineId = new galera::GaleraEngineId(source.id(), managerUri);
+    QContactId newId = QContactId(engineId);
+    contact.setId(newId);
+
+    // guid
+    QContactGuid guid;
+    guid.setGuid(source.id());
+    contact.saveDetail(&guid);
+
+    // display name
+    QContactDisplayLabel displayLabel;
+    displayLabel.setLabel(source.displayLabel());
+    contact.saveDetail(&displayLabel);
+
+    // read-only
+    QContactExtendedDetail readOnly;
+    readOnly.setName("READ-ONLY");
+    readOnly.setData(source.isReadOnly());
+    contact.saveDetail(&readOnly);
+
+    // Primary
+    QContactExtendedDetail primary;
+    primary.setName("IS-PRIMARY");
+    primary.setData(source.isPrimary());
+    contact.saveDetail(&primary);
+
+    return contact;
+}
+
+}
+
 namespace galera
 {
 GaleraContactsService::GaleraContactsService(const QString &managerUri)
@@ -58,6 +102,7 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
       m_iface(0)
 {
     RequestData::registerMetaType();
+    Source::registerMetaType();
 
     m_serviceWatcher = new QDBusServiceWatcher(CPIM_SERVICE_NAME,
                                                QDBusConnection::sessionBus(),
@@ -196,6 +241,34 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
         RequestData::setError(request);
         return;
     }
+
+    // Only return the sources names if the filter is set as contact group type
+    if (request->filter().type() == QContactFilter::ContactDetailFilter) {
+        QContactDetailFilter dFilter = static_cast<QContactDetailFilter>(request->filter());
+
+        if ((dFilter.detailType() == QContactDetail::TypeType) &&
+            (dFilter.detailField() == QContactType::FieldType) &&
+            (dFilter.value() == QContactType::TypeGroup)) {
+
+            QDBusPendingCall pcall = m_iface->asyncCall("availableSources");
+            if (pcall.isError()) {
+                qWarning() << pcall.error().name() << pcall.error().message();
+                RequestData::setError(request);
+                return;
+            }
+
+            RequestData *requestData = new RequestData(request);
+            m_runningRequests << requestData;
+
+            QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+            QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                             [=](QDBusPendingCallWatcher *call) {
+                                this->fetchContactsGroupsContinue(requestData, call);
+                             });
+            return;
+        }
+    }
+
     QString sortStr = SortClause(request->sorting()).toString();
     QString filterStr = Filter(request->filter()).toString();
     FetchHint fetchHint = FetchHint(request->fetchHint()).toString();
@@ -214,7 +287,7 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                      [=](QDBusPendingCallWatcher *call) {
                         this->fetchContactsContinue(requestData, call);
-                     });    
+                     });
 }
 
 
@@ -276,6 +349,8 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
         return;
     }
 
+    QContactManager::Error opError = QContactManager::NoError;
+    QContactAbstractRequest::State opState = QContactAbstractRequest::FinishedState;
     QDBusPendingReply<QStringList> reply = *call;
     if (reply.isError()) {
         qWarning() << reply.error().name() << reply.error().message();
@@ -299,10 +374,15 @@ void GaleraContactsService::fetchContactsDone(RequestData *request, QDBusPending
     }
 }
 
+
 void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
 {
     QObject *sender = QObject::sender();
     RequestData *request = static_cast<RequestData*>(sender->property("DATA").value<void*>());
+    if (!request->isLive()) {
+        destroyRequest(request);
+        return;
+    }
 
     QList<QContact>::iterator contact;
     for (contact = contacts.begin(); contact != contacts.end(); ++contact) {
@@ -336,15 +416,55 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
     sender->deleteLater();
 }
 
+void GaleraContactsService::fetchContactsGroupsContinue(RequestData *request,
+                                                        QDBusPendingCallWatcher *call)
+{
+    if (!request->isLive()) {
+        destroyRequest(request);
+        return;
+    }
+
+    QList<QContact> contacts;
+    QContactManager::Error opError = QContactManager::NoError;
+
+    QDBusPendingReply<SourceList> reply = *call;
+    if (reply.isError()) {
+        qWarning() << reply.error().name() << reply.error().message();
+        opError = QContactManager::UnspecifiedError;
+    } else {
+        Q_FOREACH(const Source &source, reply.value()) {
+            QContact c = parseSource(source, m_managerUri);
+            if (source.isPrimary()) {
+                contacts.prepend(c);
+            } else {
+                contacts << c;
+            }
+        }
+    }
+
+    request->update(contacts, QContactAbstractRequest::FinishedState, opError);
+    destroyRequest(request);
+}
+
 void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request)
 {
     QList<QContact> contacts = request->contacts();
     QStringList oldContacts;
     QStringList newContacts;
+    QStringList sources;
+    QStringList newSources;
 
     Q_FOREACH(const QContact &contact, contacts) {
         if (contact.id().isNull()) {
-            newContacts << VCardParser::contactToVcard(contact);
+            if (contact.type() == QContactType::TypeGroup) {
+                newSources << contact.detail<QContactDisplayLabel>().label();
+            } else {
+                newContacts << VCardParser::contactToVcard(contact);
+
+                // sources where the new contacts will be saved
+                QContactSyncTarget syncTarget = contact.detail<QContactSyncTarget>();
+                sources << syncTarget.syncTarget();
+            }
         } else {
             oldContacts << VCardParser::contactToVcard(contact);
         }
@@ -355,10 +475,14 @@ void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request
     }
 
     if (!newContacts.isEmpty()) {
-        createContacts(request, newContacts);
+        createContacts(request, newContacts, sources);
+    }
+
+    if (!newSources.isEmpty()) {
+        createSources(request, newSources);
     }
 }
-void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts)
+void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *request, QStringList contacts, QStringList sources)
 {
     if (!isOnline()) {
         qWarning() << "Server is not online";
@@ -371,8 +495,9 @@ void GaleraContactsService::createContacts(QtContacts::QContactSaveRequest *requ
         return;
     }
 
+    int i = 0;
     Q_FOREACH(QString contact, contacts) {
-        QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, "");
+        QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, sources[i++]);
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
         RequestData *requestData = new RequestData(request, watcher);
         m_runningRequests << requestData;
@@ -399,12 +524,15 @@ void GaleraContactsService::createContactsDone(RequestData *request, QDBusPendin
         qWarning() << reply.error().name() << reply.error().message();
         opError = QContactManager::UnspecifiedError;
     } else {
-        const QString id = reply.value();
-        if (!id.isEmpty()) {
+        const QString vcard = reply.value();
+        if (!vcard.isEmpty()) {
             contacts = static_cast<QtContacts::QContactSaveRequest *>(request->request())->contacts();
-            GaleraEngineId *engineId = new GaleraEngineId(id, m_managerUri);
-            QContactId contactId(engineId);
-            contacts[0].setId(QContactId(contactId));
+            QContact contact = VCardParser::vcardToContact(vcard);
+            QContactGuid detailId = contact.detail<QContactGuid>();
+            GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
+            QContactId newId = QContactId(engineId);
+            contact.setId(newId);
+            contacts.insert(0, contact);
         } else {
             opError = QContactManager::UnspecifiedError;
         }
@@ -412,6 +540,35 @@ void GaleraContactsService::createContactsDone(RequestData *request, QDBusPendin
 
     request->update(contacts, QContactAbstractRequest::FinishedState, opError);
     destroyRequest(request);
+}
+
+void GaleraContactsService::createSources(QtContacts::QContactSaveRequest *request, QStringList &sources)
+{
+    if (!isOnline()) {
+        qWarning() << "Server is not online";
+        RequestData::setError(request);
+        return;
+    }
+
+    QList<QContact> contacts;
+    QMap<int, QContactManager::Error> errorMap;
+
+    int index = 0;
+    Q_FOREACH(QString sourceName, sources) {
+        QDBusReply<Source> result = m_iface->call("createSource", sourceName);
+        if (result.isValid()) {
+            contacts << parseSource(result.value(), m_managerUri);
+        } else {
+            errorMap.insert(index, QContactManager::UnspecifiedError);
+        }
+        index++;
+    }
+
+    QContactManagerEngine::updateContactSaveRequest(request,
+                                                    contacts,
+                                                    QContactManager::NoError,
+                                                    errorMap,
+                                                    QContactAbstractRequest::FinishedState);
 }
 
 void GaleraContactsService::removeContact(QContactRemoveRequest *request)
@@ -464,7 +621,7 @@ void GaleraContactsService::removeContactDone(RequestData *request, QDBusPending
     destroyRequest(request);
 }
 
-void GaleraContactsService::updateContacts(QtContacts::QContactSaveRequest *request, QStringList &contacts)
+void GaleraContactsService::updateContacts(QtContacts::QContactSaveRequest *request, QStringList contacts)
 {
     if (!isOnline()) {
         qWarning() << "Server is not online";
@@ -591,7 +748,7 @@ void GaleraContactsService::destroyRequest(RequestData *request)
     delete request;
 }
 
-QList<QContactId> GaleraContactsService::parseIds(QStringList ids) const
+QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const
 {
     QList<QContactId> contactIds;
     Q_FOREACH(QString id, ids) {
@@ -601,18 +758,17 @@ QList<QContactId> GaleraContactsService::parseIds(QStringList ids) const
     return contactIds;
 }
 
-
-void GaleraContactsService::onContactsAdded(QStringList ids)
+void GaleraContactsService::onContactsAdded(const QStringList &ids)
 {
     Q_EMIT contactsAdded(parseIds(ids));
 }
 
-void GaleraContactsService::onContactsRemoved(QStringList ids)
+void GaleraContactsService::onContactsRemoved(const QStringList &ids)
 {
     Q_EMIT contactsRemoved(parseIds(ids));
 }
 
-void GaleraContactsService::onContactsUpdated(QStringList ids)
+void GaleraContactsService::onContactsUpdated(const QStringList &ids)
 {
     Q_EMIT contactsUpdated(parseIds(ids));
 }

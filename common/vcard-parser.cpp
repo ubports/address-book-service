@@ -49,18 +49,12 @@ namespace
             Q_UNUSED(toBeRemoved);
 
             // Export custom property PIDMAP
-            if (detail.type() == QContactDetail::TypeExtendedDetail) {
-                const QContactExtendedDetail *extendedDetail = static_cast<const QContactExtendedDetail *>(&detail);
-                if (extendedDetail->name() == galera::VCardParser::PidMapFieldName) {
-                    QVersitProperty prop;
-                    prop.setName(extendedDetail->name());
-                    QStringList value;
-                    value << extendedDetail->value(QContactExtendedDetail::FieldData).toString()
-                          << extendedDetail->value(QContactExtendedDetail::FieldData + 1).toString();
-                    prop.setValueType(QVersitProperty::CompoundType);
-                    prop.setValue(value);
-                    *toBeAdded << prop;
-                }
+            if (detail.type() == QContactDetail::TypeSyncTarget) {
+                QContactSyncTarget syncTarget = static_cast<QContactSyncTarget>(detail);
+                QVersitProperty prop;
+                prop.setName(galera::VCardParser::PidMapFieldName);
+                prop.setValue(syncTarget.syncTarget());
+                *toBeAdded << prop;
             }
 
             if (toBeAdded->size() == 0) {
@@ -138,12 +132,9 @@ namespace
             Q_UNUSED(contact);
 
             if (!*alreadyProcessed && (property.name() == galera::VCardParser::PidMapFieldName)) {
-                QContactExtendedDetail detail;
-                detail.setName(property.name());
-                QStringList value = property.value<QString>().split(";");
-                detail.setValue(QContactExtendedDetail::FieldData, value[0]);
-                detail.setValue(QContactExtendedDetail::FieldData + 1, value[1]);
-                *updatedDetails  << detail;
+                QContactSyncTarget target;
+                target.setSyncTarget(property.value<QString>());
+                *updatedDetails  << target;
                 *alreadyProcessed = true;
             }
 

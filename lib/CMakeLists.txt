@@ -10,7 +10,6 @@ set(CONTACTS_SERVICE_LIB_SRC
     dirtycontact-notify.cpp
     gee-utils.cpp
     qindividual.cpp
-    source.cpp
     update-contact-request.cpp
     view.cpp
     view-adaptor.cpp
@@ -24,7 +23,6 @@ set(CONTACTS_SERVICE_LIB_HEADERS
     dirtycontact-notify.h
     gee-utils.h
     qindividual.h
-    source.h
     update-contact-request.h
     view.h
     view-adaptor.h

@@ -29,18 +29,22 @@ class Source
 public:
     Source();
     Source(const Source &other);
-    Source(QString id, bool isReadOnly);
+    Source(QString id, const QString &displayName, bool isReadOnly, bool isPrimary);
     friend QDBusArgument &operator<<(QDBusArgument &argument, const Source &source);
     friend const QDBusArgument &operator>>(const QDBusArgument &argument, Source &source);
 
     static void registerMetaType();
     QString id() const;
+    QString displayLabel() const;
     bool isReadOnly() const;
     bool isValid() const;
+    bool isPrimary() const;
 
 private:
     QString m_id;
+    QString m_displayName;
     bool m_isReadOnly;
+    bool m_isPrimary;
 };
 
 typedef QList<Source> SourceList;

@@ -27,14 +27,20 @@ Source::Source()
 
 Source::Source(const Source &other)
     : m_id(other.id()),
-      m_isReadOnly(other.isReadOnly())
+      m_displayName(other.displayLabel()),
+      m_isReadOnly(other.isReadOnly()),
+      m_isPrimary(other.isPrimary())
+
 {
 }
 
-Source::Source(QString id, bool isReadOnly)
+Source::Source(QString id, const QString &displayName, bool isReadOnly, bool isPrimary)
     : m_id(id),
-      m_isReadOnly(isReadOnly)
+      m_displayName(displayName),
+      m_isReadOnly(isReadOnly),
+      m_isPrimary(isPrimary)
 {
+    Q_ASSERT(displayName.isEmpty() == false);
 }
 
 bool Source::isValid() const
@@ -42,9 +48,19 @@ bool Source::isValid() const
     return !m_id.isEmpty();
 }
 
+bool Source::isPrimary() const
+{
+    return m_isPrimary;
+}
+
 QString Source::id() const
 {
     return m_id;
+}
+
+QString Source::displayLabel() const
+{
+    return m_displayName;
 }
 
 bool Source::isReadOnly() const
@@ -64,7 +80,9 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Source &source)
 {
     argument.beginStructure();
     argument << source.m_id;
+    argument << source.m_displayName;
     argument << source.m_isReadOnly;
+    argument << source.m_isPrimary;
     argument.endStructure();
 
     return argument;
@@ -74,7 +92,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Source &source)
 {
     argument.beginStructure();
     argument >> source.m_id;
+    argument >> source.m_displayName;
     argument >> source.m_isReadOnly;
+    argument >> source.m_isPrimary;
     argument.endStructure();
 
     return argument;

@@ -257,7 +257,7 @@ void DetailContextParser::parseParameters(QtContacts::QContactDetail &detail,
             params.removeOne(VCardParser::PrefParamName.toLower());
         }
     }
-    QList<int> context = contextsFromParameters(params);
+    QList<int> context = contextsFromParameters(&params);
     if (!context.isEmpty()) {
         detail.setContexts(context);
     }
@@ -280,7 +280,7 @@ void DetailContextParser::parseParameters(QtContacts::QContactDetail &detail,
     }
 }
 
-QList<int> DetailContextParser::contextsFromParameters(QStringList &parameters)
+QList<int> DetailContextParser::contextsFromParameters(QStringList *parameters)
 {
     static QMap<QString, int> map;
 
@@ -293,7 +293,7 @@ QList<int> DetailContextParser::contextsFromParameters(QStringList &parameters)
 
     QList<int> values;
     QStringList accepted;
-    Q_FOREACH(const QString &param, parameters) {
+    Q_FOREACH(const QString &param, *parameters) {
         if (map.contains(param.toLower())) {
             accepted << param;
             values << map[param.toLower()];
@@ -301,7 +301,7 @@ QList<int> DetailContextParser::contextsFromParameters(QStringList &parameters)
     }
 
     Q_FOREACH(const QString &param, accepted) {
-        parameters.removeOne(param);
+        parameters->removeOne(param);
     }
 
     return values;

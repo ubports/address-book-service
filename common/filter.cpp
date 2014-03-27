@@ -57,6 +57,11 @@ bool Filter::test(const QContact &contact) const
     return QContactManagerEngine::testFilter(m_filter, contact);
 }
 
+bool Filter::isValid() const
+{
+    return (m_filter.type() != QContactFilter::InvalidFilter);
+}
+
 QString Filter::toString(const QtContacts::QContactFilter &filter)
 {
     QByteArray filterArray;

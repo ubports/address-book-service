@@ -1,3 +1,5 @@
+project(qtcontacts_galera)
+
 set(QCONTACTS_BACKEND qtcontacts_galera)
 
 set(QCONTACTS_BACKEND_SRCS

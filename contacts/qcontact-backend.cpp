@@ -105,7 +105,9 @@ int GaleraManagerEngine::managerVersion() const
 /* Filtering */
 QList<QContactId> GaleraManagerEngine::contactIds(const QtContacts::QContactFilter &filter, const QList<QtContacts::QContactSortOrder> &sortOrders, QtContacts::QContactManager::Error *error) const
 {
-    QList<QtContacts::QContact> clist = contacts(filter, sortOrders, QtContacts::QContactFetchHint(), error);
+    QContactFetchHint hint;
+    hint.setDetailTypesHint(QList<QContactDetail::DetailType>() << QContactDetail::TypeGuid);
+    QList<QtContacts::QContact> clist = contacts(filter, sortOrders, hint, error);
 
     /* Extract the ids */
     QList<QtContacts::QContactId> ids;
@@ -115,64 +117,61 @@ QList<QContactId> GaleraManagerEngine::contactIds(const QtContacts::QContactFilt
     return ids;
 }
 
-QList<QtContacts::QContact> GaleraManagerEngine::contacts(const QtContacts::QContactFilter &filter, const QList<QtContacts::QContactSortOrder>& sortOrders, const QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const
+QList<QtContacts::QContact> GaleraManagerEngine::contacts(const QtContacts::QContactFilter &filter,
+                                                          const QList<QtContacts::QContactSortOrder>& sortOrders,
+                                                          const QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const
 {
     Q_UNUSED(fetchHint);
     Q_UNUSED(error);
 
-    QList<QContact> sorted;
-    QList<QContact> contactsList = contacts();
-
-    /* First filter out contacts - check for default filter first */
-    if (filter.type() == QContactFilter::DefaultFilter) {
-        Q_FOREACH(const QtContacts::QContact&c, contactsList) {
-            QContactManagerEngine::addSorted(&sorted,c, sortOrders);
-        }
-    } else {
-        Q_FOREACH(const QContact&c, contactsList) {
-            if (QContactManagerEngine::testFilter(filter, c)) {
-                QContactManagerEngine::addSorted(&sorted,c, sortOrders);
-            }
-        }
-    }
-
-    return sorted;
-}
-
-QList<QContactId> GaleraManagerEngine::contactIds(const QList<QContact> &contacts) const
-{
-    QList<QContactId> res;
-    for (const QContact &contact: contacts) {
-        res.push_back(contact.id());
-    }
-    return res;
-}
-
-QList<QContact> GaleraManagerEngine::contacts() const
-{
     QContactFetchRequest request;
+    request.setFilter(filter);
+    request.setSorting(sortOrders);
+
     const_cast<GaleraManagerEngine*>(this)->startRequest(&request);
     const_cast<GaleraManagerEngine*>(this)->waitForRequestFinished(&request, -1);
+
+    if (error) {
+        *error = request.error();
+    }
 
     return request.contacts();
 }
 
-QContact GaleraManagerEngine::contact(const QtContacts::QContactId &contactId, const QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const
+QList<QContact> GaleraManagerEngine::contacts(const QList<QContactId> &contactIds, const QContactFetchHint &fetchHint, QMap<int, QContactManager::Error> *errorMap, QContactManager::Error *error) const
 {
-    Q_UNUSED(fetchHint);
+    QContactFetchByIdRequest request;
+    request.setIds(contactIds);
+    request.setFetchHint(fetchHint);
 
-    QList<QContact> contactsList = contacts();
+    const_cast<GaleraManagerEngine*>(this)->startRequest(&request);
+    const_cast<GaleraManagerEngine*>(this)->waitForRequestFinished(&request, -1);
 
-    int index = contactIds(contactsList).indexOf(contactId);
-
-    if (index != -1) {
-        // found the contact successfully.
-        *error = QContactManager::NoError;
-        return contactsList.at(index);
+    if (errorMap) {
+        *errorMap = request.errorMap();
     }
 
-    *error = QContactManager::DoesNotExistError;
-    return QContact();
+    if (error) {
+        *error = request.error();
+    }
+
+    return request.contacts();
+}
+
+QContact GaleraManagerEngine::contact(const QContactId &contactId, const QContactFetchHint &fetchHint, QContactManager::Error *error) const
+{
+    QContactFetchByIdRequest request;
+    request.setIds(QList<QContactId>() << contactId);
+    request.setFetchHint(fetchHint);
+
+    const_cast<GaleraManagerEngine*>(this)->startRequest(&request);
+    const_cast<GaleraManagerEngine*>(this)->waitForRequestFinished(&request, -1);
+
+    if (error) {
+        *error = request.error();
+    }
+
+    return request.contacts().value(0, QContact());
 }
 
 bool GaleraManagerEngine::saveContact(QtContacts::QContact *contact, QtContacts::QContactManager::Error *error)
@@ -185,8 +184,9 @@ bool GaleraManagerEngine::saveContact(QtContacts::QContact *contact, QtContacts:
     *error = QContactManager::NoError;
 
     // FIXME: GaleraContactsService::updateContactDone doesn't return contacts
-    if (contact->id().isNull())
+    if (contact->id().isNull()) {
       *contact = request.contacts()[0];
+    }
 
     return true;
 }

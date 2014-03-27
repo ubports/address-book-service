@@ -68,7 +68,7 @@ add_subdirectory(3rd_party)
 add_subdirectory(common)
 add_subdirectory(lib)
 add_subdirectory(src)
-add_subdirectory(qcontacts)
+add_subdirectory(contacts)
 add_subdirectory(data)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
     # Some tests fail when running on PPPC check bug #1294229

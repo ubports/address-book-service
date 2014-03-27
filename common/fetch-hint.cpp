@@ -107,7 +107,7 @@ QMap<QString, QtContacts::QContactDetail::DetailType> FetchHint::contactFieldNam
     return map;
 }
 
-QList<QContactDetail::DetailType> FetchHint::parseFieldNames(QStringList fieldNames)
+QList<QContactDetail::DetailType> FetchHint::parseFieldNames(const QStringList &fieldNames)
 {
     QList<QContactDetail::DetailType> result;
     const QMap<QString, QtContacts::QContactDetail::DetailType> map = contactFieldNames();
@@ -124,25 +124,27 @@ QList<QContactDetail::DetailType> FetchHint::parseFieldNames(QStringList fieldNa
 // Format: <KEY0>:VALUE0,VALUE1;<KEY1>:VALUE0,VALUE1
 QtContacts::QContactFetchHint FetchHint::buildFilter(const QString &originalHint)
 {
-    QString hint = QString(originalHint).replace(" ","");
     QContactFetchHint result;
-    QStringList groups = hint.split(";");
-    Q_FOREACH(QString group, groups) {
-        QStringList values = group.split(":");
+    if (!originalHint.isEmpty()) {
+        QString hint = QString(originalHint).replace(" ","");
+        QStringList groups = hint.split(";");
+        Q_FOREACH(QString group, groups) {
+            QStringList values = group.split(":");
 
-        if (values.count() == 2) {
-            if (values[0] == "FIELDS") {
-                QList<QContactDetail::DetailType> fields;
-                QMap<QString, QtContacts::QContactDetail::DetailType> map = contactFieldNames();
-                Q_FOREACH(QString field, values[1].split(",")) {
-                    if (map.contains(field)) {
-                        fields << map[field];
+            if (values.count() == 2) {
+                if (values[0] == "FIELDS") {
+                    QList<QContactDetail::DetailType> fields;
+                    QMap<QString, QtContacts::QContactDetail::DetailType> map = contactFieldNames();
+                    Q_FOREACH(QString field, values[1].split(",")) {
+                        if (map.contains(field)) {
+                            fields << map[field];
+                        }
                     }
+                    result.setDetailTypesHint(fields);
                 }
-                result.setDetailTypesHint(fields);
+            } else {
+                qWarning() << "invalid fech hint: " << values;
             }
-        } else {
-            qWarning() << "invalid fech hint: " << values;
         }
     }
 
