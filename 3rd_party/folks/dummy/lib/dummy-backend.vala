@@ -62,6 +62,28 @@ public class FolksDummy.Backend : Folks.Backend
   private HashMap<string, PersonaStore> _enabled_persona_stores;
   private Map<string, PersonaStore> _enabled_persona_stores_ro;
 
+  private const string[] _always_writable_properties =
+    {
+      "avatar",
+      "birthday",
+      "email-addresses",
+      "full-name",
+      "gender",
+      "im-addresses",
+      "is-favourite",
+      "nickname",
+      "phone-numbers",
+      "postal-addresses",
+      "roles",
+      "structured-name",
+      "local-ids",
+      "location",
+      "web-service-addresses",
+      "notes",
+      "groups",
+      null
+    };
+
   /**
    * {@inheritDoc}
    *
@@ -169,10 +191,14 @@ public class FolksDummy.Backend : Folks.Backend
           if (!this._enabled_persona_stores.has_key (id))
             {
               var store = this._all_persona_stores.get (id);
-              if (store != null)
+              if (store == null)
                 {
-                  this._enable_persona_store (store);
+                  /* Create a new persona store. */
+                  store = new FolksDummy.PersonaStore (id, id, FolksDummy.Backend._always_writable_properties);
+                  store.persona_type = typeof (FolksDummy.FullPersona);
+                  this._all_persona_stores.set (store.id, store);
                 }
+              this._enable_persona_store (store);
             }
         }
 

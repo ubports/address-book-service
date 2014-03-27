@@ -10,4 +10,6 @@
     #define FOLKS_INDIVIDUAL_AGGREGATOR_DUP    folks_individual_aggregator_dup
 #endif
 
+#define QT_PLUGINS_BINARY_DIR   "@CMAKE_BINARY_DIR@"
+
 #endif

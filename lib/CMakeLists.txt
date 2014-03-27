@@ -7,9 +7,9 @@ set(CONTACTS_SERVICE_LIB_SRC
     addressbook-adaptor.cpp
     contacts-map.cpp
     detail-context-parser.cpp
+    dirtycontact-notify.cpp
     gee-utils.cpp
     qindividual.cpp
-    source.cpp
     update-contact-request.cpp
     view.cpp
     view-adaptor.cpp
@@ -20,9 +20,9 @@ set(CONTACTS_SERVICE_LIB_HEADERS
     addressbook-adaptor.h
     contacts-map.h
     detail-context-parser.h
+    dirtycontact-notify.h
     gee-utils.h
     qindividual.h
-    source.h
     update-contact-request.h
     view.h
     view-adaptor.h
@@ -38,6 +38,7 @@ target_link_libraries(${CONTACTS_SERVICE_LIB}
     ${GLIB_LIBRARIES}
     ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
+    ${FOLKS_EDS_LIBRARIES}
 )
 
 qt5_use_modules(${CONTACTS_SERVICE_LIB} Core Contacts DBus Versit)
@@ -48,4 +49,5 @@ include_directories(
     ${GLIB_INCLUDE_DIRS}
     ${GIO_INCLUDE_DIRS}
     ${FOLKS_INCLUDE_DIRS}
+    ${FOLKS_EDS_INCLUDE_DIRS}
 )

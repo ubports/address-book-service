@@ -1,3 +1,26 @@
+address-book-service (0.1.1+14.04.20140325.2-0ubuntu1) trusty; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Run vcard parse async when necessary. Wait some msecs before send
+    any signal to client, to try send the signals grouped. Create unit
+    tests for vcard parser. .
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 25 Mar 2014 13:32:03 +0000
+
+address-book-service (0.1.1+14.04.20140318.2-0ubuntu1) trusty; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Colin Watson ]
+  * Work around pointer equality problem with -Bsymbolic-functions on
+    powerpc/ppc64el.
+
+  [ Renato Araujo Oliveira Filho ]
+  * Implemented createSource functionality.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 18 Mar 2014 17:33:20 +0000
+
 address-book-service (0.1.1+14.04.20140305-0ubuntu1) trusty; urgency=low
 
   * New rebuild forced

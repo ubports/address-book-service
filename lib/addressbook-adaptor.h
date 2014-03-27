@@ -25,7 +25,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 
-#include "source.h"
+#include "common/source.h"
 #include "common/dbus-service-defs.h"
 
 namespace galera
@@ -55,10 +55,15 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
 "    <method name=\"availableSources\">\n"
-"      <arg direction=\"out\" type=\"a(sb)\"/>\n"
+"      <arg direction=\"out\" type=\"a(ssb)\"/>\n"
 "      <annotation value=\"SourceList\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
 "    </method>\n"
 "    <method name=\"source\">\n"
+"      <arg direction=\"out\" type=\"(ssb)\"/>\n"
+"      <annotation value=\"Source\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
+"    </method>\n"
+"    <method name=\"createSource\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
 "      <arg direction=\"out\" type=\"(sb)\"/>\n"
 "      <annotation value=\"Source\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
 "    </method>\n"
@@ -103,6 +108,7 @@ public:
 public Q_SLOTS:
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
+    Source createSource(const QString &sourceName, const QDBusMessage &message);
     QStringList sortFields();
     QDBusObjectPath query(const QString &clause, const QString &sort, const QStringList &sources);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);

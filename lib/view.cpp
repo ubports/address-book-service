@@ -31,6 +31,7 @@
 #include <QtVersit/QVersitDocument>
 
 #include <QtCore/QReadWriteLock>
+#include <QtCore/QCoreApplication>
 
 using namespace QtContacts;
 using namespace QtVersit;
@@ -109,20 +110,27 @@ protected:
     void run()
     {
         m_allContacts->lock();
-        Q_FOREACH(ContactEntry *entry, m_allContacts->values())
-        {
-            m_stoppedLock.lockForRead();
-            if (m_stopped) {
-                m_stoppedLock.unlock();
-                m_allContacts->unlock();
-                return;
-            }
-            m_stoppedLock.unlock();
 
-            if (checkContact(entry)) {
-                m_contacts << entry;
+        // filter contacts if necessary
+        if (m_filter.isValid()) {
+            Q_FOREACH(ContactEntry *entry, m_allContacts->values())
+            {
+                m_stoppedLock.lockForRead();
+                if (m_stopped) {
+                    m_stoppedLock.unlock();
+                    m_allContacts->unlock();
+                    return;
+                }
+                m_stoppedLock.unlock();
+
+                if (checkContact(entry)) {
+                    m_contacts << entry;
+                }
             }
+        } else {
+            m_contacts = m_allContacts->values();
         }
+
         chageSort(m_sortClause);
         m_allContacts->unlock();
     }
@@ -148,7 +156,6 @@ View::View(QString clause, QString sort, QStringList sources, ContactsMap *allCo
       m_adaptor(0)
 {
     m_filterThread->start();
-
     connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
 }
 
@@ -169,25 +176,29 @@ void View::close()
         m_adaptor = 0;
     }
 
-    if (m_filterThread->isRunning()) {
-        m_filterThread->stop();
-        m_filterThread->wait();
+    if (m_filterThread) {
+        if (m_filterThread->isRunning()) {
+            m_filterThread->stop();
+            m_filterThread->wait();
+        }
+        delete m_filterThread;
+        m_filterThread = 0;
     }
-
-    delete m_filterThread;
-    m_filterThread = 0;
 }
 
 QString View::contactDetails(const QStringList &fields, const QString &id)
 {
+    Q_ASSERT(FALSE);
     return QString();
 }
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    m_filterThread->wait();
-    QList<ContactEntry*> entries = m_filterThread->result();
+    while(!m_filterThread->wait(300)) {
+        QCoreApplication::processEvents();
+    }
 
+    QList<ContactEntry*> entries = m_filterThread->result();
     if (startIndex < 0) {
         startIndex = 0;
     }
@@ -201,10 +212,20 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
         contacts << entries[i]->individual()->copy(FetchHint::parseFieldNames(fields));
     }
 
-    QStringList ret =  VCardParser::contactToVcard(contacts);
-    QDBusMessage reply = message.createReply(ret);
+    VCardParser *parser = new VCardParser(this);
+    parser->setProperty("DATA", QVariant::fromValue<QDBusMessage>(message));
+    connect(parser, &VCardParser::vcardParsed,
+            this, &View::onVCardParsed);
+    parser->contactToVcard(contacts);
+    return QStringList();
+}
+
+void View::onVCardParsed(QStringList vcards)
+{
+    QObject *sender = QObject::sender();
+    QDBusMessage reply = sender->property("DATA").value<QDBusMessage>().createReply(vcards);
     QDBusConnection::sessionBus().send(reply);
-    return ret;
+    sender->deleteLater();
 }
 
 int View::count()

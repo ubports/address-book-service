@@ -45,12 +45,9 @@ DummyBackendProxy::~DummyBackendProxy()
 
 void DummyBackendProxy::start(bool useDBus)
 {
+    m_useDBus = useDBus;
     initEnviroment();
     initFolks();
-    prepareAggregator();
-    if (useDBus) {
-        registerObject();
-    }
 }
 
 void DummyBackendProxy::shutdown()
@@ -60,7 +57,6 @@ void DummyBackendProxy::shutdown()
         QDBusConnection connection = QDBusConnection::sessionBus();
         connection.unregisterObject(DUMMY_OBJECT_PATH);
         connection.unregisterService(DUMMY_SERVICE_NAME);
-        qDebug() << "Unregister service; DUMMY";
 
         delete m_adaptor;
         m_adaptor = 0;
@@ -116,7 +112,7 @@ FolksIndividualAggregator *DummyBackendProxy::aggregator() const
 
 QStringList DummyBackendProxy::listContacts() const
 {
-    return galera::VCardParser::contactToVcard(contacts());
+    return galera::VCardParser::contactToVcardSync(contacts());
 }
 
 void DummyBackendProxy::reset()
@@ -126,12 +122,38 @@ void DummyBackendProxy::reset()
         GeeCollection *personas = gee_map_get_values(map);
         folks_dummy_persona_store_unregister_personas(m_primaryPersonaStore, (GeeSet*)personas);
         g_object_unref(personas);
+        m_contacts.clear();
     }
+
+    // remove any extra collection/persona store
+    GeeHashSet *extraStores = gee_hash_set_new(FOLKS_TYPE_PERSONA_STORE,
+                                                 (GBoxedCopyFunc) g_object_ref, g_object_unref,
+                                                 NULL, NULL, NULL, NULL, NULL, NULL);
+
+    GeeMap *currentStores = folks_backend_get_persona_stores(FOLKS_BACKEND(m_backend));
+    GeeSet *keys = gee_map_get_keys(currentStores);
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(keys));
+
+    while(gee_iterator_next(iter)) {
+        const gchar *key = (const gchar*) gee_iterator_get(iter);
+        if (strcmp(key, "dummy-store") != 0) {
+            FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_map_get(currentStores, key));
+            gee_abstract_collection_add(GEE_ABSTRACT_COLLECTION(extraStores), store);
+            g_object_unref(store);
+        }
+    }
+
+    if (gee_collection_get_size(GEE_COLLECTION(extraStores)) > 0) {
+        folks_dummy_backend_unregister_persona_stores(m_backend, GEE_SET(extraStores));
+    }
+
+    g_object_unref(extraStores);
+    g_object_unref(keys);
+    g_object_unref(iter);
 }
 
 void DummyBackendProxy::initFolks()
 {
-    ScopedEventLoop loop(&m_eventLoop);
     m_backendStore = folks_backend_store_dup();
     folks_backend_store_load_backends(m_backendStore,
                                       (GAsyncReadyCallback) DummyBackendProxy::backendStoreLoaded,
@@ -164,8 +186,6 @@ bool DummyBackendProxy::isReady() const
 
 void DummyBackendProxy::prepareAggregator()
 {
-    ScopedEventLoop loop(&m_eventLoop);
-
     m_aggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
     m_individualsChangedDetailedId = g_signal_connect(m_aggregator,
                                           "individuals-changed-detailed",
@@ -174,8 +194,6 @@ void DummyBackendProxy::prepareAggregator()
     folks_individual_aggregator_prepare(m_aggregator,
                                         (GAsyncReadyCallback) DummyBackendProxy::individualAggregatorPrepared,
                                         this);
-
-    loop.exec();
 }
 
 QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
@@ -192,7 +210,7 @@ QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
                                                          this);
 
     loop.exec();
-    //g_object_unref(details);
+    g_hash_table_destroy(details);
     return QString();
 }
 
@@ -231,8 +249,10 @@ void DummyBackendProxy::backendStoreLoaded(FolksBackendStore *backendStore,
     folks_backend_store_load_backends_finish(backendStore, res, &error);
     checkError(error);
 
-    self->m_eventLoop->quit();
-    self->m_eventLoop = 0;
+    self->m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(self->m_backendStore, "dummy"));
+    Q_ASSERT(self->m_backend != 0);
+    qDebug() << "Got backend" << (void*)self->m_backend;
+    self->configurePrimaryStore();
 }
 
 void DummyBackendProxy::checkError(GError *error)
@@ -244,28 +264,30 @@ void DummyBackendProxy::checkError(GError *error)
     Q_ASSERT(error == 0);
 }
 
-void DummyBackendProxy::mkpath(const QString &path)
+void DummyBackendProxy::mkpath(const QString &path) const
 {
     QDir dir;
-    Q_ASSERT(dir.mkpath(path));
+    if (!dir.mkpath(path)) {
+        qWarning() << "Fail to create path" << path;
+    }
 }
 
 void DummyBackendProxy::initEnviroment()
 {
     Q_ASSERT(m_tmpDir.isValid());
-    QString tmpFullPath = QString("%1/folks-test").arg(m_tmpDir.path());
+    QString tmpFullPath = QString("%1").arg(m_tmpDir.path());
 
     qputenv("FOLKS_BACKENDS_ALLOWED", "dummy");
     qputenv("FOLKS_PRIMARY_STORE", "dummy");
 
+    mkpath(tmpFullPath);
     qDebug() << "setting up in transient directory:" << tmpFullPath;
 
     // home
     qputenv("HOME", tmpFullPath.toUtf8().data());
 
     // cache
-    QString cacheDir = QString("%1/.cache").arg(tmpFullPath);
-
+    QString cacheDir = QString("%1/.cache/").arg(tmpFullPath);
     mkpath(cacheDir);
     qputenv("XDG_CACHE_HOME", cacheDir.toUtf8().data());
 
@@ -281,7 +303,7 @@ void DummyBackendProxy::initEnviroment()
     mkpath(QString("%1/folks").arg(dataDir));
 
     // runtime
-    QString runtimeDir = QString("%1/XDG_RUNTIME_DIR").arg(tmpFullPath);
+    QString runtimeDir = QString("%1/run").arg(tmpFullPath);
     mkpath(runtimeDir);
     qputenv("XDG_RUNTIME_DIR", runtimeDir.toUtf8().data());
 
@@ -325,9 +347,13 @@ void DummyBackendProxy::individualAggregatorPrepared(FolksIndividualAggregator *
 
     folks_individual_aggregator_prepare_finish(fia, res, &error);
     checkError(error);
+    if (self->m_useDBus) {
+        self->registerObject();
+    }
 
-    self->m_eventLoop->quit();
-    self->m_eventLoop = 0;
+    qDebug() << "READDDDY";
+    self->m_isReady = true;
+    Q_EMIT self->ready();
 }
 
 void DummyBackendProxy::individualAggregatorAddedPersona(FolksIndividualAggregator *fia,
@@ -424,14 +450,14 @@ QStringList DummyBackendAdaptor::listContacts()
 
 QString DummyBackendAdaptor::createContact(const QString &vcard)
 {
-    QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
-    return m_proxy->createContact(contacts[0]);
+    QtContacts::QContact contact = galera::VCardParser::vcardToContact(vcard);
+    return m_proxy->createContact(contact);
 }
 
 QString DummyBackendAdaptor::updateContact(const QString &contactId, const QString &vcard)
 {
-    QList<QtContacts::QContact> contacts = galera::VCardParser::vcardToContact(QStringList() << vcard);
-    return m_proxy->updateContact(contactId, contacts[0]);
+    QtContacts::QContact contact = galera::VCardParser::vcardToContact(vcard);
+    return m_proxy->updateContact(contactId, contact);
 }
 
 void DummyBackendAdaptor::enableAutoLink(bool flag)

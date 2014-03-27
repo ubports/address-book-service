@@ -23,13 +23,14 @@ macro(declare_test TESTNAME RUN_SERVER)
     if(${RUN_SERVER} STREQUAL "True")
         add_test(${TESTNAME}
                  ${DBUS_RUNNER}
+                 --keep-env
                  --task ${CMAKE_CURRENT_BINARY_DIR}/address-book-server-test
                  --task ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TEST_ARGS} --wait-for=com.canonical.pim)
     else()
         add_test(${TESTNAME} ${TESTNAME})
     endif()
 
-    set(TEST_ENVIRONMENT "QT_QPA_PLATFORM=minimal\;FOLKS_BACKEND_PATH=${folks-dummy-backend_BINARY_DIR}/dummy.so")
+    set(TEST_ENVIRONMENT "QT_QPA_PLATFORM=minimal\;FOLKS_BACKEND_PATH=${folks-dummy-backend_BINARY_DIR}/dummy.so\;FOLKS_BACKENDS_ALLOWED=dummy")
     set_tests_properties(${TESTNAME} PROPERTIES
                           ENVIRONMENT ${TEST_ENVIRONMENT}
                           TIMEOUT ${CTEST_TESTING_TIMEOUT})
@@ -53,6 +54,7 @@ endif()
 declare_test(clause-test False)
 declare_test(sort-clause-test False)
 declare_test(fetch-hint-test False)
+declare_test(vcardparser-test False)
 
 set(DUMMY_BACKEND_SRC
     scoped-loop.h
@@ -72,6 +74,7 @@ if(DBUS_RUNNER)
     declare_test(service-life-cycle-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(readonly-prop-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(contact-link-test True ${BASE_CLIENT_TEST_SRC})
+    declare_test(qcontacts-test True ${BASE_CLIENT_TEST_SRC})
 elseif()
     message(STATUS "DBus test runner not found. Some tests will be disabled")
 endif()

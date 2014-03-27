@@ -74,12 +74,13 @@ private:
     int m_individualsChangedDetailedId;
     QHash<QString, galera::QIndividual*> m_contacts;
     bool m_contactUpdated;
+    bool m_useDBus;
 
     bool registerObject();
     void initFolks();
     void initEnviroment();
     void prepareAggregator();
-    static void mkpath(const QString &path);
+    void mkpath(const QString &path) const;
     static void checkError(GError *error);
     static void backendEnabled(FolksBackendStore *backendStore,
                                GAsyncResult *res,

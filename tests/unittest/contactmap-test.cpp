@@ -76,6 +76,8 @@ private Q_SLOTS:
     {
         m_dummy = new DummyBackendProxy();
         m_dummy->start();
+        QTRY_VERIFY(m_dummy->isReady());
+        qDebug() << "Continue TESTE";
 
         createContactWithSuffix("1");
         createContactWithSuffix("2");
