@@ -153,7 +153,7 @@ void DummyBackendProxy::reset()
 }
 
 void DummyBackendProxy::initFolks()
-{    
+{
     m_backendStore = folks_backend_store_dup();
     folks_backend_store_load_backends(m_backendStore,
                                       (GAsyncReadyCallback) DummyBackendProxy::backendStoreLoaded,
@@ -167,7 +167,7 @@ bool DummyBackendProxy::isReady() const
 
 void DummyBackendProxy::prepareAggregator()
 {
-    m_aggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
+    m_aggregator = folks_individual_aggregator_dup();
     m_individualsChangedDetailedId = g_signal_connect(m_aggregator,
                                           "individuals-changed-detailed",
                                           (GCallback) DummyBackendProxy::individualsChangedCb,
@@ -298,7 +298,7 @@ void DummyBackendProxy::initEnviroment()
     // home
     qputenv("HOME", tmpFullPath.toUtf8().data());
 
-    // cache    
+    // cache
     QString cacheDir = QString("%1/.cache/").arg(tmpFullPath);
     mkpath(cacheDir);
     qputenv("XDG_CACHE_HOME", cacheDir.toUtf8().data());
