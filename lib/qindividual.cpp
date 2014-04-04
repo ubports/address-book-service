@@ -23,6 +23,8 @@
 
 #include "common/vcard-parser.h"
 
+#include <QtCore/QMutexLocker>
+
 #include <QtVersit/QVersitDocument>
 #include <QtVersit/QVersitProperty>
 #include <QtVersit/QVersitWriter>
@@ -312,21 +314,20 @@ QtContacts::QContactDetail QIndividual::getPersonaBirthday(FolksPersona *persona
     return detail;
 }
 
-void QIndividual::folksPersonaChanged(FolksPersona *persona,
-                                      GParamSpec *pspec,
-                                      QIndividual *self)
+void QIndividual::folksIndividualChanged(FolksIndividual *individual,
+                                         GParamSpec *pspec,
+                                         QIndividual *self)
 {
-    const gchar* paramName = g_param_spec_get_name(pspec);
-    if (QString::fromUtf8(paramName) == QStringLiteral("avatar")) {
-        QContactDetail newAvatar = self->getPersonaPhoto(persona, 1);
+    Q_UNUSED(individual);
+    Q_UNUSED(pspec);
 
-        QContactAvatar avatar = self->m_contact->detail(QContactAvatar::Type);
-        avatar.setImageUrl(newAvatar.value(QContactAvatar::FieldImageUrl).toUrl());
-
-        self->m_contact->saveDetail(&avatar);
+    // skip update contact during a contact update, the update will be done after
+    if (self->m_contactLock.tryLock()) {
+        // invalidate contact
+        self->markAsDirty();
         self->notifyUpdate();
+        self->m_contactLock.unlock();
     }
-    //TODO: implement for all details
 }
 
 QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, int index) const
@@ -759,8 +760,12 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
 QtContacts::QContact &QIndividual::contact()
 {
     if (!m_contact && m_individual) {
+        QMutexLocker locker(&m_contactLock);
         updatePersonas();
-        updateContact();
+        // avoid change on m_contact pointer until the contact is fully loaded
+        QContact contact;
+        updateContact(&contact);
+        m_contact = new QContact(contact);
     }
     return *m_contact;
 }
@@ -780,39 +785,21 @@ void QIndividual::updatePersonas()
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
     while(gee_iterator_next(iter)) {
         FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
-        g_signal_connect(G_OBJECT(persona), "notify::avatar",
-                         (GCallback) QIndividual::folksPersonaChanged,
-                         const_cast<QIndividual*>(this));
-
         m_personas.insert(QString::fromUtf8(folks_persona_get_iid(persona)), persona);
     }
 
     g_object_unref(iter);
 }
 
-void QIndividual::updateContact()
+void QIndividual::updateContact(QContact *contact) const
 {
-    // disconnect any previous handler
-    Q_FOREACH(FolksPersona *p, m_notifyConnections.keys()) {
-        Q_FOREACH(int handlerId, m_notifyConnections.value(p)) {
-            g_signal_handler_disconnect(p, handlerId);
-        }
-        m_notifyConnections.remove(p);
-    }
-
-    if (m_contact) {
-        delete m_contact;
-        m_contact = 0;
-    }
-
-    m_contact = new QContact();
     if (!m_individual) {
         return;
     }
 
-    m_contact->appendDetail(getUid());
+    contact->appendDetail(getUid());
     Q_FOREACH(QContactDetail detail, getSyncTargets()) {
-        m_contact->appendDetail(detail);
+        contact->appendDetail(detail);
     }
 
     int personaIndex = 1;
@@ -831,22 +818,22 @@ void QIndividual::updateContact()
 
         // vcard only support one of these details by contact
         if (personaIndex == 1) {
-            appendDetailsForPersona(m_contact,
+            appendDetailsForPersona(contact,
                                     getPersonaName(persona, personaIndex),
                                     !wPropList.contains("structured-name"));
-            appendDetailsForPersona(m_contact,
+            appendDetailsForPersona(contact,
                                     getPersonaFullName(persona, personaIndex),
                                     !wPropList.contains("full-name"));
-            appendDetailsForPersona(m_contact,
+            appendDetailsForPersona(contact,
                                     getPersonaNickName(persona, personaIndex),
                                     !wPropList.contains("structured-name"));
-            appendDetailsForPersona(m_contact,
+            appendDetailsForPersona(contact,
                                     getPersonaBirthday(persona, personaIndex),
                                     !wPropList.contains("birthday"));
-            appendDetailsForPersona(m_contact,
+            appendDetailsForPersona(contact,
                                     getPersonaPhoto(persona, personaIndex),
                                     !wPropList.contains("avatar"));
-            appendDetailsForPersona(m_contact,
+            appendDetailsForPersona(contact,
                                     getPersonaFavorite(persona, personaIndex),
                                     !wPropList.contains("is-favourite"));
         }
@@ -854,55 +841,47 @@ void QIndividual::updateContact()
         QList<QContactDetail> details;
         QContactDetail prefDetail;
         details = getPersonaRoles(persona, &prefDetail, personaIndex);
-        appendDetailsForPersona(m_contact,
+        appendDetailsForPersona(contact,
                                 details,
                                 VCardParser::PreferredActionNames[QContactOrganization::Type],
                                 prefDetail,
                                 !wPropList.contains("roles"));
 
         details = getPersonaEmails(persona, &prefDetail, personaIndex);
-        appendDetailsForPersona(m_contact,
+        appendDetailsForPersona(contact,
                                 details,
                                 VCardParser::PreferredActionNames[QContactEmailAddress::Type],
                                 prefDetail,
                                 !wPropList.contains("email-addresses"));
 
         details = getPersonaPhones(persona, &prefDetail, personaIndex);
-        appendDetailsForPersona(m_contact,
+        appendDetailsForPersona(contact,
                                 details,
                                 VCardParser::PreferredActionNames[QContactPhoneNumber::Type],
                                 prefDetail,
                                 !wPropList.contains("phone-numbers"));
 
         details = getPersonaAddresses(persona, &prefDetail, personaIndex);
-        appendDetailsForPersona(m_contact,
+        appendDetailsForPersona(contact,
                                 details,
                                 VCardParser::PreferredActionNames[QContactAddress::Type],
                                 prefDetail,
                                 !wPropList.contains("postal-addresses"));
 
         details = getPersonaIms(persona, &prefDetail, personaIndex);
-        appendDetailsForPersona(m_contact,
+        appendDetailsForPersona(contact,
                                 details,
                                 VCardParser::PreferredActionNames[QContactOnlineAccount::Type],
                                 prefDetail,
                                 !wPropList.contains("im-addresses"));
 
         details = getPersonaUrls(persona, &prefDetail, personaIndex);
-        appendDetailsForPersona(m_contact,
+        appendDetailsForPersona(contact,
                                 details,
                                 VCardParser::PreferredActionNames[QContactUrl::Type],
                                 prefDetail,
                                 !wPropList.contains("urls"));
         personaIndex++;
-
-        QList<int> ids = m_notifyConnections.value(persona);
-
-        // for now we are getting updated only about avatar changes
-        ids << g_signal_connect(G_OBJECT(persona), "notify::avatar",
-                               (GCallback) QIndividual::folksPersonaChanged,
-                               const_cast<QIndividual*>(this));
-        m_notifyConnections[persona] = ids;
     }
 }
 
@@ -910,18 +889,25 @@ bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object
 {
     QContact &originalContact = contact();
     if (newContact != originalContact) {
-        // only suppport one update by time
-        Q_ASSERT(m_currentUpdate == 0);
         m_currentUpdate = new UpdateContactRequest(newContact, this, object, slot);
+        if (!m_contactLock.tryLock(5000)) {
+            qWarning() << "Fail to lock contact to update";
+            m_currentUpdate->notifyError("Fail to update contact");
+            m_currentUpdate->deleteLater();
+            m_currentUpdate = 0;
+            return false;
+        }
+
         m_updateConnection = QObject::connect(m_currentUpdate,
                                               &UpdateContactRequest::done,
                                               [this] (const QString &errorMessage) {
 
             if (errorMessage.isEmpty()) {
-                this->updateContact();
+                markAsDirty();
             }
             m_currentUpdate->deleteLater();
             m_currentUpdate = 0;
+            m_contactLock.unlock();
         });
         m_currentUpdate->start();
         return true;
@@ -950,10 +936,6 @@ QList<FolksPersona *> QIndividual::personas() const
 void QIndividual::clearPersonas()
 {
     Q_FOREACH(FolksPersona *p, m_personas.values()) {
-        Q_FOREACH(int handlerId, m_notifyConnections.value(p)) {
-            g_signal_handler_disconnect(p, handlerId);
-        }
-        m_notifyConnections.remove(p);
         g_object_unref(p);
     }
     m_personas.clear();
@@ -963,6 +945,11 @@ void QIndividual::clear()
 {
     clearPersonas();
     if (m_individual) {
+        // disconnect any previous handler
+        Q_FOREACH(int handlerId, m_notifyConnections) {
+            g_signal_handler_disconnect(m_individual, handlerId);
+        }
+        m_notifyConnections.clear();
         g_object_unref(m_individual);
         m_individual = 0;
     }
@@ -994,15 +981,13 @@ void QIndividual::flush()
     folks_persona_store_flush(folks_individual_aggregator_get_primary_store(m_aggregator), 0, 0);
 
     // cause the contact info to be reload
-    clearPersonas();
-    if (m_contact) {
-        delete m_contact;
-        m_contact = 0;
-    }
+    markAsDirty();
 }
 
 void QIndividual::setIndividual(FolksIndividual *individual)
 {
+    static QList<QByteArray> individualProperties;
+
     if (m_individual != individual) {
         clear();
 
@@ -1019,6 +1004,48 @@ void QIndividual::setIndividual(FolksIndividual *individual)
         m_individual = individual;
         if (m_individual) {
             g_object_ref(m_individual);
+
+            if (individualProperties.isEmpty()) {
+                individualProperties << "alias"
+                                     << "avatar"
+                                     << "birthday"
+                                     << "calendar-event-id"
+                                     << "call-interaction-count"
+                                     << "client-types"
+                                     << "email-addresses"
+                                     << "full-name"
+                                     << "gender"
+                                     << "groups"
+                                     << "id"
+                                     << "im-addresses"
+                                     << "im-interaction-count"
+                                     << "is-favourite"
+                                     << "is-user"
+                                     << "last-call-interaction-datetime"
+                                     << "last-im-interaction-datetime"
+                                     << "local-ids"
+                                     << "location"
+                                     << "nickname"
+                                     << "notes"
+                                     << "personas"
+                                     << "phone-numbers"
+                                     << "postal-addresses"
+                                     << "presence-message"
+                                     << "presence-status"
+                                     << "presence-type"
+                                     << "roles"
+                                     << "structured-name"
+                                     << "trust-level"
+                                     << "urls"
+                                     << "web-service-addresses";
+            }
+
+            Q_FOREACH(const QByteArray &property, individualProperties) {
+                uint signalHandler = g_signal_connect(G_OBJECT(m_individual), QByteArray("notify::") + property,
+                                                      (GCallback) QIndividual::folksIndividualChanged,
+                                                      const_cast<QIndividual*>(this));
+                m_notifyConnections << signalHandler;
+            }
         }
     }
 }
@@ -1403,6 +1430,12 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
                     contact.preferredDetail(VCardParser::PreferredActionNames[QContactUrl::Type]));
 
     return details;
+}
+
+void QIndividual::markAsDirty()
+{
+    delete m_contact;
+    m_contact = 0;
 }
 
 void QIndividual::enableAutoLink(bool flag)

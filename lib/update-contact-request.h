@@ -43,6 +43,7 @@ public:
     void start();
     void wait();
     void deatach();
+    void notifyError(const QString &errorMessage);
 
 Q_SIGNALS:
     void done(const QString &errorMessage);

@@ -56,6 +56,8 @@ UpdateContactRequest::~UpdateContactRequest()
 
 void UpdateContactRequest::invokeSlot(const QString &errorMessage)
 {
+    Q_EMIT done(errorMessage);
+
     if (m_slot.isValid() && m_parent) {
         m_slot.invoke(m_object, Q_ARG(QString, m_parent->id()),
                                 Q_ARG(QString, errorMessage));
@@ -67,8 +69,6 @@ void UpdateContactRequest::invokeSlot(const QString &errorMessage)
     if (m_eventLoop) {
         m_eventLoop->quit();
     }
-
-    Q_EMIT done(errorMessage);
 }
 
 void UpdateContactRequest::start()
@@ -92,6 +92,11 @@ void UpdateContactRequest::wait()
 void UpdateContactRequest::deatach()
 {
     m_parent = 0;
+}
+
+void UpdateContactRequest::notifyError(const QString &errorMessage)
+{
+    invokeSlot(errorMessage);
 }
 
 bool UpdateContactRequest::isEqual(const QtContacts::QContactDetail &detailA,

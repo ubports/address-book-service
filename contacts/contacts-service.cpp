@@ -172,6 +172,8 @@ void GaleraContactsService::initialize()
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
+
+            Q_EMIT serviceChanged();
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();
             m_iface.clear();
@@ -193,9 +195,10 @@ void GaleraContactsService::deinitialize()
     }
 
     // this will make the service re-initialize
-    QDBusMessage result = m_iface->call("ping");
-    if (result.type() == QDBusMessage::ErrorMessage) {
-        qWarning() << result.errorName() << result.errorMessage();
+    m_iface->call("ping");
+    if (m_iface->lastError().isValid()) {
+        qWarning() << m_iface->lastError();
+        m_iface.clear();
         m_serviceIsReady = false;
     } else {
         m_serviceIsReady = m_iface.data()->property("isReady").toBool();
@@ -698,14 +701,14 @@ void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *req
 
 void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *request)
 {
-    if (!m_serviceIsReady) {
-        m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
-        return;
-    }
-
     if (!isOnline()) {
         qWarning() << "Server is not online";
         QContactManagerEngine::updateRequestState(request, QContactAbstractRequest::FinishedState);
+        return;
+    }
+
+    if (!m_serviceIsReady) {
+        m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
         return;
     }
 
