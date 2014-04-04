@@ -105,7 +105,6 @@ private:
                                    GAsyncResult *result);
 
     static void updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata);
-    static void folksAddAntiLinksDone(FolksAntiLinkable *antilinkable, GAsyncResult *result, UpdateContactRequest *self);
 };
 
 }

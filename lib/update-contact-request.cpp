@@ -703,31 +703,7 @@ void UpdateContactRequest::updatePersona()
         g_object_ref(m_currentPersona);
         m_currentDetailType = QContactDetail::TypeUndefined;
         m_currentPersonaIndex++;
-
-        if (QIndividual::autoLinkEnabled()) {
-            updateDetailsDone(0, 0, this);
-        } else {
-            // all personas edited by the user will have the auto link disabled
-            GeeSet *antiLinks;
-            antiLinks = GEE_SET(gee_hash_set_new(G_TYPE_STRING,
-                                                 (GBoxedCopyFunc) g_strdup,
-                                                 g_free,
-                                                 NULL, NULL, NULL, NULL, NULL, NULL));
-
-            GeeSet *oldLinks = folks_anti_linkable_get_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona));
-            if (oldLinks &&
-                gee_collection_contains(GEE_COLLECTION(antiLinks), "*")) {
-                updateDetailsDone(0, 0, this);
-                return;
-            } else if (oldLinks) {
-                gee_collection_add_all(GEE_COLLECTION(antiLinks), GEE_COLLECTION(oldLinks));
-            }
-            gee_collection_add(GEE_COLLECTION(antiLinks), "*");
-            folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona),
-                                                  antiLinks,
-                                                  (GAsyncReadyCallback) folksAddAntiLinksDone,
-                                                  this);
-        }
+        updateDetailsDone(0, 0, this);
     }
 }
 
@@ -881,19 +857,6 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         updateDetailsDone(0, 0, self);
         break;
     }
-}
-
-void UpdateContactRequest::folksAddAntiLinksDone(FolksAntiLinkable *antilinkable,
-                                                 GAsyncResult *result,
-                                                 UpdateContactRequest *self)
-{
-    GError *error = 0;
-    folks_anti_linkable_change_anti_links_finish(antilinkable, result, &error);
-    if (error) {
-        qWarning() << "Error during the anti link operation:" << error->message;
-        g_error_free(error);
-    }
-    updateDetailsDone(0, 0, self);
 }
 
 } // namespace
