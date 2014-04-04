@@ -263,29 +263,38 @@ void UpdateContactRequest::updateAvatar()
                  << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
         //Only supports one avatar
         QUrl avatarUri;
+        QUrl oldAvatarUri;
+
+        if (originalDetails.count()) {
+            QContactAvatar avatar = static_cast<QContactAvatar>(originalDetails[0]);
+            oldAvatarUri = avatar.imageUrl();
+        }
+
         if (newDetails.count()) {
             QContactAvatar avatar = static_cast<QContactAvatar>(newDetails[0]);
             avatarUri = avatar.imageUrl();
         }
 
-        GFileIcon *avatarFileIcon = NULL;
-        if(!avatarUri.isEmpty()) {
-            QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
+        if (avatarUri != oldAvatarUri) {
+            GFileIcon *avatarFileIcon = NULL;
+            if(!avatarUri.isEmpty() && ) {
+                QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
 
-            if(!formattedUri.isEmpty()) {
-                QByteArray uriUtf8 = formattedUri.toUtf8();
-                GFile *avatarFile = g_file_new_for_uri(uriUtf8.constData());
-                avatarFileIcon = G_FILE_ICON(g_file_icon_new(avatarFile));
-                g_object_unref(avatarFile);
+                if(!formattedUri.isEmpty()) {
+                    QByteArray uriUtf8 = formattedUri.toUtf8();
+                    GFile *avatarFile = g_file_new_for_uri(uriUtf8.constData());
+                    avatarFileIcon = G_FILE_ICON(g_file_icon_new(avatarFile));
+                    g_object_unref(avatarFile);
+                }
             }
-        }
 
-        folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(m_currentPersona),
-                                           G_LOADABLE_ICON(avatarFileIcon),
-                                           (GAsyncReadyCallback) updateDetailsDone,
-                                           this);
-        if (avatarFileIcon) {
-            g_object_unref(avatarFileIcon);
+            folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(m_currentPersona),
+                                               G_LOADABLE_ICON(avatarFileIcon),
+                                               (GAsyncReadyCallback) updateDetailsDone,
+                                               this);
+            if (avatarFileIcon) {
+                g_object_unref(avatarFileIcon);
+            }
         }
     } else {
         updateDetailsDone(0, 0, this);
