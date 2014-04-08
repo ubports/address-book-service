@@ -1,3 +1,10 @@
+address-book-service (0.1.1+14.04.20140408.3-0ubuntu1) trusty; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Disabled folks linking. (LP: #1302152)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 08 Apr 2014 20:41:10 +0000
+
 address-book-service (0.1.1+14.04.20140327-0ubuntu1) trusty; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
