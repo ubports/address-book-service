@@ -49,7 +49,7 @@ public:
     AddressBook(QObject *parent=0);
     virtual ~AddressBook();
 
-    static QString objectPath();    
+    static QString objectPath();
     bool start(QDBusConnection connection);
 
     // Adaptor
@@ -64,7 +64,7 @@ public:
 Q_SIGNALS:
     void stopped();
 
-public Q_SLOTS:    
+public Q_SLOTS:
     bool start();
     void shutdown();
     SourceList availableSources(const QDBusMessage &message);
@@ -145,20 +145,9 @@ private:
     static void removeContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *result,
                                   void *data);
-    static void addAntiLinksDone(FolksAntiLinkable *antilinkable,
-                                  GAsyncResult *result,
-                                  void *data);
     static void createSourceDone(GObject *source,
                                  GAsyncResult *res,
                                  void *data);
-
-    static void addGlobalAntilink(FolksPersona *persona,
-                                  GAsyncReadyCallback antilinkReady,
-                                  void *data);
-    static void addGlobalAntilinkDone(FolksAntiLinkable *antilinkable,
-                                      GAsyncResult *result,
-                                      void *data);
-
     friend class DirtyContactsNotify;
 };
 
