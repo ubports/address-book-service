@@ -66,6 +66,16 @@ Source AddressBookAdaptor::createSource(const QString &sourceName, bool setAsPri
     return Source();
 }
 
+bool AddressBookAdaptor::removeSource(const QString &sourceId, const QDBusMessage &message)
+{
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "removeSource",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QString&, sourceId),
+                              Q_ARG(const QDBusMessage&, message));
+    return false;
+}
+
 QString AddressBookAdaptor::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
 {
     message.setDelayedReply(true);

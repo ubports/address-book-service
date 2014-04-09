@@ -75,6 +75,13 @@ public:
     QDBusMessage m_message;
 };
 
+class RemoveSourceData
+{
+public:
+    galera::AddressBook *m_addressbook;
+    QDBusMessage m_message;
+};
+
 }
 
 namespace galera
@@ -243,7 +250,7 @@ Source AddressBook::createSource(const QString &sourceId, bool setAsPrimary, con
     data->m_setAsPrimary = setAsPrimary;
 
     FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
-    QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id (store));
+    QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id(store));
     if ( personaStoreTypeId == "dummy") {
         qDebug() << "Create source on dummy" << sourceId;
         FolksBackendStore *backendStore = folks_backend_store_dup();
@@ -275,6 +282,59 @@ Source AddressBook::createSource(const QString &sourceId, bool setAsPrimary, con
     }
     return Source();
 }
+
+void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &message)
+{
+    FolksBackendStore *bs = folks_backend_store_dup();
+    FolksBackend *backend = folks_backend_store_dup_backend_by_name(bs, "eds");
+    bool error = false;
+    if (backend) {
+        GeeMap *storesMap = folks_backend_get_persona_stores(backend);
+        if (gee_map_has_key(storesMap, sourceId.toUtf8().constData())) {
+            EdsfPersonaStore *ps = EDSF_PERSONA_STORE(gee_map_get(storesMap, sourceId.toUtf8().constData()));
+
+            RemoveSourceData *rData = new RemoveSourceData;
+            rData->m_addressbook = this;
+            rData->m_message = message;
+            edsf_persona_store_remove_address_book(ps, AddressBook::removeSourceDone, rData);
+            g_object_unref(ps);
+        } else {
+            qWarning() << "Source not found to remove:" << sourceId;
+            error = true;
+        }
+        g_object_unref(backend);
+    } else {
+        qWarning() << "Fail to create eds backend during the source removal:" << sourceId;
+        error = true;
+    }
+
+    g_object_unref(bs);
+
+    if (error) {
+        QDBusMessage reply = message.createReply(false);
+        QDBusConnection::sessionBus().send(reply);
+    }
+}
+
+void AddressBook::removeSourceDone(GObject *source,
+                                   GAsyncResult *res,
+                                   void *data)
+{
+    GError *error = 0;
+    bool result = true;
+    edsf_persona_store_remove_address_book_finish(res, &error);
+    if (error) {
+        qWarning() << "Fail to remove source" << error->message;
+        g_error_free(error);
+        result = false;
+    }
+
+    RemoveSourceData *rData = static_cast<RemoveSourceData*>(data);
+    QDBusMessage reply = rData->m_message.createReply(result);
+    QDBusConnection::sessionBus().send(reply);
+    delete rData;
+}
+
 
 void AddressBook::createSourceDone(GObject *source,
                                    GAsyncResult *res,
@@ -308,8 +368,9 @@ void AddressBook::createSourceDone(GObject *source,
                 } else {
                     qWarning() << "Fail to find source:" << cData->m_sourceName;
                 }
-                g_list_free_full (sources, g_object_unref);
+                g_list_free_full(sources, g_object_unref);
             }
+            g_object_unref(r);
         }
     }
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));

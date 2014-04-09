@@ -578,35 +578,84 @@ void GaleraContactsService::removeContact(QContactRemoveRequest *request)
     QContactRemoveRequestData *data = new QContactRemoveRequestData(request);
     m_runningRequests << data;
 
-    QDBusPendingCall pcall = m_iface->asyncCall("removeContacts", data->pendingIds());
-    if (pcall.isError()) {
-        qWarning() <<  "Error" << pcall.error().name() << pcall.error().message();
-        data->finish(QContactManager::UnspecifiedError);
-        destroyRequest(data);
+    if (data->contactIds().isEmpty()) {
+        removeContactContinue(data, 0);
     } else {
-        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-        data->updateWatcher(watcher);
-        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
-                         [=](QDBusPendingCallWatcher *call) {
-                            this->removeContactDone(data, call);
-                         });
+        QDBusPendingCall pcall = m_iface->asyncCall("removeContacts", data->contactIds());
+        if (pcall.isError()) {
+            qWarning() <<  "Error" << pcall.error().name() << pcall.error().message();
+            data->finish(QContactManager::UnspecifiedError);
+            destroyRequest(data);
+        } else {
+            QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+            data->updateWatcher(watcher);
+            QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                             [=](QDBusPendingCallWatcher *call) {
+                                this->removeContactContinue(data, call);
+                             });
+        }
     }
 }
 
-void GaleraContactsService::removeContactDone(QContactRemoveRequestData *data, QDBusPendingCallWatcher *call)
+void GaleraContactsService::removeContactContinue(QContactRemoveRequestData *data,
+                                                  QDBusPendingCallWatcher *call)
 {
     if (!data->isLive()) {
         destroyRequest(data);
         return;
     }
 
-    QDBusPendingReply<int> reply = *call;
-    if (reply.isError()) {
-        qWarning() << reply.error().name() << reply.error().message();
-        data->finish(QContactManager::UnspecifiedError);
-    } else {
-        data->finish();
+    if (call) {
+        QDBusPendingReply<int> reply = *call;
+        if (reply.isError()) {
+            qWarning() << reply.error().name() << reply.error().message();
+            data->finish(QContactManager::UnspecifiedError);
+            destroyRequest(data);
+            return;
+        }
     }
+
+    if (data->sourcesIds().isEmpty()) {
+        removeContactDone(data, 0);
+    } else {
+        if (data->sourcesIds().size() > 1) {
+            qWarning() << "Remove multiple sources not supported.";
+        }
+
+        QDBusPendingCall pcall = m_iface->asyncCall("removeSource", data->sourcesIds().first());
+        if (pcall.isError()) {
+            qWarning() <<  "Error" << pcall.error().name() << pcall.error().message();
+            data->finish(QContactManager::UnspecifiedError);
+            destroyRequest(data);
+        } else {
+            QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+            data->updateWatcher(watcher);
+            QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                             [=](QDBusPendingCallWatcher *call) {
+                                this->removeContactDone(data, call);
+                             });
+        }
+    }
+}
+
+void GaleraContactsService::removeContactDone(QContactRemoveRequestData *data,
+                                              QDBusPendingCallWatcher *call)
+{
+    if (!data->isLive()) {
+        destroyRequest(data);
+        return;
+    }
+
+    if (call) {
+        QDBusPendingReply<int> reply = *call;
+        if (reply.isError()) {
+            qWarning() << reply.error().name() << reply.error().message();
+            data->finish(QContactManager::UnspecifiedError);
+            destroyRequest(data);
+            return;
+        }
+    }
+    data->finish();
     destroyRequest(data);
 }
 
