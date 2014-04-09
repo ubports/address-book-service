@@ -154,7 +154,7 @@ void DummyBackendProxy::reset()
 
 void DummyBackendProxy::initFolks()
 {
-    m_aggregator = FOLKS_INDIVIDUAL_AGGREGATOR_DUP();
+    m_aggregator = folks_individual_aggregator_dup();
     m_individualsChangedDetailedId = g_signal_connect(m_aggregator,
                                           "individuals-changed-detailed",
                                           (GCallback) DummyBackendProxy::individualsChangedCb,

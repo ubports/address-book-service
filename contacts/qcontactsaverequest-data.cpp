@@ -133,6 +133,11 @@ void QContactSaveRequestData::notifyUpdateError(QContactManager::Error error)
     m_pendingContactsSyncTarget.remove(m_currentContact.key());
 }
 
+QContact QContactSaveRequestData::currentContact() const
+{
+    return qobject_cast<QContactSaveRequest*>(request())->contacts().at(m_currentContact.key());
+}
+
 QStringList QContactSaveRequestData::allPendingContacts() const
 {
     return m_pendingContacts.values();

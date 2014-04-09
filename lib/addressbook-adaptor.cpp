@@ -55,12 +55,13 @@ Source AddressBookAdaptor::source(const QDBusMessage &message)
     return Source();
 }
 
-Source AddressBookAdaptor::createSource(const QString &sourceName, const QDBusMessage &message)
+Source AddressBookAdaptor::createSource(const QString &sourceName, bool setAsPrimary, const QDBusMessage &message)
 {
     message.setDelayedReply(true);
     QMetaObject::invokeMethod(m_addressBook, "createSource",
                               Qt::QueuedConnection,
                               Q_ARG(const QString&, sourceName),
+                              Q_ARG(bool, setAsPrimary),
                               Q_ARG(const QDBusMessage&, message));
     return Source();
 }

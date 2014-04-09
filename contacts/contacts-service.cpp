@@ -487,13 +487,22 @@ void GaleraContactsService::createContactsStart(QContactSaveRequestData *data)
     QString contact = data->nextContact(&syncSource, &isGroup);
 
     if (isGroup) {
-       QDBusPendingCall pcall = m_iface->asyncCall("createSource", contact);
-       QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-       data->updateWatcher(watcher);
-       QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
-                        [=](QDBusPendingCallWatcher *call) {
-                           this->createGroupDone(data, call);
-                        });
+        bool isPrimary = false;
+        QList<QContactExtendedDetail> xDetails = data->currentContact().details<QContactExtendedDetail>();
+        Q_FOREACH(const QContactExtendedDetail &xDetail, xDetails) {
+            if (xDetail.name() == "IS-PRIMARY") {
+                isPrimary = xDetail.data().toBool();
+                break;
+            }
+        }
+
+        QDBusPendingCall pcall = m_iface->asyncCall("createSource", contact, isPrimary);
+        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+        data->updateWatcher(watcher);
+        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                         [=](QDBusPendingCallWatcher *call) {
+                            this->createGroupDone(data, call);
+                         });
 
     } else {
         QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, syncSource);
