@@ -39,6 +39,11 @@ int main(int argc, char** argv)
         qInstallMessageHandler(contactServiceMessageOutput);
     }
 
+    // disable folks linking for now
+    if (!qEnvironmentVariableIsSet("FOLKS_DISABLE_LINKING")) {
+        qputenv("FOLKS_DISABLE_LINKING", "on");
+    }
+
     galera::AddressBook book;
     book.start();
     app.connect(&book, SIGNAL(stopped()), SLOT(quit()));

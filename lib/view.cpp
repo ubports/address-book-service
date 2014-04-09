@@ -149,7 +149,7 @@ private:
     }
 };
 
-View::View(QString clause, QString sort, QStringList sources, ContactsMap *allContacts, QObject *parent)
+View::View(const QString &clause, const QString &sort, const QStringList &sources, ContactsMap *allContacts, QObject *parent)
     : QObject(parent),
       m_sources(sources),
       m_filterThread(new FilterThread(clause, sort, allContacts)),
@@ -220,7 +220,7 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     return QStringList();
 }
 
-void View::onVCardParsed(QStringList vcards)
+void View::onVCardParsed(const QStringList &vcards)
 {
     QObject *sender = QObject::sender();
     QDBusMessage reply = sender->property("DATA").value<QDBusMessage>().createReply(vcards);

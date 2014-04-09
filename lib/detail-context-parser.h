@@ -40,7 +40,7 @@ public:
 
     static QStringList listParameters(FolksAbstractFieldDetails *details);
     static void parseParameters(QtContacts::QContactDetail &detail, FolksAbstractFieldDetails *fd, bool *isPref);
-    static QList<int> contextsFromParameters(QStringList &parameters);
+    static QList<int> contextsFromParameters(QStringList *parameters);
     static void parsePhoneParameters(QtContacts::QContactDetail &phone, const QStringList &params);
     static void parseAddressParameters(QtContacts::QContactDetail &address, const QStringList &parameters);
     static int accountProtocolFromString(const QString &protocol);

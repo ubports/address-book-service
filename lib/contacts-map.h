@@ -20,7 +20,6 @@
 #define __GALERA_CONTACTS_MAP_PRIV_H__
 
 #include <QtCore/QString>
-#include <QtCore/QStringList>
 #include <QtCore/QHash>
 #include <QtCore/QMutex>
 
