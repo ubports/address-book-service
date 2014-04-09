@@ -1,15 +1,6 @@
 #ifndef __GALERA_CONFIG_H__
 #define __GALERA_CONFIG_H__
 
-#define FOLKS_VERSION                   "@FOLKS_VERSION@"
-#define FOLKS_VERSION_LESS_THAN_0_9_5    @FOLKS_VERSION_LESS_THAN_0_9_5@
-
-#if FOLKS_VERSION_LESS_THAN_0_9_5
-    #define FOLKS_INDIVIDUAL_AGGREGATOR_DUP    folks_individual_aggregator_new
-#else
-    #define FOLKS_INDIVIDUAL_AGGREGATOR_DUP    folks_individual_aggregator_dup
-#endif
-
-#define QT_PLUGINS_BINARY_DIR   "@CMAKE_BINARY_DIR@"
+#define QT_PLUGINS_BINARY_DIR   	"@CMAKE_BINARY_DIR@"
 
 #endif

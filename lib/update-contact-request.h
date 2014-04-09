@@ -43,6 +43,7 @@ public:
     void start();
     void wait();
     void deatach();
+    void notifyError(const QString &errorMessage);
 
 Q_SIGNALS:
     void done(const QString &errorMessage);
@@ -104,7 +105,6 @@ private:
                                    GAsyncResult *result);
 
     static void updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata);
-    static void folksAddAntiLinksDone(FolksAntiLinkable *antilinkable, GAsyncResult *result, UpdateContactRequest *self);
 };
 
 }

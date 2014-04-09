@@ -23,7 +23,6 @@
 #include <QtCore/QTimer>
 #include <QtCore/QSet>
 #include <QtCore/QString>
-#include <QtCore/QStringList>
 
 namespace galera {
 
@@ -38,7 +37,7 @@ class DirtyContactsNotify : public QObject
     Q_OBJECT
 
 public:
-    DirtyContactsNotify(AddressBookAdaptor *adaptor, QObject *parent=0);   
+    DirtyContactsNotify(AddressBookAdaptor *adaptor, QObject *parent=0);
     void insertChangedContacts(QSet<QString> ids);
     void insertRemovedContacts(QSet<QString> ids);
     void insertAddedContacts(QSet<QString> ids);

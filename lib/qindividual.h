@@ -22,6 +22,8 @@
 #include <QtCore/QString>
 #include <QtCore/QList>
 #include <QtCore/QMultiHash>
+#include <QtCore/QMutex>
+
 #include <QVersitProperty>
 
 #include <QtContacts/QContact>
@@ -66,9 +68,10 @@ private:
     UpdateContactRequest *m_currentUpdate;
     QList<QPair<QObject*, QMetaMethod> > m_listeners;
     QMap<QString, FolksPersona*> m_personas;
-    QMap<FolksPersona*, QList<int> > m_notifyConnections;
+    QList<uint> m_notifyConnections;
     QString m_id;
     QMetaObject::Connection m_updateConnection;
+    QMutex m_contactLock;
     static bool m_autoLink;
 
     QIndividual();
@@ -77,7 +80,8 @@ private:
     void notifyUpdate();
 
     QMultiHash<QString, QString> parseDetails(FolksAbstractFieldDetails *details) const;
-    void updateContact();
+    void markAsDirty();
+    void updateContact(QtContacts::QContact *contact) const;
     void updatePersonas();
     void clearPersonas();
     void clear();
@@ -102,7 +106,7 @@ private:
     QtContacts::QContactDetail getPersonaNickName       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaBirthday       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaPhoto          (FolksPersona *persona, int index) const;
-    QtContacts::QContactDetail getPersonaFavorite       (FolksPersona *persona, int index) const;    
+    QtContacts::QContactDetail getPersonaFavorite       (FolksPersona *persona, int index) const;
     QList<QtContacts::QContactDetail> getPersonaRoles   (FolksPersona *persona,
                                                          QtContacts::QContactDetail *preferredRole,
                                                          int index) const;
@@ -158,7 +162,7 @@ private:
                                                  const QList<QtContacts::QContactDetail> &cDetails,
                                                  const QtContacts::QContactDetail &prefDetail);
     // property changed
-    static void folksPersonaChanged             (FolksPersona *persona,
+    static void folksIndividualChanged          (FolksIndividual *individual,
                                                  GParamSpec *pspec,
                                                  QIndividual *self);
 };

@@ -181,6 +181,8 @@ void GaleraContactsService::initialize()
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
+
+            Q_EMIT serviceChanged();
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();
             m_iface.clear();
@@ -202,9 +204,10 @@ void GaleraContactsService::deinitialize()
     }
 
     // this will make the service re-initialize
-    QDBusMessage result = m_iface->call("ping");
-    if (result.type() == QDBusMessage::ErrorMessage) {
-        qWarning() << result.errorName() << result.errorMessage();
+    m_iface->call("ping");
+    if (m_iface->lastError().isValid()) {
+        qWarning() << m_iface->lastError();
+        m_iface.clear();
         m_serviceIsReady = false;
     } else {
         m_serviceIsReady = m_iface.data()->property("isReady").toBool();
@@ -387,6 +390,10 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
 {
     QObject *sender = QObject::sender();
     QContactFetchRequestData *data = static_cast<QContactFetchRequestData*>(sender->property("DATA").value<void*>());
+    if (!data->isLive()) {
+        destroyRequest(data);
+        return;
+    }
 
     QList<QContact>::iterator contact;
     for (contact = contacts.begin(); contact != contacts.end(); ++contact) {
@@ -661,14 +668,14 @@ void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *req
 
 void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *request)
 {
-    if (!m_serviceIsReady) {
-        m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
-        return;
-    }
-
     if (!isOnline()) {
         qWarning() << "Server is not online";
         QContactManagerEngine::updateRequestState(request, QContactAbstractRequest::FinishedState);
+        return;
+    }
+
+    if (!m_serviceIsReady) {
+        m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
         return;
     }
 
@@ -711,7 +718,7 @@ void GaleraContactsService::destroyRequest(QContactRequestData *request)
     delete request;
 }
 
-QList<QContactId> GaleraContactsService::parseIds(QStringList ids) const
+QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const
 {
     QList<QContactId> contactIds;
     Q_FOREACH(QString id, ids) {
@@ -721,17 +728,17 @@ QList<QContactId> GaleraContactsService::parseIds(QStringList ids) const
     return contactIds;
 }
 
-void GaleraContactsService::onContactsAdded(QStringList ids)
+void GaleraContactsService::onContactsAdded(const QStringList &ids)
 {
     Q_EMIT contactsAdded(parseIds(ids));
 }
 
-void GaleraContactsService::onContactsRemoved(QStringList ids)
+void GaleraContactsService::onContactsRemoved(const QStringList &ids)
 {
     Q_EMIT contactsRemoved(parseIds(ids));
 }
 
-void GaleraContactsService::onContactsUpdated(QStringList ids)
+void GaleraContactsService::onContactsUpdated(const QStringList &ids)
 {
     Q_EMIT contactsUpdated(parseIds(ids));
 }

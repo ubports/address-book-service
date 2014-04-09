@@ -16,12 +16,6 @@ pkg_check_modules(GIO REQUIRED gio-2.0>=2.32)
 pkg_check_modules(FOLKS REQUIRED folks>=0.9.0)
 pkg_check_modules(FOLKS_EDS REQUIRED folks-eds)
 
-if(FOLKS_VERSION VERSION_LESS "0.9.5")
-    set(FOLKS_VERSION_LESS_THAN_0_9_5 "1")
-else()
-    set(FOLKS_VERSION_LESS_THAN_0_9_5 "0")
-endif()
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 add_definitions(-std=c++11)

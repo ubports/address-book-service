@@ -150,20 +150,9 @@ private:
     static void removeContactDone(FolksIndividualAggregator *individualAggregator,
                                   GAsyncResult *result,
                                   void *data);
-    static void addAntiLinksDone(FolksAntiLinkable *antilinkable,
-                                  GAsyncResult *result,
-                                  void *data);
     static void createSourceDone(GObject *source,
                                  GAsyncResult *res,
                                  void *data);
-
-    static void addGlobalAntilink(FolksPersona *persona,
-                                  GAsyncReadyCallback antilinkReady,
-                                  void *data);
-    static void addGlobalAntilinkDone(FolksAntiLinkable *antilinkable,
-                                      GAsyncResult *result,
-                                      void *data);
-
     friend class DirtyContactsNotify;
 };
 

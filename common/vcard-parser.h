@@ -56,7 +56,7 @@ public:
     static QStringList splitVcards(const QByteArray &vcardList);
 
 Q_SIGNALS:
-    void vcardParsed(QStringList vcards);
+    void vcardParsed(const QStringList &vcards);
     void contactsParsed(QList<QtContacts::QContact> contacts);
     void finished();
 

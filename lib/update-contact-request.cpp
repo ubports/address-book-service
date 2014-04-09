@@ -56,6 +56,8 @@ UpdateContactRequest::~UpdateContactRequest()
 
 void UpdateContactRequest::invokeSlot(const QString &errorMessage)
 {
+    Q_EMIT done(errorMessage);
+
     if (m_slot.isValid() && m_parent) {
         m_slot.invoke(m_object, Q_ARG(QString, m_parent->id()),
                                 Q_ARG(QString, errorMessage));
@@ -67,8 +69,6 @@ void UpdateContactRequest::invokeSlot(const QString &errorMessage)
     if (m_eventLoop) {
         m_eventLoop->quit();
     }
-
-    Q_EMIT done(errorMessage);
 }
 
 void UpdateContactRequest::start()
@@ -92,6 +92,11 @@ void UpdateContactRequest::wait()
 void UpdateContactRequest::deatach()
 {
     m_parent = 0;
+}
+
+void UpdateContactRequest::notifyError(const QString &errorMessage)
+{
+    invokeSlot(errorMessage);
 }
 
 bool UpdateContactRequest::isEqual(const QtContacts::QContactDetail &detailA,
@@ -258,29 +263,38 @@ void UpdateContactRequest::updateAvatar()
                  << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
         //Only supports one avatar
         QUrl avatarUri;
+        QUrl oldAvatarUri;
+
+        if (originalDetails.count()) {
+            QContactAvatar avatar = static_cast<QContactAvatar>(originalDetails[0]);
+            oldAvatarUri = avatar.imageUrl();
+        }
+
         if (newDetails.count()) {
             QContactAvatar avatar = static_cast<QContactAvatar>(newDetails[0]);
             avatarUri = avatar.imageUrl();
         }
 
-        GFileIcon *avatarFileIcon = NULL;
-        if(!avatarUri.isEmpty()) {
-            QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
+        if (avatarUri != oldAvatarUri) {
+            GFileIcon *avatarFileIcon = NULL;
+            if(!avatarUri.isEmpty()) {
+                QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
 
-            if(!formattedUri.isEmpty()) {
-                QByteArray uriUtf8 = formattedUri.toUtf8();
-                GFile *avatarFile = g_file_new_for_uri(uriUtf8.constData());
-                avatarFileIcon = G_FILE_ICON(g_file_icon_new(avatarFile));
-                g_object_unref(avatarFile);
+                if(!formattedUri.isEmpty()) {
+                    QByteArray uriUtf8 = formattedUri.toUtf8();
+                    GFile *avatarFile = g_file_new_for_uri(uriUtf8.constData());
+                    avatarFileIcon = G_FILE_ICON(g_file_icon_new(avatarFile));
+                    g_object_unref(avatarFile);
+                }
             }
-        }
 
-        folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(m_currentPersona),
-                                           G_LOADABLE_ICON(avatarFileIcon),
-                                           (GAsyncReadyCallback) updateDetailsDone,
-                                           this);
-        if (avatarFileIcon) {
-            g_object_unref(avatarFileIcon);
+            folks_avatar_details_change_avatar(FOLKS_AVATAR_DETAILS(m_currentPersona),
+                                               G_LOADABLE_ICON(avatarFileIcon),
+                                               (GAsyncReadyCallback) updateDetailsDone,
+                                               this);
+            if (avatarFileIcon) {
+                g_object_unref(avatarFileIcon);
+            }
         }
     } else {
         updateDetailsDone(0, 0, this);
@@ -698,31 +712,7 @@ void UpdateContactRequest::updatePersona()
         g_object_ref(m_currentPersona);
         m_currentDetailType = QContactDetail::TypeUndefined;
         m_currentPersonaIndex++;
-
-        if (QIndividual::autoLinkEnabled()) {
-            updateDetailsDone(0, 0, this);
-        } else {
-            // all personas edited by the user will have the auto link disabled
-            GeeSet *antiLinks;
-            antiLinks = GEE_SET(gee_hash_set_new(G_TYPE_STRING,
-                                                 (GBoxedCopyFunc) g_strdup,
-                                                 g_free,
-                                                 NULL, NULL, NULL, NULL, NULL, NULL));
-
-            GeeSet *oldLinks = folks_anti_linkable_get_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona));
-            if (oldLinks &&
-                gee_collection_contains(GEE_COLLECTION(antiLinks), "*")) {
-                updateDetailsDone(0, 0, this);
-                return;
-            } else if (oldLinks) {
-                gee_collection_add_all(GEE_COLLECTION(antiLinks), GEE_COLLECTION(oldLinks));
-            }
-            gee_collection_add(GEE_COLLECTION(antiLinks), "*");
-            folks_anti_linkable_change_anti_links(FOLKS_ANTI_LINKABLE(m_currentPersona),
-                                                  antiLinks,
-                                                  (GAsyncReadyCallback) folksAddAntiLinksDone,
-                                                  this);
-        }
+        updateDetailsDone(0, 0, this);
     }
 }
 
@@ -876,19 +866,6 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         updateDetailsDone(0, 0, self);
         break;
     }
-}
-
-void UpdateContactRequest::folksAddAntiLinksDone(FolksAntiLinkable *antilinkable,
-                                                 GAsyncResult *result,
-                                                 UpdateContactRequest *self)
-{
-    GError *error = 0;
-    folks_anti_linkable_change_anti_links_finish(antilinkable, result, &error);
-    if (error) {
-        qWarning() << "Error during the anti link operation:" << error->message;
-        g_error_free(error);
-    }
-    updateDetailsDone(0, 0, self);
 }
 
 } // namespace
