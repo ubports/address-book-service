@@ -65,6 +65,13 @@ int main(int argc, char** argv)
         qputenv("FOLKS_DISABLE_LINKING", "on");
     }
 
+    // set primary store manually to avoid problems when removing stores that is marked as default in EDS
+    // Without manually set the primary store folks will check if the eds store is marked as default and update the primary store,
+    // but after removing a source if the source is the primary folks update the primary source to null
+    if (!qEnvironmentVariableIsSet("FOLKS_PRIMARY_STORE")) {
+        qputenv("FOLKS_PRIMARY_STORE", "eds:system-address-book");
+    }
+
     galera::AddressBook book;
     QObject::connect(&book, &galera::AddressBook::ready, [&book] () { onServiceReady(&book); });
     app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
