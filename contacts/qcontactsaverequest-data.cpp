@@ -118,9 +118,9 @@ void QContactSaveRequestData::updatePendingContacts(QStringList vcards)
         }
 
         // update the contacts on update list
-        QList<int> indexs = m_contactsToUpdate.keys();
+        QList<int> indexes = m_contactsToUpdate.keys();
         Q_FOREACH(const QContact &contact, contacts) {
-            m_contactsToUpdate.insert(indexs.takeFirst(), contact);
+            m_contactsToUpdate.insert(indexes.takeFirst(), contact);
         }
     }
 }

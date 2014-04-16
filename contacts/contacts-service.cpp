@@ -456,7 +456,7 @@ void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request
     QContactSaveRequestData *data = new QContactSaveRequestData(request);
     m_runningRequests << data;
 
-    // firts create the new contacts
+    // first create the new contacts
     data->prepareToCreate();
     createContactsStart(data);
 }
