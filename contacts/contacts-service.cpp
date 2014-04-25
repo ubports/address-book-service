@@ -424,6 +424,12 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
                 }
                 label.setLabel(fullName);
                 contact->saveDetail(&label);
+            } else {
+                // use company name as display label
+                QContactOrganization org = contact->detail<QContactOrganization>();
+                QContactDisplayLabel label;
+                label.setLabel(org.name());
+                contact->saveDetail(&label);
             }
         }
     }
