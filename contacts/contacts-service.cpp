@@ -402,35 +402,6 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
             GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
             QContactId newId = QContactId(engineId);
             contact->setId(newId);
-            // Parse display Name
-            QContactName detailName = contact->detail<QContactName>();
-            if (!detailName.isEmpty()) {
-                QContactDisplayLabel label;
-                QString fullName;
-                if (!detailName.firstName().isEmpty()) {
-                    fullName = detailName.firstName();
-                }
-
-                if (!detailName.middleName().isEmpty()) {
-                    fullName = QString("%1 %2")
-                            .arg(fullName.trimmed())
-                            .arg(detailName.middleName());
-                }
-
-                if (!detailName.lastName().isEmpty()) {
-                    fullName = QString("%1 %2")
-                            .arg(fullName.trimmed())
-                            .arg(detailName.lastName());
-                }
-                label.setLabel(fullName);
-                contact->saveDetail(&label);
-            } else {
-                // use company name as display label
-                QContactOrganization org = contact->detail<QContactOrganization>();
-                QContactDisplayLabel label;
-                label.setLabel(org.name());
-                contact->saveDetail(&label);
-            }
         }
     }
 

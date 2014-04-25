@@ -279,6 +279,7 @@ QtContacts::QContactDetail QIndividual::getPersonaFullName(FolksPersona *persona
         detail.setLabel(displayName);
         detail.setDetailUri(QString("%1.1").arg(index));
     }
+
     return detail;
 }
 
@@ -695,6 +696,10 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
             details << det;
         }
 
+        Q_FOREACH(QContactDetail det, fullContact.details<QContactTag>()) {
+            details << det;
+        }
+
         // sync targets
         Q_FOREACH(QContactDetail det, fullContact.details<QContactSyncTarget>()) {
             details << det;
@@ -885,6 +890,17 @@ void QIndividual::updateContact(QContact *contact) const
                                 !wPropList.contains("urls"));
         personaIndex++;
     }
+
+    // add a extra tag to help on alphabetic list
+    QContactTag tag;
+    QString displayName = contact->detail<QContactDisplayLabel>().label();
+    if (displayName.isEmpty() ||
+        displayName.at(0).isNumber()) {
+        tag.setTag("#");
+    } else {
+        tag.setTag(displayName);
+    }
+    contact->saveDetail(&tag);
 }
 
 bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object, const char *slot)
