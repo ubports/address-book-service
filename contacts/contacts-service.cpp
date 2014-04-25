@@ -402,14 +402,28 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
             GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
             QContactId newId = QContactId(engineId);
             contact->setId(newId);
-            // set tag to be used when creating sections
+            // Parse display Name
             QContactName detailName = contact->detail<QContactName>();
-            if (!detailName.firstName().isEmpty() && QString(detailName.firstName().at(0)).contains(QRegExp("([a-z]|[A-Z])"))) {
-                contact->addTag(detailName.firstName().at(0).toUpper());
-            } else if (!detailName.lastName().isEmpty() && QString(detailName.lastName().at(0)).contains(QRegExp("([a-z]|[A-Z])"))) {
-                contact->addTag(detailName.lastName().at(0).toUpper());
-            } else {
-                contact->addTag("#");
+            if (!detailName.isEmpty()) {
+                QContactDisplayLabel label;
+                QString fullName;
+                if (!detailName.firstName().isEmpty()) {
+                    fullName = detailName.firstName();
+                }
+
+                if (!detailName.middleName().isEmpty()) {
+                    fullName = QString("%1 %2")
+                            .arg(fullName.trimmed())
+                            .arg(detailName.middleName());
+                }
+
+                if (!detailName.lastName().isEmpty()) {
+                    fullName = QString("%1 %2")
+                            .arg(fullName.trimmed())
+                            .arg(detailName.lastName());
+                }
+                label.setLabel(fullName);
+                contact->saveDetail(&label);
             }
         }
     }
