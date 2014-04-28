@@ -905,7 +905,7 @@ void QIndividual::updateContact(QContact *contact) const
 
     // add a extra tag to help on alphabetic list
     QContactTag tag;
-    QString label = displayName.label();
+    QString label = displayName.label().toCaseFolded();
     if (label.isEmpty() ||
         !label.at(0).isLetter()) {
         tag.setTag("#" + label);
