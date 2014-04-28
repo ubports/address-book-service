@@ -405,6 +405,7 @@ QString AddressBook::createContact(const QString &contact, const QString &source
         QContact qcontact = VCardParser::vcardToContact(contact);
         if (!qcontact.isEmpty()) {
             GHashTable *details = QIndividual::parseDetails(qcontact);
+            Q_ASSERT(details);
             CreateContactData *data = new CreateContactData;
             data->m_message = message;
             data->m_addressbook = this;
@@ -464,6 +465,7 @@ FolksPersonaStore * AddressBook::getFolksStore(const QString &source)
 
     if (!result)  {
         result = folks_individual_aggregator_get_primary_store(m_individualAggregator);
+        Q_ASSERT(result);
         g_object_ref(result);
     }
     return result;

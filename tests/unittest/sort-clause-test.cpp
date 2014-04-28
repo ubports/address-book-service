@@ -113,6 +113,20 @@ private Q_SLOTS:
         QCOMPARE(clause.toContactSortOrder().size(), 0);
     }
 
+    void testTagSourtClause()
+    {
+        const QString strClause = QString("FULL_NAME ASC");
+        SortClause clause(strClause);
+
+        QList<QContactSortOrder> cClauseList;
+        QContactSortOrder sortTag;
+        sortTag.setDetailType(QContactDetail::TypeTag, QContactTag::FieldTag);
+        sortTag.setDirection(Qt::AscendingOrder);
+        sortTag.setCaseSensitivity(Qt::CaseInsensitive);
+        cClauseList << sortTag;
+        QVERIFY(clause.toContactSortOrder() == cClauseList);
+    }
+
 };
 
 QTEST_MAIN(SortClauseTest)

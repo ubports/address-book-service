@@ -53,6 +53,11 @@ SortClause::SortClause(const SortClause &other)
     initialize();
 }
 
+bool SortClause::isEmpty() const
+{
+    return m_sortOrders.isEmpty();
+}
+
 QString SortClause::toString() const
 {
     QString result;
@@ -129,6 +134,8 @@ void SortClause::initialize()
         clauseFieldMap["IM_URI"]        = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeOnlineAccount,  QContactOnlineAccount::FieldAccountUri);
         clauseFieldMap["IM_PROTOCOL"]   = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeOnlineAccount,  QContactOnlineAccount::FieldProtocol);
         clauseFieldMap["URL"]           = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeUrl,            QContactUrl::FieldUrl);
+        // WORKAROUND: Use FULL_NAME as sort field for Tag detail
+        clauseFieldMap["FULL_NAME"]     = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeTag,            QContactTag::FieldTag);
     }
 }
 

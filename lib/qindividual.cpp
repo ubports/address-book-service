@@ -275,6 +275,7 @@ QtContacts::QContactDetail QIndividual::getPersonaFullName(FolksPersona *persona
             displayName += QString::fromUtf8(name);
         }
     }
+
     if (!displayName.isEmpty()) {
         detail.setLabel(displayName);
         detail.setDetailUri(QString("%1.1").arg(index));
@@ -696,10 +697,6 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
             details << det;
         }
 
-        Q_FOREACH(QContactDetail det, fullContact.details<QContactTag>()) {
-            details << det;
-        }
-
         // sync targets
         Q_FOREACH(QContactDetail det, fullContact.details<QContactSyncTarget>()) {
             details << det;
@@ -752,6 +749,12 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
 
         if (fields.contains(QContactDetail::TypeUrl)) {
             Q_FOREACH(QContactDetail det, fullContact.details<QContactUrl>()) {
+                details << det;
+            }
+        }
+
+        if (fields.contains(QContactDetail::TypeTag)) {
+            Q_FOREACH(QContactDetail det, fullContact.details<QContactTag>()) {
                 details << det;
             }
         }
@@ -888,17 +891,26 @@ void QIndividual::updateContact(QContact *contact) const
                                 VCardParser::PreferredActionNames[QContactUrl::Type],
                                 prefDetail,
                                 !wPropList.contains("urls"));
+
         personaIndex++;
+    }
+
+    // if display name is empty uses org name as fallback
+    QContactDisplayLabel displayName = contact->detail<QContactDisplayLabel>();
+    if (displayName.isEmpty() || displayName.label().isEmpty()) {
+        QContactOrganization org = contact->detail<QContactOrganization>();
+        displayName.setLabel(org.name());
+        contact->saveDetail(&displayName);
     }
 
     // add a extra tag to help on alphabetic list
     QContactTag tag;
-    QString displayName = contact->detail<QContactDisplayLabel>().label();
-    if (displayName.isEmpty() ||
-        displayName.at(0).isNumber()) {
-        tag.setTag("#");
+    QString label = displayName.label();
+    if (label.isEmpty() ||
+        !label.at(0).isLetter()) {
+        tag.setTag("#" + label);
     } else {
-        tag.setTag(displayName);
+        tag.setTag(label);
     }
     contact->saveDetail(&tag);
 }
