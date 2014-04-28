@@ -900,12 +900,13 @@ void QIndividual::updateContact(QContact *contact) const
     if (displayName.isEmpty() || displayName.label().isEmpty()) {
         QContactOrganization org = contact->detail<QContactOrganization>();
         displayName.setLabel(org.name());
+        qDebug() << "Set display Name" << org.name();
         contact->saveDetail(&displayName);
     }
 
     // add a extra tag to help on alphabetic list
     QContactTag tag;
-    QString label = displayName.label().toCaseFolded();
+    QString label = displayName.label().toUpper();
     if (label.isEmpty() ||
         !label.at(0).isLetter()) {
         tag.setTag("#" + label);

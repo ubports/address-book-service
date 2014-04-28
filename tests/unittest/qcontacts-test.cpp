@@ -267,13 +267,62 @@ private Q_SLOTS:
         // check result
         QList<QContact> contacts = m_manager->contacts(filter, sortOrders);
         QCOMPARE(contacts.size(), 7);
-        QCOMPARE(contacts[0].tags().at(0), QStringLiteral("Aa"));
-        QCOMPARE(contacts[1].tags().at(0), QStringLiteral("Ba"));
-        QCOMPARE(contacts[2].tags().at(0), QStringLiteral("Bb"));
-        QCOMPARE(contacts[3].tags().at(0), QStringLiteral("x"));
+        QCOMPARE(contacts[0].tags().at(0), QStringLiteral("AA"));
+        QCOMPARE(contacts[1].tags().at(0), QStringLiteral("BA"));
+        QCOMPARE(contacts[2].tags().at(0), QStringLiteral("BB"));
+        QCOMPARE(contacts[3].tags().at(0), QStringLiteral("X"));
         QCOMPARE(contacts[4].tags().at(0), QStringLiteral("#"));
         QCOMPARE(contacts[5].tags().at(0), QStringLiteral("#*"));
         QCOMPARE(contacts[6].tags().at(0), QStringLiteral("#321"));
+    }
+
+    void testContactDisplayName()
+    {
+        // create a contact ""
+        QContact contact;
+        QContactName name = contact.detail<QContactName>();
+        name.setFirstName("");
+        name.setMiddleName("");
+        name.setLastName("");
+        contact.saveDetail(&name);
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "Aa"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("Aa");
+        contact.saveDetail(&name);
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "" with company "x"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("");
+        name.setMiddleName("");
+        name.setLastName("");
+        contact.saveDetail(&name);
+        QContactOrganization org;
+        org.setName("x");
+        contact.saveDetail(&org);
+        result = m_manager->saveContact(&contact);
+
+        QCOMPARE(result, true);
+
+        // check result
+        QContactFilter filter;
+        QList<QContact> contacts = m_manager->contacts(filter);
+
+        QStringList expectedContacts;
+        expectedContacts << ""
+                         << "Aa"
+                         << "x";
+        QCOMPARE(contacts.size(), 3);
+        Q_FOREACH(const QContact &c, contacts) {
+            expectedContacts.removeAll(c.detail<QContactDisplayLabel>().label());
+        }
+        QCOMPARE(expectedContacts.size(), 0);
     }
 };
 
