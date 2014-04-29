@@ -133,8 +133,8 @@ void SortClause::initialize()
         clauseFieldMap["ADDR_POST_OFFICE_BOX"] = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeAddress, QContactAddress::FieldPostOfficeBox);
         clauseFieldMap["IM_URI"]        = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeOnlineAccount,  QContactOnlineAccount::FieldAccountUri);
         clauseFieldMap["IM_PROTOCOL"]   = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeOnlineAccount,  QContactOnlineAccount::FieldProtocol);
-        clauseFieldMap["URL"]           = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeUrl,            QContactUrl::FieldUrl);
         clauseFieldMap["TAG"]           = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeTag,            QContactTag::FieldTag);
+        clauseFieldMap["URL"]           = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeUrl,            QContactUrl::FieldUrl);
     }
 }
 

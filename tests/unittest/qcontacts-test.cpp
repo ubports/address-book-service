@@ -182,9 +182,9 @@ private Q_SLOTS:
     }
 
     /*
-     * Test sort contacts by tag
+     * Test sort contacts by with symbols in the end
      */
-    void testQuerySortedByTag()
+    void testQuerySortedWithSymbolsInTheEnd()
     {
         QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
 
@@ -254,26 +254,40 @@ private Q_SLOTS:
 
         QTRY_COMPARE(spyContactAdded.count(), 1);
 
-        // sort contact by tag
+        // sort contact by tag and display name
         QContactFilter filter;
         QContactSortOrder sortTag;
         sortTag.setDetailType(QContactDetail::TypeTag, QContactTag::FieldTag);
         sortTag.setDirection(Qt::AscendingOrder);
         sortTag.setCaseSensitivity(Qt::CaseInsensitive);
         sortTag.setBlankPolicy(QContactSortOrder::BlanksLast);
+
+        QContactSortOrder sortDisplayName;
+        sortDisplayName.setDetailType(QContactDetail::TypeDisplayLabel, QContactDisplayLabel::FieldLabel);
+        sortDisplayName.setDirection(Qt::AscendingOrder);
+        sortDisplayName.setCaseSensitivity(Qt::CaseInsensitive);
+        sortDisplayName.setBlankPolicy(QContactSortOrder::BlanksLast);
+
         QList<QContactSortOrder> sortOrders;
-        sortOrders << sortTag;
+        sortOrders << sortTag << sortDisplayName;
 
         // check result
         QList<QContact> contacts = m_manager->contacts(filter, sortOrders);
         QCOMPARE(contacts.size(), 7);
-        QCOMPARE(contacts[0].tags().at(0), QStringLiteral("#"));
-        QCOMPARE(contacts[1].tags().at(0), QStringLiteral("#*"));
-        QCOMPARE(contacts[2].tags().at(0), QStringLiteral("#321"));
-        QCOMPARE(contacts[3].tags().at(0), QStringLiteral("AA"));
-        QCOMPARE(contacts[4].tags().at(0), QStringLiteral("BA"));
-        QCOMPARE(contacts[5].tags().at(0), QStringLiteral("BB"));
-        QCOMPARE(contacts[6].tags().at(0), QStringLiteral("X"));
+        QCOMPARE(contacts[0].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("Aa"));
+        QCOMPARE(contacts[1].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("Ba"));
+        QCOMPARE(contacts[2].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("Bb"));
+        QCOMPARE(contacts[3].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("x"));
+        QCOMPARE(contacts[4].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("*"));
+        QCOMPARE(contacts[5].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("321"));
+        QCOMPARE(contacts[6].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral(""));
     }
 
     void testContactDisplayName()
