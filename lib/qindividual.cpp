@@ -909,7 +909,7 @@ void QIndividual::updateContact(QContact *contact) const
     QString label = displayName.label().toUpper();
     if (label.isEmpty() ||
         !label.at(0).isLetter()) {
-        tag.setTag("#" + label);
+        tag.setTag("");
     } else {
         tag.setTag(label);
     }
