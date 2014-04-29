@@ -40,9 +40,11 @@ public:
 private:
     SortClause m_sortClause;
 
+#if 0
     int compareContact(const QtContacts::QContact &a, const QtContacts::QContact &b, const QList<QtContacts::QContactSortOrder> &sortOrders);
     int compareVariant(const QVariant &first, const QVariant &second, Qt::CaseSensitivity sensitivity);
     int compareStrings(const QString &left, const QString &right, Qt::CaseSensitivity sensitivity);
+#endif
 };
 
 } // namespace

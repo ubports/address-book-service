@@ -115,7 +115,7 @@ private Q_SLOTS:
 
     void testTagSourtClause()
     {
-        const QString strClause = QString("FULL_NAME ASC");
+        const QString strClause = QString("TAG ASC");
         SortClause clause(strClause);
 
         QList<QContactSortOrder> cClauseList;
@@ -126,7 +126,6 @@ private Q_SLOTS:
         cClauseList << sortTag;
         QVERIFY(clause.toContactSortOrder() == cClauseList);
     }
-
 };
 
 QTEST_MAIN(SortClauseTest)

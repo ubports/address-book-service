@@ -134,8 +134,7 @@ void SortClause::initialize()
         clauseFieldMap["IM_URI"]        = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeOnlineAccount,  QContactOnlineAccount::FieldAccountUri);
         clauseFieldMap["IM_PROTOCOL"]   = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeOnlineAccount,  QContactOnlineAccount::FieldProtocol);
         clauseFieldMap["URL"]           = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeUrl,            QContactUrl::FieldUrl);
-        // WORKAROUND: Use FULL_NAME as sort field for Tag detail
-        clauseFieldMap["FULL_NAME"]     = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeTag,            QContactTag::FieldTag);
+        clauseFieldMap["TAG"]           = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeTag,            QContactTag::FieldTag);
     }
 }
 
@@ -147,6 +146,10 @@ QString SortClause::toString(const QContactSortOrder &sort) const
         if (clauseFieldMap[key] == clausePair) {
             return key + (sort.direction() == Qt::AscendingOrder ? " ASC" : " DESC");
         }
+    }
+
+    if (sort.isValid()) {
+        qWarning() << "No sorting support for" << sort;
     }
 
     return "";

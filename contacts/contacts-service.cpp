@@ -285,7 +285,6 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     QString sortStr = SortClause(request->sorting()).toString();
     QString filterStr = Filter(request->filter()).toString();
     FetchHint fetchHint = FetchHint(request->fetchHint()).toString();
-
     QDBusPendingCall pcall = m_iface->asyncCall("query", filterStr, sortStr, QStringList());
     if (pcall.isError()) {
         qWarning() << pcall.error().name() << pcall.error().message();

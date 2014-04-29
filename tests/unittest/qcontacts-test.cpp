@@ -267,13 +267,13 @@ private Q_SLOTS:
         // check result
         QList<QContact> contacts = m_manager->contacts(filter, sortOrders);
         QCOMPARE(contacts.size(), 7);
-        QCOMPARE(contacts[0].tags().at(0), QStringLiteral("AA"));
-        QCOMPARE(contacts[1].tags().at(0), QStringLiteral("BA"));
-        QCOMPARE(contacts[2].tags().at(0), QStringLiteral("BB"));
-        QCOMPARE(contacts[3].tags().at(0), QStringLiteral("X"));
-        QCOMPARE(contacts[4].tags().at(0), QStringLiteral("#"));
-        QCOMPARE(contacts[5].tags().at(0), QStringLiteral("#*"));
-        QCOMPARE(contacts[6].tags().at(0), QStringLiteral("#321"));
+        QCOMPARE(contacts[0].tags().at(0), QStringLiteral("#"));
+        QCOMPARE(contacts[1].tags().at(0), QStringLiteral("#*"));
+        QCOMPARE(contacts[2].tags().at(0), QStringLiteral("#321"));
+        QCOMPARE(contacts[3].tags().at(0), QStringLiteral("AA"));
+        QCOMPARE(contacts[4].tags().at(0), QStringLiteral("BA"));
+        QCOMPARE(contacts[5].tags().at(0), QStringLiteral("BB"));
+        QCOMPARE(contacts[6].tags().at(0), QStringLiteral("X"));
     }
 
     void testContactDisplayName()
