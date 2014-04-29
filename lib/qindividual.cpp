@@ -904,7 +904,11 @@ void QIndividual::updateContact(QContact *contact) const
         contact->saveDetail(&displayName);
     }
 
-    // add a extra tag to help on alphabetic list
+    // WORKAROUND: add a extra tag to help on alphabetic list
+    // On the Ubuntu Address Book, contacts which the name starts with
+    // number or symbol should be moved to bottom of the list. Since the standard
+    // string sort put symbols and numbers on the top, we use the tag to sort,
+    // and keep empty tags for the especial case.
     QContactTag tag;
     QString label = displayName.label().toUpper();
     if (label.isEmpty() ||
