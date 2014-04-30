@@ -1,3 +1,13 @@
+address-book-service (0.1.1+14.10.20140430-0ubuntu1) utopic; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * implement a dummy backend for testing purpose
+  * Implemented support for create multiple contacts in the same
+    request. Split RequestData in different classes based on the
+    necessary functionality.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 30 Apr 2014 16:26:15 +0000
+
 address-book-service (0.1.1+14.04.20140408.3-0ubuntu1) trusty; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
