@@ -155,8 +155,7 @@ View::View(const QString &clause, const QString &sort, const QStringList &source
       m_filterThread(new FilterThread(clause, sort, allContacts)),
       m_adaptor(0)
 {
-        m_filterThread->start();
-
+    m_filterThread->start();
     connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
 }
 

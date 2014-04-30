@@ -25,6 +25,7 @@
  */
 
 using Folks;
+using Gee;
 
 /**
  * The dummy backend module entry point.
@@ -34,7 +35,43 @@ using Folks;
  */
 public void module_init (BackendStore backend_store)
 {
-  backend_store.add_backend (new FolksDummy.Backend ());
+  string[] writable_properties =
+    {
+      Folks.PersonaStore.detail_key (PersonaDetail.AVATAR),
+      Folks.PersonaStore.detail_key (PersonaDetail.BIRTHDAY),
+      Folks.PersonaStore.detail_key (PersonaDetail.EMAIL_ADDRESSES),
+      Folks.PersonaStore.detail_key (PersonaDetail.FULL_NAME),
+      Folks.PersonaStore.detail_key (PersonaDetail.GENDER),
+      Folks.PersonaStore.detail_key (PersonaDetail.IM_ADDRESSES),
+      Folks.PersonaStore.detail_key (PersonaDetail.IS_FAVOURITE),
+      Folks.PersonaStore.detail_key (PersonaDetail.NICKNAME),
+      Folks.PersonaStore.detail_key (PersonaDetail.PHONE_NUMBERS),
+      Folks.PersonaStore.detail_key (PersonaDetail.POSTAL_ADDRESSES),
+      Folks.PersonaStore.detail_key (PersonaDetail.ROLES),
+      Folks.PersonaStore.detail_key (PersonaDetail.STRUCTURED_NAME),
+      Folks.PersonaStore.detail_key (PersonaDetail.LOCAL_IDS),
+      Folks.PersonaStore.detail_key (PersonaDetail.LOCATION),
+      Folks.PersonaStore.detail_key (PersonaDetail.WEB_SERVICE_ADDRESSES),
+      Folks.PersonaStore.detail_key (PersonaDetail.NOTES),
+      // Keep URLS as read-only fields for testing purpose
+      //Folks.PersonaStore.detail_key (PersonaDetail.URLS),
+      Folks.PersonaStore.detail_key (PersonaDetail.GROUPS),
+      null
+    };
+
+  /* Create a new persona store. */
+  var dummy_persona_store =
+      new FolksDummy.PersonaStore ("dummy-store", "Dummy personas", writable_properties);
+  dummy_persona_store.persona_type = typeof (FolksDummy.FullPersona);
+
+  /* Register it with the backend. */
+  var persona_stores = new HashSet<PersonaStore> ();
+  persona_stores.add (dummy_persona_store);
+
+  var backend = new FolksDummy.Backend ();
+  backend.register_persona_stores (persona_stores);
+  dummy_persona_store.reach_quiescence();
+  backend_store.add_backend (backend);
 }
 
 /**

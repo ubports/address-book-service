@@ -63,6 +63,7 @@ public:
 
 Q_SIGNALS:
     void stopped();
+    void ready();
 
 public Q_SLOTS:
     bool start();
@@ -70,7 +71,7 @@ public Q_SLOTS:
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
     Source createSource(const QString &sourceId, const QDBusMessage &message);
-    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
+    QString createContact(const QString &contact, const QString &source, const QDBusMessage &message = QDBusMessage());
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
     void updateContactsDone(const QString &contactId, const QString &error);
@@ -103,8 +104,12 @@ private:
 
     // Unix signals
     static int m_sigQuitFd[2];
-
     QSocketNotifier *m_snQuit;
+
+    // dbus service name
+    QString m_serviceName;
+
+
     // Disable copy contructor
     AddressBook(const AddressBook&);
 

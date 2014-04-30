@@ -29,6 +29,15 @@ Depends: evolution-data-server,
 Description: Ubuntu contact service
  A contact aggregator service, that exports all contact information through dbus.
 
+Package: address-book-service-dummy
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Description: A fork of folks dummy backend
+ A fork of folks dummy backend to be used as standalone backend to test address-book-service.
+
+
 Package: qtcontact5-galera
 Architecture: any
 Multi-Arch: same

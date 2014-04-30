@@ -66,7 +66,7 @@ private:
     QTemporaryDir m_tmpDir;
     DummyBackendAdaptor *m_adaptor;
     FolksDummyBackend *m_backend;
-    FolksDummyPersonaStore *m_primaryPersonaStore;
+    FolksPersonaStore *m_primaryPersonaStore;
     FolksBackendStore *m_backendStore;
     QEventLoop *m_eventLoop;
     FolksIndividualAggregator *m_aggregator;
@@ -78,17 +78,10 @@ private:
 
     bool registerObject();
     void initFolks();
-    void configurePrimaryStore();
     void initEnviroment();
     void prepareAggregator();
     void mkpath(const QString &path) const;
     static void checkError(GError *error);
-    static void backendEnabled(FolksBackendStore *backendStore,
-                               GAsyncResult *res,
-                               DummyBackendProxy *self);
-    static void backendStoreLoaded(FolksBackendStore *backendStore,
-                                   GAsyncResult *res,
-                                   DummyBackendProxy *self);
     static void individualAggregatorPrepared(FolksIndividualAggregator *fia,
                                              GAsyncResult *res,
                                              DummyBackendProxy *self);

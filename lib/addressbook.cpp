@@ -91,6 +91,12 @@ AddressBook::AddressBook(QObject *parent)
       m_notifyIsQuiescentHandlerId(0),
       m_connection(QDBusConnection::sessionBus())
 {
+    if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
+        m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
+        qDebug() << "Using alternative service name:" << m_serviceName;
+    } else {
+        m_serviceName = CPIM_SERVICE_NAME;
+    }
     prepareUnixSignals();
 }
 
@@ -111,11 +117,11 @@ QString AddressBook::objectPath()
 
 bool AddressBook::registerObject(QDBusConnection &connection)
 {
-    if (connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
+    if (connection.interface()->isServiceRegistered(m_serviceName)) {
         qWarning() << "Galera pin service already registered";
         return false;
-    } else if (!connection.registerService(CPIM_SERVICE_NAME)) {
-        qWarning() << "Could not register service!" << CPIM_SERVICE_NAME;
+    } else if (!connection.registerService(m_serviceName)) {
+        qWarning() << "Could not register service!" << m_serviceName;
         return false;
     }
 
@@ -181,8 +187,8 @@ void AddressBook::shutdown()
             m_connection.interface()->isValid()) {
 
             m_connection.unregisterObject(objectPath());
-            if (m_connection.interface()->isServiceRegistered(CPIM_SERVICE_NAME)) {
-                m_connection.unregisterService(CPIM_SERVICE_NAME);
+            if (m_connection.interface()->isServiceRegistered(m_serviceName)) {
+                m_connection.unregisterService(m_serviceName);
             }
         }
 
@@ -233,9 +239,11 @@ Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &me
     data->m_addressbook = this;
     data->m_message = message;
     data->sourceName = sourceId;
+
     FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
     QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id (store));
     if ( personaStoreTypeId == "dummy") {
+        qDebug() << "Create source on dummy" << sourceId;
         FolksBackendStore *backendStore = folks_backend_store_dup();
         FolksBackend *dummy = folks_backend_store_dup_backend_by_name(backendStore, "dummy");
 
@@ -396,27 +404,27 @@ QString AddressBook::createContact(const QString &contact, const QString &source
     } else {
         QContact qcontact = VCardParser::vcardToContact(contact);
         if (!qcontact.isEmpty()) {
-            if (!qcontact.isEmpty()) {
-                GHashTable *details = QIndividual::parseDetails(qcontact);
-                CreateContactData *data = new CreateContactData;
-                data->m_message = message;
-                data->m_addressbook = this;
-                FolksPersonaStore *store = getFolksStore(source);
-                folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
-                                                                     NULL, //parent
-                                                                     store,
-                                                                     details,
-                                                                     (GAsyncReadyCallback) createContactDone,
-                                                                     (void*) data);
-                g_hash_table_destroy(details);
-                g_object_unref(store);
-                return "";
-            }
+            GHashTable *details = QIndividual::parseDetails(qcontact);
+            CreateContactData *data = new CreateContactData;
+            data->m_message = message;
+            data->m_addressbook = this;
+            FolksPersonaStore *store = getFolksStore(source);
+            folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
+                                                                 NULL, //parent
+                                                                 store,
+                                                                 details,
+                                                                 (GAsyncReadyCallback) createContactDone,
+                                                                 (void*) data);
+            g_hash_table_destroy(details);
+            g_object_unref(store);
+            return "";
         }
     }
 
-    QDBusMessage reply = message.createReply(QString());
-    QDBusConnection::sessionBus().send(reply);
+    if (message.type() != QDBusMessage::InvalidMessage) {
+        QDBusMessage reply = message.createReply(QString());
+        QDBusConnection::sessionBus().send(reply);
+    }
     return "";
 }
 
@@ -749,13 +757,17 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         ContactEntry *entry = createData->m_addressbook->m_contacts->value(QString::fromUtf8(folks_individual_get_id(individual)));
         if (entry) {
             QString vcard = VCardParser::contactToVcard(entry->individual()->contact());
-            reply = createData->m_message.createReply(vcard);
-        } else {
+            if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
+                reply = createData->m_message.createReply(vcard);
+            }
+        } else if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
             reply = createData->m_message.createErrorReply("Failed to retrieve the new contact", error->message);
         }
     }
     //TODO: use dbus connection
-    QDBusConnection::sessionBus().send(reply);
+    if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
+        QDBusConnection::sessionBus().send(reply);
+    }
     delete createData;
 }
 
@@ -766,7 +778,7 @@ void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, Address
 
     g_object_get(source, "is-quiescent", &self->m_ready, NULL);
     if (self->m_ready && self->m_adaptor) {
-        Q_EMIT self->m_adaptor->ready();
+        Q_EMIT self->ready();
     }
 }
 

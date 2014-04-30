@@ -118,9 +118,9 @@ QStringList DummyBackendProxy::listContacts() const
 void DummyBackendProxy::reset()
 {
     if (m_contacts.count()) {
-        GeeMap *map = folks_persona_store_get_personas((FolksPersonaStore*)m_primaryPersonaStore);
+        GeeMap *map = folks_persona_store_get_personas(m_primaryPersonaStore);
         GeeCollection *personas = gee_map_get_values(map);
-        folks_dummy_persona_store_unregister_personas(m_primaryPersonaStore, (GeeSet*)personas);
+        folks_dummy_persona_store_unregister_personas(FOLKS_DUMMY_PERSONA_STORE(m_primaryPersonaStore), (GeeSet*)personas);
         g_object_unref(personas);
         m_contacts.clear();
     }
@@ -154,19 +154,6 @@ void DummyBackendProxy::reset()
 
 void DummyBackendProxy::initFolks()
 {
-    m_backendStore = folks_backend_store_dup();
-    folks_backend_store_load_backends(m_backendStore,
-                                      (GAsyncReadyCallback) DummyBackendProxy::backendStoreLoaded,
-                                      this);
-}
-
-bool DummyBackendProxy::isReady() const
-{
-    return m_isReady;
-}
-
-void DummyBackendProxy::prepareAggregator()
-{
     m_aggregator = folks_individual_aggregator_dup();
     m_individualsChangedDetailedId = g_signal_connect(m_aggregator,
                                           "individuals-changed-detailed",
@@ -177,21 +164,27 @@ void DummyBackendProxy::prepareAggregator()
                                         this);
 }
 
+bool DummyBackendProxy::isReady() const
+{
+    return m_isReady;
+}
+
 QString DummyBackendProxy::createContact(const QtContacts::QContact &qcontact)
 {
     ScopedEventLoop loop(&m_eventLoop);
 
     GHashTable *details = galera::QIndividual::parseDetails(qcontact);
     Q_ASSERT(details);
+    Q_ASSERT(m_aggregator);
     folks_individual_aggregator_add_persona_from_details(m_aggregator,
                                                          NULL, //parent
-                                                         FOLKS_PERSONA_STORE(m_primaryPersonaStore),
+                                                         m_primaryPersonaStore,
                                                          details,
                                                          (GAsyncReadyCallback) DummyBackendProxy::individualAggregatorAddedPersona,
                                                          this);
 
     loop.exec();
-    //g_object_unref(details);
+    g_hash_table_destroy(details);
     return QString();
 }
 
@@ -213,59 +206,6 @@ QString DummyBackendProxy::updateContact(const QString &contactId,
     return i->id();
 }
 
-void DummyBackendProxy::configurePrimaryStore()
-{
-    static const char* writableProperties[] = {
-        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_FULL_NAME),
-        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_ALIAS),
-        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_NICKNAME),
-        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_STRUCTURED_NAME),
-        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_IS_FAVOURITE),
-        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_EMAIL_ADDRESSES),
-        folks_persona_store_detail_key(FOLKS_PERSONA_DETAIL_PHONE_NUMBERS),
-        0
-    };
-
-    m_primaryPersonaStore = folks_dummy_persona_store_new("dummy-store",
-                                                          "Dummy personas",
-                                                          const_cast<char**>(writableProperties), 7);
-    folks_dummy_persona_store_set_persona_type(m_primaryPersonaStore, FOLKS_DUMMY_TYPE_FULL_PERSONA);
-    folks_dummy_persona_store_update_trust_level(m_primaryPersonaStore, FOLKS_PERSONA_STORE_TRUST_FULL);
-
-    GeeHashSet *personaStores = gee_hash_set_new(FOLKS_TYPE_PERSONA_STORE,
-                                                 (GBoxedCopyFunc) g_object_ref, g_object_unref,
-                                                 NULL, NULL, NULL, NULL, NULL, NULL);
-
-    gee_abstract_collection_add(GEE_ABSTRACT_COLLECTION(personaStores), m_primaryPersonaStore);
-    folks_dummy_backend_register_persona_stores(m_backend, GEE_SET(personaStores), true);
-    folks_dummy_persona_store_reach_quiescence(m_primaryPersonaStore);
-    g_object_unref(personaStores);
-    prepareAggregator();
-}
-
-void DummyBackendProxy::backendEnabled(FolksBackendStore *backendStore,
-                                       GAsyncResult *res,
-                                       DummyBackendProxy *self)
-{
-    folks_backend_store_enable_backend_finish(backendStore, res);
-    self->m_eventLoop->quit();
-    self->m_eventLoop = 0;
-}
-
-
-void DummyBackendProxy::backendStoreLoaded(FolksBackendStore *backendStore,
-                                           GAsyncResult *res,
-                                           DummyBackendProxy *self)
-{
-    GError *error = 0;
-    folks_backend_store_load_backends_finish(backendStore, res, &error);
-    checkError(error);
-
-    self->m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(self->m_backendStore, "dummy"));
-    Q_ASSERT(self->m_backend != 0);
-    self->configurePrimaryStore();
-}
-
 void DummyBackendProxy::checkError(GError *error)
 {
     if (error) {
@@ -281,7 +221,6 @@ void DummyBackendProxy::mkpath(const QString &path) const
     if (!dir.mkpath(path)) {
         qWarning() << "Fail to create path" << path;
     }
-    Q_ASSERT(dir.mkpath(path));
 }
 
 void DummyBackendProxy::initEnviroment()
@@ -359,6 +298,16 @@ void DummyBackendProxy::individualAggregatorPrepared(FolksIndividualAggregator *
 
     folks_individual_aggregator_prepare_finish(fia, res, &error);
     checkError(error);
+
+    self->m_backendStore = folks_backend_store_dup();
+    self->m_backend = FOLKS_DUMMY_BACKEND(folks_backend_store_dup_backend_by_name(self->m_backendStore, "dummy"));
+    if (!self->m_backend) {
+        qWarning() << "fail to load dummy backend";
+    }
+
+    self->m_primaryPersonaStore = folks_individual_aggregator_get_primary_store(fia);
+    g_object_ref(self->m_primaryPersonaStore);
+
     if (self->m_useDBus) {
         self->registerObject();
     }

@@ -39,7 +39,11 @@ class QDBusInterface;
 using namespace QtContacts; // necessary for signal signatures
 
 namespace galera {
-class RequestData;
+
+class QContactRequestData;
+class QContactSaveRequestData;
+class QContactFetchRequestData;
+class QContactRemoveRequestData;
 
 class GaleraContactsService : public QObject
 {
@@ -73,8 +77,6 @@ private Q_SLOTS:
     void onServiceReady();
     void onVCardsParsed(QList<QtContacts::QContact> contacts);
 
-    void fetchContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
-
 private:
     QString m_id;
     QtContacts::QContactId m_selfContactId;                     // the "MyCard" contact id
@@ -83,7 +85,8 @@ private:
     bool m_serviceIsReady;
 
     QSharedPointer<QDBusInterface> m_iface;
-    QSet<RequestData*> m_runningRequests;
+    QString m_serviceName;
+    QSet<QContactRequestData*> m_runningRequests;
     QQueue<QPointer<QtContacts::QContactAbstractRequest> > m_pendingRequests;
 
     Q_INVOKABLE void initialize();
@@ -92,25 +95,25 @@ private:
     bool isOnline() const;
 
     void fetchContacts(QtContacts::QContactFetchRequest *request);
-    void fetchContactsContinue(RequestData *request,
+    void fetchContactsContinue(QContactFetchRequestData *data,
                                QDBusPendingCallWatcher *call);
-    void fetchContactsGroupsContinue(RequestData *request,
+    void fetchContactsGroupsContinue(QContactFetchRequestData *request,
                                      QDBusPendingCallWatcher *call);
     void fetchContactsById(QtContacts::QContactFetchByIdRequest *request);
-    Q_INVOKABLE void fetchContactsPage(galera::RequestData *request);
-
+    void fetchContactsPage(QContactFetchRequestData *data);
+    void fetchContactsDone(QContactFetchRequestData *data, QDBusPendingCallWatcher *call);
 
     void saveContact(QtContacts::QContactSaveRequest *request);
-    void createContacts(QtContacts::QContactSaveRequest *request, QStringList contacts, QStringList sources);
-    void createSources(QtContacts::QContactSaveRequest *request, QStringList &sources);
-    void updateContacts(QtContacts::QContactSaveRequest *request, QStringList contacts);
-    void updateContactDone(RequestData *request, QDBusPendingCallWatcher *call);
-    void createContactsDone(RequestData *request, QDBusPendingCallWatcher *call);
+    void createContactsStart(QContactSaveRequestData *data);
+    void updateContacts(QContactSaveRequestData *data);
+    void updateContactDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call);
+    void createContactsDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call);
+    void createGroupDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call);
 
     void removeContact(QtContacts::QContactRemoveRequest *request);
-    void removeContactDone(RequestData *request, QDBusPendingCallWatcher *call);
+    void removeContactDone(QContactRemoveRequestData *data, QDBusPendingCallWatcher *call);
 
-    void destroyRequest(RequestData *request);
+    void destroyRequest(QContactRequestData *request);
 
     QList<QContactId> parseIds(const QStringList &ids) const;
 };
