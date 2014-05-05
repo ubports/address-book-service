@@ -895,12 +895,19 @@ void QIndividual::updateContact(QContact *contact) const
         personaIndex++;
     }
 
-    // if display name is empty uses org name as fallback
+    // if contact name is empty use org name otherwise try phone number as fallback
     QContactDisplayLabel displayName = contact->detail<QContactDisplayLabel>();
-    if (displayName.isEmpty() || displayName.label().isEmpty()) {
+    QString label = displayName.label().trimmed();
+
+    if (label.isEmpty()) {
         QContactOrganization org = contact->detail<QContactOrganization>();
-        displayName.setLabel(org.name());
-        qDebug() << "Set display Name" << org.name();
+        label = org.name().trimmed();
+        if (label.isEmpty()) {
+            QContactPhoneNumber phone = contact->detail<QContactPhoneNumber>();
+            label = phone.number().trimmed();
+        }
+
+        displayName.setLabel(label);
         contact->saveDetail(&displayName);
     }
 
@@ -910,7 +917,7 @@ void QIndividual::updateContact(QContact *contact) const
     // string sort put symbols and numbers on the top, we use the tag to sort,
     // and keep empty tags for the especial case.
     QContactTag tag;
-    QString label = displayName.label().toUpper();
+    label = label.toUpper();
     if (label.isEmpty() ||
         !label.at(0).isLetter()) {
         tag.setTag("");
