@@ -46,6 +46,7 @@ public:
     static const QString PrefParamName;
     static const QString IrremovableFieldName;
     static const QString ReadOnlyFieldName;
+    static const QString TagFieldName;
     static const QMap<QtContacts::QContactDetail::DetailType, QString> PreferredActionNames;
 
     static QtContacts::QContact vcardToContact(const QString &vcard);

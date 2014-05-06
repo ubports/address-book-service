@@ -147,6 +147,7 @@ private Q_SLOTS:
                           << "ORG_TITLE"
                           << "PHONE"
                           << "PHOTO"
+                          << "TAG"
                           << "URL";
         QDBusReply<QStringList> reply = m_serverIface->call("sortFields");
         QCOMPARE(reply.value(), defaultSortFields);

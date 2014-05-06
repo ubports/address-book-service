@@ -53,6 +53,11 @@ SortClause::SortClause(const SortClause &other)
     initialize();
 }
 
+bool SortClause::isEmpty() const
+{
+    return m_sortOrders.isEmpty();
+}
+
 QString SortClause::toString() const
 {
     QString result;
@@ -128,6 +133,7 @@ void SortClause::initialize()
         clauseFieldMap["ADDR_POST_OFFICE_BOX"] = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeAddress, QContactAddress::FieldPostOfficeBox);
         clauseFieldMap["IM_URI"]        = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeOnlineAccount,  QContactOnlineAccount::FieldAccountUri);
         clauseFieldMap["IM_PROTOCOL"]   = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeOnlineAccount,  QContactOnlineAccount::FieldProtocol);
+        clauseFieldMap["TAG"]           = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeTag,            QContactTag::FieldTag);
         clauseFieldMap["URL"]           = QPair<QContactDetail::DetailType, int>(QContactDetail::TypeUrl,            QContactUrl::FieldUrl);
     }
 }
@@ -140,6 +146,10 @@ QString SortClause::toString(const QContactSortOrder &sort) const
         if (clauseFieldMap[key] == clausePair) {
             return key + (sort.direction() == Qt::AscendingOrder ? " ASC" : " DESC");
         }
+    }
+
+    if (sort.isValid()) {
+        qWarning() << "No sorting support for" << sort;
     }
 
     return "";

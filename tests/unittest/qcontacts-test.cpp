@@ -121,7 +121,7 @@ private Q_SLOTS:
         QContactSyncTarget target = contact.detail<QContactSyncTarget>();
         QCOMPARE(target.syncTarget(), QString("Dummy personas"));
     }
-#if 0
+
     /*
      * Test create a new contact
      */
@@ -160,42 +160,6 @@ private Q_SLOTS:
     }
 
     /*
-     * Test create a contact source using the contact group
-     */
-    void testCreateGroup()
-    {
-        QContactManager manager("galera");
-
-        // create a contact
-        QContact contact;
-        contact.setType(QContactType::TypeGroup);
-
-        QContactDisplayLabel label;
-        label.setLabel("test group");
-        contact.saveDetail(&label);
-
-        bool result = manager.saveContact(&contact);
-        QCOMPARE(result, true);
-
-        // query for new contacts
-        QContactDetailFilter filter;
-        filter.setDetailType(QContactDetail::TypeType, QContactType::FieldType);
-        filter.setValue(QContactType::TypeGroup);
-        QList<QContact> contacts = manager.contacts(filter);
-
-        // will be two sources since we have the main source already created
-        QCOMPARE(contacts.size(), 2);
-
-        QContact createdContact = contacts[0];
-        // id
-        QVERIFY(!createdContact.id().isNull());
-
-        // label
-        QContactDisplayLabel createdlabel = createdContact.detail<QContactDisplayLabel>();
-        QCOMPARE(createdlabel.label(), label.label());
-    }
-
-    /*
      * Test query a contact source using the contact group
      */
     void testQueryGroups()
@@ -216,7 +180,164 @@ private Q_SLOTS:
         QContactDisplayLabel label = contacts[0].detail(QContactDisplayLabel::Type);
         QCOMPARE(label.label(), QStringLiteral("Dummy personas"));
     }
-#endif
+
+    /*
+     * Test sort contacts by with symbols in the end
+     */
+    void testQuerySortedWithSymbolsInTheEnd()
+    {
+        QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
+
+        // create a contact ""
+        QContact contact;
+        QContactName name = contact.detail<QContactName>();
+        name.setFirstName("");
+        name.setMiddleName("");
+        name.setLastName("");
+        contact.saveDetail(&name);
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "Aa"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("Aa");
+        contact.saveDetail(&name);
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "Ba"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("Ba");
+        contact.saveDetail(&name);
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "Bb"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("Bb");
+        contact.saveDetail(&name);
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "321"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("321");
+        contact.saveDetail(&name);
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "*"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("*");
+        contact.saveDetail(&name);
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "" with company "x"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("");
+        name.setMiddleName("");
+        name.setLastName("");
+        contact.saveDetail(&name);
+
+        QContactOrganization org;
+        org.setName("x");
+        contact.saveDetail(&org);
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        QTRY_COMPARE(spyContactAdded.count(), 1);
+
+        // sort contact by tag and display name
+        QContactFilter filter;
+        QContactSortOrder sortTag;
+        sortTag.setDetailType(QContactDetail::TypeTag, QContactTag::FieldTag);
+        sortTag.setDirection(Qt::AscendingOrder);
+        sortTag.setCaseSensitivity(Qt::CaseInsensitive);
+        sortTag.setBlankPolicy(QContactSortOrder::BlanksLast);
+
+        QContactSortOrder sortDisplayName;
+        sortDisplayName.setDetailType(QContactDetail::TypeDisplayLabel, QContactDisplayLabel::FieldLabel);
+        sortDisplayName.setDirection(Qt::AscendingOrder);
+        sortDisplayName.setCaseSensitivity(Qt::CaseInsensitive);
+        sortDisplayName.setBlankPolicy(QContactSortOrder::BlanksLast);
+
+        QList<QContactSortOrder> sortOrders;
+        sortOrders << sortTag << sortDisplayName;
+
+        // check result
+        QList<QContact> contacts = m_manager->contacts(filter, sortOrders);
+        QCOMPARE(contacts.size(), 7);
+        QCOMPARE(contacts[0].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("Aa"));
+        QCOMPARE(contacts[1].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("Ba"));
+        QCOMPARE(contacts[2].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("Bb"));
+        QCOMPARE(contacts[3].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("x"));
+        QCOMPARE(contacts[4].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("*"));
+        QCOMPARE(contacts[5].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral("321"));
+        QCOMPARE(contacts[6].detail(QContactDetail::TypeDisplayLabel).value(QContactDisplayLabel::FieldLabel).toString(),
+                QStringLiteral(""));
+    }
+
+    void testContactDisplayName()
+    {
+        // create a contact ""
+        QContact contact;
+        QContactName name = contact.detail<QContactName>();
+        name.setFirstName("");
+        name.setMiddleName("");
+        name.setLastName("");
+        contact.saveDetail(&name);
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "Aa"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("Aa");
+        contact.saveDetail(&name);
+        result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // create contact "" with company "x"
+        contact = QContact();
+        name = contact.detail<QContactName>();
+        name.setFirstName("");
+        name.setMiddleName("");
+        name.setLastName("");
+        contact.saveDetail(&name);
+        QContactOrganization org;
+        org.setName("x");
+        contact.saveDetail(&org);
+        result = m_manager->saveContact(&contact);
+
+        QCOMPARE(result, true);
+
+        // check result
+        QContactFilter filter;
+        QList<QContact> contacts = m_manager->contacts(filter);
+
+        QStringList expectedContacts;
+        expectedContacts << ""
+                         << "Aa"
+                         << "x";
+        QCOMPARE(contacts.size(), 3);
+        Q_FOREACH(const QContact &c, contacts) {
+            expectedContacts.removeAll(c.detail<QContactDisplayLabel>().label());
+        }
+        QCOMPARE(expectedContacts.size(), 0);
+    }
 };
 
 QTEST_MAIN(QContactsTest)

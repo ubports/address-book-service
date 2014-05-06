@@ -275,10 +275,12 @@ QtContacts::QContactDetail QIndividual::getPersonaFullName(FolksPersona *persona
             displayName += QString::fromUtf8(name);
         }
     }
+
     if (!displayName.isEmpty()) {
         detail.setLabel(displayName);
         detail.setDetailUri(QString("%1.1").arg(index));
     }
+
     return detail;
 }
 
@@ -751,6 +753,12 @@ QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
             }
         }
 
+        if (fields.contains(QContactDetail::TypeTag)) {
+            Q_FOREACH(QContactDetail det, fullContact.details<QContactTag>()) {
+                details << det;
+            }
+        }
+
         Q_FOREACH(QContactDetail det, details) {
             result.appendDetail(det);
         }
@@ -883,8 +891,40 @@ void QIndividual::updateContact(QContact *contact) const
                                 VCardParser::PreferredActionNames[QContactUrl::Type],
                                 prefDetail,
                                 !wPropList.contains("urls"));
+
         personaIndex++;
     }
+
+    // if contact name is empty use org name otherwise try phone number as fallback
+    QContactDisplayLabel displayName = contact->detail<QContactDisplayLabel>();
+    QString label = displayName.label().trimmed();
+
+    if (label.isEmpty()) {
+        QContactOrganization org = contact->detail<QContactOrganization>();
+        label = org.name().trimmed();
+        if (label.isEmpty()) {
+            QContactPhoneNumber phone = contact->detail<QContactPhoneNumber>();
+            label = phone.number().trimmed();
+        }
+
+        displayName.setLabel(label);
+        contact->saveDetail(&displayName);
+    }
+
+    // WORKAROUND: add a extra tag to help on alphabetic list
+    // On the Ubuntu Address Book, contacts which the name starts with
+    // number or symbol should be moved to bottom of the list. Since the standard
+    // string sort put symbols and numbers on the top, we use the tag to sort,
+    // and keep empty tags for the especial case.
+    QContactTag tag;
+    label = label.toUpper();
+    if (label.isEmpty() ||
+        !label.at(0).isLetter()) {
+        tag.setTag("");
+    } else {
+        tag.setTag(label);
+    }
+    contact->saveDetail(&tag);
 }
 
 bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object, const char *slot)

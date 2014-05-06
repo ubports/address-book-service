@@ -103,6 +103,7 @@ QMap<QString, QtContacts::QContactDetail::DetailType> FetchHint::contactFieldNam
         map.insert("PHOTO", QContactAvatar::Type);
         map.insert("TEL", QContactPhoneNumber::Type);
         map.insert("URL", QContactUrl::Type);
+        map.insert("TAG", QContactTag::Type);
     }
     return map;
 }
