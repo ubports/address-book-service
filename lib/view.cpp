@@ -195,11 +195,12 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
 {
 
     int startT = ELAPPSED();
-    qDebug() << "wait filter thread" << startT;
-    while(!m_filterThread->wait(300)) {
+    qDebug() << "wait filter thread" << startT << m_filterThread->isRunning();
+    while(m_filterThread->isRunning() && !m_filterThread->wait(300)) {
         QCoreApplication::processEvents();
     }
-    qDebug() << "filter thread done" << ELAPPSED() << "Section:" << ELAPPSED() - startT;
+    int endT = ELAPPSED();
+    qDebug() << "filter thread done" << endT << "Section:" << (endT - startT);
 
     QList<ContactEntry*> entries = m_filterThread->result();
     if (startIndex < 0) {
