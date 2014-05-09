@@ -50,7 +50,8 @@
 #include <QtVersit/QVersitContactExporter>
 #include <QtVersit/QVersitWriter>
 
-#define FETCH_PAGE_SIZE                 50
+#define ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE  "CANONICAL_PIN_SERVICE_PAGE_SIZE"
+#define FETCH_PAGE_SIZE                     25
 
 using namespace QtVersit;
 using namespace QtContacts;
@@ -111,6 +112,12 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
         m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
     } else {
         m_serviceName = CPIM_SERVICE_NAME;
+    }
+
+    if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE)) {
+        m_pageSize = qgetenv(ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE).toInt();
+    } else {
+        m_pageSize = FETCH_PAGE_SIZE;
     }
 
     m_serviceWatcher = new QDBusServiceWatcher(m_serviceName,
@@ -340,7 +347,7 @@ void GaleraContactsService::fetchContactsPage(QContactFetchRequestData *data)
     QDBusPendingCall pcall = data->view()->asyncCall("contactsDetails",
                                                      data->fields(),
                                                      data->offset(),
-                                                     FETCH_PAGE_SIZE);
+                                                     m_pageSize);
     if (pcall.isError()) {
         qWarning() << pcall.error().name() << pcall.error().message();
         data->finish(QContactManager::UnspecifiedError);
@@ -414,9 +421,9 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
         }
     }
 
-    if (contacts.size() == FETCH_PAGE_SIZE) {
+    if (contacts.size() == m_pageSize) {
         data->update(contacts, QContactAbstractRequest::ActiveState);
-        data->updateOffset(FETCH_PAGE_SIZE);
+        data->updateOffset(m_pageSize);
         data->updateWatcher(0);
         fetchContactsPage(data);
     } else {

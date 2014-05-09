@@ -83,6 +83,7 @@ private:
     QString m_managerUri;                                       // for faster lookup.
     QDBusServiceWatcher *m_serviceWatcher;
     bool m_serviceIsReady;
+    int m_pageSize;
 
     QSharedPointer<QDBusInterface> m_iface;
     QString m_serviceName;
