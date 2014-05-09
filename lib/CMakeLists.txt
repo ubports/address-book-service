@@ -5,6 +5,7 @@ set(CONTACTS_SERVICE_LIB address-book-service-lib)
 set(CONTACTS_SERVICE_LIB_SRC
     addressbook.cpp
     addressbook-adaptor.cpp
+    contact-less-than.cpp
     contacts-map.cpp
     detail-context-parser.cpp
     dirtycontact-notify.cpp
@@ -18,6 +19,7 @@ set(CONTACTS_SERVICE_LIB_SRC
 set(CONTACTS_SERVICE_LIB_HEADERS
     addressbook.h
     addressbook-adaptor.h
+    contact-less-than.h
     contacts-map.h
     detail-context-parser.h
     dirtycontact-notify.h
