@@ -50,7 +50,7 @@
 #include <QtVersit/QVersitContactExporter>
 #include <QtVersit/QVersitWriter>
 
-#define FETCH_PAGE_SIZE                 100
+#define FETCH_PAGE_SIZE                 50
 
 using namespace QtVersit;
 using namespace QtContacts;
