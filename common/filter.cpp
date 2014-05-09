@@ -25,6 +25,7 @@
 #include <QtContacts/QContactIdFilter>
 #include <QtContacts/QContactDetailFilter>
 #include <QtContacts/QContactUnionFilter>
+#include <QtContacts/QContactIntersectionFilter>
 #include <QtContacts/QContactManagerEngine>
 
 using namespace QtContacts;
@@ -59,8 +60,16 @@ bool Filter::test(const QContact &contact) const
 
 bool Filter::isValid() const
 {
-    return ((m_filter.type() != QContactFilter::InvalidFilter) &&
-            (m_filter.type() != QContactFilter::DefaultFilter));
+    bool validFilter = ((m_filter.type() != QContactFilter::InvalidFilter) &&
+                        (m_filter.type() != QContactFilter::DefaultFilter));
+
+    // check if the filter is empty
+    if (validFilter && m_filter.type() == QContactFilter::IntersectionFilter) {
+        validFilter = !static_cast<QContactIntersectionFilter>(m_filter).filters().isEmpty();
+    } else if (validFilter && m_filter.type() == QContactFilter::UnionFilter) {
+        validFilter = !static_cast<QContactUnionFilter>(m_filter).filters().isEmpty();
+    }
+    return validFilter;
 }
 
 QString Filter::toString(const QtContacts::QContactFilter &filter)
