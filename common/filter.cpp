@@ -59,7 +59,8 @@ bool Filter::test(const QContact &contact) const
 
 bool Filter::isValid() const
 {
-    return (m_filter.type() != QContactFilter::InvalidFilter);
+    return ((m_filter.type() != QContactFilter::InvalidFilter) &&
+            (m_filter.type() != QContactFilter::DefaultFilter));
 }
 
 QString Filter::toString(const QtContacts::QContactFilter &filter)

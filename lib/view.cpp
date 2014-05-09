@@ -19,6 +19,7 @@
 #include "view.h"
 #include "view-adaptor.h"
 #include "contacts-map.h"
+#include "contact-less-than.h"
 #include "qindividual.h"
 
 #include "common/vcard-parser.h"
@@ -38,24 +39,6 @@ using namespace QtVersit;
 
 namespace galera
 {
-class ContactLessThan
-{
-public:
-    ContactLessThan(const SortClause &sortClause)
-        : m_sortClause(sortClause)
-    {
-
-    }
-
-    bool operator()(galera::ContactEntry *entryA, galera::ContactEntry *entryB)
-    {
-        return QContactManagerEngine::compareContact(entryA->individual()->contact(),
-                                                     entryB->individual()->contact(),
-                                                     m_sortClause.toContactSortOrder()) < 0;
-    }
-private:
-    SortClause m_sortClause;
-};
 
 class FilterThread: public QThread
 {
@@ -80,8 +63,7 @@ public:
     bool appendContact(ContactEntry *entry)
     {
         if (checkContact(entry)) {
-            //TODO: append sorted
-            m_contacts << entry;
+            addSorted(&m_contacts, entry, m_sortClause);
             return true;
         }
         return false;
@@ -95,8 +77,22 @@ public:
     void chageSort(SortClause clause)
     {
         m_sortClause = clause;
-        ContactLessThan lessThan(m_sortClause);
-        qSort(m_contacts.begin(), m_contacts.end(), lessThan);
+        if (!clause.isEmpty()) {
+            ContactLessThan lessThan(m_sortClause);
+            qSort(m_contacts.begin(), m_contacts.end(), lessThan);
+        }
+    }
+
+    void addSorted(QList<ContactEntry*>* sorted, ContactEntry* toAdd, const SortClause& sortOrder)
+    {
+        if (!sortOrder.isEmpty()) {
+            ContactLessThan lessThan(sortOrder);
+            QList<ContactEntry*>::iterator it(std::upper_bound(sorted->begin(), sorted->end(), toAdd, lessThan));
+            sorted->insert(it, toAdd);
+        } else {
+            // no sort order? just add it to the end
+            sorted->append(toAdd);
+        }
     }
 
     void stop()
@@ -124,14 +120,14 @@ protected:
                 m_stoppedLock.unlock();
 
                 if (checkContact(entry)) {
-                    m_contacts << entry;
+                    addSorted(&m_contacts, entry, m_sortClause);
                 }
             }
         } else {
             m_contacts = m_allContacts->values();
+            chageSort(m_sortClause);
         }
 
-        chageSort(m_sortClause);
         m_allContacts->unlock();
     }
 

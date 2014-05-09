@@ -16,39 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GALERA_SORT_CLAUSE_H__
-#define __GALERA_SORT_CLAUSE_H__
+#ifndef __GALERA_CONTACT_LESS_THAN_H__
+#define __GALERA_CONTACT_LESS_THAN_H__
+
+#include "common/sort-clause.h"
 
 #include <QtCore/QString>
-#include <QtCore/QList>
+#include <QtCore/QVariant>
 
-#include <QtContacts/QContactSortOrder>
+#include <QtContacts/QContact>
 
-namespace galera
-{
+namespace galera {
+
 class ContactEntry;
 
-class SortClause
+class ContactLessThan
 {
 public:
-    SortClause(const QString &sort);
-    SortClause(QList<QtContacts::QContactSortOrder> sort);
-    SortClause(const SortClause &other);
+    ContactLessThan(const SortClause &sortClause);
 
-    bool isEmpty() const;
-    QString toString() const;
-    QList<QtContacts::QContactSortOrder> toContactSortOrder() const;
-
-    static QStringList supportedFields();
+    bool operator()(ContactEntry *entryA, ContactEntry *entryB);
 
 private:
-    QList<QtContacts::QContactSortOrder> m_sortOrders;
-
-    QtContacts::QContactSortOrder fromString(const QString &clause) const;
-    QString toString(const QtContacts::QContactSortOrder &sort) const;
-    static void initialize();
+    SortClause m_sortClause;
 };
 
-}
+} // namespace
 
-#endif
+#endif //__GALERA_CONTACT_LESS_THAN_H__
