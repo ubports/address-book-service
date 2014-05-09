@@ -56,6 +56,9 @@
 using namespace QtVersit;
 using namespace QtContacts;
 
+static QElapsedTimer eTimer;
+#define ELAPPSED() (eTimer.elapsed()/1000.0)
+
 namespace //private
 {
 
@@ -256,6 +259,9 @@ void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdReque
 
 void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *request)
 {
+    qDebug() << ">START A NEW FETCH";
+    eTimer.restart();
+
     if (!isOnline()) {
         qWarning() << "Server is not online";
         QContactFetchRequestData::notifyError(request);
@@ -314,8 +320,12 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
 void GaleraContactsService::fetchContactsContinue(QContactFetchRequestData *data,
                                                   QDBusPendingCallWatcher *call)
 {
+    qDebug() << "\tFetch continue" << ELAPPSED();
+    eTimer.start();
+    eTimer.restart();
     if (!data->isLive()) {
         destroyRequest(data);
+        qDebug() << "\tFetch canceled" << __LINE__;
         return;
     }
 
@@ -336,9 +346,11 @@ void GaleraContactsService::fetchContactsContinue(QContactFetchRequestData *data
 
 void GaleraContactsService::fetchContactsPage(QContactFetchRequestData *data)
 {
+    qDebug() << "\tFetch contact page:" << ELAPPSED();
     if (!isOnline() || !data->isLive()) {
         qWarning() << "Server is not online";
         destroyRequest(data);
+        qDebug() << "Fetch canceled" << __LINE__;
         return;
     }
 
@@ -351,6 +363,7 @@ void GaleraContactsService::fetchContactsPage(QContactFetchRequestData *data)
         qWarning() << pcall.error().name() << pcall.error().message();
         data->finish(QContactManager::UnspecifiedError);
         destroyRequest(data);
+        qDebug() << "Fetch canceled" << __LINE__;
         return;
     }
 
@@ -365,8 +378,10 @@ void GaleraContactsService::fetchContactsPage(QContactFetchRequestData *data)
 void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
                                               QDBusPendingCallWatcher *call)
 {
+    qDebug() << "\tReceived contacts:" << ELAPPSED();
     if (!data->isLive()) {
         destroyRequest(data);
+        qDebug() << "Fetch canceled" << __LINE__;
         return;
     }
 
@@ -377,6 +392,7 @@ void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
                         QContactAbstractRequest::FinishedState,
                         QContactManager::UnspecifiedError);
         destroyRequest(data);
+        qDebug() << "Fetch error" << __LINE__;
     } else {
         const QStringList vcards = reply.value();
         if (vcards.size()) {
@@ -394,10 +410,12 @@ void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
 
 void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
 {
+    qDebug() << "\tVcard parsed:" << ELAPPSED();
     QObject *sender = QObject::sender();
     QContactFetchRequestData *data = static_cast<QContactFetchRequestData*>(sender->property("DATA").value<void*>());
     if (!data->isLive()) {
         destroyRequest(data);
+        qDebug() << "Fetch canceled" << __LINE__;
         return;
     }
 
@@ -415,8 +433,11 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
         data->update(contacts, QContactAbstractRequest::ActiveState);
         data->updateOffset(m_pageSize);
         data->updateWatcher(0);
+        qDebug() << "\tFetch page done:" << ELAPPSED();
         fetchContactsPage(data);
     } else {
+        qDebug() << "\t===============================";
+        qDebug() << "\tFetch done:" << ELAPPSED();
         data->update(contacts, QContactAbstractRequest::FinishedState);
         destroyRequest(data);
     }

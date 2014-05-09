@@ -37,6 +37,9 @@
 using namespace QtContacts;
 using namespace QtVersit;
 
+static QElapsedTimer eTimer;
+#define ELAPPSED() (eTimer.elapsed()/1000.0)
+
 namespace galera
 {
 
@@ -190,9 +193,13 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
+
+    int startT = ELAPPSED();
+    qDebug() << "wait filter thread" << startT;
     while(!m_filterThread->wait(300)) {
         QCoreApplication::processEvents();
     }
+    qDebug() << "filter thread done" << ELAPPSED() << "Section:" << ELAPPSED() - startT;
 
     QList<ContactEntry*> entries = m_filterThread->result();
     if (startIndex < 0) {

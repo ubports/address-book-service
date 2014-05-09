@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2013 Canonical Ltd.
  *
  * This file is part of contact-service-app.
