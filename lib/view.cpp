@@ -110,6 +110,9 @@ protected:
     {
         m_allContacts->lock();
 
+        // oly sort contacts if the contacts was stored in a different order into the contacts map
+        bool needSort = (!m_sortClause.isEmpty() &&
+                         (m_sortClause.toContactSortOrder() != m_allContacts->sort().toContactSortOrder()));
         // filter contacts if necessary
         if (m_filter.isValid()) {
             Q_FOREACH(ContactEntry *entry, m_allContacts->values())
@@ -123,12 +126,18 @@ protected:
                 m_stoppedLock.unlock();
 
                 if (checkContact(entry)) {
-                    addSorted(&m_contacts, entry, m_sortClause);
+                    if (needSort) {
+                        addSorted(&m_contacts, entry, m_sortClause);
+                    } else {
+                        m_contacts.append(entry);
+                    }
                 }
             }
         } else {
             m_contacts = m_allContacts->values();
-            chageSort(m_sortClause);
+            if (needSort) {
+                chageSort(m_sortClause);
+            }
         }
 
         m_allContacts->unlock();

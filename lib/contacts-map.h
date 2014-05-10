@@ -19,6 +19,8 @@
 #ifndef __GALERA_CONTACTS_MAP_PRIV_H__
 #define __GALERA_CONTACTS_MAP_PRIV_H__
 
+#include "common/sort-clause.h"
+
 #include <QtCore/QString>
 #include <QtCore/QHash>
 #include <QtCore/QMutex>
@@ -72,9 +74,16 @@ public:
     void lock();
     void unlock();
     QList<ContactEntry*> values() const;
+    void sertSort(const SortClause &clause);
+    SortClause sort() const;
+
+    static SortClause defaultSort();
 
 private:
     QHash<QString, ContactEntry*> m_idToEntry;
+    // sorted contacts
+    QList<ContactEntry*> m_contacts;
+    SortClause m_sortClause;
     QMutex m_mutex;
 };
 

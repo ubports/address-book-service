@@ -16,10 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "contact-less-than.h"
 #include "contacts-map.h"
 #include "qindividual.h"
 
 #include <QtCore/QDebug>
+
+#include <QtContacts/QContactSortOrder>
+#include <QtContacts/QContactDisplayLabel>
+#include <QtContacts/QContactTag>
+
+using namespace QtContacts;
 
 namespace galera
 {
@@ -43,7 +50,9 @@ QIndividual *ContactEntry::individual() const
 
 //ContactMap
 ContactsMap::ContactsMap()
+    : m_sortClause(defaultSort())
 {
+
 }
 
 
@@ -66,7 +75,11 @@ ContactEntry *ContactsMap::take(FolksIndividual *individual)
 ContactEntry *ContactsMap::take(const QString &id)
 {
     QMutexLocker locker(&m_mutex);
-    return m_idToEntry.take(id);
+    ContactEntry *entry = m_idToEntry.take(id);
+    if (entry) {
+        m_contacts.removeOne(entry);
+    }
+    return entry;
 }
 
 void ContactsMap::remove(const QString &id)
@@ -74,6 +87,7 @@ void ContactsMap::remove(const QString &id)
     QMutexLocker locker(&m_mutex);
     ContactEntry *entry = m_idToEntry.value(id,0);
     if (entry) {
+        m_contacts.removeOne(entry);
         m_idToEntry.remove(id);
         delete entry;
     }
@@ -85,6 +99,14 @@ void ContactsMap::insert(ContactEntry *entry)
     FolksIndividual *fIndividual = entry->individual()->individual();
     if (fIndividual) {
         m_idToEntry.insert(folks_individual_get_id(fIndividual), entry);
+
+        if (!m_sortClause.isEmpty()) {
+            ContactLessThan lessThan(m_sortClause);
+            QList<ContactEntry*>::iterator it(std::upper_bound(m_contacts.begin(), m_contacts.end(), entry, lessThan));
+            m_contacts.insert(it, entry);
+        } else {
+            m_contacts.append(entry);
+        }
     }
 }
 
@@ -98,6 +120,7 @@ void ContactsMap::clear()
     QMutexLocker locker(&m_mutex);
     QList<ContactEntry*> entries = m_idToEntry.values();
     m_idToEntry.clear();
+    m_contacts.clear();
     qDeleteAll(entries);
 }
 
@@ -113,7 +136,49 @@ void ContactsMap::unlock()
 
 QList<ContactEntry*> ContactsMap::values() const
 {
-    return m_idToEntry.values();
+    return m_contacts;
+}
+
+void ContactsMap::sertSort(const SortClause &clause)
+{
+    if (clause.toContactSortOrder() != m_sortClause.toContactSortOrder()) {
+        m_sortClause = clause;
+        if (!m_sortClause.isEmpty()) {
+            ContactLessThan lessThan(m_sortClause);
+            qSort(m_contacts.begin(), m_contacts.end(), lessThan);
+        }
+    }
+}
+
+SortClause ContactsMap::sort() const
+{
+    return m_sortClause;
+}
+
+SortClause ContactsMap::defaultSort()
+{
+    static SortClause clause("");
+    if (clause.isEmpty()) {
+        // create a default sort, this sort is used by the most commom case
+        QList<QContactSortOrder> cClauseList;
+
+        QContactSortOrder cClauseTag;
+        cClauseTag.setCaseSensitivity(Qt::CaseInsensitive);
+        cClauseTag.setDetailType(QContactDetail::TypeTag, QContactTag::FieldTag);
+        cClauseTag.setBlankPolicy(QContactSortOrder::BlanksLast);
+        cClauseTag.setDirection(Qt::AscendingOrder);
+        cClauseList << cClauseTag;
+
+        QContactSortOrder cClauseName;
+        cClauseName.setCaseSensitivity(Qt::CaseInsensitive);
+        cClauseName.setDetailType(QContactDetail::TypeDisplayLabel, QContactDisplayLabel::FieldLabel);
+        cClauseName.setBlankPolicy(QContactSortOrder::BlanksLast);
+        cClauseName.setDirection(Qt::AscendingOrder);
+        cClauseList << cClauseName;
+        clause = SortClause(cClauseList);
+    }
+
+    return clause;
 }
 
 ContactEntry *ContactsMap::valueFromVCard(const QString &vcard) const
@@ -148,3 +213,4 @@ ContactEntry *ContactsMap::value(FolksIndividual *individual) const
 }
 
 } //namespace
+
