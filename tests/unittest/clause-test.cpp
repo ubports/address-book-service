@@ -71,6 +71,45 @@ private Q_SLOTS:
         QCOMPARE(filterFromString.test(contact5), QContactManagerEngine::testFilter(originalFilter, contact5));
         QCOMPARE(filterFromString.test(contact2), QContactManagerEngine::testFilter(originalFilter, contact2));
     }
+
+    void testSimpleEmptyFilter()
+    {
+        Filter filter("");
+        QVERIFY(filter.isEmpty());
+        QVERIFY(filter.isValid());
+    }
+
+    void testUnionEmptyFilter()
+    {
+        QContactUnionFilter uFilter;
+        Filter filter(uFilter);
+        QVERIFY(filter.isEmpty());
+        QVERIFY(filter.isValid());
+
+        QList<QContactFilter> filters;
+        filters << QContactDetailFilter();
+        uFilter.setFilters(filters);
+
+        Filter filter2(uFilter);
+        QVERIFY(!filter2.isEmpty());
+        QVERIFY(filter2.isValid());
+    }
+
+    void testIntersectEmptyFilter()
+    {
+        QContactIntersectionFilter iFilter;
+        Filter filter(iFilter);
+        QVERIFY(filter.isEmpty());
+        QVERIFY(filter.isValid());
+
+        QList<QContactFilter> filters;
+        filters << QContactDetailFilter ();
+        iFilter.setFilters(filters);
+
+        Filter filter2(iFilter);
+        QVERIFY(!filter2.isEmpty());
+        QVERIFY(filter2.isValid());
+    }
 };
 
 QTEST_MAIN(ClauseParseTest)

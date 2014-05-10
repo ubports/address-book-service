@@ -115,29 +115,34 @@ protected:
                          (m_sortClause.toContactSortOrder() != m_allContacts->sort().toContactSortOrder()));
         // filter contacts if necessary
         if (m_filter.isValid()) {
-            Q_FOREACH(ContactEntry *entry, m_allContacts->values())
-            {
-                m_stoppedLock.lockForRead();
-                if (m_stopped) {
-                    m_stoppedLock.unlock();
-                    m_allContacts->unlock();
-                    return;
+            if (m_filter.isEmpty()) {
+                m_contacts = m_allContacts->values();
+                if (needSort) {
+                    chageSort(m_sortClause);
                 }
-                m_stoppedLock.unlock();
+            } else {
+                Q_FOREACH(ContactEntry *entry, m_allContacts->values())
+                {
+                    m_stoppedLock.lockForRead();
+                    if (m_stopped) {
+                        m_stoppedLock.unlock();
+                        m_allContacts->unlock();
+                        return;
+                    }
+                    m_stoppedLock.unlock();
 
-                if (checkContact(entry)) {
-                    if (needSort) {
-                        addSorted(&m_contacts, entry, m_sortClause);
-                    } else {
-                        m_contacts.append(entry);
+                    if (checkContact(entry)) {
+                        if (needSort) {
+                            addSorted(&m_contacts, entry, m_sortClause);
+                        } else {
+                            m_contacts.append(entry);
+                        }
                     }
                 }
             }
         } else {
-            m_contacts = m_allContacts->values();
-            if (needSort) {
-                chageSort(m_sortClause);
-            }
+            // invalid filter
+            m_contacts.clear();
         }
 
         m_allContacts->unlock();

@@ -58,18 +58,50 @@ bool Filter::test(const QContact &contact) const
     return QContactManagerEngine::testFilter(m_filter, contact);
 }
 
+bool Filter::checkIsValid(const QList<QContactFilter> filters) const
+{
+    Q_FOREACH(const QContactFilter &f, filters) {
+        switch (f.type()) {
+            case QContactFilter::InvalidFilter:
+                return false;
+            case QContactFilter::IntersectionFilter:
+                return checkIsValid(static_cast<QContactIntersectionFilter>(f).filters());
+            case QContactFilter::UnionFilter:
+                return checkIsValid(static_cast<QContactUnionFilter>(f).filters());
+            default:
+                return true;
+        }
+    }
+    // list is empty
+    return true;
+}
+
 bool Filter::isValid() const
 {
-    bool validFilter = ((m_filter.type() != QContactFilter::InvalidFilter) &&
-                        (m_filter.type() != QContactFilter::DefaultFilter));
+    return checkIsValid(QList<QContactFilter>() << m_filter);
+}
 
-    // check if the filter is empty
-    if (validFilter && m_filter.type() == QContactFilter::IntersectionFilter) {
-        validFilter = !static_cast<QContactIntersectionFilter>(m_filter).filters().isEmpty();
-    } else if (validFilter && m_filter.type() == QContactFilter::UnionFilter) {
-        validFilter = !static_cast<QContactUnionFilter>(m_filter).filters().isEmpty();
+bool Filter::checkIsEmpty(const QList<QContactFilter> filters) const
+{
+    Q_FOREACH(const QContactFilter &f, filters) {
+        switch (f.type()) {
+        case QContactFilter::DefaultFilter:
+            return true;
+        case QContactFilter::IntersectionFilter:
+            return checkIsEmpty(static_cast<QContactIntersectionFilter>(f).filters());
+        case QContactFilter::UnionFilter:
+            return checkIsEmpty(static_cast<QContactUnionFilter>(f).filters());
+        default:
+            return false;
+        }
     }
-    return validFilter;
+    // list is empty
+    return true;
+}
+
+bool Filter::isEmpty() const
+{
+    return checkIsEmpty(QList<QContactFilter>() << m_filter);
 }
 
 QString Filter::toString(const QtContacts::QContactFilter &filter)
