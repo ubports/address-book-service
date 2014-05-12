@@ -45,6 +45,7 @@ public:
 
     void notifyUpdateError(QtContacts::QContactManager::Error error);
 
+    QtContacts::QContact currentContact() const;
     bool hasNext() const;
     QString nextContact(QString *syncTargetName, bool *isGroup);
 

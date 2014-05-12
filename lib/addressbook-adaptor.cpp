@@ -55,14 +55,25 @@ Source AddressBookAdaptor::source(const QDBusMessage &message)
     return Source();
 }
 
-Source AddressBookAdaptor::createSource(const QString &sourceName, const QDBusMessage &message)
+Source AddressBookAdaptor::createSource(const QString &sourceName, bool setAsPrimary, const QDBusMessage &message)
 {
     message.setDelayedReply(true);
     QMetaObject::invokeMethod(m_addressBook, "createSource",
                               Qt::QueuedConnection,
                               Q_ARG(const QString&, sourceName),
+                              Q_ARG(bool, setAsPrimary),
                               Q_ARG(const QDBusMessage&, message));
     return Source();
+}
+
+bool AddressBookAdaptor::removeSource(const QString &sourceId, const QDBusMessage &message)
+{
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "removeSource",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QString&, sourceId),
+                              Q_ARG(const QDBusMessage&, message));
+    return false;
 }
 
 QString AddressBookAdaptor::createContact(const QString &contact, const QString &source, const QDBusMessage &message)

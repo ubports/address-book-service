@@ -69,7 +69,15 @@ public:
 class CreateSourceData
 {
 public:
-    QString sourceName;
+    QString m_sourceName;
+    bool m_setAsPrimary;
+    galera::AddressBook *m_addressbook;
+    QDBusMessage m_message;
+};
+
+class RemoveSourceData
+{
+public:
     galera::AddressBook *m_addressbook;
     QDBusMessage m_message;
 };
@@ -233,15 +241,16 @@ Source AddressBook::source(const QDBusMessage &message)
     return Source();
 }
 
-Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &message)
+Source AddressBook::createSource(const QString &sourceId, bool setAsPrimary, const QDBusMessage &message)
 {
     CreateSourceData *data = new CreateSourceData;
     data->m_addressbook = this;
     data->m_message = message;
-    data->sourceName = sourceId;
+    data->m_sourceName = sourceId;
+    data->m_setAsPrimary = setAsPrimary;
 
     FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
-    QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id (store));
+    QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id(store));
     if ( personaStoreTypeId == "dummy") {
         qDebug() << "Create source on dummy" << sourceId;
         FolksBackendStore *backendStore = folks_backend_store_dup();
@@ -274,6 +283,59 @@ Source AddressBook::createSource(const QString &sourceId, const QDBusMessage &me
     return Source();
 }
 
+void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &message)
+{
+    FolksBackendStore *bs = folks_backend_store_dup();
+    FolksBackend *backend = folks_backend_store_dup_backend_by_name(bs, "eds");
+    bool error = false;
+    if (backend) {
+        GeeMap *storesMap = folks_backend_get_persona_stores(backend);
+        if (gee_map_has_key(storesMap, sourceId.toUtf8().constData())) {
+            EdsfPersonaStore *ps = EDSF_PERSONA_STORE(gee_map_get(storesMap, sourceId.toUtf8().constData()));
+
+            RemoveSourceData *rData = new RemoveSourceData;
+            rData->m_addressbook = this;
+            rData->m_message = message;
+            edsf_persona_store_remove_address_book(ps, AddressBook::removeSourceDone, rData);
+            g_object_unref(ps);
+        } else {
+            qWarning() << "Source not found to remove:" << sourceId;
+            error = true;
+        }
+        g_object_unref(backend);
+    } else {
+        qWarning() << "Fail to create eds backend during the source removal:" << sourceId;
+        error = true;
+    }
+
+    g_object_unref(bs);
+
+    if (error) {
+        QDBusMessage reply = message.createReply(false);
+        QDBusConnection::sessionBus().send(reply);
+    }
+}
+
+void AddressBook::removeSourceDone(GObject *source,
+                                   GAsyncResult *res,
+                                   void *data)
+{
+    GError *error = 0;
+    bool result = true;
+    edsf_persona_store_remove_address_book_finish(res, &error);
+    if (error) {
+        qWarning() << "Fail to remove source" << error->message;
+        g_error_free(error);
+        result = false;
+    }
+
+    RemoveSourceData *rData = static_cast<RemoveSourceData*>(data);
+    QDBusMessage reply = rData->m_message.createReply(result);
+    QDBusConnection::sessionBus().send(reply);
+    delete rData;
+}
+
+
 void AddressBook::createSourceDone(GObject *source,
                                    GAsyncResult *res,
                                    void *data)
@@ -286,7 +348,30 @@ void AddressBook::createSourceDone(GObject *source,
         qWarning() << "Fail to create source" << error->message;
         g_error_free(error);
     } else {
-        src = Source(cData->sourceName, cData->sourceName, false, false);
+        src = Source(cData->m_sourceName, cData->m_sourceName, false, cData->m_setAsPrimary);
+        if (cData->m_setAsPrimary) {
+            ESourceRegistry *r = e_source_registry_new_sync(NULL, &error);
+            if (error) {
+                qWarning() << "Fail to change default contact address book" << error->message;
+                g_error_free(error);
+            } else {
+                ESource *edsSource = 0;
+                GList *sources = e_source_registry_list_sources(r, E_SOURCE_EXTENSION_ADDRESS_BOOK);
+                for(GList *i = sources; i != -0; i = sources->next) {
+                    edsSource = E_SOURCE(i->data);
+                    if (strcmp(cData->m_sourceName.toUtf8().constData(), e_source_get_uid(edsSource)) == 0) {
+                        break;
+                    }
+                }
+                if (edsSource) {
+                    e_source_registry_set_default_address_book(r, edsSource);
+                } else {
+                    qWarning() << "Fail to find source:" << cData->m_sourceName;
+                }
+                g_list_free_full(sources, g_object_unref);
+            }
+            g_object_unref(r);
+        }
     }
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
     QDBusConnection::sessionBus().send(reply);
@@ -383,6 +468,24 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             bool canWrite = folks_persona_store_get_can_add_personas(store) &&
                             folks_persona_store_get_can_remove_personas(store);
             bool isPrimary = folks_persona_store_get_is_primary_store(store);
+
+            // FIXME: Due a bug on Folks we can not rely on folks_persona_store_get_is_primary_store
+            // see main.cpp:68
+            if (strcmp(folks_backend_get_name(backend), "eds") == 0) {
+                GError *error = 0;
+                ESourceRegistry *r = e_source_registry_new_sync(NULL, &error);
+                if (error) {
+                    qWarning() << "Failt to check default source:" << error->message;
+                    g_error_free(error);
+                } else {
+                    ESource *defaultSource = e_source_registry_ref_default_address_book(r);
+                    ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
+                    isPrimary = e_source_equal(defaultSource, source);
+                    g_object_unref(defaultSource);
+                    g_object_unref(r);
+                }
+            }
+
             result << Source(id, displayName, !canWrite, isPrimary);
 
             g_object_unref(store);
