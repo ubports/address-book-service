@@ -468,6 +468,24 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             bool canWrite = folks_persona_store_get_can_add_personas(store) &&
                             folks_persona_store_get_can_remove_personas(store);
             bool isPrimary = folks_persona_store_get_is_primary_store(store);
+
+            // FIXME: Due a bug on Folks we can not rely on folks_persona_store_get_is_primary_store
+            // see main.cpp:68
+            if (strcmp(folks_backend_get_name(backend), "eds") == 0) {
+                GError *error = 0;
+                ESourceRegistry *r = e_source_registry_new_sync(NULL, &error);
+                if (error) {
+                    qWarning() << "Failt to check default source:" << error->message;
+                    g_error_free(error);
+                } else {
+                    ESource *defaultSource = e_source_registry_ref_default_address_book(r);
+                    ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
+                    isPrimary = e_source_equal(defaultSource, source);
+                    g_object_unref(defaultSource);
+                    g_object_unref(r);
+                }
+            }
+
             result << Source(id, displayName, !canWrite, isPrimary);
 
             g_object_unref(store);
