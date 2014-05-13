@@ -54,6 +54,7 @@ private:
     static QtContacts::QContactFilter parseFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseIdFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseUnionFilter(const QtContacts::QContactFilter &filter);
+    static QtContacts::QContactFilter parseIntersectionFilter(const QtContacts::QContactFilter &filter);
 };
 
 }

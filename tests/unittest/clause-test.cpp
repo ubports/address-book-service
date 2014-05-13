@@ -72,6 +72,46 @@ private Q_SLOTS:
         QCOMPARE(filterFromString.test(contact2), QContactManagerEngine::testFilter(originalFilter, contact2));
     }
 
+    void testIntersectionWithContactId()
+    {
+        // Create manager to allow us to creact contact id
+        QContactManager manager("memory");
+
+        QContactId id5 = QContactId::fromString("qtcontacts:memory::5");
+        QContactId id2 = QContactId::fromString("qtcontacts:memory::2");
+        QContactGuid guid5;
+        guid5.setGuid("5");
+
+        QContactGuid guid2;
+        guid2.setGuid("2");
+
+        // guid is necessary because our server uses that for compare ids
+        // check Filter source code for more details
+        QContact contact5;
+        contact5.setId(id5);
+        contact5.appendDetail(guid5);
+
+        QContact contact2;
+        contact2.setId(id2);
+        contact2.appendDetail(guid2);
+
+        QContactIntersectionFilter iFilter;
+        QContactIdFilter originalFilter = QContactIdFilter();
+        originalFilter.setIds(QList<QContactId>()
+                              << QContactId::fromString("qtcontacts:memory::1")
+                              << QContactId::fromString("qtcontacts:memory::2")
+                              << QContactId::fromString("qtcontacts:memory::3"));
+        iFilter.setFilters(QList<QContactFilter>() << originalFilter);
+
+        QString filterString = Filter(iFilter).toString();
+        Filter filterFromString = Filter(filterString);
+
+        QCOMPARE(filterFromString.test(contact5), false);
+        QCOMPARE(filterFromString.test(contact2), true);
+        QCOMPARE(filterFromString.test(contact5), QContactManagerEngine::testFilter(originalFilter, contact5));
+        QCOMPARE(filterFromString.test(contact2), QContactManagerEngine::testFilter(originalFilter, contact2));
+    }
+
     void testSimpleEmptyFilter()
     {
         Filter filter("");
@@ -103,7 +143,7 @@ private Q_SLOTS:
         QVERIFY(filter.isValid());
 
         QList<QContactFilter> filters;
-        filters << QContactDetailFilter ();
+        filters << QContactDetailFilter();
         iFilter.setFilters(filters);
 
         Filter filter2(iFilter);

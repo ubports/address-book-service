@@ -125,13 +125,16 @@ QtContacts::QContactFilter Filter::buildFilter(const QString &filter)
 
 QtContacts::QContactFilter Filter::parseFilter(const QtContacts::QContactFilter &filter)
 {
-    QContactUnionFilter newFilter;
+    QContactFilter newFilter;
     switch (filter.type()) {
     case QContactFilter::IdFilter:
         newFilter = parseIdFilter(filter);
         break;
     case QContactFilter::UnionFilter:
         newFilter = parseUnionFilter(filter);
+        break;
+    case QContactFilter::IntersectionFilter:
+        newFilter = parseIntersectionFilter(filter);
         break;
     default:
         return filter;
@@ -144,6 +147,16 @@ QtContacts::QContactFilter Filter::parseUnionFilter(const QtContacts::QContactFi
     QContactUnionFilter newFilter;
     const QContactUnionFilter *unionFilter = static_cast<const QContactUnionFilter*>(&filter);
     Q_FOREACH(QContactFilter f, unionFilter->filters()) {
+        newFilter << parseFilter(f);
+    }
+    return newFilter;
+}
+
+QtContacts::QContactFilter Filter::parseIntersectionFilter(const QtContacts::QContactFilter &filter)
+{
+    QContactIntersectionFilter newFilter;
+    const QContactIntersectionFilter *intersectFilter = static_cast<const QContactIntersectionFilter*>(&filter);
+    Q_FOREACH(QContactFilter f, intersectFilter->filters()) {
         newFilter << parseFilter(f);
     }
     return newFilter;
