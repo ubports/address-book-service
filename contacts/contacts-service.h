@@ -112,6 +112,7 @@ private:
     void createGroupDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call);
 
     void removeContact(QtContacts::QContactRemoveRequest *request);
+    void removeContactContinue(QContactRemoveRequestData *data, QDBusPendingCallWatcher *call);
     void removeContactDone(QContactRemoveRequestData *data, QDBusPendingCallWatcher *call);
 
     void destroyRequest(QContactRequestData *request);

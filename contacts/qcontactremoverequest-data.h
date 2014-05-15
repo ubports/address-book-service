@@ -31,7 +31,8 @@ class QContactRemoveRequestData : public QContactRequestData
 {
 public:
     QContactRemoveRequestData(QtContacts::QContactRemoveRequest *request);
-    QStringList pendingIds() const;
+    QStringList contactIds() const;
+    QStringList sourcesIds() const;
 
     static void notifyError(QtContacts::QContactRemoveRequest *request,
                             QtContacts::QContactManager::Error error = QtContacts::QContactManager::NotSupportedError);
@@ -41,7 +42,8 @@ protected:
                                QMap<int, QtContacts::QContactManager::Error> errorMap);
 
 private:
-    QStringList m_pendingIds;
+    QStringList m_contactsIds;
+    QStringList m_sourcesIds;
 };
 
 }
