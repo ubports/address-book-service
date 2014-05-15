@@ -108,8 +108,50 @@ private Q_SLOTS:
 
         QCOMPARE(filterFromString.test(contact5), false);
         QCOMPARE(filterFromString.test(contact2), true);
-        QCOMPARE(filterFromString.test(contact5), QContactManagerEngine::testFilter(originalFilter, contact5));
-        QCOMPARE(filterFromString.test(contact2), QContactManagerEngine::testFilter(originalFilter, contact2));
+        QCOMPARE(filterFromString.test(contact5), QContactManagerEngine::testFilter(iFilter, contact5));
+        QCOMPARE(filterFromString.test(contact2), QContactManagerEngine::testFilter(iFilter, contact2));
+    }
+
+    void testIntersecionListFilter()
+    {
+        // Create manager to allow us to creact contact id
+        QContactManager manager("memory");
+
+        QContactId id5 = QContactId::fromString("qtcontacts:memory::5");
+        QContactId id2 = QContactId::fromString("qtcontacts:memory::2");
+        QContactGuid guid5;
+        guid5.setGuid("5");
+
+        QContactGuid guid2;
+        guid2.setGuid("2");
+
+        // guid is necessary because our server uses that for compare ids
+        // check Filter source code for more details
+        QContact contact5;
+        contact5.setId(id5);
+        contact5.appendDetail(guid5);
+
+        QContact contact2;
+        contact2.setId(id2);
+        contact2.appendDetail(guid2);
+
+        QContactIntersectionFilter iFilter;
+        QContactIntersectionFilter emptyField;
+        QContactIdFilter originalFilter = QContactIdFilter();
+        originalFilter.setIds(QList<QContactId>()
+                              << QContactId::fromString("qtcontacts:memory::1")
+                              << QContactId::fromString("qtcontacts:memory::2")
+                              << QContactId::fromString("qtcontacts:memory::3"));
+        iFilter.setFilters(QList<QContactFilter>() << originalFilter << emptyField);
+
+        QString filterString = Filter(iFilter).toString();
+        Filter filterFromString = Filter(filterString);
+
+        QCOMPARE(filterFromString.test(contact5), QContactManagerEngine::testFilter(iFilter, contact5));
+        QCOMPARE(filterFromString.test(contact2), QContactManagerEngine::testFilter(iFilter, contact2));
+
+        QCOMPARE(filterFromString.test(contact5), false);
+        QCOMPARE(filterFromString.test(contact2), false);
     }
 
     void testSimpleEmptyFilter()
