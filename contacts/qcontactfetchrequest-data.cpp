@@ -101,7 +101,6 @@ void QContactFetchRequestData::notifyError(QContactFetchRequest *request, QConta
 
 void QContactFetchRequestData::updateRequest(QContactAbstractRequest::State state, QContactManager::Error error, QMap<int, QContactManager::Error> errorMap)
 {
-    qDebug() << "UPDATE REQUEST" << m_result.size() << (state == QContactAbstractRequest::FinishedState);
     QContactManagerEngine::updateContactFetchRequest(static_cast<QContactFetchRequest*>(m_request.data()),
                                                      m_result,
                                                      error,
