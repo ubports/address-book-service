@@ -146,7 +146,7 @@ QtContacts::QContactFilter Filter::parseUnionFilter(const QtContacts::QContactFi
 {
     QContactUnionFilter newFilter;
     const QContactUnionFilter *unionFilter = static_cast<const QContactUnionFilter*>(&filter);
-    Q_FOREACH(QContactFilter f, unionFilter->filters()) {
+    Q_FOREACH(const QContactFilter &f, unionFilter->filters()) {
         newFilter << parseFilter(f);
     }
     return newFilter;
@@ -156,7 +156,7 @@ QtContacts::QContactFilter Filter::parseIntersectionFilter(const QtContacts::QCo
 {
     QContactIntersectionFilter newFilter;
     const QContactIntersectionFilter *intersectFilter = static_cast<const QContactIntersectionFilter*>(&filter);
-    Q_FOREACH(QContactFilter f, intersectFilter->filters()) {
+    Q_FOREACH(const QContactFilter &f, intersectFilter->filters()) {
         newFilter << parseFilter(f);
     }
     return newFilter;
@@ -171,7 +171,7 @@ QtContacts::QContactFilter Filter::parseIdFilter(const QContactFilter &filter)
 
     QContactUnionFilter newFilter;
 
-    Q_FOREACH(QContactId id, idFilter->ids()) {
+    Q_FOREACH(const QContactId &id, idFilter->ids()) {
         QContactDetailFilter detailFilter;
         detailFilter.setMatchFlags(QContactFilter::MatchExactly);
         detailFilter.setDetailType(QContactDetail::TypeGuid, QContactGuid::FieldGuid);
