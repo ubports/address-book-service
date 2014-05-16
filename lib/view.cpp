@@ -107,7 +107,7 @@ protected:
     {
         m_allContacts->lock();
 
-        // oly sort contacts if the contacts was stored in a different order into the contacts map
+        // only sort contacts if the contacts was stored in a different order into the contacts map
         bool needSort = (!m_sortClause.isEmpty() &&
                          (m_sortClause.toContactSortOrder() != m_allContacts->sort().toContactSortOrder()));
         // filter contacts if necessary
