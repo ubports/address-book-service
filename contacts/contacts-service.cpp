@@ -50,7 +50,7 @@
 #include <QtVersit/QVersitContactExporter>
 #include <QtVersit/QVersitWriter>
 
-#define ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE  "CANONICAL_PIN_SERVICE_PAGE_SIZE"
+#define ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE  "CANONICAL_PIM_SERVICE_PAGE_SIZE"
 #define FETCH_PAGE_SIZE                     25
 
 using namespace QtVersit;
