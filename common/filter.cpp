@@ -168,6 +168,9 @@ QtContacts::QContactFilter Filter::parseIdFilter(const QContactFilter &filter)
     // Since the dbus service does not instantiate the manager we translate it to QContactDetailFilter
     // using Guid values. This is possible because our server use the Guid to build the contactId.
     const QContactIdFilter *idFilter = static_cast<const QContactIdFilter*>(&filter);
+    if (idFilter->ids().isEmpty()) {
+        return filter;
+    }
 
     QContactUnionFilter newFilter;
 
