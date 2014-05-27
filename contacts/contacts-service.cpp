@@ -662,7 +662,14 @@ void GaleraContactsService::updateContacts(QContactSaveRequestData *data)
         return;
     }
 
-    QDBusPendingCall pcall = m_iface->asyncCall("updateContacts", data->allPendingContacts());
+    QStringList pendingContacts = data->allPendingContacts();
+    if (pendingContacts.isEmpty()) {
+        data->finish(QContactManager::NoError);
+        destroyRequest(data);
+        return;
+    }
+
+    QDBusPendingCall pcall = m_iface->asyncCall("updateContacts", pendingContacts);
     if (pcall.isError()) {
         qWarning() <<  "Error" << pcall.error().name() << pcall.error().message();
         data->finish(QtContacts::QContactManager::UnspecifiedError);
@@ -676,7 +683,6 @@ void GaleraContactsService::updateContacts(QContactSaveRequestData *data)
                          });
     }
 }
-
 
 void GaleraContactsService::updateContactDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call)
 {
@@ -705,6 +711,7 @@ void GaleraContactsService::cancelRequest(QtContacts::QContactAbstractRequest *r
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
             rData->cancel();
+            destroyRequest(rData);
             return;
         }
     }
@@ -715,6 +722,19 @@ void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *req
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
             rData->wait();
+            destroyRequest(rData);
+            return;
+        }
+    }
+}
+
+void GaleraContactsService::releaseRequest(QContactAbstractRequest *request)
+{
+    Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
+        if (rData->request() == request) {
+            rData->releaseRequest();
+            rData->cancel();
+            destroyRequest(rData);
             return;
         }
     }
@@ -769,7 +789,7 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
 void GaleraContactsService::destroyRequest(QContactRequestData *request)
 {
     m_runningRequests.remove(request);
-    delete request;
+    request->deleteLater();
 }
 
 QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const

@@ -28,7 +28,6 @@ namespace galera
 QContactRequestData::QContactRequestData(QContactAbstractRequest *request,
                                          QDBusPendingCallWatcher *watcher)
     : m_request(request),
-      m_canceled(false),
       m_eventLoop(0)
 {
     updateWatcher(watcher);
@@ -36,9 +35,7 @@ QContactRequestData::QContactRequestData(QContactAbstractRequest *request,
 
 QContactRequestData::~QContactRequestData()
 {
-    if (!m_request.isNull() && m_canceled) {
-        update(QContactAbstractRequest::CanceledState);
-    }
+    Q_ASSERT(m_eventLoop == 0);
     m_request.clear();
 }
 
@@ -56,12 +53,8 @@ bool QContactRequestData::isLive() const
 void QContactRequestData::cancel()
 {
     m_watcher.clear();
-    m_canceled = true;
-}
-
-bool QContactRequestData::canceled() const
-{
-    return m_canceled;
+    update(QContactAbstractRequest::CanceledState, QContactManager::UnspecifiedError);
+    m_request.clear();
 }
 
 void QContactRequestData::wait()
@@ -71,6 +64,7 @@ void QContactRequestData::wait()
         Q_ASSERT(false);
     }
 
+    QMutexLocker locker(&m_waiting);
     if (isLive()) {
         QEventLoop eventLoop;
         m_eventLoop = &eventLoop;
@@ -79,9 +73,23 @@ void QContactRequestData::wait()
     }
 }
 
+void QContactRequestData::releaseRequest()
+{
+    m_request.clear();
+}
+
 void QContactRequestData::finish(QContactManager::Error error)
 {
     update(QContactAbstractRequest::FinishedState, error, m_errorMap);
+}
+
+void QContactRequestData::deleteLater()
+{
+    // skip delete if still running
+    if (m_waiting.tryLock()) {
+        m_waiting.unlock();
+        delete this;
+    }
 }
 
 void QContactRequestData::updateWatcher(QDBusPendingCallWatcher *watcher)
@@ -110,7 +118,7 @@ void QContactRequestData::update(QContactAbstractRequest::State state,
 void QContactRequestData::deleteWatcher(QDBusPendingCallWatcher *watcher)
 {
     if (watcher) {
-        watcher->deleteLater();
+        delete watcher;
     }
 }
 

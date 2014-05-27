@@ -320,6 +320,7 @@ bool GaleraManagerEngine::validateContact(const QtContacts::QContact &contact, Q
 /* Asynchronous Request Support */
 void GaleraManagerEngine::requestDestroyed(QtContacts::QContactAbstractRequest *req)
 {
+    m_service->releaseRequest(req);
 }
 
 bool GaleraManagerEngine::startRequest(QtContacts::QContactAbstractRequest *req)
