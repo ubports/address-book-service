@@ -53,7 +53,7 @@ bool QContactRequestData::isLive() const
 void QContactRequestData::cancel()
 {
     m_watcher.clear();
-    update(QContactAbstractRequest::CanceledState, QContactManager::UnspecifiedError);
+    update(QContactAbstractRequest::CanceledState, QContactManager::NoError);
     m_request.clear();
 }
 
