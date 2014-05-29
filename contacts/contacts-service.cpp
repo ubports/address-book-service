@@ -381,6 +381,7 @@ void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
         if (vcards.size()) {
             VCardParser *parser = new VCardParser(this);
             parser->setProperty("DATA", QVariant::fromValue<void*>(data));
+            data->setVCardParser(parser);
             connect(parser, &VCardParser::contactsParsed,
                     this, &GaleraContactsService::onVCardsParsed);
             parser->vcardToContact(vcards);
@@ -395,7 +396,10 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
 {
     QObject *sender = QObject::sender();
     QContactFetchRequestData *data = static_cast<QContactFetchRequestData*>(sender->property("DATA").value<void*>());
+    data->clearVCardParser();
+
     if (!data->isLive()) {
+        sender->deleteLater();
         destroyRequest(data);
         return;
     }
