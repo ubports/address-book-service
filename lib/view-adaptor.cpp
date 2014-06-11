@@ -32,33 +32,54 @@ ViewAdaptor::ViewAdaptor(const QDBusConnection &connection, View *parent)
 
 ViewAdaptor::~ViewAdaptor()
 {
+    m_view = 0;
+}
+
+void ViewAdaptor::destroy()
+{
+    m_view = 0;
+    this->deleteLater();
 }
 
 QString ViewAdaptor::contactDetails(const QStringList &fields, const QString &id)
 {
-    return m_view->contactDetails(fields, id);
+    if (m_view) {
+        return m_view->contactDetails(fields, id);
+    } else {
+        return QString();
+    }
 }
 
 QStringList ViewAdaptor::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    message.setDelayedReply(true);
-    m_view->contactsDetails(fields, startIndex, pageSize, message);
+    if (m_view) {
+        message.setDelayedReply(true);
+        m_view->contactsDetails(fields, startIndex, pageSize, message);
+    }
     return QStringList();
 }
 
 int ViewAdaptor::count()
 {
-    return m_view->count();
+    if (m_view) {
+        return m_view->count();
+    } else {
+        return 0;
+    }
 }
 
 void ViewAdaptor::sort(const QString &field)
 {
-    return m_view->sort(field);
+    if (m_view) {
+        return m_view->sort(field);
+    }
 }
 
 void ViewAdaptor::close()
 {
-    return m_view->close();
+    if (m_view) {
+        return m_view->close();
+    }
 }
 
 } //namespace

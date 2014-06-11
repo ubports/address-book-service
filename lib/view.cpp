@@ -181,7 +181,7 @@ void View::close()
 
         QDBusConnection conn = QDBusConnection::sessionBus();
         unregisterObject(conn);
-        m_adaptor->deleteLater();
+        m_adaptor->destroy();
         m_adaptor = 0;
     }
 
