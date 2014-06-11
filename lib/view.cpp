@@ -208,12 +208,12 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    if (!isOpen()) {
-        return QStringList();
+    while(isOpen() && m_filterThread->isRunning() && !m_filterThread->wait(300)) {
+        QCoreApplication::processEvents();
     }
 
-    while(m_filterThread->isRunning() && !m_filterThread->wait(300)) {
-        QCoreApplication::processEvents();
+    if (!isOpen()) {
+        return QStringList();
     }
 
     QList<ContactEntry*> entries = m_filterThread->result();
