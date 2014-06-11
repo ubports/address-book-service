@@ -195,6 +195,11 @@ void View::close()
     }
 }
 
+bool View::isOpen() const
+{
+    return (m_adaptor != 0);
+}
+
 QString View::contactDetails(const QStringList &fields, const QString &id)
 {
     Q_ASSERT(FALSE);
@@ -203,6 +208,10 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
+    if (!isOpen()) {
+        return QStringList();
+    }
+
     while(m_filterThread->isRunning() && !m_filterThread->wait(300)) {
         QCoreApplication::processEvents();
     }
@@ -239,6 +248,10 @@ void View::onVCardParsed(const QStringList &vcards)
 
 int View::count()
 {
+    if (!isOpen()) {
+        return 0;
+    }
+
     m_filterThread->wait();
 
     return m_filterThread->result().count();
@@ -246,6 +259,10 @@ int View::count()
 
 void View::sort(const QString &field)
 {
+    if (!isOpen()) {
+        return;
+    }
+
     m_filterThread->chageSort(SortClause(field));
 }
 
@@ -287,6 +304,10 @@ void View::unregisterObject(QDBusConnection &connection)
 
 bool View::appendContact(ContactEntry *entry)
 {
+    if (!isOpen()) {
+        return false;
+    }
+
     if (m_filterThread->appendContact(entry)) {
         Q_EMIT countChanged(m_filterThread->result().count());
         return true;
@@ -296,6 +317,10 @@ bool View::appendContact(ContactEntry *entry)
 
 bool View::removeContact(ContactEntry *entry)
 {
+    if (!isOpen()) {
+        return false;
+    }
+
     if (m_filterThread->removeContact(entry)) {
         Q_EMIT countChanged(m_filterThread->result().count());
         return true;

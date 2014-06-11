@@ -61,6 +61,8 @@ public:
     void sort(const QString &field);
     void close();
 
+    bool isOpen() const;
+
 public Q_SLOTS:
     QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message);
 
