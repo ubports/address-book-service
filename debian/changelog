@@ -1,3 +1,11 @@
+address-book-service (0.1.1+14.10.20140613-0ubuntu1) utopic; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Reduce the contact retrieve page size to 25. Keep contacts sorted in
+    memory.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 13 Jun 2014 18:22:04 +0000
+
 address-book-service (0.1.1+14.10.20140512-0ubuntu1) utopic; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
