@@ -25,6 +25,7 @@
 #include <QtContacts/QContactIdFilter>
 #include <QtContacts/QContactDetailFilter>
 #include <QtContacts/QContactUnionFilter>
+#include <QtContacts/QContactIntersectionFilter>
 #include <QtContacts/QContactManagerEngine>
 
 using namespace QtContacts;
@@ -57,10 +58,50 @@ bool Filter::test(const QContact &contact) const
     return QContactManagerEngine::testFilter(m_filter, contact);
 }
 
+bool Filter::checkIsValid(const QList<QContactFilter> filters) const
+{
+    Q_FOREACH(const QContactFilter &f, filters) {
+        switch (f.type()) {
+            case QContactFilter::InvalidFilter:
+                return false;
+            case QContactFilter::IntersectionFilter:
+                return checkIsValid(static_cast<QContactIntersectionFilter>(f).filters());
+            case QContactFilter::UnionFilter:
+                return checkIsValid(static_cast<QContactUnionFilter>(f).filters());
+            default:
+                return true;
+        }
+    }
+    // list is empty
+    return true;
+}
+
 bool Filter::isValid() const
 {
-    return ((m_filter.type() != QContactFilter::InvalidFilter) &&
-            (m_filter.type() != QContactFilter::DefaultFilter));
+    return checkIsValid(QList<QContactFilter>() << m_filter);
+}
+
+bool Filter::checkIsEmpty(const QList<QContactFilter> filters) const
+{
+    Q_FOREACH(const QContactFilter &f, filters) {
+        switch (f.type()) {
+        case QContactFilter::DefaultFilter:
+            return true;
+        case QContactFilter::IntersectionFilter:
+            return checkIsEmpty(static_cast<QContactIntersectionFilter>(f).filters());
+        case QContactFilter::UnionFilter:
+            return checkIsEmpty(static_cast<QContactUnionFilter>(f).filters());
+        default:
+            return false;
+        }
+    }
+    // list is empty
+    return true;
+}
+
+bool Filter::isEmpty() const
+{
+    return checkIsEmpty(QList<QContactFilter>() << m_filter);
 }
 
 QString Filter::toString(const QtContacts::QContactFilter &filter)
@@ -84,13 +125,16 @@ QtContacts::QContactFilter Filter::buildFilter(const QString &filter)
 
 QtContacts::QContactFilter Filter::parseFilter(const QtContacts::QContactFilter &filter)
 {
-    QContactUnionFilter newFilter;
+    QContactFilter newFilter;
     switch (filter.type()) {
     case QContactFilter::IdFilter:
         newFilter = parseIdFilter(filter);
         break;
     case QContactFilter::UnionFilter:
         newFilter = parseUnionFilter(filter);
+        break;
+    case QContactFilter::IntersectionFilter:
+        newFilter = parseIntersectionFilter(filter);
         break;
     default:
         return filter;
@@ -102,7 +146,17 @@ QtContacts::QContactFilter Filter::parseUnionFilter(const QtContacts::QContactFi
 {
     QContactUnionFilter newFilter;
     const QContactUnionFilter *unionFilter = static_cast<const QContactUnionFilter*>(&filter);
-    Q_FOREACH(QContactFilter f, unionFilter->filters()) {
+    Q_FOREACH(const QContactFilter &f, unionFilter->filters()) {
+        newFilter << parseFilter(f);
+    }
+    return newFilter;
+}
+
+QtContacts::QContactFilter Filter::parseIntersectionFilter(const QtContacts::QContactFilter &filter)
+{
+    QContactIntersectionFilter newFilter;
+    const QContactIntersectionFilter *intersectFilter = static_cast<const QContactIntersectionFilter*>(&filter);
+    Q_FOREACH(const QContactFilter &f, intersectFilter->filters()) {
         newFilter << parseFilter(f);
     }
     return newFilter;
@@ -114,10 +168,13 @@ QtContacts::QContactFilter Filter::parseIdFilter(const QContactFilter &filter)
     // Since the dbus service does not instantiate the manager we translate it to QContactDetailFilter
     // using Guid values. This is possible because our server use the Guid to build the contactId.
     const QContactIdFilter *idFilter = static_cast<const QContactIdFilter*>(&filter);
+    if (idFilter->ids().isEmpty()) {
+        return filter;
+    }
 
     QContactUnionFilter newFilter;
 
-    Q_FOREACH(QContactId id, idFilter->ids()) {
+    Q_FOREACH(const QContactId &id, idFilter->ids()) {
         QContactDetailFilter detailFilter;
         detailFilter.setMatchFlags(QContactFilter::MatchExactly);
         detailFilter.setDetailType(QContactDetail::TypeGuid, QContactGuid::FieldGuid);

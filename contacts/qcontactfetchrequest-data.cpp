@@ -29,6 +29,7 @@ QContactFetchRequestData::QContactFetchRequestData(QContactAbstractRequest *requ
                                                    QDBusInterface *view,
                                                    const FetchHint &hint)
     : QContactRequestData(request),
+      m_runningParser(0),
       m_view(0),
       m_offset(0),
       m_hint(hint)
@@ -40,6 +41,7 @@ QContactFetchRequestData::QContactFetchRequestData(QContactAbstractRequest *requ
 
 QContactFetchRequestData::~QContactFetchRequestData()
 {
+    delete m_runningParser;
 }
 
 int QContactFetchRequestData::offset() const
@@ -50,6 +52,16 @@ int QContactFetchRequestData::offset() const
 QDBusInterface* QContactFetchRequestData::view() const
 {
     return m_view.data();
+}
+
+void QContactFetchRequestData::setVCardParser(QObject *parser)
+{
+    m_runningParser = parser;
+}
+
+void QContactFetchRequestData::clearVCardParser()
+{
+    m_runningParser = 0;
 }
 
 void QContactFetchRequestData::updateView(QDBusInterface* view)

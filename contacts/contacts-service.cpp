@@ -50,7 +50,8 @@
 #include <QtVersit/QVersitContactExporter>
 #include <QtVersit/QVersitWriter>
 
-#define FETCH_PAGE_SIZE                 100
+#define ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE  "CANONICAL_PIM_SERVICE_PAGE_SIZE"
+#define FETCH_PAGE_SIZE                     25
 
 using namespace QtVersit;
 using namespace QtContacts;
@@ -111,6 +112,12 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
         m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
     } else {
         m_serviceName = CPIM_SERVICE_NAME;
+    }
+
+    if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE)) {
+        m_pageSize = qgetenv(ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE).toInt();
+    } else {
+        m_pageSize = FETCH_PAGE_SIZE;
     }
 
     m_serviceWatcher = new QDBusServiceWatcher(m_serviceName,
@@ -330,7 +337,6 @@ void GaleraContactsService::fetchContactsContinue(QContactFetchRequestData *data
 void GaleraContactsService::fetchContactsPage(QContactFetchRequestData *data)
 {
     if (!isOnline() || !data->isLive()) {
-        qWarning() << "Server is not online";
         destroyRequest(data);
         return;
     }
@@ -339,7 +345,7 @@ void GaleraContactsService::fetchContactsPage(QContactFetchRequestData *data)
     QDBusPendingCall pcall = data->view()->asyncCall("contactsDetails",
                                                      data->fields(),
                                                      data->offset(),
-                                                     FETCH_PAGE_SIZE);
+                                                     m_pageSize);
     if (pcall.isError()) {
         qWarning() << pcall.error().name() << pcall.error().message();
         data->finish(QContactManager::UnspecifiedError);
@@ -375,6 +381,7 @@ void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
         if (vcards.size()) {
             VCardParser *parser = new VCardParser(this);
             parser->setProperty("DATA", QVariant::fromValue<void*>(data));
+            data->setVCardParser(parser);
             connect(parser, &VCardParser::contactsParsed,
                     this, &GaleraContactsService::onVCardsParsed);
             parser->vcardToContact(vcards);
@@ -389,7 +396,10 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
 {
     QObject *sender = QObject::sender();
     QContactFetchRequestData *data = static_cast<QContactFetchRequestData*>(sender->property("DATA").value<void*>());
+    data->clearVCardParser();
+
     if (!data->isLive()) {
+        sender->deleteLater();
         destroyRequest(data);
         return;
     }
@@ -404,9 +414,9 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
         }
     }
 
-    if (contacts.size() == FETCH_PAGE_SIZE) {
+    if (contacts.size() == m_pageSize) {
         data->update(contacts, QContactAbstractRequest::ActiveState);
-        data->updateOffset(FETCH_PAGE_SIZE);
+        data->updateOffset(m_pageSize);
         data->updateWatcher(0);
         fetchContactsPage(data);
     } else {
@@ -656,7 +666,14 @@ void GaleraContactsService::updateContacts(QContactSaveRequestData *data)
         return;
     }
 
-    QDBusPendingCall pcall = m_iface->asyncCall("updateContacts", data->allPendingContacts());
+    QStringList pendingContacts = data->allPendingContacts();
+    if (pendingContacts.isEmpty()) {
+        data->finish(QContactManager::NoError);
+        destroyRequest(data);
+        return;
+    }
+
+    QDBusPendingCall pcall = m_iface->asyncCall("updateContacts", pendingContacts);
     if (pcall.isError()) {
         qWarning() <<  "Error" << pcall.error().name() << pcall.error().message();
         data->finish(QtContacts::QContactManager::UnspecifiedError);
@@ -670,7 +687,6 @@ void GaleraContactsService::updateContacts(QContactSaveRequestData *data)
                          });
     }
 }
-
 
 void GaleraContactsService::updateContactDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call)
 {
@@ -699,6 +715,7 @@ void GaleraContactsService::cancelRequest(QtContacts::QContactAbstractRequest *r
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
             rData->cancel();
+            destroyRequest(rData);
             return;
         }
     }
@@ -709,6 +726,19 @@ void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *req
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
             rData->wait();
+            destroyRequest(rData);
+            return;
+        }
+    }
+}
+
+void GaleraContactsService::releaseRequest(QContactAbstractRequest *request)
+{
+    Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
+        if (rData->request() == request) {
+            rData->releaseRequest();
+            rData->cancel();
+            destroyRequest(rData);
             return;
         }
     }
@@ -763,7 +793,7 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
 void GaleraContactsService::destroyRequest(QContactRequestData *request)
 {
     m_runningRequests.remove(request);
-    delete request;
+    request->deleteLater();
 }
 
 QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const

@@ -36,11 +36,15 @@ public:
     QtContacts::QContactFilter toContactFilter() const;
     bool test(const QtContacts::QContact &contact) const;
     bool isValid() const;
+    bool isEmpty() const;
 
 private:
     QtContacts::QContactFilter m_filter;
 
     Filter();
+
+    bool checkIsEmpty(const QList<QtContacts::QContactFilter> filters) const;
+    bool checkIsValid(const QList<QtContacts::QContactFilter> filters) const;
 
     static QString toString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter buildFilter(const QString &filter);
@@ -50,6 +54,7 @@ private:
     static QtContacts::QContactFilter parseFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseIdFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseUnionFilter(const QtContacts::QContactFilter &filter);
+    static QtContacts::QContactFilter parseIntersectionFilter(const QtContacts::QContactFilter &filter);
 };
 
 }

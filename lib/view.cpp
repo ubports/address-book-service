@@ -107,25 +107,38 @@ protected:
     {
         m_allContacts->lock();
 
+        // only sort contacts if the contacts was stored in a different order into the contacts map
+        bool needSort = (!m_sortClause.isEmpty() &&
+                         (m_sortClause.toContactSortOrder() != m_allContacts->sort().toContactSortOrder()));
         // filter contacts if necessary
         if (m_filter.isValid()) {
-            Q_FOREACH(ContactEntry *entry, m_allContacts->values())
-            {
-                m_stoppedLock.lockForRead();
-                if (m_stopped) {
-                    m_stoppedLock.unlock();
-                    m_allContacts->unlock();
-                    return;
+            if (m_filter.isEmpty()) {
+                m_contacts = m_allContacts->values();
+                if (needSort) {
+                    chageSort(m_sortClause);
                 }
-                m_stoppedLock.unlock();
-
-                if (checkContact(entry)) {
-                    addSorted(&m_contacts, entry, m_sortClause);
+            } else {
+                Q_FOREACH(ContactEntry *entry, m_allContacts->values())
+                {
+                    m_stoppedLock.lockForRead();
+                    if (m_stopped) {
+                        m_stoppedLock.unlock();
+                        m_allContacts->unlock();
+                        return;
+                    }
+                    m_stoppedLock.unlock();
+                    if (checkContact(entry)) {
+                        if (needSort) {
+                            addSorted(&m_contacts, entry, m_sortClause);
+                        } else {
+                            m_contacts.append(entry);
+                        }
+                    }
                 }
             }
         } else {
-            m_contacts = m_allContacts->values();
-            chageSort(m_sortClause);
+            // invalid filter
+            m_contacts.clear();
         }
 
         m_allContacts->unlock();
@@ -168,7 +181,7 @@ void View::close()
 
         QDBusConnection conn = QDBusConnection::sessionBus();
         unregisterObject(conn);
-        m_adaptor->deleteLater();
+        m_adaptor->destroy();
         m_adaptor = 0;
     }
 
@@ -182,6 +195,11 @@ void View::close()
     }
 }
 
+bool View::isOpen() const
+{
+    return (m_adaptor != 0);
+}
+
 QString View::contactDetails(const QStringList &fields, const QString &id)
 {
     Q_ASSERT(FALSE);
@@ -190,8 +208,12 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    while(!m_filterThread->wait(300)) {
+    while(isOpen() && m_filterThread->isRunning() && !m_filterThread->wait(300)) {
         QCoreApplication::processEvents();
+    }
+
+    if (!isOpen()) {
+        return QStringList();
     }
 
     QList<ContactEntry*> entries = m_filterThread->result();
@@ -226,6 +248,10 @@ void View::onVCardParsed(const QStringList &vcards)
 
 int View::count()
 {
+    if (!isOpen()) {
+        return 0;
+    }
+
     m_filterThread->wait();
 
     return m_filterThread->result().count();
@@ -233,6 +259,10 @@ int View::count()
 
 void View::sort(const QString &field)
 {
+    if (!isOpen()) {
+        return;
+    }
+
     m_filterThread->chageSort(SortClause(field));
 }
 
@@ -274,6 +304,10 @@ void View::unregisterObject(QDBusConnection &connection)
 
 bool View::appendContact(ContactEntry *entry)
 {
+    if (!isOpen()) {
+        return false;
+    }
+
     if (m_filterThread->appendContact(entry)) {
         Q_EMIT countChanged(m_filterThread->result().count());
         return true;
@@ -283,6 +317,10 @@ bool View::appendContact(ContactEntry *entry)
 
 bool View::removeContact(ContactEntry *entry)
 {
+    if (!isOpen()) {
+        return false;
+    }
+
     if (m_filterThread->removeContact(entry)) {
         Q_EMIT countChanged(m_filterThread->result().count());
         return true;

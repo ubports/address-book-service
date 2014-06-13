@@ -48,6 +48,9 @@ public:
     void updateView(QDBusInterface *view);
     QDBusInterface* view() const;
 
+    void setVCardParser(QObject *parser);
+    void clearVCardParser();
+
     QList<QtContacts::QContact> result() const;
 
     void update(QList<QtContacts::QContact> result,
@@ -70,6 +73,7 @@ protected:
                 QMap<int, QtContacts::QContactManager::Error> errorMap = QMap<int, QtContacts::QContactManager::Error>());
 
 private:
+    QObject *m_runningParser;
     QSharedPointer<QDBusInterface> m_view;
     int m_offset;
     FetchHint m_hint;

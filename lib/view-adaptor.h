@@ -71,6 +71,7 @@ class ViewAdaptor: public QDBusAbstractAdaptor
 public:
     ViewAdaptor(const QDBusConnection &connection, View *parent);
     virtual ~ViewAdaptor();
+    void destroy();
 
 public Q_SLOTS:
     QString contactDetails(const QStringList &fields, const QString &id);

@@ -62,6 +62,7 @@ public:
     void addRequest(QtContacts::QContactAbstractRequest *request);
     void cancelRequest(QtContacts::QContactAbstractRequest *request);
     void waitRequest(QtContacts::QContactAbstractRequest *request);
+    void releaseRequest(QtContacts::QContactAbstractRequest *request);
 
 Q_SIGNALS:
     void contactsAdded(QList<QContactId> ids);
@@ -83,6 +84,7 @@ private:
     QString m_managerUri;                                       // for faster lookup.
     QDBusServiceWatcher *m_serviceWatcher;
     bool m_serviceIsReady;
+    int m_pageSize;
 
     QSharedPointer<QDBusInterface> m_iface;
     QString m_serviceName;

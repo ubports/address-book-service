@@ -25,6 +25,7 @@
 #include <QtCore/QSharedPointer>
 #include <QtCore/QEventLoop>
 #include <QtCore/QPointer>
+#include <QtCore/QMutex>
 
 #include <QtContacts/QContactAbstractRequest>
 
@@ -37,7 +38,6 @@ class QContactRequestData
 {
 public:
     QContactRequestData(QtContacts::QContactAbstractRequest *request, QDBusPendingCallWatcher *watcher = 0);
-    virtual ~QContactRequestData();
 
     QtContacts::QContactAbstractRequest* request() const;
 
@@ -45,9 +45,10 @@ public:
 
     bool isLive() const;
     void cancel();
-    bool canceled() const;
     void wait();
+    void releaseRequest();
     void finish(QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError);
+    void deleteLater();
 
     virtual void update(QtContacts::QContactAbstractRequest::State state,
                 QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError,
@@ -57,14 +58,15 @@ protected:
     QPointer<QtContacts::QContactAbstractRequest> m_request;
     QMap<int, QtContacts::QContactManager::Error> m_errorMap;
 
+    virtual ~QContactRequestData();
     virtual void updateRequest(QtContacts::QContactAbstractRequest::State state,
                                QtContacts::QContactManager::Error error,
                                QMap<int, QtContacts::QContactManager::Error> errorMap) = 0;
 
 private:
     QSharedPointer<QDBusPendingCallWatcher> m_watcher;
-    bool m_canceled;
     QEventLoop *m_eventLoop;
+    QMutex m_waiting;
 
     void init(QtContacts::QContactAbstractRequest *request,
               QDBusInterface *view,

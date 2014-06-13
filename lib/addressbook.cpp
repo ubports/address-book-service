@@ -250,8 +250,11 @@ Source AddressBook::createSource(const QString &sourceId, bool setAsPrimary, con
     data->m_setAsPrimary = setAsPrimary;
 
     FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
-    QString personaStoreTypeId  = QString::fromUtf8(folks_persona_store_get_type_id(store));
-    if ( personaStoreTypeId == "dummy") {
+    QString personaStoreTypeId("dummy");
+    if (store) {
+        personaStoreTypeId = QString::fromUtf8(folks_persona_store_get_type_id(store));
+    }
+    if (personaStoreTypeId == "dummy") {
         qDebug() << "Create source on dummy" << sourceId;
         FolksBackendStore *backendStore = folks_backend_store_dup();
         FolksBackend *dummy = folks_backend_store_dup_backend_by_name(backendStore, "dummy");

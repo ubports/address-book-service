@@ -29,6 +29,7 @@
 
 void BaseClientTest::initTestCase()
 {
+    QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
     galera::Source::registerMetaType();
 
     QString serviceName;
