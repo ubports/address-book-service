@@ -89,10 +89,10 @@ QtContacts::QContactSortOrder SortClause::fromString(const QString &clause) cons
         sOrder.setDirection(order);
         sOrder.setCaseSensitivity(Qt::CaseInsensitive);
         return sOrder;
-    } else {
+    } else if (!sort[0].isEmpty()) {
         qWarning() << "Invalid sort field:" << sort[0];
-        return QContactSortOrder();
     }
+    return QContactSortOrder();
 }
 
 QList<QtContacts::QContactSortOrder> SortClause::toContactSortOrder() const
