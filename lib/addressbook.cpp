@@ -820,6 +820,7 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     }
 
     g_object_unref(keys);
+    g_object_unref(iter);
 
     if (!removedIds.isEmpty()) {
         self->m_notifyContactUpdate->insertRemovedContacts(removedIds);
