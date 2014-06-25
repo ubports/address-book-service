@@ -1101,6 +1101,8 @@ GHashTable *QIndividual::parseAddressDetails(GHashTable *details,
     }
 
     GValue *value = GeeUtils::gValueSliceNew(G_TYPE_OBJECT);
+    GeeCollection *collection = GEE_COLLECTION(SET_AFD_NEW());
+    g_value_take_object(value, collection);
 
     Q_FOREACH(const QContactDetail& detail, cDetails) {
         if(!detail.isEmpty()) {
@@ -1115,11 +1117,6 @@ GHashTable *QIndividual::parseAddressDetails(GHashTable *details,
                                                                          NULL,  // address format
                                                                          NULL); //UID
 
-            GeeCollection *collection = (GeeCollection*) g_value_get_object(value);
-            if(collection == NULL) {
-                collection = GEE_COLLECTION(SET_AFD_NEW());
-                g_value_take_object(value, collection);
-            }
 
             if (!folks_postal_address_is_empty(postalAddress)) {
                 FolksPostalAddressFieldDetails *pafd = folks_postal_address_field_details_new(postalAddress, NULL);
@@ -1132,8 +1129,9 @@ GHashTable *QIndividual::parseAddressDetails(GHashTable *details,
 
             g_object_unref(postalAddress);
         }
-        GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_POSTAL_ADDRESSES, value);
     }
+
+    GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_POSTAL_ADDRESSES, value);
 
     return details;
 }
@@ -1369,6 +1367,9 @@ GHashTable *QIndividual::parseOrganizationDetails(GHashTable *details,
     }
 
     GValue *value = GeeUtils::gValueSliceNew(G_TYPE_OBJECT);
+    GeeCollection *collection = GEE_COLLECTION(SET_AFD_NEW());
+    g_value_take_object(value, collection);
+
     Q_FOREACH(const QContactDetail& detail, cDetails) {
         QContactOrganization org = static_cast<QContactOrganization>(detail);
         if(!org.isEmpty()) {
@@ -1376,12 +1377,6 @@ GHashTable *QIndividual::parseOrganizationDetails(GHashTable *details,
                                              org.name().toUtf8().data(),
                                              NULL);
             folks_role_set_role(role, org.role().toUtf8().data());
-
-            GeeCollection *collection = (GeeCollection*) g_value_get_object(value);
-            if(collection == NULL) {
-                collection = GEE_COLLECTION(SET_AFD_NEW());
-                g_value_take_object(value, collection);
-            }
             FolksRoleFieldDetails *rfd = folks_role_field_details_new(role, NULL);
             DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(rfd), org, detail == prefDetail);
             gee_collection_add(collection, rfd);
