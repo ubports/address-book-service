@@ -27,6 +27,9 @@
 
 #include <QtVersit/QVersitWriter>
 #include <QtVersit/QVersitReader>
+#include <QtVersit/QVersitResourceHandler>
+#include <QtVersit/QVersitContactExporterDetailHandlerV2>
+#include <QtVersit/QVersitContactImporterPropertyHandlerV2>
 
 namespace galera
 {
@@ -40,6 +43,10 @@ public:
 
     void contactToVcard(QList<QtContacts::QContact> contacts);
     void vcardToContact(const QStringList &vcardList);
+    void waitForFinished();
+
+    QStringList vcardResult() const;
+    QList<QtContacts::QContact> contactsResult() const;
 
     static const QString PidMapFieldName;
     static const QString PidFieldName;
@@ -69,8 +76,12 @@ private Q_SLOTS:
 private:
     QtVersit::QVersitWriter *m_versitWriter;
     QtVersit::QVersitReader *m_versitReader;
+    QtVersit::QVersitContactExporterDetailHandlerV2 *m_exporterHandler;
+    QtVersit::QVersitContactImporterPropertyHandlerV2 *m_importerHandler;
 
     QByteArray m_vcardData;
+    QStringList m_vcardsResult;
+    QList<QtContacts::QContact> m_contactsResult;
 };
 
 }
