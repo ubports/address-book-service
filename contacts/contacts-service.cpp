@@ -379,7 +379,7 @@ void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
     } else {
         const QStringList vcards = reply.value();
         if (vcards.size()) {
-            VCardParser *parser = new VCardParser(this);
+            VCardParser *parser = new VCardParser;
             parser->setProperty("DATA", QVariant::fromValue<void*>(data));
             data->setVCardParser(parser);
             connect(parser, &VCardParser::contactsParsed,
