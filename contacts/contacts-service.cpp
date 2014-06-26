@@ -726,11 +726,8 @@ void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *req
 {
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
-            qDebug() << "WAIT FO rDATA";
             rData->wait();
-            qDebug() << "WAIT FO rDATA: DONE";
             destroyRequest(rData);
-            qDebug() << "WAIT FO rDATA: DESTROYED";
             return;
         }
     }

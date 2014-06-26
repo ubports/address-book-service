@@ -55,9 +55,7 @@ void QContactSaveRequestData::prepareContacts(QMap<int, QtContacts::QContact> co
             m_pendingContacts.insert(index, contact.detail<QContactDisplayLabel>().label());
             m_pendingContactsSyncTarget.insert(index, "");
         } else {
-            qDebug() << "WILL PARSE VCARD";
             m_pendingContacts.insert(index, VCardParser::contactToVcard(contact));
-            qDebug() << "WILL PARSE VCARD: DONE";
             m_pendingContactsSyncTarget.insert(index, contact.detail<QContactSyncTarget>().syncTarget());
         }
     }

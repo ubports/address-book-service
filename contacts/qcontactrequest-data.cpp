@@ -85,10 +85,8 @@ void QContactRequestData::finish(QContactManager::Error error)
 
 void QContactRequestData::deleteLater()
 {
-    qDebug() << "DESTROY REQEUSSSSs";
     // skip delete if still running
     if (m_waiting.tryLock()) {
-        qDebug() << "DESTROY REQEUSSSSs: CALL DELETE";
         m_waiting.unlock();
         delete this;
     }
