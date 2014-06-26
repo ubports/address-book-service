@@ -34,6 +34,8 @@
 namespace galera
 {
 
+using namespace QtVersit;
+
 class VCardParser : public QObject
 {
     Q_OBJECT
@@ -69,8 +71,8 @@ Q_SIGNALS:
     void finished();
 
 private Q_SLOTS:
-    void onWriterStateChanged(QtVersit::QVersitWriter::State state);
-    void onReaderStateChanged(QtVersit::QVersitReader::State state);
+    void onWriterStateChanged(QVersitWriter::State state);
+    void onReaderStateChanged(QVersitReader::State state);
     void onReaderResultsAvailable();
 
 private:
