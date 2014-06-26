@@ -298,26 +298,35 @@ void VCardParser::vcardToContact(const QStringList &vcardList)
 
     QString vcards = vcardList.join("\r\n");
     m_versitReader = new QVersitReader(vcards.toUtf8());
+    qDebug() << "CONNECT [1]";
     connect(m_versitReader,
             SIGNAL(resultsAvailable()),
             SLOT(onReaderResultsAvailable()));
+    qDebug() << "CONNECT [1.1]";
     connect(m_versitReader,
             SIGNAL(stateChanged(QVersitReader::State)),
             SLOT(onReaderStateChanged(QVersitReader::State)));
+    qDebug() << "CONNECT [1.2]";
     m_versitReader->startReading();
 }
 
 void VCardParser::waitForFinished()
 {
+    qDebug() << "waitForFinished" << __LINE__;
     if (m_versitReader) {
+        qDebug() << "waitForFinished" << __LINE__;
         m_versitReader->waitForFinished();
     }
+    qDebug() << "waitForFinished" << __LINE__;
     if (m_versitWriter) {
+        qDebug() << "waitForFinished" << __LINE__;
         m_versitWriter->waitForFinished();
     }
 
+    qDebug() << "waitForFinished" << __LINE__;
     // wait state changed events to arrive
     QCoreApplication::sendPostedEvents(this);
+    qDebug() << "waitForFinished" << __LINE__;
 }
 
 QStringList VCardParser::vcardResult() const
@@ -390,9 +399,11 @@ void VCardParser::contactToVcard(QList<QtContacts::QContact> contacts)
     }
 
     m_versitWriter = new QVersitWriter(&m_vcardData);
+    qDebug() << "CONNECT [0]";
     connect(m_versitWriter,
             SIGNAL(stateChanged(QVersitWriter::State)),
             SLOT(onWriterStateChanged(QVersitWriter::State)));
+    qDebug() << "CONNECT [0.0]";
     m_versitWriter->startWriting(exporter.documents());
 }
 

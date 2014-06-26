@@ -180,7 +180,9 @@ bool GaleraManagerEngine::saveContact(QtContacts::QContact *contact, QtContacts:
 
     request.setContact(*contact);
     startRequest(&request);
+    qDebug() << "WAIT SAVE TO FINISHED: START";
     waitForRequestFinished(&request, -1);
+    qDebug() << "WAIT SAVE TO FINISHED: DONE";
     *error = QContactManager::NoError;
 
     // FIXME: GaleraContactsService::updateContactDone doesn't return contacts
