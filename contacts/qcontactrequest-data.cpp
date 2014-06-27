@@ -53,8 +53,15 @@ bool QContactRequestData::isLive() const
 void QContactRequestData::cancel()
 {
     m_watcher.clear();
-    update(QContactAbstractRequest::CanceledState, QContactManager::NoError);
-    m_request.clear();
+    if (!m_request.isNull()) {
+        update(QContactAbstractRequest::CanceledState, QContactManager::NoError);
+        m_request.clear();
+    }
+    // quit event loop if waiting
+    if (m_eventLoop) {
+        m_eventLoop->quit();
+    }
+
 }
 
 void QContactRequestData::wait()
@@ -83,7 +90,7 @@ void QContactRequestData::finish(QContactManager::Error error)
     update(QContactAbstractRequest::FinishedState, error, m_errorMap);
 }
 
-void QContactRequestData::deleteLater()
+bool QContactRequestData::deleteLater()
 {
     // skip delete if still running
     if (m_waiting.tryLock()) {

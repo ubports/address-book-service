@@ -26,11 +26,13 @@
 
 #include <QtCore/QDebug>
 #include <QtTest/QTest>
+#include <QtContacts/QContactId>
 
 void BaseClientTest::initTestCase()
 {
     QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
     galera::Source::registerMetaType();
+    qRegisterMetaType<QList<QtContacts::QContactId> >("QList<QContactId>");
 
     QString serviceName;
     if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {

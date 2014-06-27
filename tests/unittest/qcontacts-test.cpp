@@ -123,7 +123,7 @@ private Q_SLOTS:
     }
 
     /*
-     * Test create a new contact
+     * Test update a contact
      */
     void testUpdateContact()
     {
@@ -337,6 +337,57 @@ private Q_SLOTS:
             expectedContacts.removeAll(c.detail<QContactDisplayLabel>().label());
         }
         QCOMPARE(expectedContacts.size(), 0);
+    }
+
+
+    /*
+     * Test create a contact with two address
+     * BUG: #1334402
+     */
+    void testCreateContactWithTwoAddress()
+    {
+        QContact contact = galera::VCardParser::vcardToContact("BEGIN:VCARD\r\n"
+                                                               "VERSION:3.0\r\n"
+                                                               "N:Gump;Forrest;Mr.\r\n"
+                                                               "FN:Forrest Gump\r\n"
+                                                               "ORG:Bubba Gump Shrimp Co.\r\n"
+                                                               "TITLE:Shrimp Man\r\n"
+                                                               "PHOTO;VALUE=URL;TYPE=GIF:http://www.example.com/dir_photos/my_photo.gif\r\n"
+                                                               "TEL;TYPE=WORK,VOICE:(111) 555-12121\r\n"
+                                                               "TEL;TYPE=HOME,VOICE:(404) 555-1212\r\n"
+                                                               "ADR;TYPE=WORK:;;100 Waters Edge;Baytown;LA;30314;United States of America\r\n"
+                                                               "LABEL;TYPE=WORK:100 Waters Edge\nBaytown, LA 30314\nUnited States of America\r\n"
+                                                               "ADR;TYPE=HOME:;;42 Plantation St.;Baytown;LA;30314;United States of America\r\n"
+                                                               "LABEL;TYPE=HOME:42 Plantation St.\nBaytown, LA 30314\nUnited States of America\r\n"
+                                                               "EMAIL;TYPE=PREF,INTERNET:forrestgump@example.com\r\n"
+                                                               "REV:2008-04-24T19:52:43Z\r\n"
+                                                               "END:VCARD\r\n");
+
+
+        // create a contact
+        QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+        QTRY_COMPARE(spyContactAdded.count(), 1);
+
+        // query for new contacts
+        QContactFilter filter;
+        QList<QContact> contacts = m_manager->contacts(filter);
+        QCOMPARE(contacts.size(), 1);
+
+        QContact createdContact = contacts[0];
+        // id
+        QVERIFY(!createdContact.id().isNull());
+
+        // address
+        QList<QContactAddress> address = createdContact.details<QContactAddress>();
+        QCOMPARE(address.size(), 2);
+
+        QList<QContactAddress> originalAddress = contact.details<QContactAddress>();
+        Q_FOREACH(const QContactAddress addr, originalAddress) {
+            address.removeAll(addr);
+        }
+        QCOMPARE(address.size(), 0);
     }
 };
 

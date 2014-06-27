@@ -379,11 +379,12 @@ void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
     } else {
         const QStringList vcards = reply.value();
         if (vcards.size()) {
-            VCardParser *parser = new VCardParser(this);
+            VCardParser *parser = new VCardParser;
             parser->setProperty("DATA", QVariant::fromValue<void*>(data));
             data->setVCardParser(parser);
-            connect(parser, &VCardParser::contactsParsed,
-                    this, &GaleraContactsService::onVCardsParsed);
+            connect(parser,
+                    SIGNAL(contactsParsed(QList<QtContacts::QContact>)),
+                    SLOT(onVCardsParsed(QList<QtContacts::QContact>)));
             parser->vcardToContact(vcards);
         } else {
             data->update(QList<QContact>(), QContactAbstractRequest::FinishedState);
@@ -723,12 +724,22 @@ void GaleraContactsService::cancelRequest(QtContacts::QContactAbstractRequest *r
 
 void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *request)
 {
+    QContactRequestData *data = 0;
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
-            rData->wait();
-            destroyRequest(rData);
-            return;
+            data = rData;
+            break;
         }
+    }
+
+    if (data) {
+        data->wait();
+
+        // this is the only case where we still need to delete data even if the data is not in the running list anymore,
+        // because we can not delete it while waiting (the pointer still be used by wait function)
+        m_runningRequests.remove(data);
+        // the data could be removed from m_runningRequests while waiting, but we still need to destroy it
+        data->deleteLater();
     }
 }
 
@@ -736,9 +747,10 @@ void GaleraContactsService::releaseRequest(QContactAbstractRequest *request)
 {
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
+            m_runningRequests.remove(rData);
             rData->releaseRequest();
             rData->cancel();
-            destroyRequest(rData);
+            rData->deleteLater();
             return;
         }
     }
@@ -792,8 +804,11 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
 
 void GaleraContactsService::destroyRequest(QContactRequestData *request)
 {
-    m_runningRequests.remove(request);
-    request->deleteLater();
+    // only destroy the resquest data if it still on the list
+    // otherwise it was already destroyed
+    if (m_runningRequests.remove(request)) {
+        request->deleteLater();
+    }
 }
 
 QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const

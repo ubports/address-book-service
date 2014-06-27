@@ -27,10 +27,9 @@ void contactServiceMessageOutput(QtMsgType type,
                                  const QMessageLogContext &context,
                                  const QString &message)
 {
-    Q_UNUSED(type);
-    Q_UNUSED(context);
-    Q_UNUSED(message);
-    //nothing
+    if (type != QtDebugMsg) {
+        printf("[%s:%d]%s\n", qPrintable(QFileInfo(context.file).fileName()), context.line, qPrintable(message));
+    }
 }
 
 void onServiceReady(galera::AddressBook *book)
@@ -80,8 +79,8 @@ int main(int argc, char** argv)
     QObject::connect(&book, &galera::AddressBook::ready, [&book] () { onServiceReady(&book); });
     app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
 
-    book.start();
-
-    return app.exec();
+    if (book.start()) {
+        return app.exec();
+    }
 }
 

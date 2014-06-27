@@ -27,9 +27,14 @@
 
 #include <QtVersit/QVersitWriter>
 #include <QtVersit/QVersitReader>
+#include <QtVersit/QVersitResourceHandler>
+#include <QtVersit/QVersitContactExporterDetailHandlerV2>
+#include <QtVersit/QVersitContactImporterPropertyHandlerV2>
 
 namespace galera
 {
+
+using namespace QtVersit;
 
 class VCardParser : public QObject
 {
@@ -40,6 +45,10 @@ public:
 
     void contactToVcard(QList<QtContacts::QContact> contacts);
     void vcardToContact(const QStringList &vcardList);
+    void waitForFinished();
+
+    QStringList vcardResult() const;
+    QList<QtContacts::QContact> contactsResult() const;
 
     static const QString PidMapFieldName;
     static const QString PidFieldName;
@@ -62,15 +71,19 @@ Q_SIGNALS:
     void finished();
 
 private Q_SLOTS:
-    void onWriterStateChanged(QtVersit::QVersitWriter::State state);
-    void onReaderStateChanged(QtVersit::QVersitReader::State state);
+    void onWriterStateChanged(QVersitWriter::State state);
+    void onReaderStateChanged(QVersitReader::State state);
     void onReaderResultsAvailable();
 
 private:
     QtVersit::QVersitWriter *m_versitWriter;
     QtVersit::QVersitReader *m_versitReader;
+    QtVersit::QVersitContactExporterDetailHandlerV2 *m_exporterHandler;
+    QtVersit::QVersitContactImporterPropertyHandlerV2 *m_importerHandler;
 
     QByteArray m_vcardData;
+    QStringList m_vcardsResult;
+    QList<QtContacts::QContact> m_contactsResult;
 };
 
 }
