@@ -90,7 +90,7 @@ void QContactRequestData::finish(QContactManager::Error error)
     update(QContactAbstractRequest::FinishedState, error, m_errorMap);
 }
 
-bool QContactRequestData::deleteLater()
+void QContactRequestData::deleteLater()
 {
     // skip delete if still running
     if (m_waiting.tryLock()) {

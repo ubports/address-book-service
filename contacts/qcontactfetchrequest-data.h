@@ -63,7 +63,7 @@ public:
                             QtContacts::QContactManager::Error error = QtContacts::QContactManager::NotSupportedError);
 
 protected:
-    QSet<QtContacts::QContact> m_result;
+    QList<QtContacts::QContact> m_result;
 
     virtual void updateRequest(QtContacts::QContactAbstractRequest::State state,
                                QtContacts::QContactManager::Error error,

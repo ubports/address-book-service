@@ -81,7 +81,7 @@ void QContactFetchRequestData::updateOffset(int offset)
 
 QList<QContact> QContactFetchRequestData::result() const
 {
-    return m_result.values();
+    return m_result;
 }
 
 void QContactFetchRequestData::update(QContactAbstractRequest::State state,
@@ -99,7 +99,7 @@ void QContactFetchRequestData::update(QList<QContact> result,
                                       QContactManager::Error error,
                                       QMap<int, QContactManager::Error> errorMap)
 {
-    m_result.unite(QSet<QContact>::fromList(result));
+    m_result += result;
     QContactRequestData::update(state, error, errorMap);
 }
 
@@ -114,7 +114,7 @@ void QContactFetchRequestData::notifyError(QContactFetchRequest *request, QConta
 void QContactFetchRequestData::updateRequest(QContactAbstractRequest::State state, QContactManager::Error error, QMap<int, QContactManager::Error> errorMap)
 {
     QContactManagerEngine::updateContactFetchRequest(static_cast<QContactFetchRequest*>(m_request.data()),
-                                                     m_result.values(),
+                                                     m_result,
                                                      error,
                                                      state);
 }
