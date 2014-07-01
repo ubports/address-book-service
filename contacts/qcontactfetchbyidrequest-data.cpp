@@ -45,7 +45,7 @@ void QContactFetchByIdRequestData::notifyError(QContactFetchByIdRequest *request
 void QContactFetchByIdRequestData::updateRequest(QContactAbstractRequest::State state, QContactManager::Error error, QMap<int, QContactManager::Error> errorMap)
 {
     QContactManagerEngine::updateContactFetchByIdRequest(static_cast<QContactFetchByIdRequest*>(m_request.data()),
-                                                         m_result,
+                                                         m_result.values(),
                                                          error,
                                                          errorMap,
                                                          state);
