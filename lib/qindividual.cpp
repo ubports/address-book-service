@@ -386,7 +386,7 @@ void QIndividual::avatarCacheStoreDone(GObject *source, GAsyncResult *result, gp
         g_error_free(error);
     }
 
-    if (g_str_equal(data, uri) != 0) {
+    if (!g_str_equal(data, uri)) {
         qWarning() << "Avatar name changed from" << (gchar*)data << "to" << uri;
     }
     g_free(data);

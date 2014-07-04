@@ -99,7 +99,7 @@ void QContactFetchRequestData::update(QList<QContact> result,
                                       QContactManager::Error error,
                                       QMap<int, QContactManager::Error> errorMap)
 {
-    m_result = result;
+    m_result += result;
     QContactRequestData::update(state, error, errorMap);
 }
 

@@ -23,6 +23,7 @@
 #include <common/fetch-hint.h>
 
 #include <QtCore/QList>
+#include <QtCore/QSet>
 #include <QtCore/QSharedPointer>
 
 #include <QtContacts/QContactAbstractRequest>

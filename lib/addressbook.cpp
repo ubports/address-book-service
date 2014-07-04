@@ -760,67 +760,52 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
                                        GeeMultiMap *changes,
                                        AddressBook *self)
 {
-    qDebug() << Q_FUNC_INFO;
     Q_UNUSED(individualAggregator);
 
     QSet<QString> removedIds;
     QSet<QString> addedIds;
     QSet<QString> updatedIds;
-    QSet<QString> ignoreIds;
 
-    GeeSet *keys = gee_multi_map_get_keys(changes);
-    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(keys));
-
+    GeeSet *removed = gee_multi_map_get_keys(changes);
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(removed));
     while(gee_iterator_next(iter)) {
-        FolksIndividual *individualKey = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
-        GeeCollection *values = gee_multi_map_get(changes, individualKey);
-        GeeIterator *iterV;
-
-        iterV = gee_iterable_iterator(GEE_ITERABLE(values));
-        while(gee_iterator_next(iterV)) {
-            FolksIndividual *individualValue = FOLKS_INDIVIDUAL(gee_iterator_get(iterV));
-
-            // contact added
-            if (individualKey == 0) {
-                addedIds << self->addContact(individualValue);
-            } else if (individualValue != 0) {
-                QString idValue = QString::fromUtf8(folks_individual_get_id(individualValue));
-                QString idKey = QString::fromUtf8(folks_individual_get_id(individualKey));
-                // after adding a anti link folks emit a signal with the same value in both key and value,
-                // we can ignore this
-                if (idValue == idKey) {
-                    // individual object has changed
-                    ignoreIds << self->addContact(individualValue);
-                } else {
-                    if (self->m_contacts->value(idValue)) {
-                        updatedIds << self->addContact(individualValue);
-                    } else {
-                        addedIds << self->addContact(individualValue);
-                    }
-                }
-            }
-
-            if (individualValue) {
-                g_object_unref(individualValue);
-            }
+        FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
+        if (!individual) {
+            continue;
         }
 
-        g_object_unref(iterV);
-        g_object_unref(values);
-
-        if (individualKey) {
-            QString id = QString::fromUtf8(folks_individual_get_id(individualKey));
-            if (!ignoreIds.contains(id) &&
-                !addedIds.contains(id) &&
-                !updatedIds.contains(id)) {
-                removedIds << self->removeContact(individualKey);
-            }
-            g_object_unref(individualKey);
-        }
+        removedIds << self->removeContact(individual);
+        g_object_unref(individual);
     }
-
-    g_object_unref(keys);
     g_object_unref(iter);
+
+    GeeCollection *added = gee_multi_map_get_values(changes);
+    iter = gee_iterable_iterator(GEE_ITERABLE(added));
+    while(gee_iterator_next(iter)) {
+        FolksIndividual *individual = FOLKS_INDIVIDUAL(gee_iterator_get(iter));
+
+        if (!individual) {
+            continue;
+        }
+
+        QString id = QString::fromUtf8(folks_individual_get_id(individual));
+        if (addedIds.contains(id)) {
+            g_object_unref(individual);
+            continue;
+        }
+
+        if (self->m_contacts->contains(id)) {
+            updatedIds << self->addContact(individual);
+        } else {
+            addedIds << self->addContact(individual);
+        }
+
+        g_object_unref(individual);
+    }
+    g_object_unref(iter);
+
+    g_object_unref(removed);
+    g_object_unref(added);
 
     if (!removedIds.isEmpty()) {
         self->m_notifyContactUpdate->insertRemovedContacts(removedIds);
