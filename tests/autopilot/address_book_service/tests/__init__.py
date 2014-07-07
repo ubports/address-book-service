@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 from address_book_app.tests import AddressBookAppTestCase
 
 

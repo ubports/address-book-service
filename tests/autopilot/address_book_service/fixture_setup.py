@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 import os
 import subprocess
 import sysconfig
@@ -49,7 +48,6 @@ class AddressBookServiceDummyBackend(Fixture):
         self.useFixture(EnvironmentVariable(
             'ADDRESS_BOOK_SERVICE_DEMO_DATA',
             os.path.abspath('../data/vcard.vcf')))
-        print(os.path.abspath('../data/vcard.vcf'))
 
     def _restart_address_book_service(self):
         self._kill_address_book_service()
