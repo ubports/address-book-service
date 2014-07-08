@@ -47,7 +47,7 @@ class AddressBookServiceDummyBackend(Fixture):
         self.useFixture(EnvironmentVariable('FOLKS_PRIMARY_STORE', 'dummy'))
         self.useFixture(EnvironmentVariable(
             'ADDRESS_BOOK_SERVICE_DEMO_DATA',
-            os.path.abspath('../data/vcard.vcf')))
+            self._get_vcard_location()))
 
     def _restart_address_book_service(self):
         self._kill_address_book_service()
@@ -55,6 +55,14 @@ class AddressBookServiceDummyBackend(Fixture):
         path = self._get_service_library_path() + 'address-book-service'
         subprocess.Popen([path])
 
+    def _get_vcard_location(self):
+        local_location = os.path.abspath('vcard.vcf')
+        bin_location = '/usr/share/address-book-service/data/vcard.vcf'
+        if os.path.exists(local_location):
+            return local_location
+        else:
+            return bin_location
+    
     def _get_service_library_path(self):
         architecture = sysconfig.get_config_var('MULTIARCH')
 

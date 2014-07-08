@@ -38,6 +38,17 @@ Description: A fork of folks dummy backend
  A fork of folks dummy backend to be used as standalone backend to test address-book-service.
 
 
+Package: address-book-service-autopilot
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         address-book-service-dummy,
+         address-book-app-autopilot,
+Description: High-level tests for dummy-backend
+ Autopilot tests to ensure the dummy backend keeps functioning.
+
+
 Package: qtcontact5-galera
 Architecture: any
 Multi-Arch: same
