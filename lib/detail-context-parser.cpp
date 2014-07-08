@@ -96,7 +96,7 @@ QStringList DetailContextParser::parsePhoneContext(const QtContacts::QContactDet
     // populate the map once
     if (map.isEmpty()) {
         map[QContactPhoneNumber::SubTypeLandline] = "landline";
-        map[QContactPhoneNumber::SubTypeMobile] = "mobile";
+        map[QContactPhoneNumber::SubTypeMobile] = "cell";
         map[QContactPhoneNumber::SubTypeFax] = "fax";
         map[QContactPhoneNumber::SubTypePager] = "pager";
         map[QContactPhoneNumber::SubTypeVoice] = "voice";
