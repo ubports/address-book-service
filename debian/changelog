@@ -1,3 +1,11 @@
+address-book-service (0.1.1+14.10.20140710-0ubuntu1) utopic; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Used "cell" string to save mobile phones instead of "mobile". (Keep
+    compatible with evolution) (LP: #1332124)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 10 Jul 2014 01:00:41 +0000
+
 address-book-service (0.1.1+14.10.20140704-0ubuntu1) utopic; urgency=low
 
   [ Ubuntu daily release ]
