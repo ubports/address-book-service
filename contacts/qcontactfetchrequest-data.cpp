@@ -99,7 +99,8 @@ void QContactFetchRequestData::update(QList<QContact> result,
                                       QContactManager::Error error,
                                       QMap<int, QContactManager::Error> errorMap)
 {
-    m_result += result;
+    m_result = result;
+    m_allResults += result;
     QContactRequestData::update(state, error, errorMap);
 }
 
@@ -113,8 +114,19 @@ void QContactFetchRequestData::notifyError(QContactFetchRequest *request, QConta
 
 void QContactFetchRequestData::updateRequest(QContactAbstractRequest::State state, QContactManager::Error error, QMap<int, QContactManager::Error> errorMap)
 {
+    QList<QtContacts::QContact> result;
+    // send all results only in the finished state, this will avoid a contact update in every updateContactFetchRequest
+    switch(state)
+    {
+    case QContactAbstractRequest::FinishedState:
+        result = m_allResults;
+        break;
+    default:
+        result = m_result;
+    }
+
     QContactManagerEngine::updateContactFetchRequest(static_cast<QContactFetchRequest*>(m_request.data()),
-                                                     m_result,
+                                                     result,
                                                      error,
                                                      state);
 }
