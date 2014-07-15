@@ -64,6 +64,7 @@ public:
 
 protected:
     QList<QtContacts::QContact> m_result;
+    QList<QtContacts::QContact> m_allResults;
 
     virtual void updateRequest(QtContacts::QContactAbstractRequest::State state,
                                QtContacts::QContactManager::Error error,
