@@ -38,7 +38,7 @@ Description: A fork of folks dummy backend
  A fork of folks dummy backend to be used as standalone backend to test address-book-service.
 
 
-Package: address-book-service-autopilot
+Package: address-book-service-testability
 Architecture: any
 Multi-Arch: same
 Depends: ${misc:Depends},
