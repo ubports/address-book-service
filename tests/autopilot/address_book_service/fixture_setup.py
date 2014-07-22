@@ -25,6 +25,7 @@ from fixtures import EnvironmentVariable, Fixture
 
 
 def get_service_library_path():
+    """Return path of address-book-service binary directory."""
     architecture = sysconfig.get_config_var('MULTIARCH')
 
     return os.path.join(
@@ -34,7 +35,14 @@ def get_service_library_path():
 
 
 class AddressBookServiceDummyBackend(Fixture):
+    """Fixture to load test vcard for client applications
 
+    Call the fixture without any paramter to load a default vcard.
+    
+    :parameter vcard: call the fixture with a vcard to be used by
+                      test application.
+
+    """
     def __init__(self, vcard=None):
         self.contact_data = vcard
 
