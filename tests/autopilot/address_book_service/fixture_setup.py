@@ -24,49 +24,67 @@ import sysconfig
 from fixtures import EnvironmentVariable, Fixture
 
 
+def get_service_library_path():
+    architecture = sysconfig.get_config_var('MULTIARCH')
+
+    return os.path.join(
+        '/usr/lib/',
+        architecture,
+        'address-book-service/')
+
+
 class AddressBookServiceDummyBackend(Fixture):
+
+    def __init__(self, vcard=None):
+        self.contact_data = vcard
 
     def setUp(self):
         super(AddressBookServiceDummyBackend, self).setUp()
-        self.start_dummy_contact_service()
-        self.addCleanup(self._restart_address_book_service)
+        self.useFixture(SetupEnvironmentVariables(self.contact_data))
+        self.useFixture(RestartService())
 
-    def start_dummy_contact_service(self):
-        """Add environment variables to load the dummy backend
-        and restart the service."""
+
+class SetupEnvironmentVariables(Fixture):
+
+    def __init__(self, vcard):
+        self.vcard = vcard
+    
+    def setUp(self):
+        super(SetupEnvironmentVariables, self).setUp()
         self._setup_environment()
-        self._restart_address_book_service()
 
     def _setup_environment(self):
         self.useFixture(EnvironmentVariable(
             'ALTERNATIVE_CPIM_SERVICE_NAME', 'com.canonical.test.pim'))
         self.useFixture(EnvironmentVariable(
             'FOLKS_BACKEND_PATH',
-            self._get_service_library_path() + 'dummy.so'))
+            os.path.join(get_service_library_path(), 'dummy.so')))
         self.useFixture(EnvironmentVariable('FOLKS_BACKENDS_ALLOWED', 'dummy'))
         self.useFixture(EnvironmentVariable('FOLKS_PRIMARY_STORE', 'dummy'))
         self.useFixture(EnvironmentVariable(
             'ADDRESS_BOOK_SERVICE_DEMO_DATA',
             self._get_vcard_location()))
 
-    def _restart_address_book_service(self):
-        self._kill_address_book_service()
-
-        path = self._get_service_library_path() + 'address-book-service'
-        subprocess.Popen([path])
-
     def _get_vcard_location(self):
+        if self.vcard:
+            return self.vcard
+        
         local_location = os.path.abspath('vcard.vcf')
         bin_location = '/usr/share/address-book-service/data/vcard.vcf'
         if os.path.exists(local_location):
             return local_location
-        else:
+        elif os.path.exists(bin_location):
             return bin_location
-    
-    def _get_service_library_path(self):
-        architecture = sysconfig.get_config_var('MULTIARCH')
+        else:
+            raise RuntimeError('No VCARD found.')
 
-        return '/usr/lib/' + architecture + '/address-book-service/'
+
+class RestartService(Fixture):
+
+    def setUp(self):
+        super(RestartService, self).setUp()
+        self.addCleanup(self._kill_address_book_service)
+        self._restart_address_book_service()
 
     def _kill_address_book_service(self):
         try:
@@ -76,3 +94,10 @@ class AddressBookServiceDummyBackend(Fixture):
         except subprocess.CalledProcessError:
             # Service not running, so do nothing.
             pass
+    
+    def _restart_address_book_service(self):
+        self._kill_address_book_service()
+        path = os.path.join(
+            get_service_library_path(), 'address-book-service')
+       
+        subprocess.Popen([path])
