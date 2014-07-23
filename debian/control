@@ -45,8 +45,8 @@ Depends: ${misc:Depends},
          ${shlibs:Depends},
          address-book-service-dummy,
          address-book-app-autopilot,
-Description: High-level tests for dummy-backend
- Autopilot tests to ensure the dummy backend keeps functioning.
+Description: Low-level tests for dummy-backend
+ Tests to ensure the dummy backend keeps functioning.
 
 
 Package: qtcontact5-galera
