@@ -121,8 +121,8 @@ class RestartService(Fixture):
         for i in range(10):
             try:
                 proxy.Introspect()
-                return
-            except dbus.DBusException:
+                break
+            except dbus.exceptions.DBusException:
                 time.sleep(1)
             else:
                 raise RuntimeError('address-book-service never started.')

@@ -32,5 +32,5 @@ class DummyBackendTestCase(testtools.TestCase):
 
     def test_dummy_backend_loads_vcard(self):
         """Makes sure the dummy backend is loading the vcard."""
-        contacts = str(helpers.ContactsDbusService().query_contacts())
+        contacts = str(helpers.query_contacts())
         self.assertTrue('UX User' in contacts, True)
