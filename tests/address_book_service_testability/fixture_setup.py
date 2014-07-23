@@ -105,24 +105,12 @@ class RestartService(Fixture):
             pass
 
     def _restart_address_book_service(self):
+        self._kill_address_book_service()
         path = os.path.join(
             get_service_library_path(), 'address-book-service')
 
-        self._kill_address_book_service()
         subprocess.Popen([path])
-        self._ensure_service_running()
-
-    def _ensure_service_running(self):
-        import dbus
-        bus = dbus.SessionBus()
-        proxy = bus.get_object(
-            'com.canonical.pim', '/com/canonical/pim/AddressBook')
-
-        for i in range(10):
-            try:
-                proxy.Introspect()
-                break
-            except dbus.exceptions.DBusException:
-                time.sleep(1)
-            else:
-                raise RuntimeError('address-book-service never started.')
+        # FIXME: Wait for 5 seconds before proceeding so that the
+        # service starts,doing this because the dbus interface is
+        # not reliable enough it seems. --om26er 23-07-2014
+        time.sleep(5)
