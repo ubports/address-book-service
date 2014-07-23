@@ -28,7 +28,6 @@ class DummyBackendTestCase(testtools.TestCase):
     def setUp(self):
         dummy_backend = fixture_setup.AddressBookServiceDummyBackend()
         self.useFixture(dummy_backend)
-        from time import sleep; sleep(3)
         super(DummyBackendTestCase, self).setUp()
 
     def test_dummy_backend_loads_vcard(self):

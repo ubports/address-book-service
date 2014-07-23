@@ -20,6 +20,7 @@
 import os
 import subprocess
 import sysconfig
+import time
 
 from fixtures import EnvironmentVariable, Fixture
 
@@ -37,8 +38,8 @@ def get_service_library_path():
 class AddressBookServiceDummyBackend(Fixture):
     """Fixture to load test vcard for client applications
 
-    Call the fixture without any paramter to load a default vcard.
-    
+    Call the fixture without any paramter to load a default vcard
+
     :parameter vcard: call the fixture with a vcard to be used by
                       test application.
 
@@ -56,7 +57,7 @@ class SetupEnvironmentVariables(Fixture):
 
     def __init__(self, vcard):
         self.vcard = vcard
-    
+
     def setUp(self):
         super(SetupEnvironmentVariables, self).setUp()
         self._setup_environment()
@@ -76,7 +77,7 @@ class SetupEnvironmentVariables(Fixture):
     def _get_vcard_location(self):
         if self.vcard:
             return self.vcard
-        
+
         local_location = os.path.abspath('vcard.vcf')
         bin_location = '/usr/share/address-book-service/data/vcard.vcf'
         if os.path.exists(local_location):
@@ -102,10 +103,26 @@ class RestartService(Fixture):
         except subprocess.CalledProcessError:
             # Service not running, so do nothing.
             pass
-    
+
     def _restart_address_book_service(self):
-        self._kill_address_book_service()
         path = os.path.join(
             get_service_library_path(), 'address-book-service')
-       
+
+        self._kill_address_book_service()
         subprocess.Popen([path])
+        self._ensure_service_running()
+
+    def _ensure_service_running(self):
+        import dbus
+        bus = dbus.SessionBus()
+        proxy = bus.get_object(
+            'com.canonical.pim', '/com/canonical/pim/AddressBook')
+
+        for i in range(10):
+            try:
+                proxy.Introspect()
+                return
+            except dbus.DBusException:
+                time.sleep(1)
+            else:
+                raise RuntimeError('address-book-service never started.')
