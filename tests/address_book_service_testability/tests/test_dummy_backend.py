@@ -17,24 +17,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from testtools.matchers import Equals
-from autopilot.matchers import Eventually
+import testtools
 
-from address_book_service.tests import AddressBookServiceTestCase
-from address_book_service import fixture_setup
+from address_book_service_testability import fixture_setup, helpers
 
 
-class DummyBackendTestCase(AddressBookServiceTestCase):
-    """High-level tests for the dummy backend of contacts service."""
+class DummyBackendTestCase(testtools.TestCase):
+    """tests for the dummy backend of contacts service."""
 
     def setUp(self):
         dummy_backend = fixture_setup.AddressBookServiceDummyBackend()
         self.useFixture(dummy_backend)
+        from time import sleep; sleep(3)
         super(DummyBackendTestCase, self).setUp()
 
     def test_dummy_backend_loads_vcard(self):
         """Makes sure the dummy backend is loading the vcard."""
-        list_page = self.main_window.get_contact_list_page()
-        view_page = list_page.open_contact(0)
-
-        self.assertThat(view_page.title, Eventually(Equals('UX User')))
+        contacts = str(helpers.ContactsDbusService().query_contacts())
+        self.assertTrue('UX User' in contacts, True)

@@ -16,12 +16,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-from address_book_app.tests import AddressBookAppTestCase
-
-
-class AddressBookServiceTestCase(AddressBookAppTestCase):
-
-    def setUp(self):
-        AddressBookAppTestCase.MEMORY_BACKEND = False
-        super(AddressBookServiceTestCase, self).setUp()

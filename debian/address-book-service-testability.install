@@ -1,2 +1,2 @@
-tests/autopilot/address_book_service /usr/lib/python3/dist-packages
-tests/autopilot/vcard.vcf /usr/share/address-book-service/data
+tests/address_book_service_testability /usr/lib/python3/dist-packages
+tests/vcard.vcf /usr/share/address-book-service/data
