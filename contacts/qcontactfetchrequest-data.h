@@ -23,6 +23,7 @@
 #include <common/fetch-hint.h>
 
 #include <QtCore/QList>
+#include <QtCore/QSet>
 #include <QtCore/QSharedPointer>
 
 #include <QtContacts/QContactAbstractRequest>
@@ -63,6 +64,7 @@ public:
 
 protected:
     QList<QtContacts::QContact> m_result;
+    QList<QtContacts::QContact> m_allResults;
 
     virtual void updateRequest(QtContacts::QContactAbstractRequest::State state,
                                QtContacts::QContactManager::Error error,

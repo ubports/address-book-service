@@ -274,7 +274,11 @@ private Q_SLOTS:
     void testUpdateContact()
     {
         // create a basic contact
+        QSignalSpy addedContactSpy(m_serverIface, SIGNAL(contactsAdded(QStringList)));
         QDBusReply<QString> replyAdd = m_serverIface->call("createContact", m_basicVcard, "dummy-store");
+        // wait for added signal
+        QTRY_COMPARE(addedContactSpy.count(), 1);
+
         QString vcard = replyAdd.value();
         QContact newContact = galera::VCardParser::vcardToContact(vcard);
         QString newContactId = newContact.detail<QContactGuid>().guid();

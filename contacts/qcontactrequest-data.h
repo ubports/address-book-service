@@ -48,7 +48,7 @@ public:
     void wait();
     void releaseRequest();
     void finish(QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError);
-    bool deleteLater();
+    void deleteLater();
 
     virtual void update(QtContacts::QContactAbstractRequest::State state,
                 QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError,
