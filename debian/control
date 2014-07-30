@@ -39,12 +39,10 @@ Description: A fork of folks dummy backend
 
 
 Package: address-book-service-testability
-Architecture: any
-Multi-Arch: same
+Architecture: all
 Depends: ${misc:Depends},
          ${shlibs:Depends},
          address-book-service-dummy,
-         address-book-app-autopilot,
 Description: Low-level tests for dummy-backend
  Tests to ensure the dummy backend keeps functioning.
 
