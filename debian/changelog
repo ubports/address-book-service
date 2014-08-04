@@ -1,3 +1,13 @@
+address-book-service (0.1.1+14.10.20140804-0ubuntu1) utopic; urgency=low
+
+  [ Omer Akram ]
+  * add a test to ensure the dummy backend is working.
+
+  [ Brendan Donegan ]
+  * add a test to ensure the dummy backend is working.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 04 Aug 2014 22:54:03 +0000
+
 address-book-service (0.1.1+14.10.20140715-0ubuntu2) utopic; urgency=medium
 
   * No-change rebuild to get dbgsyms for all binaries onto
