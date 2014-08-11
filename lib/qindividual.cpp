@@ -916,7 +916,7 @@ void QIndividual::updateContact(QContact *contact) const
     // number or symbol should be moved to bottom of the list. Since the standard
     // string sort put symbols and numbers on the top, we use the tag to sort,
     // and keep empty tags for the especial case.
-    QContactTag tag;
+    QContactTag tag = contact->detail<QContactTag>();
     label = label.toUpper();
     if (label.isEmpty() ||
         !label.at(0).isLetter()) {

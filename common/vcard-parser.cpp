@@ -60,14 +60,6 @@ namespace
                 *toBeAdded << prop;
             }
 
-            if (detail.type() == QContactDetail::TypeTag) {
-                QContactTag tag = static_cast<QContactTag>(detail);
-                QVersitProperty prop;
-                prop.setName(galera::VCardParser::TagFieldName);
-                prop.setValue(tag.tag());
-                *toBeAdded << prop;
-            }
-
             if (toBeAdded->size() == 0) {
                 return;
             }
@@ -146,13 +138,6 @@ namespace
                 QContactSyncTarget target;
                 target.setSyncTarget(property.value<QString>());
                 *updatedDetails  << target;
-                *alreadyProcessed = true;
-            }
-
-            if (!*alreadyProcessed && (property.name() == galera::VCardParser::TagFieldName)) {
-                QContactTag tag;
-                tag.setTag(property.value<QString>());
-                *updatedDetails  << tag;
                 *alreadyProcessed = true;
             }
 
