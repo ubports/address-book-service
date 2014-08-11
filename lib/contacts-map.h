@@ -69,6 +69,7 @@ public:
 
     void remove(const QString &id);
     void insert(ContactEntry *entry);
+    void updatePosition(ContactEntry *entry);
     int size() const;
     void clear();
     void lock();

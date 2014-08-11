@@ -704,6 +704,8 @@ void AddressBook::updateContactsDone(const QString &contactId,
         } else {
             m_updateCommandResult[currentContactIndex] = "";
         }
+        // update contact position on map
+        m_contacts->updatePosition(entry);
     }
 
     if (!m_updateCommandPendingContacts.isEmpty()) {

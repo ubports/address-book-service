@@ -110,6 +110,25 @@ void ContactsMap::insert(ContactEntry *entry)
     }
 }
 
+void ContactsMap::updatePosition(ContactEntry *entry)
+{
+    if (!m_sortClause.isEmpty()) {
+        int oldPos = m_contacts.indexOf(entry);
+
+        ContactLessThan lessThan(m_sortClause);
+        QList<ContactEntry*>::iterator it(std::upper_bound(m_contacts.begin(), m_contacts.end(), entry, lessThan));
+
+        if (it != m_contacts.end()) {
+            int newPos = std::distance(m_contacts.begin(), it);
+            if (oldPos != newPos) {
+                m_contacts.move(oldPos, newPos);
+            }
+        } else if (oldPos != (m_contacts.size() - 1)) {
+            m_contacts.move(oldPos, m_contacts.size() -1);
+        }
+    }
+}
+
 int ContactsMap::size() const
 {
     return m_idToEntry.size();
