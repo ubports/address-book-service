@@ -340,6 +340,107 @@ private Q_SLOTS:
     }
 
 
+    void testContactUpdateDisplayName()
+    {
+        // create a contact ""
+        QContact contact;
+        QContactName name = contact.detail<QContactName>();
+        name.setFirstName("Fulano");
+        name.setMiddleName("de");
+        name.setLastName("Tal");
+        contact.saveDetail(&name);
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // check result
+        QList<QContactId> ids;
+        ids << contact.id();
+        QList<QContact> contacts = m_manager->contacts(ids);
+
+        QCOMPARE(contacts[0].details<QContactTag>().size(), 1);
+        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("Fulano Tal"));
+        QCOMPARE(contacts[0].detail<QContactTag>().tag(), QStringLiteral("FULANO TAL"));
+
+        // Change contact name
+        name = contact.detail<QContactName>();
+        name.setFirstName("xFulano");
+        contact.saveDetail(&name);
+        m_manager->saveContact(&contact);
+
+        contacts = m_manager->contacts(ids);
+        QCOMPARE(contacts[0].details<QContactTag>().size(), 1);
+        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("xFulano Tal"));
+        QCOMPARE(contacts[0].detail<QContactTag>().tag(), QStringLiteral("XFULANO TAL"));
+    }
+
+    void testContactChangeOrder()
+    {
+        // create a contact "A de Tal"
+        QContact contactA;
+        QContactName name = contactA.detail<QContactName>();
+        name.setFirstName("A");
+        name.setMiddleName("de");
+        name.setLastName("Tal");
+        contactA.saveDetail(&name);
+        bool result = m_manager->saveContact(&contactA);
+        QCOMPARE(result, true);
+
+        // create a contact "B de Tal"
+        QContact contactB;
+        name = contactB.detail<QContactName>();
+        name.setFirstName("B");
+        name.setMiddleName("de");
+        name.setLastName("Tal");
+        contactB.saveDetail(&name);
+        result = m_manager->saveContact(&contactB);
+        QCOMPARE(result, true);
+
+        // create a contact "C de Tal"
+        QContact contactC;
+        name = contactC.detail<QContactName>();
+        name.setFirstName("C");
+        name.setMiddleName("de");
+        name.setLastName("Tal");
+        contactC.saveDetail(&name);
+        result = m_manager->saveContact(&contactC);
+        QCOMPARE(result, true);
+
+        // create a contact "D de Tal"
+        QContact contactD;
+        name = contactD.detail<QContactName>();
+        name.setFirstName("D");
+        name.setMiddleName("de");
+        name.setLastName("Tal");
+        contactD.saveDetail(&name);
+        result = m_manager->saveContact(&contactD);
+        QCOMPARE(result, true);
+
+        // check result
+        QContactFilter filter;
+        QList<QContact> contacts = m_manager->contacts(filter);
+
+        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("A Tal"));
+        QCOMPARE(contacts[1].detail<QContactDisplayLabel>().label(), QStringLiteral("B Tal"));
+        QCOMPARE(contacts[2].detail<QContactDisplayLabel>().label(), QStringLiteral("C Tal"));
+        QCOMPARE(contacts[3].detail<QContactDisplayLabel>().label(), QStringLiteral("D Tal"));
+
+        // Update contact B name
+        contactB = contacts[1];
+        name = contactB.detail<QContactName>();
+        name.setFirstName("X");
+        contactB.saveDetail(&name);
+        m_manager->saveContact(&contactB);
+
+        // Fetch contacts again
+        contacts = m_manager->contacts(filter);
+
+        // check new order
+        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("A Tal"));
+        QCOMPARE(contacts[1].detail<QContactDisplayLabel>().label(), QStringLiteral("C Tal"));
+        QCOMPARE(contacts[2].detail<QContactDisplayLabel>().label(), QStringLiteral("D Tal"));
+        QCOMPARE(contacts[3].detail<QContactDisplayLabel>().label(), QStringLiteral("X Tal"));
+    }
+
     /*
      * Test create a contact with two address
      * BUG: #1334402
