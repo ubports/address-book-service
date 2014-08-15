@@ -80,7 +80,10 @@ int main(int argc, char** argv)
     app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
 
     if (book.start()) {
+        qDebug() << "Service started";
         return app.exec();
+    } else {
+        qDebug() << "Fail to start service";
     }
 }
 
