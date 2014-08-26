@@ -1,3 +1,10 @@
+address-book-service (0.1.1+14.10.20140826-0ubuntu1) utopic; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Make sure that EDS is running before start address-book-service.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 26 Aug 2014 14:56:56 +0000
+
 address-book-service (0.1.1+14.10.20140815-0ubuntu1) utopic; urgency=low
 
   [ Ubuntu daily release ]
