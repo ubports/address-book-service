@@ -80,9 +80,13 @@ public Q_SLOTS:
 private Q_SLOTS:
     void viewClosed();
     void individualChanged(QIndividual *individual);
+    void onEdsServiceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
 
     // Unix signal handlers.
     void handleSigQuit();
+
+    // WORKAROUND: Check if EDS was running when the service started
+    void checkForEds();
 
 private:
     FolksIndividualAggregator *m_individualAggregator;
@@ -91,7 +95,9 @@ private:
     AddressBookAdaptor *m_adaptor;
     // timer to avoid send several updates at the same time
     DirtyContactsNotify *m_notifyContactUpdate;
+    QDBusServiceWatcher *m_edsWatcher;
 
+    bool m_edsIsLive;
     bool m_ready;
     int m_individualsChangedDetailedId;
     int m_notifyIsQuiescentHandlerId;
@@ -123,6 +129,8 @@ private:
     static void quitSignalHandler(int unused);
 
     void prepareFolks();
+    void unprepareFolks();
+    void connectWithEDS();
     bool registerObject(QDBusConnection &connection);
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);

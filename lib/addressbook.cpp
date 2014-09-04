@@ -91,9 +91,10 @@ int AddressBook::m_sigQuitFd[2] = {0, 0};
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
       m_individualAggregator(0),
-      m_contacts(new ContactsMap),
+      m_contacts(0),
       m_adaptor(0),
       m_notifyContactUpdate(0),
+      m_edsIsLive(false),
       m_ready(false),
       m_individualsChangedDetailedId(0),
       m_notifyIsQuiescentHandlerId(0),
@@ -106,6 +107,7 @@ AddressBook::AddressBook(QObject *parent)
         m_serviceName = CPIM_SERVICE_NAME;
     }
     prepareUnixSignals();
+    connectWithEDS();
 }
 
 AddressBook::~AddressBook()
@@ -159,6 +161,7 @@ bool AddressBook::start(QDBusConnection connection)
         prepareFolks();
         return true;
     }
+
     return false;
 }
 
@@ -167,7 +170,7 @@ bool AddressBook::start()
     return start(QDBusConnection::sessionBus());
 }
 
-void AddressBook::shutdown()
+void AddressBook::unprepareFolks()
 {
     m_ready = false;
 
@@ -190,6 +193,12 @@ void AddressBook::shutdown()
         g_clear_object(&m_individualAggregator);
     }
 
+}
+
+void AddressBook::shutdown()
+{
+    unprepareFolks();
+
     if (m_adaptor) {
         if (m_connection.interface() &&
             m_connection.interface()->isValid()) {
@@ -208,6 +217,7 @@ void AddressBook::shutdown()
 
 void AddressBook::prepareFolks()
 {
+    m_contacts = new ContactsMap;
     m_individualAggregator = folks_individual_aggregator_dup();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
     if (m_ready) {
@@ -227,6 +237,19 @@ void AddressBook::prepareFolks()
     folks_individual_aggregator_prepare(m_individualAggregator,
                                         (GAsyncReadyCallback) AddressBook::prepareFolksDone,
                                         this);
+}
+
+void AddressBook::connectWithEDS()
+{
+    m_edsWatcher = new QDBusServiceWatcher("org.gnome.evolution.dataserver.AddressBook6",
+                                           QDBusConnection::sessionBus(),
+                                           QDBusServiceWatcher::WatchForOwnerChange,
+                                           this);
+    connect(m_edsWatcher, SIGNAL(serviceOwnerChanged(QString,QString,QString)),
+            this, SLOT(onEdsServiceOwnerChanged(QString,QString,QString)));
+
+    // WORKAROUND: Will ceck for EDS after 10 secs to see if it was started
+    QTimer::singleShot(10 * 1000, this, SLOT(checkForEds()));
 }
 
 SourceList AddressBook::availableSources(const QDBusMessage &message)
@@ -606,6 +629,19 @@ void AddressBook::individualChanged(QIndividual *individual)
     m_notifyContactUpdate->insertChangedContacts(QSet<QString>() << individual->id());
 }
 
+void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner)
+{
+    if (newOwner.isEmpty()) {
+        m_edsIsLive = false;
+        qWarning() << "EDS died: restarting service";
+        // reset folks objects
+        unprepareFolks();
+        prepareFolks();
+    } else {
+        m_edsIsLive = true;
+    }
+}
+
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
 {
     RemoveContactsData *data = new RemoveContactsData;
@@ -918,6 +954,17 @@ void AddressBook::handleSigQuit()
     shutdown();
 
     m_snQuit->setEnabled(true);
+}
+
+// WORKAROUND: For some strange reason sometimes EDS does not start with the service request
+// we will try to reload folks if this happen
+void AddressBook::checkForEds()
+{
+    if (!m_edsIsLive) {
+        qWarning() << "EDS did not start, trying to reload folks;";
+        unprepareFolks();
+        prepareFolks();
+    }
 }
 
 } //namespace
