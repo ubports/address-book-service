@@ -248,8 +248,9 @@ void AddressBook::connectWithEDS()
     connect(m_edsWatcher, SIGNAL(serviceOwnerChanged(QString,QString,QString)),
             this, SLOT(onEdsServiceOwnerChanged(QString,QString,QString)));
 
-    // WORKAROUND: Will ceck for EDS after 10 secs to see if it was started
-    QTimer::singleShot(10 * 1000, this, SLOT(checkForEds()));
+
+    // WORKAROUND: Will ceck for EDS after the service get ready
+    connect(this, SIGNAL(ready()), SLOT(checkForEds()));
 }
 
 SourceList AddressBook::availableSources(const QDBusMessage &message)
