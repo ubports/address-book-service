@@ -241,6 +241,14 @@ void AddressBook::prepareFolks()
 
 void AddressBook::connectWithEDS()
 {
+    // Check if eds was disabled manually
+    // If eds was disabled we should skip the check
+    if (qEnvironmentVariableIsSet("FOLKS_BACKENDS_ALLOWED")) {
+        QString allowedBackends = qgetenv("FOLKS_BACKENDS_ALLOWED");
+        if (!allowedBackends.contains("eds")) {
+            return;
+        }
+    }
     m_edsWatcher = new QDBusServiceWatcher("org.gnome.evolution.dataserver.AddressBook6",
                                            QDBusConnection::sessionBus(),
                                            QDBusServiceWatcher::WatchForOwnerChange,
