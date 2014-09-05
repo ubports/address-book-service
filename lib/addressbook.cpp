@@ -247,6 +247,9 @@ void AddressBook::prepareFolks()
 
 void AddressBook::connectWithEDS()
 {
+    // we need to keep it update with the EDS dbus service name
+    static const QString evolutionServiceName("org.gnome.evolution.dataserver.AddressBook6");
+
     // Check if eds was disabled manually
     // If eds was disabled we should skip the check
     if (qEnvironmentVariableIsSet("FOLKS_BACKENDS_ALLOWED")) {
@@ -258,13 +261,13 @@ void AddressBook::connectWithEDS()
 
     // check if service is already registered
     // We will try register a EDS service if its fails this mean that the service is already registered
-    m_edsIsLive = !QDBusConnection::sessionBus().registerService("org.gnome.evolution.dataserver.AddressBook6");
+    m_edsIsLive = !QDBusConnection::sessionBus().registerService(evolutionServiceName);
     if (!m_edsIsLive) {
         // if we succeed we need to unregister it
-        QDBusConnection::sessionBus().unregisterService("org.gnome.evolution.dataserver.AddressBook6");
+        QDBusConnection::sessionBus().unregisterService(evolutionServiceName);
     }
 
-    m_edsWatcher = new QDBusServiceWatcher("org.gnome.evolution.dataserver.AddressBook6",
+    m_edsWatcher = new QDBusServiceWatcher(evolutionServiceName,
                                            QDBusConnection::sessionBus(),
                                            QDBusServiceWatcher::WatchForOwnerChange,
                                            this);
@@ -986,6 +989,13 @@ void AddressBook::handleSigQuit()
 // we will try to reload folks if this happen
 void AddressBook::checkForEds()
 {
+    // Use maxRetry value to avoid infinite loop
+    static const int maxRerty = 10;
+    static int retryCount = 0;
+    if (retryCount >= maxRerty) {
+        return;
+    }
+    retryCount++;
     if (!m_edsIsLive) {
         qWarning() << "EDS did not start, trying to reload folks;";
         unprepareFolks();
