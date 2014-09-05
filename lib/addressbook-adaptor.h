@@ -51,6 +51,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"a(ss)\" name=\"errorMap\"/>\n"
 "    </signal>\n"
 "    <signal name=\"ready\"/>\n"
+"    <signal name=\"reloaded\"/>\n"
 "    <method name=\"ping\">\n"
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
@@ -131,6 +132,7 @@ Q_SIGNALS:
     void contactsUpdated(const QStringList &ids);
     void asyncOperationResult(QMap<QString, QString> errors);
     void ready();
+    void reloaded();
 
 private:
     AddressBook *m_addressBook;

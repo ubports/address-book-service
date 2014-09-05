@@ -158,6 +158,11 @@ QList<ContactEntry*> ContactsMap::values() const
     return m_contacts;
 }
 
+QStringList ContactsMap::keys() const
+{
+    return m_idToEntry.keys();
+}
+
 void ContactsMap::sertSort(const SortClause &clause)
 {
     if (clause.toContactSortOrder() != m_sortClause.toContactSortOrder()) {

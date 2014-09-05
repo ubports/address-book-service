@@ -172,6 +172,14 @@ bool AddressBook::start()
 
 void AddressBook::unprepareFolks()
 {
+    // remove all contacts
+    // flusing any pending notification
+    m_notifyContactUpdate->flush();
+
+    // notify about contacts removal
+    m_notifyContactUpdate->insertRemovedContacts(m_contacts->keys().toSet());
+    m_notifyContactUpdate->flush();
+
     m_ready = false;
 
     Q_FOREACH(View* view, m_views) {
@@ -192,7 +200,6 @@ void AddressBook::unprepareFolks()
         m_individualsChangedDetailedId = m_notifyIsQuiescentHandlerId = 0;
         g_clear_object(&m_individualAggregator);
     }
-
 }
 
 void AddressBook::shutdown()
@@ -225,14 +232,13 @@ void AddressBook::prepareFolks()
     }
     m_notifyIsQuiescentHandlerId = g_signal_connect(m_individualAggregator,
                                           "notify::is-quiescent",
-                                          (GCallback)AddressBook::isQuiescentChanged,
+                                          (GCallback) AddressBook::isQuiescentChanged,
                                           this);
 
     m_individualsChangedDetailedId = g_signal_connect(m_individualAggregator,
                                           "individuals-changed-detailed",
                                           (GCallback) AddressBook::individualsChangedCb,
                                           this);
-
 
     folks_individual_aggregator_prepare(m_individualAggregator,
                                         (GAsyncReadyCallback) AddressBook::prepareFolksDone,
@@ -249,6 +255,15 @@ void AddressBook::connectWithEDS()
             return;
         }
     }
+
+    // check if service is already registered
+    // We will try register a EDS service if its fails this mean that the service is already registered
+    m_edsIsLive = !QDBusConnection::sessionBus().registerService("org.gnome.evolution.dataserver.AddressBook6");
+    if (!m_edsIsLive) {
+        // if we succeed we need to unregister it
+        QDBusConnection::sessionBus().unregisterService("org.gnome.evolution.dataserver.AddressBook6");
+    }
+
     m_edsWatcher = new QDBusServiceWatcher("org.gnome.evolution.dataserver.AddressBook6",
                                            QDBusConnection::sessionBus(),
                                            QDBusServiceWatcher::WatchForOwnerChange,
@@ -642,10 +657,12 @@ void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &o
 {
     if (newOwner.isEmpty()) {
         m_edsIsLive = false;
-        qWarning() << "EDS died: restarting service";
+        qWarning() << "EDS died: restarting service" << m_individualsChangedDetailedId;
         // reset folks objects
         unprepareFolks();
         prepareFolks();
+
+        Q_EMIT m_adaptor->reloaded();
     } else {
         m_edsIsLive = true;
     }

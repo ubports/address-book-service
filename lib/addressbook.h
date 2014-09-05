@@ -99,8 +99,8 @@ private:
 
     bool m_edsIsLive;
     bool m_ready;
-    int m_individualsChangedDetailedId;
-    int m_notifyIsQuiescentHandlerId;
+    gulong m_individualsChangedDetailedId;
+    gulong m_notifyIsQuiescentHandlerId;
     QDBusConnection m_connection;
 
     // Update command
