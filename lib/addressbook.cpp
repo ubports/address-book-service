@@ -177,8 +177,10 @@ void AddressBook::unprepareFolks()
     m_notifyContactUpdate->flush();
 
     // notify about contacts removal
-    m_notifyContactUpdate->insertRemovedContacts(m_contacts->keys().toSet());
-    m_notifyContactUpdate->flush();
+    if (m_contacts) {
+        m_notifyContactUpdate->insertRemovedContacts(m_contacts->keys().toSet());
+        m_notifyContactUpdate->flush();
+    }
 
     m_ready = false;
 
