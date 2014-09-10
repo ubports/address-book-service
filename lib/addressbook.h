@@ -87,6 +87,7 @@ private Q_SLOTS:
 
     // WORKAROUND: Check if EDS was running when the service started
     void checkForEds();
+    void reloadFolks();
 
 private:
     FolksIndividualAggregator *m_individualAggregator;

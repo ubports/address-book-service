@@ -660,6 +660,7 @@ void AddressBook::individualChanged(QIndividual *individual)
 
 void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner)
 {
+    qDebug() << name << oldOwner << newOwner;
     if (newOwner.isEmpty()) {
         m_edsIsLive = false;
         qWarning() << "EDS died: restarting service" << m_individualsChangedDetailedId;
@@ -998,11 +999,20 @@ void AddressBook::checkForEds()
         return;
     }
     retryCount++;
+
     if (!m_edsIsLive) {
+        // wait some ms to restart folks, this ms increase 500ms for each retryCount
+        QTimer::singleShot(500 * retryCount, this, SLOT(reloadFolks()));
         qWarning() << "EDS did not start, trying to reload folks;";
-        unprepareFolks();
-        prepareFolks();
+    } else {
+        retryCount = 0;
     }
+}
+
+void AddressBook::reloadFolks()
+{
+    unprepareFolks();
+    prepareFolks();
 }
 
 } //namespace
