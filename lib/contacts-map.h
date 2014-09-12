@@ -75,6 +75,8 @@ public:
     void lock();
     void unlock();
     QList<ContactEntry*> values() const;
+    QStringList keys() const;
+
     void sertSort(const SortClause &clause);
     SortClause sort() const;
 

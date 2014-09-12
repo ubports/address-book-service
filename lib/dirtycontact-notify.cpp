@@ -54,6 +54,12 @@ void DirtyContactsNotify::insertAddedContacts(QSet<QString> ids)
     m_timer.start();
 }
 
+void DirtyContactsNotify::flush()
+{
+    m_timer.stop();
+    emitSignals();
+}
+
 void DirtyContactsNotify::insertRemovedContacts(QSet<QString> ids)
 {
     if (!m_adaptor->isReady()) {
