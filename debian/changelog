@@ -1,3 +1,15 @@
+address-book-service (0.1.1+14.10.20140912-0ubuntu1) utopic; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Renato Araujo Oliveira Filho ]
+  * Enabled folks and service debug by default. Reload contacts if EDS
+    die. WORKAROUND: Check for EDS status after start the service and if
+    necessary reload folks. (LP: #1347557)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 12 Sep 2014 00:50:47 +0000
+
 address-book-service (0.1.1+14.10.20140826-0ubuntu1) utopic; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
