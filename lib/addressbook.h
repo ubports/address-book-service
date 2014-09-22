@@ -166,6 +166,9 @@ private:
     static void removeSourceDone(GObject *source,
                                  GAsyncResult *res,
                                  void *data);
+    static void folksUprepared(GObject *source,
+                               GAsyncResult *res,
+                               void *data);
     friend class DirtyContactsNotify;
 };
 

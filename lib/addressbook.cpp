@@ -172,6 +172,7 @@ bool AddressBook::start()
 
 void AddressBook::unprepareFolks()
 {
+    qDebug() << "Unprepare folks";
     // remove all contacts
     // flusing any pending notification
     m_notifyContactUpdate->flush();
@@ -200,6 +201,15 @@ void AddressBook::unprepareFolks()
         g_signal_handler_disconnect(m_individualAggregator,
                                     m_notifyIsQuiescentHandlerId);
         m_individualsChangedDetailedId = m_notifyIsQuiescentHandlerId = 0;
+
+        // make it sync
+        GMainLoop *waitLoop = g_main_loop_new(NULL, FALSE);
+        folks_individual_aggregator_unprepare(m_individualAggregator,
+                                              AddressBook::folksUprepared,
+                                              waitLoop);
+        // wait unprepare
+        g_main_loop_run(waitLoop);
+        g_main_loop_unref(waitLoop);
         g_clear_object(&m_individualAggregator);
     }
 }
@@ -226,6 +236,7 @@ void AddressBook::shutdown()
 
 void AddressBook::prepareFolks()
 {
+    qDebug() << "Initialize folks";
     m_contacts = new ContactsMap;
     m_individualAggregator = folks_individual_aggregator_dup();
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
@@ -390,6 +401,12 @@ void AddressBook::removeSourceDone(GObject *source,
     delete rData;
 }
 
+void AddressBook::folksUprepared(GObject *source, GAsyncResult *res, void *data)
+{
+    GMainLoop *waitLoop = static_cast<GMainLoop*>(data);
+    folks_individual_aggregator_unprepare_finish(FOLKS_INDIVIDUAL_AGGREGATOR(source), res, NULL);
+    g_main_loop_quit(waitLoop);
+}
 
 void AddressBook::createSourceDone(GObject *source,
                                    GAsyncResult *res,
@@ -996,6 +1013,8 @@ void AddressBook::checkForEds()
     static const int maxRerty = 10;
     static int retryCount = 0;
     if (retryCount >= maxRerty) {
+        // abort when reach the maxRetry
+        shutdown();
         return;
     }
     retryCount++;
@@ -1003,7 +1022,7 @@ void AddressBook::checkForEds()
     if (!m_edsIsLive) {
         // wait some ms to restart folks, this ms increase 500ms for each retryCount
         QTimer::singleShot(500 * retryCount, this, SLOT(reloadFolks()));
-        qWarning() << "EDS did not start, trying to reload folks;";
+        qWarning() << QDateTime::currentDateTime() << "EDS did not start, trying to reload folks;";
     } else {
         retryCount = 0;
     }
@@ -1011,6 +1030,7 @@ void AddressBook::checkForEds()
 
 void AddressBook::reloadFolks()
 {
+    qWarning() << "Trying to reload folks";
     unprepareFolks();
     prepareFolks();
 }
