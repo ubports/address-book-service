@@ -155,9 +155,11 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
     if (name == m_serviceName) {
         if (!newOwner.isEmpty()) {
             // service appear
+            qDebug() << "Service appeared";
             initialize();
         } else if (!m_iface.isNull()) {
             // lost service
+            qDebug() << "Service disappeared";
             deinitialize(true);
         }
     }
