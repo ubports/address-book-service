@@ -1010,10 +1010,11 @@ void AddressBook::handleSigQuit()
 void AddressBook::checkForEds()
 {
     // Use maxRetry value to avoid infinite loop
-    static const int maxRerty = 10;
+    static const int maxRetry = 10;
     static int retryCount = 0;
-    if (retryCount >= maxRerty) {
+    if (retryCount >= maxRetry) {
         // abort when reach the maxRetry
+        qWarning() << "Fail to start EDS the service will abort";
         shutdown();
         return;
     }
@@ -1022,7 +1023,7 @@ void AddressBook::checkForEds()
     if (!m_edsIsLive) {
         // wait some ms to restart folks, this ms increase 500ms for each retryCount
         QTimer::singleShot(500 * retryCount, this, SLOT(reloadFolks()));
-        qWarning() << QDateTime::currentDateTime() << "EDS did not start, trying to reload folks;";
+        qWarning() << QDateTime::currentDateTime().toString() << "EDS did not start, trying to reload folks";
     } else {
         retryCount = 0;
     }
