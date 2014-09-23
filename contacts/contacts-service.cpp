@@ -101,8 +101,7 @@ static QContact parseSource(const galera::Source &source, const QString &manager
 namespace galera
 {
 GaleraContactsService::GaleraContactsService(const QString &managerUri)
-    : m_selfContactId(),
-      m_managerUri(managerUri),
+    : m_managerUri(managerUri),
       m_serviceIsReady(false),
       m_iface(0)
 {
@@ -131,8 +130,7 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
 }
 
 GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
-    : m_selfContactId(other.m_selfContactId),
-      m_managerUri(other.m_managerUri),
+    : m_managerUri(other.m_managerUri),
       m_iface(other.m_iface)
 {
 }
@@ -160,7 +158,7 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
             initialize();
         } else if (!m_iface.isNull()) {
             // lost service
-            deinitialize();
+            deinitialize(true);
         }
     }
 }
@@ -198,28 +196,29 @@ void GaleraContactsService::initialize()
     }
 }
 
-void GaleraContactsService::deinitialize()
+void GaleraContactsService::deinitialize(bool clearIface)
 {
     Q_FOREACH(QContactRequestData* rData, m_runningRequests) {
         rData->cancel();
         rData->request()->waitForFinished();
         rData->finish(QContactManager::UnspecifiedError);
     }
-
-    if (!m_iface.isNull()) {
-        m_id.clear();
-        Q_EMIT serviceChanged();
-    }
+    m_runningRequests.clear();
 
     // this will make the service re-initialize
-    m_iface->call("ping");
-    if (m_iface->lastError().isValid()) {
+    if (!clearIface) {
+        m_iface->call("ping");
+    }
+
+    if (clearIface || m_iface->lastError().isValid()) {
         qWarning() << m_iface->lastError();
         m_iface.clear();
         m_serviceIsReady = false;
     } else {
         m_serviceIsReady = m_iface.data()->property("isReady").toBool();
     }
+
+    Q_EMIT serviceChanged();
 }
 
 bool GaleraContactsService::isOnline() const

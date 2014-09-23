@@ -79,8 +79,6 @@ private Q_SLOTS:
     void onVCardsParsed(QList<QtContacts::QContact> contacts);
 
 private:
-    QString m_id;
-    QtContacts::QContactId m_selfContactId;                     // the "MyCard" contact id
     QString m_managerUri;                                       // for faster lookup.
     QDBusServiceWatcher *m_serviceWatcher;
     bool m_serviceIsReady;
@@ -92,7 +90,7 @@ private:
     QQueue<QPointer<QtContacts::QContactAbstractRequest> > m_pendingRequests;
 
     Q_INVOKABLE void initialize();
-    Q_INVOKABLE void deinitialize();
+    Q_INVOKABLE void deinitialize(bool clearIface);
 
     bool isOnline() const;
 
