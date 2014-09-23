@@ -205,11 +205,15 @@ void AddressBook::unprepareFolks()
         // make it sync
         GMainLoop *waitLoop = g_main_loop_new(NULL, FALSE);
         folks_individual_aggregator_unprepare(m_individualAggregator,
-                                              AddressBook::folksUprepared,
+                                              AddressBook::folksUnprepared,
                                               waitLoop);
+        guint timeoutId = g_timeout_add_seconds(3,
+                                                AddressBook::folksUnprepareTimeout,
+                                                waitLoop);
         // wait unprepare
         g_main_loop_run(waitLoop);
         g_main_loop_unref(waitLoop);
+        g_source_remove(timeoutId);
         g_clear_object(&m_individualAggregator);
     }
 }
@@ -401,11 +405,18 @@ void AddressBook::removeSourceDone(GObject *source,
     delete rData;
 }
 
-void AddressBook::folksUprepared(GObject *source, GAsyncResult *res, void *data)
+void AddressBook::folksUnprepared(GObject *source, GAsyncResult *res, void *data)
 {
     GMainLoop *waitLoop = static_cast<GMainLoop*>(data);
     folks_individual_aggregator_unprepare_finish(FOLKS_INDIVIDUAL_AGGREGATOR(source), res, NULL);
     g_main_loop_quit(waitLoop);
+}
+
+gboolean AddressBook::folksUnprepareTimeout(gpointer data)
+{
+    GMainLoop *waitLoop = static_cast<GMainLoop*>(data);
+    g_main_loop_quit(waitLoop);
+    return FALSE;
 }
 
 void AddressBook::createSourceDone(GObject *source,
