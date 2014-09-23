@@ -1,2 +1,2 @@
 usr/lib/*/address-book-service/address-book-service
-upstart/address-book-service.conf /usr/share/upstart/sessions
+usr/share/upstart/sessions/address-book-service.conf
