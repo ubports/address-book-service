@@ -50,6 +50,9 @@
 #include <QtVersit/QVersitContactExporter>
 #include <QtVersit/QVersitWriter>
 
+// FIXME: remove use of QtGuiApp
+#include <QtGui/QGuiApplication>
+
 #define ALTERNATIVE_CPIM_SERVICE_PAGE_SIZE  "CANONICAL_PIM_SERVICE_PAGE_SIZE"
 #define FETCH_PAGE_SIZE                     25
 
@@ -126,7 +129,12 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
     connect(m_serviceWatcher, SIGNAL(serviceOwnerChanged(QString,QString,QString)),
             this, SLOT(serviceOwnerChanged(QString,QString,QString)));
 
-    initialize();
+    initialize(true);
+
+    // FIXME: Remove use of QtGuiApp
+    connect(QGuiApplication::instance(),
+            SIGNAL(applicationStateChanged(Qt::ApplicationState)),
+            SLOT(onAppStateChanged(Qt::ApplicationState)));
 }
 
 GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
@@ -156,7 +164,7 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
         if (!newOwner.isEmpty()) {
             // service appear
             qDebug() << "Service appeared";
-            initialize();
+            initialize(true);
         } else if (!m_iface.isNull()) {
             // lost service
             qDebug() << "Service disappeared";
@@ -176,7 +184,7 @@ void GaleraContactsService::onServiceReady()
     }
 }
 
-void GaleraContactsService::initialize()
+void GaleraContactsService::initialize(bool notify)
 {
     if (m_iface.isNull()) {
         m_iface = QSharedPointer<QDBusInterface>(new QDBusInterface(m_serviceName,
@@ -189,8 +197,9 @@ void GaleraContactsService::initialize()
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
-
-            Q_EMIT serviceChanged();
+            if (notify) {
+                Q_EMIT serviceChanged();
+            }
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();
             m_iface.clear();
@@ -428,6 +437,20 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
     }
 
     sender->deleteLater();
+}
+
+void GaleraContactsService::onAppStateChanged(Qt::ApplicationState state)
+{
+    switch(state) {
+    case Qt::ApplicationInactive:
+        suspend();
+        break;
+    case Qt::ApplicationActive:
+        resume();
+        break;
+    default:
+        break;
+    }
 }
 
 void GaleraContactsService::fetchContactsGroupsContinue(QContactFetchRequestData *data,
@@ -821,6 +844,58 @@ QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const
         contactIds << QContactId(engineId);
     }
     return contactIds;
+}
+
+void GaleraContactsService::suspend()
+{
+    disconnect(m_serviceWatcher, SIGNAL(serviceOwnerChanged(QString,QString,QString)),
+            this, SLOT(serviceOwnerChanged(QString,QString,QString)));
+
+    if (m_iface.isNull()) {
+        qDebug() << "Application already suspended" << this;
+        return;
+    }
+    Q_FOREACH(QContactRequestData* rData, m_runningRequests) {
+        rData->request()->waitForFinished();
+    }
+    m_runningRequests.clear();
+    m_serviceIsReady = false;
+    m_lastKnownUuid = m_iface.data()->property("uuid").toString();
+    m_iface.clear();
+    qDebug() << "Contacts in suspended state" << m_iface.isNull() << (void*) this;
+}
+
+void GaleraContactsService::resume()
+{
+    if (!m_iface.isNull()) {
+        return;
+    }
+
+    qDebug() << "Contacts starting the resume" << (void*) this;
+    qDebug() << "Last uuid" << m_lastKnownUuid;
+    initialize(false);
+    bool notify = false;
+
+    if (!m_iface.isNull()) {
+        QString newUuid = m_iface.data()->property("uuid").toString();
+        if (newUuid != m_lastKnownUuid) {
+            qDebug() << "Service has changed will notify";
+            notify = true;
+        }
+    } else {
+        qDebug() << "service is down will notify";
+        notify = true;
+    }
+
+    m_lastKnownUuid.clear();
+    connect(m_serviceWatcher, SIGNAL(serviceOwnerChanged(QString,QString,QString)),
+            this, SLOT(serviceOwnerChanged(QString,QString,QString)));
+
+    if (notify) {
+        Q_EMIT serviceChanged();
+    }
+
+    qDebug() << "Contacts resume completed";
 }
 
 void GaleraContactsService::onContactsAdded(const QStringList &ids)

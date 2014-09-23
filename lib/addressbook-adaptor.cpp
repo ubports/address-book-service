@@ -30,6 +30,13 @@ AddressBookAdaptor::AddressBookAdaptor(const QDBusConnection &connection, Addres
 {
     setAutoRelaySignals(true);
     connect(m_addressBook, SIGNAL(ready()), SIGNAL(ready()));
+
+    // notify any data change
+    connect(this, SIGNAL(contactsAdded(QStringList)), SLOT(serverDataChanged()));
+    connect(this, SIGNAL(contactsRemoved(QStringList)), SLOT(serverDataChanged()));
+    connect(this, SIGNAL(contactsUpdated(QStringList)), SLOT(serverDataChanged()));
+    connect(this, SIGNAL(reloaded()), SLOT(serverDataChanged()));
+    m_uuid = QUuid::createUuid();
 }
 
 AddressBookAdaptor::~AddressBookAdaptor()
@@ -137,6 +144,17 @@ bool AddressBookAdaptor::isReady()
 bool AddressBookAdaptor::ping()
 {
     return true;
+}
+
+QString AddressBookAdaptor::uuid()
+{
+    return m_uuid.toString();
+}
+
+void AddressBookAdaptor::serverDataChanged()
+{
+    m_uuid = QUuid::createUuid();
+    Q_EMIT uuidChanged();
 }
 
 } //namespace

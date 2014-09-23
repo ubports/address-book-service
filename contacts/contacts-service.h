@@ -77,19 +77,21 @@ private Q_SLOTS:
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
     void onServiceReady();
     void onVCardsParsed(QList<QtContacts::QContact> contacts);
+    void onAppStateChanged(Qt::ApplicationState state);
 
 private:
     QString m_managerUri;                                       // for faster lookup.
     QDBusServiceWatcher *m_serviceWatcher;
     bool m_serviceIsReady;
     int m_pageSize;
+    QString m_lastKnownUuid;
 
     QSharedPointer<QDBusInterface> m_iface;
     QString m_serviceName;
     QSet<QContactRequestData*> m_runningRequests;
     QQueue<QPointer<QtContacts::QContactAbstractRequest> > m_pendingRequests;
 
-    Q_INVOKABLE void initialize();
+    Q_INVOKABLE void initialize(bool notify);
     Q_INVOKABLE void deinitialize(bool clearIface);
 
     bool isOnline() const;
@@ -117,6 +119,9 @@ private:
     void destroyRequest(QContactRequestData *request);
 
     QList<QContactId> parseIds(const QStringList &ids) const;
+
+    void suspend();
+    void resume();
 };
 
 }
