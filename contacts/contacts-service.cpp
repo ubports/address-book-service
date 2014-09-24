@@ -862,7 +862,7 @@ void GaleraContactsService::suspend()
     m_serviceIsReady = false;
     m_lastKnownUuid = m_iface.data()->property("uuid").toString();
     m_iface.clear();
-    qDebug() << "Contacts in suspended state" << m_iface.isNull() << (void*) this;
+    qDebug() << (void*) this << "Contacts in suspended state" <<  m_lastKnownUuid;
 }
 
 void GaleraContactsService::resume()
@@ -871,19 +871,16 @@ void GaleraContactsService::resume()
         return;
     }
 
-    qDebug() << "Contacts starting the resume" << (void*) this;
-    qDebug() << "Last uuid" << m_lastKnownUuid;
+    qDebug() << (void*) this <<  "Contacts starting the resume:" << m_lastKnownUuid;
     initialize(false);
     bool notify = false;
 
     if (!m_iface.isNull()) {
         QString newUuid = m_iface.data()->property("uuid").toString();
         if (newUuid != m_lastKnownUuid) {
-            qDebug() << "Service has changed will notify";
             notify = true;
         }
     } else {
-        qDebug() << "service is down will notify";
         notify = true;
     }
 
@@ -892,10 +889,11 @@ void GaleraContactsService::resume()
             this, SLOT(serviceOwnerChanged(QString,QString,QString)));
 
     if (notify) {
+        qDebug() << "\tNotify service change";
         Q_EMIT serviceChanged();
     }
 
-    qDebug() << "Contacts resume completed";
+    qDebug() << "\tContacts resume completed";
 }
 
 void GaleraContactsService::onContactsAdded(const QStringList &ids)

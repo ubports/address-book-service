@@ -37,6 +37,7 @@ AddressBookAdaptor::AddressBookAdaptor(const QDBusConnection &connection, Addres
     connect(this, SIGNAL(contactsUpdated(QStringList)), SLOT(serverDataChanged()));
     connect(this, SIGNAL(reloaded()), SLOT(serverDataChanged()));
     m_uuid = QUuid::createUuid();
+    qDebug() << "Update service uui" << m_uuid.toString();
 }
 
 AddressBookAdaptor::~AddressBookAdaptor()
@@ -154,6 +155,7 @@ QString AddressBookAdaptor::uuid()
 void AddressBookAdaptor::serverDataChanged()
 {
     m_uuid = QUuid::createUuid();
+    qDebug() << "Update service uui" << m_uuid.toString();
     Q_EMIT uuidChanged();
 }
 
