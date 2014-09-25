@@ -199,12 +199,10 @@ void GaleraContactsService::initialize()
 
 void GaleraContactsService::deinitialize()
 {
-    Q_FOREACH(QContactRequestData* rData, m_runningRequests) {
-        rData->cancel();
-        rData->request()->waitForFinished();
-        rData->finish(QContactManager::UnspecifiedError);
+    // wait until all request finish
+    while (m_runningRequests.size()) {
+        QCoreApplication::processEvents();
     }
-    m_runningRequests.clear();
 
     // this will make the service re-initialize
     m_iface->call("ping");
@@ -837,12 +835,6 @@ void GaleraContactsService::onContactsUpdated(const QStringList &ids)
 
 void GaleraContactsService::onServiceReloaded()
 {
-    Q_FOREACH(QContactRequestData* rData, m_runningRequests) {
-        rData->cancel();
-        rData->request()->cancel();
-        rData->finish(QContactManager::UnspecifiedError);
-    }
-    m_runningRequests.clear();
     Q_EMIT serviceChanged();
 }
 
