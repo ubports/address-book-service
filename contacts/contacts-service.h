@@ -74,6 +74,7 @@ private Q_SLOTS:
     void onContactsAdded(const QStringList &ids);
     void onContactsRemoved(const QStringList &ids);
     void onContactsUpdated(const QStringList &ids);
+    void onServiceReloaded();
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
     void onServiceReady();
     void onVCardsParsed(QList<QtContacts::QContact> contacts);
