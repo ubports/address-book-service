@@ -126,7 +126,7 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
     connect(m_serviceWatcher, SIGNAL(serviceOwnerChanged(QString,QString,QString)),
             this, SLOT(serviceOwnerChanged(QString,QString,QString)));
 
-    initialize(true);
+    initialize();
 }
 
 GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
@@ -156,11 +156,11 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
         if (!newOwner.isEmpty()) {
             // service appear
             qDebug() << "Service appeared";
-            initialize(true);
+            initialize();
         } else if (!m_iface.isNull()) {
             // lost service
             qDebug() << "Service disappeared";
-            deinitialize(true);
+            deinitialize();
         }
     }
 }
@@ -176,7 +176,7 @@ void GaleraContactsService::onServiceReady()
     }
 }
 
-void GaleraContactsService::initialize(bool notify)
+void GaleraContactsService::initialize()
 {
     if (m_iface.isNull()) {
         m_iface = QSharedPointer<QDBusInterface>(new QDBusInterface(m_serviceName,
@@ -189,9 +189,7 @@ void GaleraContactsService::initialize(bool notify)
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
-            if (notify) {
-                Q_EMIT serviceChanged();
-            }
+            Q_EMIT serviceChanged();
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();
             m_iface.clear();
@@ -199,7 +197,7 @@ void GaleraContactsService::initialize(bool notify)
     }
 }
 
-void GaleraContactsService::deinitialize(bool clearIface)
+void GaleraContactsService::deinitialize()
 {
     Q_FOREACH(QContactRequestData* rData, m_runningRequests) {
         rData->cancel();
@@ -209,11 +207,9 @@ void GaleraContactsService::deinitialize(bool clearIface)
     m_runningRequests.clear();
 
     // this will make the service re-initialize
-    if (!clearIface) {
-        m_iface->call("ping");
-    }
+    m_iface->call("ping");
 
-    if (clearIface || m_iface->lastError().isValid()) {
+    if (m_iface->lastError().isValid()) {
         qWarning() << m_iface->lastError();
         m_iface.clear();
         m_serviceIsReady = false;

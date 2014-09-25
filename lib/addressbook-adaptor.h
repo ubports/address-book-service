@@ -24,7 +24,6 @@
 #include <QtCore/QList>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
-#include <QtCore/QUuid>
 
 #include "common/source.h"
 #include "common/dbus-service-defs.h"
