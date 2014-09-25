@@ -77,7 +77,6 @@ private Q_SLOTS:
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
     void onServiceReady();
     void onVCardsParsed(QList<QtContacts::QContact> contacts);
-    void onAppStateChanged(Qt::ApplicationState state);
 
 private:
     QString m_managerUri;                                       // for faster lookup.
@@ -119,9 +118,6 @@ private:
     void destroyRequest(QContactRequestData *request);
 
     QList<QContactId> parseIds(const QStringList &ids) const;
-
-    void suspend();
-    void resume();
 };
 
 }

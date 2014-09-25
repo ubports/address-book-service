@@ -39,7 +39,6 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
     Q_CLASSINFO("D-Bus Introspection", ""
 "  <interface name=\"com.canonical.pim.AddressBook\">\n"
 "    <property name=\"isReady\" type=\"b\" access=\"read\"/>\n"
-"    <property name=\"uuid\" type=\"s\" access=\"read\"/>\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"
@@ -54,7 +53,6 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    </signal>\n"
 "    <signal name=\"ready\"/>\n"
 "    <signal name=\"reloaded\"/>\n"
-"    <signal name=\"uuidChanged\"/>\n"
 "    <method name=\"ping\">\n"
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
@@ -110,7 +108,6 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "  </interface>\n"
         "")
     Q_PROPERTY(bool isReady READ isReady NOTIFY ready)
-    Q_PROPERTY(QString uuid READ uuid NOTIFY uuidChanged)
 public:
     AddressBookAdaptor(const QDBusConnection &connection, AddressBook *parent);
     virtual ~AddressBookAdaptor();
@@ -129,7 +126,6 @@ public Q_SLOTS:
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
     bool isReady();
     bool ping();
-    QString uuid();
 
 Q_SIGNALS:
     void contactsAdded(const QStringList &ids);
@@ -138,15 +134,10 @@ Q_SIGNALS:
     void asyncOperationResult(QMap<QString, QString> errors);
     void ready();
     void reloaded();
-    void uuidChanged();
-
-private Q_SLOTS:
-    void serverDataChanged();
 
 private:
     AddressBook *m_addressBook;
     QDBusConnection m_connection;
-    QUuid m_uuid;
 };
 
 } //namespace

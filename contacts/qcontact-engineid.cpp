@@ -54,6 +54,12 @@ GaleraEngineId::GaleraEngineId(const QMap<QString, QString> &parameters, const Q
 
 bool GaleraEngineId::isEqualTo(const QtContacts::QContactEngineId *other) const
 {
+    Q_ASSERT(other);
+    if (!other) {
+        qWarning() << "GaleraEngineId::isEqualTo, other is null";
+        return false;
+    }
+
     if (m_contactId != static_cast<const GaleraEngineId*>(other)->m_contactId)
         return false;
     return true;
@@ -61,6 +67,12 @@ bool GaleraEngineId::isEqualTo(const QtContacts::QContactEngineId *other) const
 
 bool GaleraEngineId::isLessThan(const QtContacts::QContactEngineId *other) const
 {
+    Q_ASSERT(other);
+    if (!other) {
+        qWarning() << "GaleraEngineId::isLessThan, other is null";
+        return false;
+    }
+
     const GaleraEngineId *otherPtr = static_cast<const GaleraEngineId*>(other);
     if (m_managerUri < otherPtr->m_managerUri)
         return true;
