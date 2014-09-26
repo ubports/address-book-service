@@ -172,7 +172,6 @@ bool AddressBook::start()
 
 void AddressBook::unprepareFolks()
 {
-    qDebug() << "Unprepare folks";
     // remove all contacts
     // flusing any pending notification
     m_notifyContactUpdate->flush();
@@ -1026,7 +1025,8 @@ void AddressBook::checkForEds()
     if (retryCount >= maxRetry) {
         // abort when reach the maxRetry
         qWarning() << QDateTime::currentDateTime().toString() << "Fail to start EDS the service will abort";
-        shutdown();
+        // FIXME: Use exit for now, but we should investigate why shutdown is freezing at some cases
+        exit(0);
         return;
     }
     retryCount++;
