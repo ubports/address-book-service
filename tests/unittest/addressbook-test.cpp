@@ -21,6 +21,7 @@
 #include "common/dbus-service-defs.h"
 #include "common/vcard-parser.h"
 
+
 #include <QObject>
 #include <QtDBus>
 #include <QtTest>
@@ -171,7 +172,6 @@ private Q_SLOTS:
         QCOMPARE(src.isReadOnly(), false);
     }
 
-
     void testCreateContact()
     {
         // spy 'contactsAdded' signal
@@ -313,6 +313,55 @@ private Q_SLOTS:
         contacts = galera::VCardParser::vcardToContactSync(result);
         contactUpdatedResult = contacts[0];
         compareContact(contactUpdatedResult, contactUpdated);
+    }
+
+    void testSortContacts()
+    {
+        // call create contact "Foo Bar"
+        QString copyVcard = QString(m_basicVcard).replace("Fulano_", "Foo");
+        copyVcard = copyVcard.replace("de", "");
+        copyVcard = copyVcard.replace("Tal", "Bar");
+        m_serverIface->call("createContact", copyVcard, "dummy-store");
+
+        // call create contact "Baz Quux"
+        copyVcard = QString(m_basicVcard).replace("Fulano_", "Baz");
+        copyVcard = copyVcard.replace("de", "");
+        copyVcard = copyVcard.replace("Tal", "Quux");
+        m_serverIface->call("createContact", copyVcard, "dummy-store");
+
+        // call create contact "Spider Man"
+        copyVcard = copyVcard.replace("de", "");
+        copyVcard = QString(m_basicVcard).replace("Fulano_", "Spider");
+        copyVcard = copyVcard.replace("Tal", "Man");
+        m_serverIface->call("createContact", copyVcard, "dummy-store");
+
+        // call create contact "Fone Broke"
+        copyVcard = QString(m_basicVcard).replace("Fulano_", "Fone");
+        copyVcard = copyVcard.replace("de", "");
+        copyVcard = copyVcard.replace("Tal", "Broke");
+        m_serverIface->call("createContact", copyVcard, "dummy-store");
+
+        // check if the cotact is listed in the correct order
+        QDBusMessage result = m_serverIface->call("query", "", "", QStringList());
+        QDBusObjectPath viewObjectPath = result.arguments()[0].value<QDBusObjectPath>();
+        QDBusInterface *view = new QDBusInterface(m_serverIface->service(),
+                                                  viewObjectPath.path(),
+                                                  CPIM_ADDRESSBOOK_VIEW_IFACE_NAME);
+
+        QDBusReply<QStringList> reply = view->call("contactsDetails",
+                                                   QStringList(),
+                                                   0,
+                                                   100);
+        QCOMPARE(reply.value().count(), 4);
+        QList<QtContacts::QContact> contactsCreated = galera::VCardParser::vcardToContactSync(reply.value());
+        QCOMPARE(contactsCreated.count(), 4);
+
+        // compare result order (different from creation)
+        // Baz Quux, Fone Broke, Foo Bar, Spider Man
+        QCOMPARE(contactsCreated[0].detail<QtContacts::QContactDisplayLabel>().label(), QStringLiteral("Baz Quux"));
+        QCOMPARE(contactsCreated[1].detail<QtContacts::QContactDisplayLabel>().label(), QStringLiteral("Fone Broke"));
+        QCOMPARE(contactsCreated[2].detail<QtContacts::QContactDisplayLabel>().label(), QStringLiteral("Foo Bar"));
+        QCOMPARE(contactsCreated[3].detail<QtContacts::QContactDisplayLabel>().label(), QStringLiteral("Spider Man"));
     }
 };
 
