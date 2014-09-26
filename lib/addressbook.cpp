@@ -1025,7 +1025,7 @@ void AddressBook::checkForEds()
     static int retryCount = 0;
     if (retryCount >= maxRetry) {
         // abort when reach the maxRetry
-        qWarning() << "Fail to start EDS the service will abort";
+        qWarning() << QDateTime::currentDateTime().toString() << "Fail to start EDS the service will abort";
         shutdown();
         return;
     }
