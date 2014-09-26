@@ -175,15 +175,18 @@ void AddressBook::unprepareFolks()
     // remove all contacts
     // flusing any pending notification
     m_notifyContactUpdate->flush();
+    qDebug() << "All notifications flushed";
 
     // notify about contacts removal
     if (m_contacts) {
+        qDebug() << "Will notify about contact removal";
         m_notifyContactUpdate->insertRemovedContacts(m_contacts->keys().toSet());
         m_notifyContactUpdate->flush();
     }
 
     m_ready = false;
 
+    qDebug() << "Will close all views";
     Q_FOREACH(View* view, m_views) {
         view->close();
     }
@@ -194,6 +197,7 @@ void AddressBook::unprepareFolks()
         m_contacts = 0;
     }
 
+    qDebug() << "Will destroy aggregator" << (void*) m_individualAggregator;
     if (m_individualAggregator) {
         g_signal_handler_disconnect(m_individualAggregator,
                                     m_individualsChangedDetailedId);
@@ -202,6 +206,7 @@ void AddressBook::unprepareFolks()
         m_individualsChangedDetailedId = m_notifyIsQuiescentHandlerId = 0;
 
         // make it sync
+        qDebug() << "call unprepare";
         GMainLoop *waitLoop = g_main_loop_new(NULL, FALSE);
         folks_individual_aggregator_unprepare(m_individualAggregator,
                                               AddressBook::folksUnprepared,
@@ -210,29 +215,37 @@ void AddressBook::unprepareFolks()
                                                 AddressBook::folksUnprepareTimeout,
                                                 waitLoop);
         // wait unprepare
+        qDebug() << "call unprepare: wait";
         g_main_loop_run(waitLoop);
+        qDebug() << "call unprepare: done";
         g_main_loop_unref(waitLoop);
         g_source_remove(timeoutId);
         g_clear_object(&m_individualAggregator);
     }
+    qDebug() << "folks unprepared: OK";
 }
 
 void AddressBook::shutdown()
 {
     unprepareFolks();
+    qDebug() << "Folks is not running anymore";
 
     if (m_adaptor) {
         if (m_connection.interface() &&
             m_connection.interface()->isValid()) {
 
+            qDebug() << "Unregister dbus object";
             m_connection.unregisterObject(objectPath());
             if (m_connection.interface()->isServiceRegistered(m_serviceName)) {
+                qDebug() << "Unregister service";
                 m_connection.unregisterService(m_serviceName);
             }
+            qDebug() << "Service unregistered";
         }
 
         delete m_adaptor;
         m_adaptor = 0;
+        qDebug() << "Service will stop";
         Q_EMIT stopped();
     }
 }
@@ -1025,8 +1038,7 @@ void AddressBook::checkForEds()
     if (retryCount >= maxRetry) {
         // abort when reach the maxRetry
         qWarning() << QDateTime::currentDateTime().toString() << "Fail to start EDS the service will abort";
-        // FIXME: Use exit for now, but we should investigate why shutdown is freezing at some cases
-        exit(0);
+        QTimer::singleShot(500, this, SLOT(shutdown()));
         return;
     }
     retryCount++;
