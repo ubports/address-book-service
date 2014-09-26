@@ -87,7 +87,7 @@ private Q_SLOTS:
 
     // WORKAROUND: Check if EDS was running when the service started
     void checkForEds();
-    void reloadFolks();
+    void unprepareFolks();
 
 private:
     FolksIndividualAggregator *m_individualAggregator;
@@ -100,6 +100,7 @@ private:
 
     bool m_edsIsLive;
     bool m_ready;
+    bool m_isAboutToQuit;
     gulong m_individualsChangedDetailedId;
     gulong m_notifyIsQuiescentHandlerId;
     QDBusConnection m_connection;
@@ -130,8 +131,8 @@ private:
     static void quitSignalHandler(int unused);
 
     void prepareFolks();
-    void unprepareFolks();
     void connectWithEDS();
+    void continueShutdown();
     bool registerObject(QDBusConnection &connection);
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
@@ -169,7 +170,6 @@ private:
     static void folksUnprepared(GObject *source,
                                GAsyncResult *res,
                                void *data);
-    static gboolean folksUnprepareTimeout(gpointer data);
     friend class DirtyContactsNotify;
 };
 
