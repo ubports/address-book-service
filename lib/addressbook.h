@@ -131,6 +131,7 @@ private:
     static void quitSignalHandler(int unused);
 
     void prepareFolks();
+    void unprepareEds();
     void connectWithEDS();
     void continueShutdown();
     bool registerObject(QDBusConnection &connection);
@@ -170,6 +171,12 @@ private:
     static void folksUnprepared(GObject *source,
                                GAsyncResult *res,
                                void *data);
+    static void edsUnprepared(GObject *source,
+                              GAsyncResult *res,
+                              void *data);
+    static void edsPrepared(GObject *source,
+                            GAsyncResult *res,
+                            void *data);
     friend class DirtyContactsNotify;
 };
 

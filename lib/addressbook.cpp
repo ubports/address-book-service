@@ -266,6 +266,21 @@ void AddressBook::prepareFolks()
                                         this);
 }
 
+void AddressBook::unprepareEds()
+{
+    FolksBackendStore *store = folks_backend_store_dup();
+    FolksBackend *edsBackend = folks_backend_store_dup_backend_by_name(store, "eds");
+    if (edsBackend && folks_backend_get_is_prepared(edsBackend)) {
+        qDebug() << "WILL unprepare EDS";
+        folks_backend_unprepare(edsBackend,
+                                AddressBook::edsUnprepared,
+                                this);
+    } else {
+        qDebug() << "Eds not prepared will restart folks";
+        prepareFolks();
+    }
+}
+
 void AddressBook::connectWithEDS()
 {
     // we need to keep it update with the EDS dbus service name
@@ -423,9 +438,38 @@ void AddressBook::folksUnprepared(GObject *source, GAsyncResult *res, void *data
     if (self->m_isAboutToQuit) {
         self->continueShutdown();
     } else {
-        qDebug() << "Try reload it again";
-        self->prepareFolks();
+        self->unprepareEds();
     }
+}
+
+void AddressBook::edsUnprepared(GObject *source, GAsyncResult *res, void *data)
+{
+    AddressBook *self = static_cast<AddressBook*>(data);
+    GError *error = NULL;
+    folks_backend_unprepare_finish(FOLKS_BACKEND(source), res, &error);
+    if (error) {
+        qWarning() << "Fail to unprepare eds:" << error->message;
+        g_error_free(error);
+    }
+    qDebug() << "EDS unprepared";
+    folks_backend_prepare(FOLKS_BACKEND(source),
+                          AddressBook::edsPrepared,
+                          data);
+}
+
+void AddressBook::edsPrepared(GObject *source, GAsyncResult *res, void *data)
+{
+    AddressBook *self = static_cast<AddressBook*>(data);
+    GError *error = NULL;
+    folks_backend_prepare_finish(FOLKS_BACKEND(source), res, &error);
+    if (error) {
+        qWarning() << "Fail to prepare eds:" << error->message;
+        g_error_free(error);
+    }
+    // remove reference created by parent function
+    g_object_unref(source);
+    // will start folks again
+    self->prepareFolks();
 }
 
 void AddressBook::createSourceDone(GObject *source,
