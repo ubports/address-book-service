@@ -63,7 +63,7 @@ public:
 
 Q_SIGNALS:
     void stopped();
-    void ready();
+    void readyChanged();
 
 public Q_SLOTS:
     bool start();
@@ -101,6 +101,7 @@ private:
     bool m_edsIsLive;
     bool m_ready;
     bool m_isAboutToQuit;
+    bool m_isAboutToReload;
     gulong m_individualsChangedDetailedId;
     gulong m_notifyIsQuiescentHandlerId;
     QDBusConnection m_connection;
@@ -118,7 +119,6 @@ private:
     // dbus service name
     QString m_serviceName;
 
-
     // Disable copy contructor
     AddressBook(const AddressBook&);
 
@@ -134,6 +134,7 @@ private:
     void unprepareEds();
     void connectWithEDS();
     void continueShutdown();
+    void setIsReady(bool isReady);
     bool registerObject(QDBusConnection &connection);
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);

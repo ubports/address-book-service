@@ -74,7 +74,6 @@ private Q_SLOTS:
     void onContactsAdded(const QStringList &ids);
     void onContactsRemoved(const QStringList &ids);
     void onContactsUpdated(const QStringList &ids);
-    void onServiceReloaded();
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
     void onServiceReady();
     void onVCardsParsed(QList<QtContacts::QContact> contacts);
@@ -88,7 +87,6 @@ private:
     QSharedPointer<QDBusInterface> m_iface;
     QString m_serviceName;
     QSet<QContactRequestData*> m_runningRequests;
-    QQueue<QPointer<QtContacts::QContactAbstractRequest> > m_pendingRequests;
 
     Q_INVOKABLE void initialize();
     Q_INVOKABLE void deinitialize();

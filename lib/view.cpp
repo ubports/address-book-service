@@ -105,6 +105,10 @@ public:
 protected:
     void run()
     {
+        if (!m_allContacts) {
+            return;
+        }
+
         m_allContacts->lock();
 
         // only sort contacts if the contacts was stored in a different order into the contacts map
@@ -164,8 +168,10 @@ View::View(const QString &clause, const QString &sort, const QStringList &source
       m_filterThread(new FilterThread(clause, sort, allContacts)),
       m_adaptor(0)
 {
-    m_filterThread->start();
-    connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
+    if (allContacts) {
+        connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
+        m_filterThread->start();
+    }
 }
 
 View::~View()

@@ -137,15 +137,7 @@ GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
 
 GaleraContactsService::~GaleraContactsService()
 {
-    while(!m_pendingRequests.isEmpty()) {
-        QPointer<QContactAbstractRequest> request = m_pendingRequests.takeFirst();
-        if (request) {
-            request->cancel();
-            request->waitForFinished();
-        }
-    }
     m_runningRequests.clear();
-
     delete m_serviceWatcher;
 }
 
@@ -167,13 +159,8 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
 
 void GaleraContactsService::onServiceReady()
 {
-    m_serviceIsReady = true;
-    while(!m_pendingRequests.isEmpty()) {
-        QPointer<QContactAbstractRequest> request = m_pendingRequests.takeFirst();
-        if (request) {
-            addRequest(request);
-        }
-    }
+    m_serviceIsReady = m_iface.data()->property("isReady").toBool();
+    Q_EMIT serviceChanged();
 }
 
 void GaleraContactsService::initialize()
@@ -184,8 +171,7 @@ void GaleraContactsService::initialize()
                                                                     CPIM_ADDRESSBOOK_IFACE_NAME));
         if (!m_iface->lastError().isValid()) {
             m_serviceIsReady = m_iface.data()->property("isReady").toBool();
-            connect(m_iface.data(), SIGNAL(ready()), this, SLOT(onServiceReady()));
-            connect(m_iface.data(), SIGNAL(reloaded()), this, SLOT(onServiceReloaded()));
+            connect(m_iface.data(), SIGNAL(readyChanged()), this, SLOT(onServiceReady()));
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
@@ -278,6 +264,7 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
             m_runningRequests << data;
 
             QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+            data->updateWatcher(watcher);
             QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                              [=](QDBusPendingCallWatcher *call) {
                                 this->fetchContactsGroupsContinue(data, call);
@@ -761,11 +748,6 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
         return;
     }
 
-    if (!m_serviceIsReady) {
-        m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
-        return;
-    }
-
     Q_ASSERT(request->state() == QContactAbstractRequest::ActiveState);
     switch (request->type()) {
         case QContactAbstractRequest::ContactFetchRequest:
@@ -831,11 +813,6 @@ void GaleraContactsService::onContactsRemoved(const QStringList &ids)
 void GaleraContactsService::onContactsUpdated(const QStringList &ids)
 {
     Q_EMIT contactsUpdated(parseIds(ids));
-}
-
-void GaleraContactsService::onServiceReloaded()
-{
-    Q_EMIT serviceChanged();
 }
 
 } //namespace
