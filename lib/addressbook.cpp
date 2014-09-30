@@ -254,10 +254,6 @@ void AddressBook::prepareFolks()
     m_individualAggregator = folks_individual_aggregator_dup();
     bool ready;
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &ready, NULL);
-    if (ready) {
-        qDebug() << "Folks is already in quiescent mode";
-        AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
-    }
     m_notifyIsQuiescentHandlerId = g_signal_connect(m_individualAggregator,
                                           "notify::is-quiescent",
                                           (GCallback) AddressBook::isQuiescentChanged,
@@ -271,6 +267,10 @@ void AddressBook::prepareFolks()
     folks_individual_aggregator_prepare(m_individualAggregator,
                                         (GAsyncReadyCallback) AddressBook::prepareFolksDone,
                                         this);
+    if (ready) {
+        qDebug() << "Folks is already in quiescent mode";
+        setIsReady(ready);
+    }
 }
 
 void AddressBook::unprepareEds()
@@ -298,6 +298,7 @@ void AddressBook::connectWithEDS()
     if (qEnvironmentVariableIsSet("FOLKS_BACKENDS_ALLOWED")) {
         QString allowedBackends = qgetenv("FOLKS_BACKENDS_ALLOWED");
         if (!allowedBackends.contains("eds")) {
+            m_edsIsLive = true;
             return;
         }
     }
@@ -1014,7 +1015,6 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
 
 void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, AddressBook *self)
 {
-    Q_UNUSED(source);
     Q_UNUSED(param);
     bool ready = false;
     g_object_get(source, "is-quiescent", &ready, NULL);
