@@ -76,7 +76,7 @@ int main(int argc, char** argv)
     }
 
     galera::AddressBook book;
-    QObject::connect(&book, &galera::AddressBook::ready, [&book] () { onServiceReady(&book); });
+    QObject::connect(&book, &galera::AddressBook::readyChanged, [&book] () { onServiceReady(&book); });
     app.connect(&book, SIGNAL(stopped()), SLOT(quit()));
 
     if (book.start()) {

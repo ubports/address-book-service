@@ -5,7 +5,6 @@ start on started dbus and xsession SESSION=ubuntu-touch
 stop on runlevel [06]
 
 respawn
-respawn limit unlimited
 
 pre-start script
     echo "START `date`"
@@ -16,4 +15,4 @@ post-stop script
     echo "STOP `date`"
 end script
 
-exec /usr/lib/arm-linux-gnueabihf/address-book-service/address-book-service
+exec @CMAKE_INSTALL_FULL_LIBEXECDIR@/address-book-service

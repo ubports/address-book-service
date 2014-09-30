@@ -96,6 +96,8 @@ AddressBook::AddressBook(QObject *parent)
       m_notifyContactUpdate(0),
       m_edsIsLive(false),
       m_ready(false),
+      m_isAboutToQuit(false),
+      m_isAboutToReload(false),
       m_individualsChangedDetailedId(0),
       m_notifyIsQuiescentHandlerId(0),
       m_connection(QDBusConnection::sessionBus())
@@ -112,8 +114,14 @@ AddressBook::AddressBook(QObject *parent)
 
 AddressBook::~AddressBook()
 {
-    shutdown();
-    // destructor
+    if (m_individualAggregator) {
+        qWarning() << "Addressbook destructor called while running, you should call shutdown first";
+        shutdown();
+        while (m_adaptor) {
+            QCoreApplication::processEvents();
+        }
+    }
+
     if (m_notifyContactUpdate) {
         delete m_notifyContactUpdate;
         m_notifyContactUpdate = 0;
@@ -176,13 +184,7 @@ void AddressBook::unprepareFolks()
     // flusing any pending notification
     m_notifyContactUpdate->flush();
 
-    // notify about contacts removal
-    if (m_contacts) {
-        m_notifyContactUpdate->insertRemovedContacts(m_contacts->keys().toSet());
-        m_notifyContactUpdate->flush();
-    }
-
-    m_ready = false;
+    setIsReady(false);
 
     Q_FOREACH(View* view, m_views) {
         view->close();
@@ -194,20 +196,31 @@ void AddressBook::unprepareFolks()
         m_contacts = 0;
     }
 
+    qDebug() << "Will destroy aggregator" << (void*) m_individualAggregator;
     if (m_individualAggregator) {
         g_signal_handler_disconnect(m_individualAggregator,
                                     m_individualsChangedDetailedId);
         g_signal_handler_disconnect(m_individualAggregator,
                                     m_notifyIsQuiescentHandlerId);
         m_individualsChangedDetailedId = m_notifyIsQuiescentHandlerId = 0;
-        g_clear_object(&m_individualAggregator);
+
+        // make it sync
+        qDebug() << "call unprepare";
+        folks_individual_aggregator_unprepare(m_individualAggregator,
+                                              AddressBook::folksUnprepared,
+                                              this);
     }
 }
 
 void AddressBook::shutdown()
 {
+    m_isAboutToQuit = true;
     unprepareFolks();
+}
 
+void AddressBook::continueShutdown()
+{
+    qDebug() << "Folks is not running anymore";
     if (m_adaptor) {
         if (m_connection.interface() &&
             m_connection.interface()->isValid()) {
@@ -224,14 +237,23 @@ void AddressBook::shutdown()
     }
 }
 
+void AddressBook::setIsReady(bool isReady)
+{
+    if (isReady != m_ready) {
+        m_ready = isReady;
+        if (m_adaptor) {
+            Q_EMIT readyChanged();
+        }
+    }
+}
+
 void AddressBook::prepareFolks()
 {
+    qDebug() << "Initialize folks";
     m_contacts = new ContactsMap;
     m_individualAggregator = folks_individual_aggregator_dup();
-    g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &m_ready, NULL);
-    if (m_ready) {
-        AddressBook::isQuiescentChanged(G_OBJECT(m_individualAggregator), NULL, this);
-    }
+    gboolean ready;
+    g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &ready, NULL);
     m_notifyIsQuiescentHandlerId = g_signal_connect(m_individualAggregator,
                                           "notify::is-quiescent",
                                           (GCallback) AddressBook::isQuiescentChanged,
@@ -245,6 +267,25 @@ void AddressBook::prepareFolks()
     folks_individual_aggregator_prepare(m_individualAggregator,
                                         (GAsyncReadyCallback) AddressBook::prepareFolksDone,
                                         this);
+    if (ready) {
+        qDebug() << "Folks is already in quiescent mode";
+        setIsReady(ready);
+    }
+}
+
+void AddressBook::unprepareEds()
+{
+    FolksBackendStore *store = folks_backend_store_dup();
+    FolksBackend *edsBackend = folks_backend_store_dup_backend_by_name(store, "eds");
+    if (edsBackend && folks_backend_get_is_prepared(edsBackend)) {
+        qDebug() << "WILL unprepare EDS";
+        folks_backend_unprepare(edsBackend,
+                                AddressBook::edsUnprepared,
+                                this);
+    } else {
+        qDebug() << "Eds not prepared will restart folks";
+        prepareFolks();
+    }
 }
 
 void AddressBook::connectWithEDS()
@@ -257,6 +298,7 @@ void AddressBook::connectWithEDS()
     if (qEnvironmentVariableIsSet("FOLKS_BACKENDS_ALLOWED")) {
         QString allowedBackends = qgetenv("FOLKS_BACKENDS_ALLOWED");
         if (!allowedBackends.contains("eds")) {
+            m_edsIsLive = true;
             return;
         }
     }
@@ -278,7 +320,7 @@ void AddressBook::connectWithEDS()
 
 
     // WORKAROUND: Will ceck for EDS after the service get ready
-    connect(this, SIGNAL(ready()), SLOT(checkForEds()));
+    connect(this, SIGNAL(readyChanged()), SLOT(checkForEds()));
 }
 
 SourceList AddressBook::availableSources(const QDBusMessage &message)
@@ -307,7 +349,6 @@ Source AddressBook::createSource(const QString &sourceId, bool setAsPrimary, con
         personaStoreTypeId = QString::fromUtf8(folks_persona_store_get_type_id(store));
     }
     if (personaStoreTypeId == "dummy") {
-        qDebug() << "Create source on dummy" << sourceId;
         FolksBackendStore *backendStore = folks_backend_store_dup();
         FolksBackend *dummy = folks_backend_store_dup_backend_by_name(backendStore, "dummy");
 
@@ -390,6 +431,53 @@ void AddressBook::removeSourceDone(GObject *source,
     delete rData;
 }
 
+void AddressBook::folksUnprepared(GObject *source, GAsyncResult *res, void *data)
+{
+    AddressBook *self = static_cast<AddressBook*>(data);
+    GError *error = NULL;
+    folks_individual_aggregator_unprepare_finish(FOLKS_INDIVIDUAL_AGGREGATOR(source), res, &error);
+    if (error) {
+        qWarning() << "Fail to unprepare folks:" << error->message;
+        g_error_free(error);
+    }
+    g_clear_object(&self->m_individualAggregator);
+
+    qDebug() << "Folks unprepared" << (void*) self->m_individualAggregator;
+    if (self->m_isAboutToQuit) {
+        self->continueShutdown();
+    } else {
+        self->unprepareEds();
+    }
+}
+
+void AddressBook::edsUnprepared(GObject *source, GAsyncResult *res, void *data)
+{
+    GError *error = NULL;
+    folks_backend_unprepare_finish(FOLKS_BACKEND(source), res, &error);
+    if (error) {
+        qWarning() << "Fail to unprepare eds:" << error->message;
+        g_error_free(error);
+    }
+    qDebug() << "EDS unprepared";
+    folks_backend_prepare(FOLKS_BACKEND(source),
+                          AddressBook::edsPrepared,
+                          data);
+}
+
+void AddressBook::edsPrepared(GObject *source, GAsyncResult *res, void *data)
+{
+    AddressBook *self = static_cast<AddressBook*>(data);
+    GError *error = NULL;
+    folks_backend_prepare_finish(FOLKS_BACKEND(source), res, &error);
+    if (error) {
+        qWarning() << "Fail to prepare eds:" << error->message;
+        g_error_free(error);
+    }
+    // remove reference created by parent function
+    g_object_unref(source);
+    // will start folks again
+    self->prepareFolks();
+}
 
 void AddressBook::createSourceDone(GObject *source,
                                    GAsyncResult *res,
@@ -637,12 +725,7 @@ QString AddressBook::linkContacts(const QStringList &contacts)
 
 View *AddressBook::query(const QString &clause, const QString &sort, const QStringList &sources)
 {
-    // wait for the service be ready for queries
-    while(!m_ready) {
-        QCoreApplication::processEvents();
-    }
-
-    View *view = new View(clause, sort, sources, m_contacts, this);
+    View *view = new View(clause, sort, sources, m_ready ? m_contacts : 0, this);
     m_views << view;
     connect(view, SIGNAL(closed()), this, SLOT(viewClosed()));
     return view;
@@ -660,15 +743,11 @@ void AddressBook::individualChanged(QIndividual *individual)
 
 void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner)
 {
-    qDebug() << name << oldOwner << newOwner;
     if (newOwner.isEmpty()) {
         m_edsIsLive = false;
+        m_isAboutToReload = true;
         qWarning() << "EDS died: restarting service" << m_individualsChangedDetailedId;
-        // reset folks objects
         unprepareFolks();
-        prepareFolks();
-
-        Q_EMIT m_adaptor->reloaded();
     } else {
         m_edsIsLive = true;
     }
@@ -734,7 +813,7 @@ bool AddressBook::unlinkContacts(const QString &parent, const QStringList &conta
 
 bool AddressBook::isReady() const
 {
-    return m_ready;
+    return m_ready && m_edsIsLive;
 }
 
 QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBusMessage &message)
@@ -754,7 +833,6 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
 void AddressBook::updateContactsDone(const QString &contactId,
                                      const QString &error)
 {
-    qDebug() << Q_FUNC_INFO;
     int currentContactIndex = m_updateCommandResult.size() - m_updateCommandPendingContacts.size() - 1;
 
     if (!error.isEmpty()) {
@@ -937,12 +1015,11 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
 
 void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, AddressBook *self)
 {
-    Q_UNUSED(source);
     Q_UNUSED(param);
-
-    g_object_get(source, "is-quiescent", &self->m_ready, NULL);
-    if (self->m_ready && self->m_adaptor) {
-        Q_EMIT self->ready();
+    gboolean ready = false;
+    g_object_get(source, "is-quiescent", &ready, NULL);
+    if (self) {
+        self->setIsReady(ready);
     }
 }
 
@@ -992,27 +1069,31 @@ void AddressBook::handleSigQuit()
 // we will try to reload folks if this happen
 void AddressBook::checkForEds()
 {
+    if (!m_ready) {
+        return;
+    }
+
     // Use maxRetry value to avoid infinite loop
-    static const int maxRerty = 10;
+    static const int maxRetry = 10;
     static int retryCount = 0;
-    if (retryCount >= maxRerty) {
+
+    qDebug() << "Check for EDS attempt number " << retryCount;
+    if (retryCount >= maxRetry) {
+        // abort when reach the maxRetry
+        qWarning() << QDateTime::currentDateTime().toString() << "Fail to start EDS the service will abort";
+        QTimer::singleShot(500, this, SLOT(shutdown()));
         return;
     }
     retryCount++;
 
     if (!m_edsIsLive) {
-        // wait some ms to restart folks, this ms increase 500ms for each retryCount
-        QTimer::singleShot(500 * retryCount, this, SLOT(reloadFolks()));
-        qWarning() << "EDS did not start, trying to reload folks;";
+        // wait some ms to restart folks, this increase 1s for each retryCount
+        m_isAboutToReload = true;
+        QTimer::singleShot(1000 * retryCount, this, SLOT(unprepareFolks()));
+        qWarning() << QDateTime::currentDateTime().toString() << "EDS did not start, trying to reload folks";
     } else {
         retryCount = 0;
     }
-}
-
-void AddressBook::reloadFolks()
-{
-    unprepareFolks();
-    prepareFolks();
 }
 
 } //namespace

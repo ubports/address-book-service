@@ -61,7 +61,6 @@ void QContactRequestData::cancel()
     if (m_eventLoop) {
         m_eventLoop->quit();
     }
-
 }
 
 void QContactRequestData::wait()

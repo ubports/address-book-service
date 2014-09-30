@@ -50,8 +50,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    <signal name=\"asyncOperationResult\">\n"
 "      <arg direction=\"out\" type=\"a(ss)\" name=\"errorMap\"/>\n"
 "    </signal>\n"
-"    <signal name=\"ready\"/>\n"
-"    <signal name=\"reloaded\"/>\n"
+"    <signal name=\"readyChanged\"/>\n"
 "    <method name=\"ping\">\n"
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
@@ -106,7 +105,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    </method>\n"
 "  </interface>\n"
         "")
-    Q_PROPERTY(bool isReady READ isReady NOTIFY ready)
+    Q_PROPERTY(bool isReady READ isReady NOTIFY readyChanged)
 public:
     AddressBookAdaptor(const QDBusConnection &connection, AddressBook *parent);
     virtual ~AddressBookAdaptor();
@@ -131,7 +130,7 @@ Q_SIGNALS:
     void contactsRemoved(const QStringList &ids);
     void contactsUpdated(const QStringList &ids);
     void asyncOperationResult(QMap<QString, QString> errors);
-    void ready();
+    void readyChanged();
     void reloaded();
 
 private:

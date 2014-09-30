@@ -4,7 +4,7 @@ set(QCONTACTS_BACKEND qtcontacts_galera)
 
 set(QCONTACTS_BACKEND_SRCS
     qcontact-backend.cpp
-    qcontact-engineid.cpp    
+    qcontact-engineid.cpp
     qcontactfetchrequest-data.cpp
     qcontactfetchbyidrequest-data.cpp
     qcontactremoverequest-data.cpp

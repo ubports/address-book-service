@@ -101,8 +101,7 @@ static QContact parseSource(const galera::Source &source, const QString &manager
 namespace galera
 {
 GaleraContactsService::GaleraContactsService(const QString &managerUri)
-    : m_selfContactId(),
-      m_managerUri(managerUri),
+    : m_managerUri(managerUri),
       m_serviceIsReady(false),
       m_iface(0)
 {
@@ -131,23 +130,14 @@ GaleraContactsService::GaleraContactsService(const QString &managerUri)
 }
 
 GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
-    : m_selfContactId(other.m_selfContactId),
-      m_managerUri(other.m_managerUri),
+    : m_managerUri(other.m_managerUri),
       m_iface(other.m_iface)
 {
 }
 
 GaleraContactsService::~GaleraContactsService()
 {
-    while(!m_pendingRequests.isEmpty()) {
-        QPointer<QContactAbstractRequest> request = m_pendingRequests.takeFirst();
-        if (request) {
-            request->cancel();
-            request->waitForFinished();
-        }
-    }
     m_runningRequests.clear();
-
     delete m_serviceWatcher;
 }
 
@@ -157,9 +147,11 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
     if (name == m_serviceName) {
         if (!newOwner.isEmpty()) {
             // service appear
+            qDebug() << "Service appeared";
             initialize();
         } else if (!m_iface.isNull()) {
             // lost service
+            qDebug() << "Service disappeared";
             deinitialize();
         }
     }
@@ -167,13 +159,8 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
 
 void GaleraContactsService::onServiceReady()
 {
-    m_serviceIsReady = true;
-    while(!m_pendingRequests.isEmpty()) {
-        QPointer<QContactAbstractRequest> request = m_pendingRequests.takeFirst();
-        if (request) {
-            addRequest(request);
-        }
-    }
+    m_serviceIsReady = m_iface.data()->property("isReady").toBool();
+    Q_EMIT serviceChanged();
 }
 
 void GaleraContactsService::initialize()
@@ -184,12 +171,10 @@ void GaleraContactsService::initialize()
                                                                     CPIM_ADDRESSBOOK_IFACE_NAME));
         if (!m_iface->lastError().isValid()) {
             m_serviceIsReady = m_iface.data()->property("isReady").toBool();
-            connect(m_iface.data(), SIGNAL(ready()), this, SLOT(onServiceReady()));
-            connect(m_iface.data(), SIGNAL(reloaded()), this, SIGNAL(serviceChanged()));
+            connect(m_iface.data(), SIGNAL(readyChanged()), this, SLOT(onServiceReady()));
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
-
             Q_EMIT serviceChanged();
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();
@@ -200,19 +185,14 @@ void GaleraContactsService::initialize()
 
 void GaleraContactsService::deinitialize()
 {
-    Q_FOREACH(QContactRequestData* rData, m_runningRequests) {
-        rData->cancel();
-        rData->request()->waitForFinished();
-        rData->finish(QContactManager::UnspecifiedError);
-    }
-
-    if (!m_iface.isNull()) {
-        m_id.clear();
-        Q_EMIT serviceChanged();
+    // wait until all request finish
+    while (m_runningRequests.size()) {
+        QCoreApplication::processEvents();
     }
 
     // this will make the service re-initialize
     m_iface->call("ping");
+
     if (m_iface->lastError().isValid()) {
         qWarning() << m_iface->lastError();
         m_iface.clear();
@@ -220,6 +200,8 @@ void GaleraContactsService::deinitialize()
     } else {
         m_serviceIsReady = m_iface.data()->property("isReady").toBool();
     }
+
+    Q_EMIT serviceChanged();
 }
 
 bool GaleraContactsService::isOnline() const
@@ -282,6 +264,7 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
             m_runningRequests << data;
 
             QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+            data->updateWatcher(watcher);
             QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                              [=](QDBusPendingCallWatcher *call) {
                                 this->fetchContactsGroupsContinue(data, call);
@@ -762,11 +745,6 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
     if (!isOnline()) {
         qWarning() << "Server is not online";
         QContactManagerEngine::updateRequestState(request, QContactAbstractRequest::FinishedState);
-        return;
-    }
-
-    if (!m_serviceIsReady) {
-        m_pendingRequests << QPointer<QtContacts::QContactAbstractRequest>(request);
         return;
     }
 

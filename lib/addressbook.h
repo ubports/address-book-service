@@ -63,7 +63,7 @@ public:
 
 Q_SIGNALS:
     void stopped();
-    void ready();
+    void readyChanged();
 
 public Q_SLOTS:
     bool start();
@@ -87,7 +87,7 @@ private Q_SLOTS:
 
     // WORKAROUND: Check if EDS was running when the service started
     void checkForEds();
-    void reloadFolks();
+    void unprepareFolks();
 
 private:
     FolksIndividualAggregator *m_individualAggregator;
@@ -100,6 +100,8 @@ private:
 
     bool m_edsIsLive;
     bool m_ready;
+    bool m_isAboutToQuit;
+    bool m_isAboutToReload;
     gulong m_individualsChangedDetailedId;
     gulong m_notifyIsQuiescentHandlerId;
     QDBusConnection m_connection;
@@ -117,7 +119,6 @@ private:
     // dbus service name
     QString m_serviceName;
 
-
     // Disable copy contructor
     AddressBook(const AddressBook&);
 
@@ -130,8 +131,10 @@ private:
     static void quitSignalHandler(int unused);
 
     void prepareFolks();
-    void unprepareFolks();
+    void unprepareEds();
     void connectWithEDS();
+    void continueShutdown();
+    void setIsReady(bool isReady);
     bool registerObject(QDBusConnection &connection);
     QString removeContact(FolksIndividual *individual);
     QString addContact(FolksIndividual *individual);
@@ -166,6 +169,15 @@ private:
     static void removeSourceDone(GObject *source,
                                  GAsyncResult *res,
                                  void *data);
+    static void folksUnprepared(GObject *source,
+                               GAsyncResult *res,
+                               void *data);
+    static void edsUnprepared(GObject *source,
+                              GAsyncResult *res,
+                              void *data);
+    static void edsPrepared(GObject *source,
+                            GAsyncResult *res,
+                            void *data);
     friend class DirtyContactsNotify;
 };
 
