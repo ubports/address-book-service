@@ -1,3 +1,13 @@
+address-book-service (0.1.1+14.10.20140930-0ubuntu1) 14.09; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Renato Araujo Oliveira Filho ]
+  * Correct release folks if eds die. (LP: #1347557)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 30 Sep 2014 17:03:07 +0000
+
 address-book-service (0.1.1+14.10.20140912-0ubuntu1) utopic; urgency=low
 
   [ Ubuntu daily release ]
