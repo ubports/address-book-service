@@ -252,7 +252,7 @@ void AddressBook::prepareFolks()
     qDebug() << "Initialize folks";
     m_contacts = new ContactsMap;
     m_individualAggregator = folks_individual_aggregator_dup();
-    bool ready;
+    gboolean ready;
     g_object_get(G_OBJECT(m_individualAggregator), "is-quiescent", &ready, NULL);
     m_notifyIsQuiescentHandlerId = g_signal_connect(m_individualAggregator,
                                           "notify::is-quiescent",
@@ -1016,9 +1016,11 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
 void AddressBook::isQuiescentChanged(GObject *source, GParamSpec *param, AddressBook *self)
 {
     Q_UNUSED(param);
-    bool ready = false;
+    gboolean ready = false;
     g_object_get(source, "is-quiescent", &ready, NULL);
-    self->setIsReady(ready);
+    if (self) {
+        self->setIsReady(ready);
+    }
 }
 
 void AddressBook::quitSignalHandler(int)
