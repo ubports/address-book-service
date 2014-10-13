@@ -339,7 +339,6 @@ private Q_SLOTS:
         QCOMPARE(expectedContacts.size(), 0);
     }
 
-
     void testContactUpdateDisplayName()
     {
         // create a contact ""

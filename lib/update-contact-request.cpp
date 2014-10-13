@@ -335,24 +335,17 @@ void UpdateContactRequest::updateBirthday()
     }
 }
 
-void UpdateContactRequest::updateFullName()
+void UpdateContactRequest::updateFullName(const QString &fullName)
 {
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeDisplayLabel, m_currentPersonaIndex, 0);
-    QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeDisplayLabel, m_currentPersonaIndex, 0);
-
     if (m_currentPersona &&
         FOLKS_IS_NAME_DETAILS(m_currentPersona) &&
-        !isEqual(originalDetails, newDetails)) {
+        originalDetails.size() > 0 &&
+        (originalDetails[0].value(QContactDisplayLabel::FieldLabel).toString() != fullName)) {
         qDebug() << "Full Name diff:"
                  << "\n\t" << originalDetails.size() << (originalDetails.size() > 0 ? originalDetails[0] : QContactDetail()) << "\n"
-                 << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
+                 << "\n\t" << fullName;
         //Only supports one fullName
-        QString fullName;
-        if (newDetails.count()) {
-            QContactDisplayLabel label = static_cast<QContactDisplayLabel>(newDetails[0]);
-            fullName = label.label();
-        }
-
         QByteArray fullNameUtf8 = fullName.toUtf8();
         folks_name_details_change_full_name(FOLKS_NAME_DETAILS(m_currentPersona),
                                             fullNameUtf8.constData(),
@@ -806,7 +799,8 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         self->updateBirthday();
         break;
     case QContactDetail::TypeDisplayLabel:
-        self->updateFullName();
+        qDebug() << "will update full name" << QIndividual::displayName(self->m_newContact);
+        self->updateFullName(QIndividual::displayName(self->m_newContact));
         break;
     case QContactDetail::TypeEmailAddress:
         //WORKAROUND: Folks automatically add online accounts based on e-mail address
