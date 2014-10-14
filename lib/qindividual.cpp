@@ -880,7 +880,13 @@ void QIndividual::updateContact(QContact *contact) const
         personaIndex++;
     }
 
-    QString label = displayName(*contact);
+    // Display label is mandatory
+    QContactDisplayLabel dLabel = contact->detail<QContactDisplayLabel>();
+    if (dLabel.label().isEmpty()) {
+        dLabel.setLabel(displayName(*contact));
+        contact->saveDetail(&dLabel);
+    }
+    QString label = dLabel.label();
     // WORKAROUND: add a extra tag to help on alphabetic list
     // On the Ubuntu Address Book, contacts which the name starts with
     // number or symbol should be moved to bottom of the list. Since the standard
@@ -1481,10 +1487,6 @@ QString QIndividual::displayName(const QContact &contact)
     if (fallbackLabel.isEmpty()) {
         QContactOnlineAccount account = contact.detail<QContactOnlineAccount>();
         fallbackLabel = account.accountUri().trimmed();
-    }
-
-    if (fallbackLabel.isEmpty()) {
-        fallbackLabel = "";
     }
 
     return fallbackLabel;
