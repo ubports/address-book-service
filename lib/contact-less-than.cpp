@@ -27,6 +27,8 @@
 #include <QtCore/QDebug>
 
 #include <QtContacts/QContactManagerEngine>
+#include <QtContacts/QContactDisplayLabel>
+#include <QtContacts/QContactTag>
 
 using namespace QtContacts;
 
@@ -39,9 +41,16 @@ ContactLessThan::ContactLessThan(const galera::SortClause &sortClause)
 
 bool ContactLessThan::operator()(ContactEntry *entryA, ContactEntry *entryB)
 {
-    return QContactManagerEngine::compareContact(entryA->individual()->contact(),
+    qDebug() << "Compare" << m_sortClause.toContactSortOrder();
+    int r = QContactManagerEngine::compareContact(entryA->individual()->contact(),
                                                  entryB->individual()->contact(),
-                                                 m_sortClause.toContactSortOrder()) < 0;
+                                                 m_sortClause.toContactSortOrder());
+    qDebug() << "A:" << entryA->individual()->contact().detail<QContactDisplayLabel>().label()
+                     << "\t" << entryA->individual()->contact().detail<QContactTag>().tag();
+    qDebug() << "B:" << entryB->individual()->contact().detail<QContactDisplayLabel>().label()
+                     << "\t" << entryB->individual()->contact().detail<QContactTag>().tag();
+    qDebug() << "A < B" << r;
+    return (r <= 0);
 }
 
 } // namespace
