@@ -27,8 +27,6 @@
 #include <QtCore/QDebug>
 
 #include <QtContacts/QContactManagerEngine>
-#include <QtContacts/QContactDisplayLabel>
-#include <QtContacts/QContactTag>
 
 using namespace QtContacts;
 
