@@ -127,11 +127,6 @@ void ContactsMap::updatePosition(ContactEntry *entry)
             m_contacts.move(oldPos, m_contacts.size() -1);
         }
     }
-
-    qDebug() << "NEW CONTACT LIST";
-    Q_FOREACH(ContactEntry *entry, m_contacts) {
-        qDebug() << entry->individual()->contact().detail<QContactDisplayLabel>().label();
-    }
 }
 
 int ContactsMap::size() const

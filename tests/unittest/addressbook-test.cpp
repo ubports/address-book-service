@@ -21,7 +21,6 @@
 #include "common/dbus-service-defs.h"
 #include "common/vcard-parser.h"
 
-
 #include <QObject>
 #include <QtDBus>
 #include <QtTest>
@@ -171,6 +170,7 @@ private Q_SLOTS:
         QCOMPARE(src.displayLabel(), QStringLiteral("Dummy personas"));
         QCOMPARE(src.isReadOnly(), false);
     }
+
 
     void testCreateContact()
     {

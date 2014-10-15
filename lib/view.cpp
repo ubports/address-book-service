@@ -227,7 +227,6 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
         startIndex = 0;
     }
 
-    qDebug() << "NEW CONTACT LIST: VIEW";
     Q_FOREACH(ContactEntry *entry, entries) {
         qDebug() << entry->individual()->contact().detail<QContactDisplayLabel>().label();
     }
