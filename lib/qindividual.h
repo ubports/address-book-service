@@ -56,6 +56,7 @@ public:
     void flush();
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
+    static QString displayName(const QtContacts::QContact &contact);
 
     // enable or disable auto-link
     static void enableAutoLink(bool flag);
@@ -133,7 +134,9 @@ private:
     static void createPersonaForDetailDone(GObject *detail, GAsyncResult *result, gpointer userdata);
 
     // translate details
-    static GHashTable *parseFullNameDetails     (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
+    static GHashTable *parseFullNameDetails     (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QString &fallback);
     static GHashTable *parseNicknameDetails     (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
     static GHashTable *parseNameDetails         (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);
     static GHashTable *parseGenderDetails       (GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails);

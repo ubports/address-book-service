@@ -89,7 +89,7 @@ private:
     void updateAddress();
     void updateAvatar();
     void updateBirthday();
-    void updateFullName();
+    void updateFullName(const QString &fullName);
     void updateEmail();
     void updateName();
     void updateNickname();
