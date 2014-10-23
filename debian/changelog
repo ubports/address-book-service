@@ -1,3 +1,14 @@
+address-book-service (0.1.1+14.10.20141023~rtm-0ubuntu1) 14.09; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Renato Araujo Oliveira Filho ]
+  * Make sure that the full name always get updated with some value.
+    (LP: #1380094)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 23 Oct 2014 16:19:48 +0000
+
 address-book-service (0.1.1+14.10.20140930-0ubuntu1) 14.09; urgency=low
 
   [ Ubuntu daily release ]
