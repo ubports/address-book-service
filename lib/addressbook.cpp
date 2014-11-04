@@ -69,10 +69,12 @@ public:
 class CreateSourceData
 {
 public:
+    QString m_sourceId;
     QString m_sourceName;
     bool m_setAsPrimary;
     galera::AddressBook *m_addressbook;
     QDBusMessage m_message;
+    ESource *m_source;
 };
 
 class RemoveSourceData
@@ -81,6 +83,32 @@ public:
     galera::AddressBook *m_addressbook;
     QDBusMessage m_message;
 };
+
+ESource* create_esource_from_data(const CreateSourceData &data, ESourceRegistry **registry)
+{
+    GError *error = NULL;
+    ESource *source = e_source_new_with_uid(data.m_sourceId.toUtf8().data(), NULL, &error);
+    if (error) {
+        qWarning() << "Fail to create source" << error->message;
+        g_error_free(error);
+        return 0;
+    }
+
+    e_source_set_parent(source, "local-stub");
+    e_source_set_display_name(source, data.m_sourceName.toUtf8().data());
+    ESourceAddressBook *ext = E_SOURCE_ADDRESS_BOOK(e_source_get_extension(source, E_SOURCE_EXTENSION_ADDRESS_BOOK));
+    e_source_backend_set_backend_name(E_SOURCE_BACKEND(ext), "local");
+
+    *registry = e_source_registry_new_sync(NULL, &error);
+    if (error) {
+        qWarning() << "Fail to change default contact address book" << error->message;
+        g_error_free(error);
+        g_object_unref(source);
+        return 0;
+    }
+
+    return source;
+}
 
 }
 
@@ -335,12 +363,12 @@ Source AddressBook::source(const QDBusMessage &message)
     return Source();
 }
 
-Source AddressBook::createSource(const QString &sourceId, bool setAsPrimary, const QDBusMessage &message)
+Source AddressBook::createSource(const QString &sourceName, bool setAsPrimary, const QDBusMessage &message)
 {
     CreateSourceData *data = new CreateSourceData;
     data->m_addressbook = this;
     data->m_message = message;
-    data->m_sourceName = sourceId;
+    data->m_sourceName = sourceName;
     data->m_setAsPrimary = setAsPrimary;
 
     FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
@@ -359,22 +387,37 @@ Source AddressBook::createSource(const QString &sourceId, bool setAsPrimary, con
                                                        NULL, NULL, NULL, NULL, NULL, NULL);
 
         gee_collection_add_all(GEE_COLLECTION(storesIds), GEE_COLLECTION(storesKeys));
-        gee_collection_add(GEE_COLLECTION(storesIds), sourceId.toUtf8().constData());
+        gee_collection_add(GEE_COLLECTION(storesIds), sourceName.toUtf8().constData());
         folks_backend_set_persona_stores(dummy, storesIds);
 
         g_object_unref(storesIds);
         g_object_unref(backendStore);
         g_object_unref(dummy);
 
-        Source src(sourceId, sourceId, false, false);
+        Source src(sourceName, sourceName, false, false);
         QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(src));
         QDBusConnection::sessionBus().send(reply);
     } else if (personaStoreTypeId == "eds") {
-        edsf_persona_store_create_address_book(sourceId.toUtf8().data(),
-                                               (GAsyncReadyCallback) AddressBook::createSourceDone,
-                                               data);
+        data->m_sourceId = QUuid::createUuid().toString().replace("{", "_").replace("}", "_");
+        ESourceRegistry *registry = NULL;
+        ESource *source = create_esource_from_data(*data, &registry);
+        if (source) {
+            data->m_source = source;
+            e_source_registry_commit_source(registry,
+                                            source,
+                                            NULL,
+                                            (GAsyncReadyCallback) AddressBook::createSourceDone,
+                                            data);
+        } else {
+            delete data;
+            QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(Source()));
+            QDBusConnection::sessionBus().send(reply);
+        }
     } else {
         qWarning() << "Not supported, create sources on persona store with type id:" << personaStoreTypeId;
+        delete data;
+        QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(Source()));
+        QDBusConnection::sessionBus().send(reply);
     }
     return Source();
 }
@@ -486,36 +529,18 @@ void AddressBook::createSourceDone(GObject *source,
     CreateSourceData *cData = static_cast<CreateSourceData*>(data);
     GError *error = 0;
     Source src;
-    edsf_persona_store_create_address_book_finish(res, &error);
+    e_source_registry_commit_source_finish(E_SOURCE_REGISTRY(source), res, &error);
     if (error) {
         qWarning() << "Fail to create source" << error->message;
         g_error_free(error);
     } else {
-        src = Source(cData->m_sourceName, cData->m_sourceName, false, cData->m_setAsPrimary);
+        // set as primary if necessary
         if (cData->m_setAsPrimary) {
-            ESourceRegistry *r = e_source_registry_new_sync(NULL, &error);
-            if (error) {
-                qWarning() << "Fail to change default contact address book" << error->message;
-                g_error_free(error);
-            } else {
-                ESource *edsSource = 0;
-                GList *sources = e_source_registry_list_sources(r, E_SOURCE_EXTENSION_ADDRESS_BOOK);
-                for(GList *i = sources; i != -0; i = sources->next) {
-                    edsSource = E_SOURCE(i->data);
-                    if (strcmp(cData->m_sourceName.toUtf8().constData(), e_source_get_uid(edsSource)) == 0) {
-                        break;
-                    }
-                }
-                if (edsSource) {
-                    e_source_registry_set_default_address_book(r, edsSource);
-                } else {
-                    qWarning() << "Fail to find source:" << cData->m_sourceName;
-                }
-                g_list_free_full(sources, g_object_unref);
-            }
-            g_object_unref(r);
+            e_source_registry_set_default_address_book(E_SOURCE_REGISTRY(source), cData->m_source);
         }
+        src = Source(cData->m_sourceId, cData->m_sourceName, false, cData->m_setAsPrimary);
     }
+    g_object_unref(source);
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
     QDBusConnection::sessionBus().send(reply);
     delete cData;
@@ -630,7 +655,6 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             }
 
             result << Source(id, displayName, !canWrite, isPrimary);
-
             g_object_unref(store);
         }
 
