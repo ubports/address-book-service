@@ -521,32 +521,32 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona 
         QContactAddress address;
         const char *field = folks_postal_address_get_country(addr);
         if (field && strlen(field)) {
-            address.setCountry(QString::fromUtf8(field));
+            address.setCountry(QString::fromUtf8(field).trimmed().remove("\n"));
         }
 
         field = folks_postal_address_get_locality(addr);
         if (field && strlen(field)) {
-            address.setLocality(QString::fromUtf8(field));
+            address.setLocality(QString::fromUtf8(field).trimmed().remove("\n"));
         }
 
         field = folks_postal_address_get_po_box(addr);
         if (field && strlen(field)) {
-            address.setPostOfficeBox(QString::fromUtf8(field));
+            address.setPostOfficeBox(QString::fromUtf8(field).trimmed().remove("\n"));
         }
 
         field = folks_postal_address_get_postal_code(addr);
         if (field && strlen(field)) {
-            address.setPostcode(QString::fromUtf8(field));
+            address.setPostcode(QString::fromUtf8(field).trimmed().remove("\n"));
         }
 
         field = folks_postal_address_get_region(addr);
         if (field && strlen(field)) {
-            address.setRegion(QString::fromUtf8(field));
+            address.setRegion(QString::fromUtf8(field).trimmed().remove("\n"));
         }
 
         field = folks_postal_address_get_street(addr);
         if (field && strlen(field)) {
-            address.setStreet(QString::fromUtf8(field));
+            address.setStreet(QString::fromUtf8(field).remove("\n"));
         }
 
         bool isPref = false;
