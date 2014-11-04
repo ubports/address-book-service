@@ -546,7 +546,7 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona 
 
         field = folks_postal_address_get_street(addr);
         if (field && strlen(field)) {
-            address.setStreet(QString::fromUtf8(field).remove("\n"));
+            address.setStreet(QString::fromUtf8(field).trimmed().remove("\n"));
         }
 
         bool isPref = false;
