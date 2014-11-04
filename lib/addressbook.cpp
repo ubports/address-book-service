@@ -429,19 +429,30 @@ void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &mess
     bool error = false;
     if (backend) {
         GeeMap *storesMap = folks_backend_get_persona_stores(backend);
-        if (gee_map_has_key(storesMap, sourceId.toUtf8().constData())) {
-            EdsfPersonaStore *ps = EDSF_PERSONA_STORE(gee_map_get(storesMap, sourceId.toUtf8().constData()));
-
-            RemoveSourceData *rData = new RemoveSourceData;
-            rData->m_addressbook = this;
-            rData->m_message = message;
-            edsf_persona_store_remove_address_book(ps, AddressBook::removeSourceDone, rData);
+        GeeCollection *stores = gee_map_get_values(storesMap);
+        GeeIterator *i = gee_iterable_iterator(GEE_ITERABLE(stores));
+        RemoveSourceData *rData = 0;
+        while (gee_iterator_next(i)) {
+            FolksPersonaStore *ps = FOLKS_PERSONA_STORE(gee_iterator_get(i));
+            // We need to compare using source name due the missing API to handle sources diff from contacts
+            if (g_strcmp0(folks_persona_store_get_display_name(ps), sourceId.toUtf8().constData()) == 0) {
+                rData = new RemoveSourceData;
+                rData->m_addressbook = this;
+                rData->m_message = message;
+                edsf_persona_store_remove_address_book(EDSF_PERSONA_STORE(ps), AddressBook::removeSourceDone, rData);
+                g_object_unref(ps);
+                break;
+            }
             g_object_unref(ps);
-        } else {
+        }
+
+        g_object_unref(backend);
+        g_object_unref(stores);
+
+        if (!rData) {
             qWarning() << "Source not found to remove:" << sourceId;
             error = true;
         }
-        g_object_unref(backend);
     } else {
         qWarning() << "Fail to create eds backend during the source removal:" << sourceId;
         error = true;
