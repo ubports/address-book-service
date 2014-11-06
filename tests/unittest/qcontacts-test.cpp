@@ -489,6 +489,26 @@ private Q_SLOTS:
         }
         QCOMPARE(address.size(), 0);
     }
+
+    /*
+     * Test saving a contact with a multi line field
+     * BUG: #240587
+     */
+    void testFieldWithNewLineChar()
+    {
+        // create a contact
+        QContact contact = testContact();
+        QContactAddress addr;
+        addr.setCountry("Line1\nLine2\r\nLine3");
+        contact.saveDetail(&addr);
+        QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+        QTRY_COMPARE(spyContactAdded.count(), 1);
+
+        addr = contact.detail<QContactAddress>();
+        QCOMPARE(addr.country(), QStringLiteral("Line1Line2Line3"));
+    }
 };
 
 QTEST_MAIN(QContactsTest)

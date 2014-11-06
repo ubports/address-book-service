@@ -168,6 +168,8 @@ private:
     static void folksIndividualChanged          (FolksIndividual *individual,
                                                  GParamSpec *pspec,
                                                  QIndividual *self);
+
+    static QString qStringFromGChar             (const gchar *str);
 };
 
 } //namespace

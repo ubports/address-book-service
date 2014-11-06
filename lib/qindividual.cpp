@@ -230,23 +230,23 @@ QContactDetail QIndividual::getPersonaName(FolksPersona *persona, int index) con
     if (sn) {
         const char *name = folks_structured_name_get_given_name(sn);
         if (name && strlen(name)) {
-            detail.setFirstName(QString::fromUtf8(name));
+            detail.setFirstName(qStringFromGChar(name));
         }
         name = folks_structured_name_get_additional_names(sn);
         if (name && strlen(name)) {
-            detail.setMiddleName(QString::fromUtf8(name));
+            detail.setMiddleName(qStringFromGChar(name));
         }
         name = folks_structured_name_get_family_name(sn);
         if (name && strlen(name)) {
-            detail.setLastName(QString::fromUtf8(name));
+            detail.setLastName(qStringFromGChar(name));
         }
         name = folks_structured_name_get_prefixes(sn);
         if (name && strlen(name)) {
-            detail.setPrefix(QString::fromUtf8(name));
+            detail.setPrefix(qStringFromGChar(name));
         }
         name = folks_structured_name_get_suffixes(sn);
         if (name && strlen(name)) {
-            detail.setSuffix(QString::fromUtf8(name));
+            detail.setSuffix(qStringFromGChar(name));
         }
         detail.setDetailUri(QString("%1.1").arg(index));
     }
@@ -262,7 +262,7 @@ QtContacts::QContactDetail QIndividual::getPersonaFullName(FolksPersona *persona
     QContactDisplayLabel detail;
     const gchar *fullName = folks_name_details_get_full_name(FOLKS_NAME_DETAILS(persona));
     if (fullName) {
-        detail.setLabel(QString::fromUtf8(fullName));
+        detail.setLabel(qStringFromGChar(fullName));
         detail.setDetailUri(QString("%1.1").arg(index));
     }
 
@@ -278,7 +278,7 @@ QtContacts::QContactDetail QIndividual::getPersonaNickName(FolksPersona *persona
     QContactNickname detail;
     const gchar* nickname = folks_name_details_get_nickname(FOLKS_NAME_DETAILS(persona));
     if (nickname && strlen(nickname)) {
-        detail.setNickname(QString::fromUtf8(nickname));
+        detail.setNickname(qStringFromGChar(nickname));
         detail.setDetailUri(QString("%1.1").arg(index));
     }
     return detail;
@@ -315,6 +315,11 @@ void QIndividual::folksIndividualChanged(FolksIndividual *individual,
         self->notifyUpdate();
         self->m_contactLock.unlock();
     }
+}
+
+QString QIndividual::qStringFromGChar(const gchar *str)
+{
+    return QString::fromUtf8(str).remove(QRegExp("[\r\n]"));
 }
 
 QtContacts::QContactDetail QIndividual::getPersonaPhoto(FolksPersona *persona, int index) const
@@ -399,15 +404,15 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaRoles(FolksPersona *per
         QContactOrganization org;
         QString field;
 
-        field = QString::fromUtf8(folks_role_get_organisation_name(role));
+        field = qStringFromGChar(folks_role_get_organisation_name(role));
         if (!field.isEmpty()) {
             org.setName(field);
         }
-        field = QString::fromUtf8(folks_role_get_title(role));
+        field = qStringFromGChar(folks_role_get_title(role));
         if (!field.isEmpty()) {
             org.setTitle(field);
         }
-        field = QString::fromUtf8(folks_role_get_role(role));
+        field = qStringFromGChar(folks_role_get_role(role));
         if (!field.isEmpty()) {
             org.setRole(field);
         }
@@ -447,7 +452,7 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaEmails(FolksPersona *pe
         const gchar *email = (const gchar*) folks_abstract_field_details_get_value(fd);
 
         QContactEmailAddress addr;
-        addr.setEmailAddress(QString::fromUtf8(email));
+        addr.setEmailAddress(qStringFromGChar(email));
         bool isPref = false;
         DetailContextParser::parseParameters(addr, fd, &isPref);
         addr.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
@@ -483,7 +488,7 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaPhones(FolksPersona *pe
         const gchar *phone = (const char*) folks_abstract_field_details_get_value(fd);
 
         QContactPhoneNumber number;
-        number.setNumber(QString::fromUtf8(phone));
+        number.setNumber(qStringFromGChar(phone));
         bool isPref = false;
         DetailContextParser::parseParameters(number, fd, &isPref);
         number.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
@@ -521,32 +526,32 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaAddresses(FolksPersona 
         QContactAddress address;
         const char *field = folks_postal_address_get_country(addr);
         if (field && strlen(field)) {
-            address.setCountry(QString::fromUtf8(field).trimmed().remove("\n"));
+            address.setCountry(qStringFromGChar(field));
         }
 
         field = folks_postal_address_get_locality(addr);
         if (field && strlen(field)) {
-            address.setLocality(QString::fromUtf8(field).trimmed().remove("\n"));
+            address.setLocality(qStringFromGChar(field));
         }
 
         field = folks_postal_address_get_po_box(addr);
         if (field && strlen(field)) {
-            address.setPostOfficeBox(QString::fromUtf8(field).trimmed().remove("\n"));
+            address.setPostOfficeBox(qStringFromGChar(field));
         }
 
         field = folks_postal_address_get_postal_code(addr);
         if (field && strlen(field)) {
-            address.setPostcode(QString::fromUtf8(field).trimmed().remove("\n"));
+            address.setPostcode(qStringFromGChar(field));
         }
 
         field = folks_postal_address_get_region(addr);
         if (field && strlen(field)) {
-            address.setRegion(QString::fromUtf8(field).trimmed().remove("\n"));
+            address.setRegion(qStringFromGChar(field));
         }
 
         field = folks_postal_address_get_street(addr);
         if (field && strlen(field)) {
-            address.setStreet(QString::fromUtf8(field).trimmed().remove("\n"));
+            address.setStreet(qStringFromGChar(field));
         }
 
         bool isPref = false;
@@ -594,8 +599,8 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *perso
             }
 
             QContactOnlineAccount account;
-            account.setAccountUri(QString::fromUtf8(uri));
-            int protocolId = DetailContextParser::accountProtocolFromString(QString::fromUtf8(key));
+            account.setAccountUri(qStringFromGChar(uri));
+            int protocolId = DetailContextParser::accountProtocolFromString(qStringFromGChar(key));
             account.setProtocol(static_cast<QContactOnlineAccount::Protocol>(protocolId));
 
             bool isPref = false;
@@ -636,7 +641,7 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaUrls(FolksPersona *pers
         const char *url = (const char*) folks_abstract_field_details_get_value(fd);
 
         QContactUrl detail;
-        detail.setUrl(QString::fromUtf8(url));
+        detail.setUrl(qStringFromGChar(url));
         bool isPref = false;
         DetailContextParser::parseParameters(detail, fd, &isPref);
         detail.setDetailUri(QString("%1.%2").arg(index).arg(fieldIndex++));
@@ -780,7 +785,7 @@ void QIndividual::updatePersonas()
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
     while(gee_iterator_next(iter)) {
         FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
-        m_personas.insert(QString::fromUtf8(folks_persona_get_iid(persona)), persona);
+        m_personas.insert(qStringFromGChar(folks_persona_get_iid(persona)), persona);
     }
 
     g_object_unref(iter);
