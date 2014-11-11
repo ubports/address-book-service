@@ -398,7 +398,7 @@ Source AddressBook::createSource(const QString &sourceName, bool setAsPrimary, c
         QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(src));
         QDBusConnection::sessionBus().send(reply);
     } else if (personaStoreTypeId == "eds") {
-        data->m_sourceId = QUuid::createUuid().toString().replace("{", "_").replace("}", "_");
+        data->m_sourceId = QUuid::createUuid().toString().remove("{").remove("}");
         ESourceRegistry *registry = NULL;
         ESource *source = create_esource_from_data(*data, &registry);
         if (source) {
