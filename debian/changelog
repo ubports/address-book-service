@@ -1,3 +1,14 @@
+address-book-service (0.1.1+15.04.20141112-0ubuntu1) vivid; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Renato Araujo Oliveira Filho ]
+  * Avoid create sources with duplicated Id; Remove address book sources
+    based on source name instead of source id. (LP: #1387763)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 12 Nov 2014 15:30:49 +0000
+
 address-book-service (0.1.1+14.10.20141023~rtm-0ubuntu1) 14.09; urgency=low
 
   [ Ubuntu daily release ]
