@@ -70,7 +70,7 @@ public Q_SLOTS:
     void shutdown();
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
-    Source createSource(const QString &sourceId, bool setAsPrimary, const QDBusMessage &message);
+    Source createSource(const QString &sourceName, bool setAsPrimary, const QDBusMessage &message);
     void removeSource(const QString &sourceId, const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message = QDBusMessage());
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);

@@ -36,6 +36,57 @@ macro(declare_test TESTNAME RUN_SERVER)
                           TIMEOUT ${CTEST_TESTING_TIMEOUT})
 endmacro()
 
+macro(declare_eds_test TESTNAME)
+    add_executable(${TESTNAME}
+                   ${ARGN}
+                   ${TESTNAME}.cpp
+    )
+    qt5_use_modules(${TESTNAME} Core Contacts Versit Test DBus)
+
+    if(TEST_XML_OUTPUT)
+        set(TEST_ARGS -p -xunitxml -p -o -p test_${testname}.xml)
+    else()
+        set(TEST_ARGS "")
+    endif()
+
+    target_link_libraries(${TESTNAME}
+                          address-book-service-lib
+                          ${CONTACTS_SERVICE_LIB}
+                          ${GLIB_LIBRARIES}
+                          ${GIO_LIBRARIES}
+                          ${FOLKS_LIBRARIES}
+    )
+
+    add_test(${TESTNAME}
+             ${DBUS_RUNNER}
+             --keep-env
+             --task ${EVOLUTION_ADDRESSBOOK_FACTORY_BIN} --task-name "evolution-addressbook" -r
+             --task ${address-book-service_BINARY_DIR}/address-book-service --wait-for=${EVOLUTION_ADDRESSBOOK_SERVICE_NAME} -r
+             --task ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TEST_ARGS} --wait-for=com.canonical.pim --wait-until-complete)
+
+    execute_process(COMMAND mktemp -d /tmp/${TESTNAME}_XXXX
+                    OUTPUT_VARIABLE TMP_HOME_DIR)
+    list(APPEND TEST_ENVIRONMENT_LIST "QT_QPA_PLATFORM=minimal")
+    list(APPEND TEST_ENVIRONMENT_LIST "FOLKS_BACKENDS_ALLOWED=eds")
+    list(APPEND TEST_ENVIRONMENT_LIST "HOME=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_RUNTIME_DIR=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_CACHE_HOME=${TMP_HOME_DIR}/.cache")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_CONFIG_HOME=${TMP_HOME_DIR}/.config")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_CONFIG_HOME=${TMP_HOME_DIR}/.local/share")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_DOCUMENTS_DIR=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_DOWNLOAD_DIR=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_MUSIC_DIR=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_PICTURES_DIR=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_PUBLICSHARE_DIR=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_TEMPLATES_DIR=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "XDG_VIDEOS_DIR=${TMP_HOME_DIR}")
+    list(APPEND TEST_ENVIRONMENT_LIST "QORGANIZER_EDS_DEBUG=On")
+
+    set_tests_properties(${TESTNAME} PROPERTIES
+                          ENVIRONMENT ${TEST_ENVIRONMENT_LIST}
+                          TIMEOUT ${CTEST_TESTING_TIMEOUT})
+endmacro()
+
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
@@ -77,6 +128,8 @@ if(DBUS_RUNNER)
     declare_test(qcontacts-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(qcontacts-create-source-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(qcontacts-async-request-test True ${BASE_CLIENT_TEST_SRC})
+
+    declare_eds_test(contact-collection-test)
 elseif()
     message(STATUS "DBus test runner not found. Some tests will be disabled")
 endif()
@@ -100,4 +153,5 @@ target_link_libraries(address-book-server-test
                       ${GIO_LIBRARIES}
                       ${FOLKS_LIBRARIES}
 )
+
 
