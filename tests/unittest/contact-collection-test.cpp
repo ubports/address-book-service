@@ -50,7 +50,7 @@ private Q_SLOTS:
     }
 
     /*
-     * Test create a new addressbook
+     * Test create a new collection
      */
     void testCreateAddressBook()
     {
@@ -79,7 +79,7 @@ private Q_SLOTS:
     }
 
     /*
-     * Test remove an address book
+     * Test remove a collection
      */
     void testRemoveAddressBook()
     {
@@ -114,7 +114,7 @@ private Q_SLOTS:
     }
 
     /*
-     * Test query a contact source using the contact group
+     * Test query for collections using the contact group type
      */
     void testQueryAddressBook()
     {
