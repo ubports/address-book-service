@@ -25,34 +25,17 @@
 
 using namespace QtContacts;
 
-class AddressBookTest : public QObject
+class ContactCollectionTest : public QObject
 {
     Q_OBJECT
 private:
     QContactManager *m_manager;
 
-    QContact testContact()
-    {
-        // create a contact
-        QContact contact;
-
-        QContactName name;
-        name.setFirstName("Fulano");
-        name.setMiddleName("de");
-        name.setLastName("Tal");
-        contact.saveDetail(&name);
-
-        QContactEmailAddress email;
-        email.setEmailAddress("fulano@email.com");
-        contact.saveDetail(&email);
-
-        return contact;
-    }
-
 private Q_SLOTS:
     void initTestCase()
     {
         QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
+        // wait for address-book-service
         QTest::qWait(1000);
     }
 
@@ -92,7 +75,7 @@ private Q_SLOTS:
                 return;
             }
         }
-        QFAIL("New source not found");
+        QFAIL("New collection not found");
     }
 
     /*
@@ -125,7 +108,7 @@ private Q_SLOTS:
         QList<QContact> contacts = m_manager->contacts(filter);
         Q_FOREACH(const QContact &contact, contacts) {
             if (contact.id() == c.id()) {
-                QFAIL("Source not removed");
+                QFAIL("Collection not removed");
             }
         }
     }
@@ -150,10 +133,10 @@ private Q_SLOTS:
                 return;
             }
         }
-        QFAIL("Fail to create new source");
+        QFAIL("Fail to query for collections");
     }
 };
 
-QTEST_MAIN(AddressBookTest)
+QTEST_MAIN(ContactCollectionTest)
 
-#include "address-book-test.moc"
+#include "contact-collection-test.moc"

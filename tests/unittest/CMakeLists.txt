@@ -129,7 +129,7 @@ if(DBUS_RUNNER)
     declare_test(qcontacts-create-source-test True ${BASE_CLIENT_TEST_SRC})
     declare_test(qcontacts-async-request-test True ${BASE_CLIENT_TEST_SRC})
 
-    declare_eds_test(address-book-test)
+    declare_eds_test(contact-collection-test)
 elseif()
     message(STATUS "DBus test runner not found. Some tests will be disabled")
 endif()
