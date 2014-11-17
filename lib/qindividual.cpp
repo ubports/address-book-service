@@ -260,24 +260,9 @@ QtContacts::QContactDetail QIndividual::getPersonaFullName(FolksPersona *persona
     }
 
     QContactDisplayLabel detail;
-    FolksStructuredName *sn = folks_name_details_get_structured_name(FOLKS_NAME_DETAILS(persona));
-    QString displayName;
-    if (sn) {
-        const char *name = folks_structured_name_get_given_name(sn);
-        if (name && strlen(name)) {
-            displayName += QString::fromUtf8(name);
-        }
-        name = folks_structured_name_get_family_name(sn);
-        if (name && strlen(name)) {
-            if (!displayName.isEmpty()) {
-                displayName += " ";
-            }
-            displayName += QString::fromUtf8(name);
-        }
-    }
-
-    if (!displayName.isEmpty()) {
-        detail.setLabel(displayName);
+    const gchar *fullName = folks_name_details_get_full_name(FOLKS_NAME_DETAILS(persona));
+    if (fullName) {
+        detail.setLabel(QString::fromUtf8(fullName));
         detail.setDetailUri(QString("%1.1").arg(index));
     }
 
@@ -895,22 +880,13 @@ void QIndividual::updateContact(QContact *contact) const
         personaIndex++;
     }
 
-    // if contact name is empty use org name otherwise try phone number as fallback
-    QContactDisplayLabel displayName = contact->detail<QContactDisplayLabel>();
-    QString label = displayName.label().trimmed();
-
-    if (label.isEmpty()) {
-        QContactOrganization org = contact->detail<QContactOrganization>();
-        label = org.name().trimmed();
-        if (label.isEmpty()) {
-            QContactPhoneNumber phone = contact->detail<QContactPhoneNumber>();
-            label = phone.number().trimmed();
-        }
-
-        displayName.setLabel(label);
-        contact->saveDetail(&displayName);
+    // Display label is mandatory
+    QContactDisplayLabel dLabel = contact->detail<QContactDisplayLabel>();
+    if (dLabel.label().isEmpty()) {
+        dLabel.setLabel(displayName(*contact));
+        contact->saveDetail(&dLabel);
     }
-
+    QString label = dLabel.label();
     // WORKAROUND: add a extra tag to help on alphabetic list
     // On the Ubuntu Address Book, contacts which the name starts with
     // number or symbol should be moved to bottom of the list. Since the standard
@@ -1269,26 +1245,27 @@ GHashTable *QIndividual::parseNameDetails(GHashTable *details, const QList<QtCon
     return details;
 }
 
-GHashTable *QIndividual::parseFullNameDetails(GHashTable *details, const QList<QtContacts::QContactDetail> &cDetails)
+GHashTable *QIndividual::parseFullNameDetails(GHashTable *details,
+                                              const QList<QtContacts::QContactDetail> &cDetails,
+                                              const QString &fallback)
 {
-    if(cDetails.size() == 0) {
-        return details;
-    }
-
+    bool found = false;
     Q_FOREACH(const QContactDetail& detail, cDetails) {
         QContactDisplayLabel displayLabel = static_cast<QContactDisplayLabel>(detail);
         if(!displayLabel.label().isEmpty()) {
             GValue *value = GeeUtils::gValueSliceNew(G_TYPE_STRING);
             g_value_set_string(value, displayLabel.label().toUtf8().data());
             GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_FULL_NAME, value);
-
-            // FIXME: check if those values should all be set to the same thing
-            value = GeeUtils::gValueSliceNew(G_TYPE_STRING);
-            g_value_set_string(value, displayLabel.label().toUtf8().data());
-            GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_ALIAS, value);
+            found = true;
         }
     }
 
+    // Full name is mandatory
+    if (!found) {
+        GValue *value = GeeUtils::gValueSliceNew(G_TYPE_STRING);
+        g_value_set_string(value, fallback.toUtf8().data());
+        GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_FULL_NAME, value);
+    }
     return details;
 }
 
@@ -1441,7 +1418,7 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
     parseFavoriteDetails(details, contact.details(QContactFavorite::Type));
     parseGenderDetails(details, contact.details(QContactGender::Type));
     parseNameDetails(details, contact.details(QContactName::Type));
-    parseFullNameDetails(details, contact.details(QContactDisplayLabel::Type));
+    parseFullNameDetails(details, contact.details(QContactDisplayLabel::Type), displayName(contact));
     parseNicknameDetails(details, contact.details(QContactNickname::Type));
 
     parseAddressDetails(details,
@@ -1466,7 +1443,53 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
                     contact.details(QContactUrl::Type),
                     contact.preferredDetail(VCardParser::PreferredActionNames[QContactUrl::Type]));
 
+    QContactDisplayLabel label = contact.detail<QContactDisplayLabel>();
+    if (label.label().isEmpty()) {
+        // display label is mandatory, usese the fallback in case of empty values
+        label.setLabel(displayName(contact));
+
+    }
     return details;
+}
+
+QString QIndividual::displayName(const QContact &contact)
+{
+    if (contact.isEmpty()) {
+        return "";
+    }
+
+    QString fallbackLabel;
+    // format display name based on designer request
+    // fallback priority list [Name, Company, PhoneNumber, Email, Alias]
+    if (fallbackLabel.isEmpty()) {
+        QContactName name = contact.detail<QContactName>();
+        if (!name.isEmpty()) {
+            QString fullName = QString("%1 %2").arg(name.firstName()).arg(name.lastName());
+            fallbackLabel = fullName.trimmed();
+        }
+    }
+
+    if (fallbackLabel.isEmpty()) {
+        QContactOrganization org = contact.detail<QContactOrganization>();
+        fallbackLabel = org.name().trimmed();
+    }
+
+    if (fallbackLabel.isEmpty()) {
+        QContactPhoneNumber number = contact.detail<QContactPhoneNumber>();
+        fallbackLabel = number.number().trimmed();
+    }
+
+    if (fallbackLabel.isEmpty()) {
+        QContactEmailAddress email = contact.detail<QContactEmailAddress>();
+        fallbackLabel = email.emailAddress().trimmed();
+    }
+
+    if (fallbackLabel.isEmpty()) {
+        QContactOnlineAccount account = contact.detail<QContactOnlineAccount>();
+        fallbackLabel = account.accountUri().trimmed();
+    }
+
+    return fallbackLabel;
 }
 
 void QIndividual::markAsDirty()
