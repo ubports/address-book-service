@@ -1,3 +1,14 @@
+address-book-service (0.1.1+15.04.20141211-0ubuntu1) vivid; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Renato Araujo Oliveira Filho ]
+  * Save address fields in single lines. To avoid problems with folks.
+    (LP: #1390110)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 11 Dec 2014 16:24:21 +0000
+
 address-book-service (0.1.1+15.04.20141112-0ubuntu1) vivid; urgency=low
 
   [ Ubuntu daily release ]
