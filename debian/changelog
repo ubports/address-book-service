@@ -1,3 +1,13 @@
+address-book-service (0.1.1+15.04.20150105-0ubuntu1) vivid; urgency=low
+
+  [ Renato Araujo Oliveira Filho ]
+  * Create unit test to check the sort order of stored contacts (LP:
+    #1373185)
+  * Added a new field on contact object "X-NORMALIZED_FN" which contains
+    the unaccented contact full name.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 05 Jan 2015 18:35:33 +0000
+
 address-book-service (0.1.1+15.04.20141211-0ubuntu1) vivid; urgency=low
 
   [ Ubuntu daily release ]
