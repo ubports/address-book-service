@@ -116,6 +116,22 @@ static void gValueGeeSetAddStringFieldDetails(GValue *value,
     } \
 }
 
+static QString unaccent(const QString &value)
+{
+    QString s2 = value.normalized(QString::NormalizationForm_D);
+    QString out;
+
+    for (int i=0, j=s2.length(); i<j; i++)
+    {
+        // strip diacritic marks
+        if (s2.at(i).category() != QChar::Mark_NonSpacing &&
+            s2.at(i).category() != QChar::Mark_SpacingCombining) {
+            out.append(s2.at(i));
+        }
+    }
+    return out;
+}
+
 }
 
 namespace galera
@@ -906,6 +922,11 @@ void QIndividual::updateContact(QContact *contact) const
         tag.setTag(label);
     }
     contact->saveDetail(&tag);
+
+    QContactExtendedDetail normalizedLabel;
+    normalizedLabel.setName("X-NORMALIZED_FN");
+    normalizedLabel.setData(unaccent(dLabel.label()));
+    contact->saveDetail(&normalizedLabel);
 }
 
 bool QIndividual::update(const QtContacts::QContact &newContact, QObject *object, const char *slot)
