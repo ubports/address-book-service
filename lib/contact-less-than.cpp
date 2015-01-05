@@ -39,9 +39,10 @@ ContactLessThan::ContactLessThan(const galera::SortClause &sortClause)
 
 bool ContactLessThan::operator()(ContactEntry *entryA, ContactEntry *entryB)
 {
-    return QContactManagerEngine::compareContact(entryA->individual()->contact(),
+    int r = QContactManagerEngine::compareContact(entryA->individual()->contact(),
                                                  entryB->individual()->contact(),
-                                                 m_sortClause.toContactSortOrder()) < 0;
+                                                 m_sortClause.toContactSortOrder());
+    return (r <= 0);
 }
 
 } // namespace
