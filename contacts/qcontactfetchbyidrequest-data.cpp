@@ -44,8 +44,19 @@ void QContactFetchByIdRequestData::notifyError(QContactFetchByIdRequest *request
 
 void QContactFetchByIdRequestData::updateRequest(QContactAbstractRequest::State state, QContactManager::Error error, QMap<int, QContactManager::Error> errorMap)
 {
+    QList<QtContacts::QContact> result;
+    // send all results only in the finished state, this will avoid a contact update in every updateContactFetchRequest
+    switch(state)
+    {
+    case QContactAbstractRequest::FinishedState:
+        result = m_allResults;
+        break;
+    default:
+        result = m_result;
+    }
+
     QContactManagerEngine::updateContactFetchByIdRequest(static_cast<QContactFetchByIdRequest*>(m_request.data()),
-                                                         m_result,
+                                                         result,
                                                          error,
                                                          errorMap,
                                                          state);
