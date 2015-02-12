@@ -1,3 +1,14 @@
+address-book-service (0.1.1+15.04.20150212-0ubuntu1) vivid; urgency=medium
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Renato Araujo Oliveira Filho ]
+  * Update fetch by id with all contacts in the end of the query. (LP:
+    #1419854)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 12 Feb 2015 00:46:37 +0000
+
 address-book-service (0.1.1+15.04.20150105-0ubuntu1) vivid; urgency=low
 
   [ Renato Araujo Oliveira Filho ]
