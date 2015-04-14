@@ -1030,6 +1030,7 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         qWarning() << "Failed to create individual from contact: Persona already exists";
         reply = createData->m_message.createErrorReply("Failed to create individual from contact", "Contact already exists");
     } else {
+        QIndividual::setCreatedDate(persona, QDateTime::currentDateTime());
         FolksIndividual *individual = folks_persona_get_individual(persona);
         ContactEntry *entry = createData->m_addressbook->m_contacts->value(QString::fromUtf8(folks_individual_get_id(individual)));
         if (entry) {

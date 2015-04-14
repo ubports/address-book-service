@@ -23,6 +23,9 @@
 
 #include "common/vcard-parser.h"
 
+#include <folks/folks-eds.h>
+#include <libebook/libebook.h>
+
 #include <QtCore/QMutexLocker>
 
 #include <QtVersit/QVersitDocument>
@@ -51,6 +54,8 @@
 
 using namespace QtVersit;
 using namespace QtContacts;
+
+#define X_CREATED_AT              "X-CREATED-AT"
 
 namespace
 {
@@ -234,6 +239,30 @@ void QIndividual::appendDetailsForPersona(QtContacts::QContact *contact,
         }
     }
 }
+
+QContactDetail QIndividual::getTimeStamp(FolksPersona *persona, int index) const
+{
+    if (!EDSF_IS_PERSONA(persona)) {
+        return QContactDetail();
+    }
+
+    QContactTimestamp timestamp;
+    EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+    const gchar *rev = static_cast<const gchar*>(e_contact_get_const(c, E_CONTACT_REV));
+    if (rev) {
+        timestamp.setLastModified(QDateTime::fromString(QString::fromUtf8(rev), Qt::ISODate));
+    }
+
+    EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_CREATED_AT);
+    if (attr) {
+        GString *createdAt = e_vcard_attribute_get_value_decoded(attr);
+        timestamp.setCreated(QDateTime::fromString(createdAt->str, Qt::ISODate));
+        g_string_free(createdAt, TRUE);
+    }
+
+    return timestamp;
+}
+
 
 QContactDetail QIndividual::getPersonaName(FolksPersona *persona, int index) const
 {
@@ -1516,6 +1545,32 @@ QString QIndividual::displayName(const QContact &contact)
     }
 
     return fallbackLabel;
+}
+
+void QIndividual::setCreatedDate(FolksPersona *persona, const QDateTime &createdAt)
+{
+    FolksPersonaStore *store = folks_persona_get_store(persona);
+    if (EDSF_IS_PERSONA_STORE(store)) {
+        GError *error = NULL;
+        ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
+        EClient *client = e_book_client_connect_sync(source, NULL, &error);
+        if (error) {
+            qWarning() << "Fail to connect with EDS" << error->message;
+            g_error_free(error);
+        } else {
+            EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+            EVCardAttribute *attr = e_vcard_attribute_new("", X_CREATED_AT);
+            e_vcard_add_attribute_with_value(E_VCARD(c),
+                                             attr,
+                                             createdAt.toString(Qt::ISODate).toUtf8().constData());
+            e_book_client_modify_contact_sync(E_BOOK_CLIENT(client), c, NULL, &error);
+            if (error) {
+                qWarning() << "Fail to update EDS contact:" << error->message;
+                g_error_free(error);
+            }
+        }
+        g_object_unref(client);
+    }
 }
 
 void QIndividual::markAsDirty()

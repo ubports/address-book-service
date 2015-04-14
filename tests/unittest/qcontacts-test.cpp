@@ -92,6 +92,7 @@ private Q_SLOTS:
         QCOMPARE(contacts.size(), 0);
 
         // create a contact
+        QDateTime createdAt = QDateTime::currentDateTime();
         QContact contact = testContact();
         QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
         bool result = m_manager->saveContact(&contact);
@@ -105,6 +106,11 @@ private Q_SLOTS:
         QContact createdContact = contacts[0];
         // id
         QVERIFY(!createdContact.id().isNull());
+
+        // createdAt
+        QContactTimestamp timestamp = contact.detail<QContactTimestamp>();
+        QVERIFY(createdAt.secsTo(timestamp.created()) < 60);
+        QVERIFY(createdAt.secsTo(timestamp.lastModified()) < 60);
 
         // email
         QContactEmailAddress email = contact.detail<QContactEmailAddress>();

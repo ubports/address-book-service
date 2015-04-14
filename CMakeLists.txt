@@ -7,6 +7,8 @@ include(FindPkgConfig)
 include(GNUInstallDirs)
 
 find_package(Qt5Core REQUIRED)
+find_package(Qt5DBus REQUIRED)
+find_package(Qt5Versit REQUIRED)
 find_program(DBUS_RUNNER dbus-test-runner)
 
 add_definitions(-DQT_NO_KEYWORDS)

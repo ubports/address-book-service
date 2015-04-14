@@ -57,6 +57,7 @@ public:
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
     static QString displayName(const QtContacts::QContact &contact);
+    static void setCreatedDate(FolksPersona *persona, const QDateTime &createdAt);
 
     // enable or disable auto-link
     static void enableAutoLink(bool flag);
@@ -102,6 +103,7 @@ private:
     // QContact
     QtContacts::QContactDetail getUid() const;
     QList<QtContacts::QContactDetail> getSyncTargets() const;
+    QtContacts::QContactDetail getTimeStamp             (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaName           (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaFullName       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaNickName       (FolksPersona *persona, int index) const;
