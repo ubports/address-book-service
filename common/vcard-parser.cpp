@@ -60,6 +60,13 @@ namespace
                 *toBeAdded << prop;
             }
 
+            if (detail.type() == QContactDetail::TypeExtendedDetail) {
+                QVersitProperty prop;
+                prop.setName(detail.value(QContactExtendedDetail::FieldName).toString());
+                prop.setValue(detail.value(QContactExtendedDetail::FieldData).toString());
+                *toBeAdded << prop;
+            }
+
             if (toBeAdded->size() == 0) {
                 return;
             }
@@ -138,6 +145,14 @@ namespace
                 QContactSyncTarget target;
                 target.setSyncTarget(property.value<QString>());
                 *updatedDetails  << target;
+                *alreadyProcessed = true;
+            }
+
+            if (!*alreadyProcessed && (property.name().startsWith("X-"))) {
+                QContactExtendedDetail xDet;
+                xDet.setName(property.name());
+                xDet.setData(property.value<QString>());
+                *updatedDetails  << xDet;
                 *alreadyProcessed = true;
             }
 

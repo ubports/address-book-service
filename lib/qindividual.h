@@ -58,6 +58,7 @@ public:
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
     static QString displayName(const QtContacts::QContact &contact);
     static void setCreatedDate(FolksPersona *persona, const QDateTime &createdAt);
+    static void setExtendedDetails(FolksPersona *persona, const QList<QtContacts::QContactDetail> &xDetails);
 
     // enable or disable auto-link
     static void enableAutoLink(bool flag);
@@ -75,6 +76,7 @@ private:
     QMetaObject::Connection m_updateConnection;
     QMutex m_contactLock;
     static bool m_autoLink;
+    static QStringList m_supportedExtendedDetails;
 
     QIndividual();
     QIndividual(const QIndividual &);
@@ -110,6 +112,8 @@ private:
     QtContacts::QContactDetail getPersonaBirthday       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaPhoto          (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaFavorite       (FolksPersona *persona, int index) const;
+
+    QList<QtContacts::QContactDetail> getPersonaExtendedDetails (FolksPersona *persona, int index) const;
     QList<QtContacts::QContactDetail> getPersonaRoles   (FolksPersona *persona,
                                                          QtContacts::QContactDetail *preferredRole,
                                                          int index) const;

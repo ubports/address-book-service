@@ -56,6 +56,7 @@ using namespace QtVersit;
 using namespace QtContacts;
 
 #define X_CREATED_AT              "X-CREATED-AT"
+#define X_REMOTE_ID               "X-REMOTE-ID"
 
 namespace
 {
@@ -142,6 +143,7 @@ static QString unaccent(const QString &value)
 namespace galera
 {
 bool QIndividual::m_autoLink = false;
+QStringList QIndividual::m_supportedExtendedDetails;
 
 QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator)
     : m_individual(0),
@@ -149,6 +151,10 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
       m_contact(0),
       m_currentUpdate(0)
 {
+    if (m_supportedExtendedDetails.isEmpty()) {
+        m_supportedExtendedDetails << X_CREATED_AT
+                                   << X_REMOTE_ID;
+    }
     setIndividual(individual);
 }
 
@@ -196,10 +202,10 @@ QList<QtContacts::QContactDetail> QIndividual::getSyncTargets() const
 
         FolksPersona *p = m_personas[id];
         FolksPersonaStore *ps = folks_persona_get_store(p);
-        QString displayName = folks_persona_store_get_display_name(ps);
+        QString storeId = QString::fromUtf8(folks_persona_store_get_id(ps));
 
         target.setDetailUri(QString(id).replace(":","."));
-        target.setSyncTarget(displayName);
+        target.setSyncTarget(storeId);
         details << target;
     }
     return details;
@@ -250,7 +256,8 @@ QContactDetail QIndividual::getTimeStamp(FolksPersona *persona, int index) const
     EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
     const gchar *rev = static_cast<const gchar*>(e_contact_get_const(c, E_CONTACT_REV));
     if (rev) {
-        timestamp.setLastModified(QDateTime::fromString(QString::fromUtf8(rev), Qt::ISODate));
+        QString time = QString::fromUtf8(rev);
+        timestamp.setLastModified(QDateTime::fromString(time, Qt::ISODate));
     }
 
     EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_CREATED_AT);
@@ -712,6 +719,29 @@ QtContacts::QContactDetail QIndividual::getPersonaFavorite(FolksPersona *persona
     return detail;
 }
 
+QList<QContactDetail> QIndividual::getPersonaExtendedDetails(FolksPersona *persona, int index) const
+{
+    QList<QContactDetail> result;
+    if (!EDSF_IS_PERSONA(persona)) {
+        return result;
+    }
+
+    EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+    Q_FOREACH(const QString &xDetName, m_supportedExtendedDetails) {
+        EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), xDetName.toUtf8().constData());
+        if (attr) {
+            GString *attrValue = e_vcard_attribute_get_value_decoded(attr);
+            QContactExtendedDetail xDet;
+            xDet.setName(xDetName);
+            xDet.setData(QString::fromUtf8(attrValue->str));
+            g_string_free(attrValue, true);
+            result << xDet;
+        }
+    }
+
+    return result;
+}
+
 QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
 {
     QList<QContactDetail> details;
@@ -864,6 +894,9 @@ void QIndividual::updateContact(QContact *contact) const
         // vcard only support one of these details by contact
         if (personaIndex == 1) {
             appendDetailsForPersona(contact,
+                                    getTimeStamp(persona, personaIndex),
+                                    true);
+            appendDetailsForPersona(contact,
                                     getPersonaName(persona, personaIndex),
                                     !wPropList.contains("structured-name"));
             appendDetailsForPersona(contact,
@@ -926,6 +959,13 @@ void QIndividual::updateContact(QContact *contact) const
                                 VCardParser::PreferredActionNames[QContactUrl::Type],
                                 prefDetail,
                                 !wPropList.contains("urls"));
+
+        details = getPersonaExtendedDetails (persona, personaIndex);
+        appendDetailsForPersona(contact,
+                                details,
+                                QString(),
+                                QContactDetail(),
+                                false);
 
         personaIndex++;
     }
@@ -1547,8 +1587,14 @@ QString QIndividual::displayName(const QContact &contact)
     return fallbackLabel;
 }
 
-void QIndividual::setCreatedDate(FolksPersona *persona, const QDateTime &createdAt)
+void QIndividual::setExtendedDetails(FolksPersona *persona, const QList<QContactDetail> &xDetails)
 {
+    QContactExtendedDetail createdAt;
+    createdAt.setName(X_CREATED_AT);
+    createdAt.setData(QDateTime::currentDateTime().toString(Qt::ISODate));
+    QList<QContactDetail> newDetails = xDetails;
+    newDetails += createdAt;
+
     FolksPersonaStore *store = folks_persona_get_store(persona);
     if (EDSF_IS_PERSONA_STORE(store)) {
         GError *error = NULL;
@@ -1559,10 +1605,15 @@ void QIndividual::setCreatedDate(FolksPersona *persona, const QDateTime &created
             g_error_free(error);
         } else {
             EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
-            EVCardAttribute *attr = e_vcard_attribute_new("", X_CREATED_AT);
-            e_vcard_add_attribute_with_value(E_VCARD(c),
-                                             attr,
-                                             createdAt.toString(Qt::ISODate).toUtf8().constData());
+            Q_FOREACH(const QContactDetail &d, newDetails) {
+                QContactExtendedDetail xd = static_cast<QContactExtendedDetail>(d);
+                if (m_supportedExtendedDetails.contains(xd.name())) {
+                    EVCardAttribute *attr = e_vcard_attribute_new("", xd.name().toUtf8().constData());
+                    e_vcard_add_attribute_with_value(E_VCARD(c),
+                                                     attr,
+                                                     xd.data().toString().toUtf8().constData());
+                }
+            }
             e_book_client_modify_contact_sync(E_BOOK_CLIENT(client), c, NULL, &error);
             if (error) {
                 qWarning() << "Fail to update EDS contact:" << error->message;

@@ -29,6 +29,8 @@
 #include <QtCore/QPair>
 #include <QtCore/QUuid>
 
+#include <QtContacts/QContactExtendedDetail>
+
 #include <signal.h>
 #include <sys/socket.h>
 
@@ -43,6 +45,7 @@ class CreateContactData
 {
 public:
     QDBusMessage m_message;
+    QContact m_contact;
     galera::AddressBook *m_addressbook;
 };
 
@@ -690,6 +693,7 @@ QString AddressBook::createContact(const QString &contact, const QString &source
             CreateContactData *data = new CreateContactData;
             data->m_message = message;
             data->m_addressbook = this;
+            data->m_contact = qcontact;
             FolksPersonaStore *store = getFolksStore(source);
             folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
                                                                  NULL, //parent
@@ -1030,7 +1034,8 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         qWarning() << "Failed to create individual from contact: Persona already exists";
         reply = createData->m_message.createErrorReply("Failed to create individual from contact", "Contact already exists");
     } else {
-        QIndividual::setCreatedDate(persona, QDateTime::currentDateTime());
+        QIndividual::setExtendedDetails(persona,
+                                        createData->m_contact.details(QContactExtendedDetail::Type));
         FolksIndividual *individual = folks_persona_get_individual(persona);
         ContactEntry *entry = createData->m_addressbook->m_contacts->value(QString::fromUtf8(folks_individual_get_id(individual)));
         if (entry) {

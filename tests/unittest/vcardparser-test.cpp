@@ -349,6 +349,52 @@ private Q_SLOTS:
         QVERIFY(vcard.contains("CLIENTPIDMAP;PID=1.ADDRESSBOOKID0:ADDRESSBOOKNAME0"));
         QVERIFY(vcard.contains("CLIENTPIDMAP;PID=2.ADDRESSBOOKID1:ADDRESSBOOKNAME1"));
     }
+
+    /*
+     * Test parse a vcard with timestamp
+     */
+    void testVCardWithTimestamp()
+    {
+        QString vcard = QStringLiteral("BEGIN:VCARD\r\n"
+                                       "VERSION:3.0\r\n"
+                                       "N:Sauro;Dino;da Silva;;\r\n"
+                                       "EMAILPID=1.1;:dino@familiadinosauro.com.br\r\n"
+                                       "TEL;PID=1.1;TYPE=ISDN:33331410\r\n"
+                                       "TEL;PID=1.2;TYPE=CELL:8888888\r\n"
+                                       "X-CREATED-AT:2015-04-14T16:16:44Z\r\n"
+                                       "REV:2015-04-14T21:56:56Z(2300)\r\n"
+                                       "END:VCARD\r\n");
+        QContact contact = VCardParser::vcardToContact(vcard);
+        QList<QContactTimestamp> timestamps = contact.details<QContactTimestamp>();
+        QCOMPARE(timestamps.size(), 1);
+
+        QContactTimestamp timestamp = timestamps.at(0);
+        //QCOMPARE(timestamp.created(), QDateTime::fromString("2015-04-14T16:16:44Z", Qt::ISODate));
+        QCOMPARE(timestamp.lastModified(), QDateTime::fromString("2015-04-14T21:56:56Z(2300)", Qt::ISODate));
+    }
+
+    /*
+     * Test parse a vcard with extend details
+     */
+    void testVCardWithExtendDetails()
+    {
+        QString vcard = QStringLiteral("BEGIN:VCARD\r\n"
+                                       "VERSION:3.0\r\n"
+                                       "N:Sauro;Dino;da Silva;;\r\n"
+                                       "EMAILPID=1.1;:dino@familiadinosauro.com.br\r\n"
+                                       "TEL;PID=1.1;TYPE=ISDN:33331410\r\n"
+                                       "TEL;PID=1.2;TYPE=CELL:8888888\r\n"
+                                       "X-AIM:foo@aim.com\r\n"
+                                       "X-REMOTE-ID:MY_REMOTE_ID\r\n"
+                                       "END:VCARD\r\n");
+        QContact contact = VCardParser::vcardToContact(vcard);
+        QList<QContactExtendedDetail> xDetails = contact.details<QContactExtendedDetail>();
+        QCOMPARE(xDetails.size(), 1);
+
+        QContactExtendedDetail xDetail = xDetails.at(0);
+        QCOMPARE(xDetail.name(), QStringLiteral("X-REMOTE-ID"));
+        QCOMPARE(xDetail.data().toString(), QStringLiteral("MY_REMOTE_ID"));
+    }
 };
 
 QTEST_MAIN(VCardParseTest)
