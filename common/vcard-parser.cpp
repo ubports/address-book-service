@@ -123,6 +123,14 @@ namespace
 
         virtual void contactProcessed(const QContact& contact, QVersitDocument* document)
         {
+            if (!contact.id().isNull() &&
+                contact.details<QContactGuid>().isEmpty()) {
+                // translate contact id to uid vcard
+                QVersitProperty prop;
+                prop.setName("UID");
+                prop.setValue(contact.id().toString().split("::").last());
+                document->addProperty(prop);
+            }
             Q_UNUSED(contact);
             document->removeProperties("X-QTPROJECT-EXTENDED-DETAIL");
         }
@@ -222,6 +230,13 @@ namespace
                 contact->setPreferredDetail(galera::VCardParser::PreferredActionNames[QContactDetail::TypePhoneNumber],
                                             m_prefferedPhone);
                 m_prefferedPhone = QContactDetail();
+            }
+
+            if (contact->id().isNull() &&
+                !contact->detail<QContactGuid>().isEmpty()) {
+                QContactId id = QContactId::fromString(
+                            QString("qtcontacts:galera::%1").arg(contact->detail<QContactGuid>().guid()));
+                contact->setId(id);
             }
         }
     private:

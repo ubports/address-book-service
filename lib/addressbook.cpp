@@ -894,12 +894,14 @@ void AddressBook::updateContactsDone(const QString &contactId,
     }
 
     if (!m_updateCommandPendingContacts.isEmpty()) {
-        QContact newContact = VCardParser::vcardToContact(m_updateCommandPendingContacts.takeFirst());
+        QString vCard = m_updateCommandPendingContacts.takeFirst();
+        QContact newContact = VCardParser::vcardToContact(vCard);
         ContactEntry *entry = m_contacts->value(newContact.detail<QContactGuid>().guid());
         if (entry) {
             entry->individual()->update(newContact, this,
                                         SLOT(updateContactsDone(QString,QString)));
         } else {
+            qWarning() << "Contact not found for update:" << vCard;
             updateContactsDone("", "Contact not found!");
         }
     } else {
@@ -1039,6 +1041,8 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         FolksIndividual *individual = folks_persona_get_individual(persona);
         ContactEntry *entry = createData->m_addressbook->m_contacts->value(QString::fromUtf8(folks_individual_get_id(individual)));
         if (entry) {
+            // We will need to reload contact due the extended details
+            entry->individual()->flush();
             QString vcard = VCardParser::contactToVcard(entry->individual()->contact());
             if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
                 reply = createData->m_message.createReply(vcard);

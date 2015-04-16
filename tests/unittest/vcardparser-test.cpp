@@ -395,6 +395,36 @@ private Q_SLOTS:
         QCOMPARE(xDetail.name(), QStringLiteral("X-REMOTE-ID"));
         QCOMPARE(xDetail.data().toString(), QStringLiteral("MY_REMOTE_ID"));
     }
+
+    void testVCardFromGoogle()
+    {
+        QString vcard = QStringLiteral("BEGIN:VCARD\r\n"
+                                       "VERSION:3.0\r\n"
+                                       "REV:2015-04-16T15:26:50Z\r\n"
+                                       "X-GOOGLE-ETAG:\"RXc_eTVSLit7I2A9XRdUF04NRwc.\"\r\n"
+                                       "X-REMOTE-ID:1dd7d51a1518626a\r\n"
+                                       "PHOTO;VALUE=URL,URL:https://www.google.com/m8/feeds/photos/media/renato.test\r\n"
+                                       " e2%40gmail.com/1dd7d51a1518626a\r\n"
+                                       "N:;REnato;;;\r\n"
+                                       "EMAIL:renatox@gmail.com\r\n"
+                                       "TEL:87042144\r\n"
+                                       "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
+                                       "END:VCARD\r\n");
+        QContact contact = VCardParser::vcardToContact(vcard);
+        QList<QContactExtendedDetail> xDetails = contact.details<QContactExtendedDetail>();
+        QCOMPARE(xDetails.size(), 2);
+    }
+
+     void testContactIdToUid()
+     {
+         // Create manager to allow us to creact contact id
+         QContactManager manager("memory");
+
+         QContact c = m_contacts[0];
+         c.setId(QContactId::fromString(QStringLiteral("qtcontacts:memory::11")));
+         QString vcard = VCardParser::contactToVcard(c);
+         QVERIFY(vcard.contains("UID:11"));
+     }
 };
 
 QTEST_MAIN(VCardParseTest)

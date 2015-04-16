@@ -57,6 +57,7 @@ using namespace QtContacts;
 
 #define X_CREATED_AT              "X-CREATED-AT"
 #define X_REMOTE_ID               "X-REMOTE-ID"
+#define X_GOOGLE_ETAG             "X-GOOGLE-ETAG"
 
 namespace
 {
@@ -153,7 +154,8 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
 {
     if (m_supportedExtendedDetails.isEmpty()) {
         m_supportedExtendedDetails << X_CREATED_AT
-                                   << X_REMOTE_ID;
+                                   << X_REMOTE_ID
+                                   << X_GOOGLE_ETAG;
     }
     setIndividual(individual);
 }
