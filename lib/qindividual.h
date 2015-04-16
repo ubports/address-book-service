@@ -23,6 +23,7 @@
 #include <QtCore/QList>
 #include <QtCore/QMultiHash>
 #include <QtCore/QMutex>
+#include <QtCore/QDateTime>
 
 #include <QVersitProperty>
 
@@ -57,8 +58,9 @@ public:
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
     static QString displayName(const QtContacts::QContact &contact);
-    static void setCreatedDate(FolksPersona *persona, const QDateTime &createdAt);
-    static void setExtendedDetails(FolksPersona *persona, const QList<QtContacts::QContactDetail> &xDetails);
+    static void setExtendedDetails(FolksPersona *persona,
+                                   const QList<QtContacts::QContactDetail> &xDetails,
+                                   const QDateTime &createdAt = QDateTime());
 
     // enable or disable auto-link
     static void enableAutoLink(bool flag);

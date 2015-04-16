@@ -99,6 +99,7 @@ private:
     void updatePhone();
     void updateUrl();
     void updateFavorite();
+    void updateExtendedDetails();
 
     QString callDetailChangeFinish(QtContacts::QContactDetail::DetailType detailType,
                                    FolksPersona *persona,

@@ -106,11 +106,20 @@ bool UpdateContactRequest::isEqual(const QtContacts::QContactDetail &detailA,
         return false;
     }
 
+
     switch(detailA.type()) {
     case QContactDetail::TypeFavorite:
         return detailA.value(QContactFavorite::FieldFavorite) == detailB.value(QContactFavorite::FieldFavorite);
     default:
-        return (detailA == detailB);
+    {
+        // clear detail uri to compare only the field value
+        QContactDetail copyA(detailA);
+        QContactDetail copyB(detailB);
+
+        copyA.setDetailUri("");
+        copyB.setDetailUri("");
+        return (copyA == copyB);
+    }
     }
 }
 
@@ -275,7 +284,8 @@ void UpdateContactRequest::updateAvatar()
             avatarUri = avatar.imageUrl();
         }
 
-        if (avatarUri != oldAvatarUri) {
+        if ((avatarUri != oldAvatarUri) &&
+            avatarUri.isLocalFile()){
             GFileIcon *avatarFileIcon = NULL;
             if(!avatarUri.isEmpty()) {
                 QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
@@ -295,10 +305,10 @@ void UpdateContactRequest::updateAvatar()
             if (avatarFileIcon) {
                 g_object_unref(avatarFileIcon);
             }
+            return;
         }
-    } else {
-        updateDetailsDone(0, 0, this);
     }
+    updateDetailsDone(0, 0, this);
 }
 
 void UpdateContactRequest::updateBirthday()
@@ -403,7 +413,6 @@ void UpdateContactRequest::updateName()
     if (m_currentPersona &&
         FOLKS_IS_NAME_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, newDetails)) {
-        qDebug() << "Name diff";
         //Only supports one fullName
         FolksStructuredName *sn = 0;
         if (newDetails.count()) {
@@ -692,6 +701,18 @@ void UpdateContactRequest::updateFavorite()
     }
 }
 
+void UpdateContactRequest::updateExtendedDetails()
+{
+    QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0);
+    QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0);
+    if (m_currentPersona &&
+        !isEqual(originalDetails, newDetails)) {
+        qDebug() << "Extended details diff";
+        QIndividual::setExtendedDetails(m_currentPersona, newDetails);
+    }
+    updateDetailsDone(0, 0, this);
+}
+
 void UpdateContactRequest::updatePersona()
 {
     if (m_personas.size() <= m_currentPersonaIndex) {
@@ -770,6 +791,7 @@ QString UpdateContactRequest::callDetailChangeFinish(QtContacts::QContactDetail:
 
 void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata)
 {
+    qDebug() << "UPDAE DONE";
     UpdateContactRequest *self = static_cast<UpdateContactRequest*>(userdata);
 
     QString errorMessage;
@@ -810,6 +832,9 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         // from folks
         self->updateOnlineAccount();
         break;
+    case QContactDetail::TypeExtendedDetail:
+        self->updateExtendedDetails();
+        break;
     case QContactDetail::TypeFavorite:
         self->updateFavorite();
         break;
@@ -847,7 +872,6 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         //TODO
     case QContactDetail::TypeGuid:
     case QContactDetail::TypeType:
-    case QContactDetail::TypeExtendedDetail:
         updateDetailsDone(0, 0, self);
         break;
     case QContactDetail::TypeVersion:

@@ -1589,13 +1589,17 @@ QString QIndividual::displayName(const QContact &contact)
     return fallbackLabel;
 }
 
-void QIndividual::setExtendedDetails(FolksPersona *persona, const QList<QContactDetail> &xDetails)
+void QIndividual::setExtendedDetails(FolksPersona *persona,
+                                     const QList<QContactDetail> &xDetails,
+                                     const QDateTime &createdAtDate)
 {
-    QContactExtendedDetail createdAt;
-    createdAt.setName(X_CREATED_AT);
-    createdAt.setData(QDateTime::currentDateTime().toString(Qt::ISODate));
     QList<QContactDetail> newDetails = xDetails;
-    newDetails += createdAt;
+    if (createdAtDate.isValid()) {
+        QContactExtendedDetail createdAt;
+        createdAt.setName(X_CREATED_AT);
+        createdAt.setData(createdAtDate.toString(Qt::ISODate));
+        newDetails += createdAt;
+    }
 
     FolksPersonaStore *store = folks_persona_get_store(persona);
     if (EDSF_IS_PERSONA_STORE(store)) {
