@@ -224,8 +224,6 @@ namespace
 
         virtual void documentProcessed(const QVersitDocument& document, QContact* contact)
         {
-            Q_UNUSED(document);
-            Q_UNUSED(contact);
             if (!m_prefferedPhone.isEmpty()) {
                 contact->setPreferredDetail(galera::VCardParser::PreferredActionNames[QContactDetail::TypePhoneNumber],
                                             m_prefferedPhone);
@@ -238,6 +236,18 @@ namespace
                             QString("qtcontacts:galera::%1").arg(contact->detail<QContactGuid>().guid()));
                 contact->setId(id);
             }
+
+            //update contact timestamp with X-CREATED-AT
+            QContactTimestamp timestamp = contact->detail<QContactTimestamp>();
+            QDateTime createdAt = timestamp.lastModified();
+            Q_FOREACH(const QVersitProperty &prop, document.properties()) {
+                if (prop.name() == "X-CREATED-AT") {
+                    createdAt = QDateTime::fromString(prop.value(), Qt::ISODate).toUTC();
+                    break;
+                }
+            }
+            timestamp.setCreated(createdAt);
+            contact->saveDetail(&timestamp);
         }
     private:
         QContactDetail m_prefferedPhone;

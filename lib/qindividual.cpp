@@ -58,6 +58,7 @@ using namespace QtContacts;
 #define X_CREATED_AT              "X-CREATED-AT"
 #define X_REMOTE_ID               "X-REMOTE-ID"
 #define X_GOOGLE_ETAG             "X-GOOGLE-ETAG"
+#define X_GROUP_ID                "X-GROUP-ID"
 
 namespace
 {
@@ -155,7 +156,8 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
     if (m_supportedExtendedDetails.isEmpty()) {
         m_supportedExtendedDetails << X_CREATED_AT
                                    << X_REMOTE_ID
-                                   << X_GOOGLE_ETAG;
+                                   << X_GOOGLE_ETAG
+                                   << X_GROUP_ID;
     }
     setIndividual(individual);
 }
@@ -259,15 +261,24 @@ QContactDetail QIndividual::getTimeStamp(FolksPersona *persona, int index) const
     const gchar *rev = static_cast<const gchar*>(e_contact_get_const(c, E_CONTACT_REV));
     if (rev) {
         QString time = QString::fromUtf8(rev);
-        timestamp.setLastModified(QDateTime::fromString(time, Qt::ISODate));
+        QDateTime rev = QDateTime::fromString(time, Qt::ISODate);
+        // time is saved on UTC FORMAT
+        rev.setTimeSpec(Qt::UTC);
+        timestamp.setLastModified(rev);
     }
 
     EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_CREATED_AT);
+    QDateTime createdAtDate;
     if (attr) {
         GString *createdAt = e_vcard_attribute_get_value_decoded(attr);
-        timestamp.setCreated(QDateTime::fromString(createdAt->str, Qt::ISODate));
+        createdAtDate = QDateTime::fromString(createdAt->str, Qt::ISODate);
+        createdAtDate.setTimeSpec(Qt::UTC);
         g_string_free(createdAt, TRUE);
+    } else {
+        // use last modified data as created date if it does not exists on contact
+        createdAtDate = timestamp.lastModified();
     }
+    timestamp.setCreated(createdAtDate);
 
     return timestamp;
 }
@@ -1593,14 +1604,6 @@ void QIndividual::setExtendedDetails(FolksPersona *persona,
                                      const QList<QContactDetail> &xDetails,
                                      const QDateTime &createdAtDate)
 {
-    QList<QContactDetail> newDetails = xDetails;
-    if (createdAtDate.isValid()) {
-        QContactExtendedDetail createdAt;
-        createdAt.setName(X_CREATED_AT);
-        createdAt.setData(createdAtDate.toString(Qt::ISODate));
-        newDetails += createdAt;
-    }
-
     FolksPersonaStore *store = folks_persona_get_store(persona);
     if (EDSF_IS_PERSONA_STORE(store)) {
         GError *error = NULL;
@@ -1611,15 +1614,38 @@ void QIndividual::setExtendedDetails(FolksPersona *persona,
             g_error_free(error);
         } else {
             EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
-            Q_FOREACH(const QContactDetail &d, newDetails) {
+
+            // create X-CREATED-AT if it does not exists
+            EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_CREATED_AT);
+            if (!attr) {
+                QDateTime createdAt = createdAtDate.isValid() ? createdAtDate : QDateTime::currentDateTime();
+                attr = e_vcard_attribute_new("", X_CREATED_AT);
+                e_vcard_add_attribute_with_value(E_VCARD(c),
+                                                 attr,
+                                                 createdAt.toUTC().toString(Qt::ISODate).toUtf8().constData());
+            }
+
+            Q_FOREACH(const QContactDetail &d, xDetails) {
                 QContactExtendedDetail xd = static_cast<QContactExtendedDetail>(d);
+                // X_CREATED_AT should not be updated
+                if (xd.name() == X_CREATED_AT) {
+                    continue;
+                }
+
                 if (m_supportedExtendedDetails.contains(xd.name())) {
-                    EVCardAttribute *attr = e_vcard_attribute_new("", xd.name().toUtf8().constData());
+                    // Remove old attribute
+                    attr = e_vcard_get_attribute(E_VCARD(c), xd.name().toUtf8().constData());
+                    if (attr) {
+                        e_vcard_remove_attribute(E_VCARD(c), attr);
+                    }
+
+                    attr = e_vcard_attribute_new("", xd.name().toUtf8().constData());
                     e_vcard_add_attribute_with_value(E_VCARD(c),
                                                      attr,
                                                      xd.data().toString().toUtf8().constData());
                 }
             }
+
             e_book_client_modify_contact_sync(E_BOOK_CLIENT(client), c, NULL, &error);
             if (error) {
                 qWarning() << "Fail to update EDS contact:" << error->message;
