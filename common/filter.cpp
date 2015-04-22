@@ -27,6 +27,7 @@
 #include <QtContacts/QContactUnionFilter>
 #include <QtContacts/QContactIntersectionFilter>
 #include <QtContacts/QContactManagerEngine>
+#include <QtContacts/QContactChangeLogFilter>
 
 using namespace QtContacts;
 
@@ -53,9 +54,20 @@ QtContacts::QContactFilter Filter::toContactFilter() const
     return m_filter;
 }
 
-bool Filter::test(const QContact &contact) const
+bool Filter::test(const QContact &contact, const QDateTime &deletedDate) const
 {
-    return QContactManagerEngine::testFilter(m_filter, contact);
+    if (m_filter.type() == QContactFilter::ChangeLogFilter) {
+        const QContactChangeLogFilter clf(m_filter);
+        if (clf.eventType() == QContactChangeLogFilter::EventRemoved) {
+            return (deletedDate >= clf.since());
+        }
+    }
+
+    if (!deletedDate.isValid()) {
+        return QContactManagerEngine::testFilter(m_filter, contact);
+    } else {
+        return false;
+    }
 }
 
 bool Filter::checkIsValid(const QList<QContactFilter> filters) const
@@ -102,6 +114,12 @@ bool Filter::checkIsEmpty(const QList<QContactFilter> filters) const
 bool Filter::isEmpty() const
 {
     return checkIsEmpty(QList<QContactFilter>() << m_filter);
+}
+
+bool Filter::includeRemoved() const
+{
+    // Only return removed contacts if the filter type is ChangeLogFilter
+    return (m_filter.type() == QContactFilter::ChangeLogFilter);
 }
 
 QString Filter::toString(const QtContacts::QContactFilter &filter)

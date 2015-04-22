@@ -825,10 +825,16 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
         QString contactId = removeData->m_request.takeFirst();
         ContactEntry *entry = removeData->m_addressbook->m_contacts->value(contactId);
         if (entry) {
-            folks_individual_aggregator_remove_individual(individualAggregator,
-                                                          entry->individual()->individual(),
-                                                          (GAsyncReadyCallback) removeContactDone,
-                                                          data);
+            if (entry->individual()->markAsDeleted()) {
+                removeContactDone(individualAggregator, 0, data);
+            } else {
+                FolksIndividual *i = entry->individual()->individual();
+
+                folks_individual_aggregator_remove_individual(individualAggregator,
+                                                              entry->individual()->individual(),
+                                                              (GAsyncReadyCallback) removeContactDone,
+                                                              data);
+            }
         } else {
             removeContactDone(individualAggregator, 0, data);
         }

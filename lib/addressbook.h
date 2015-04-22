@@ -178,6 +178,7 @@ private:
     static void edsPrepared(GObject *source,
                             GAsyncResult *res,
                             void *data);
+    static void edsRemoveContact(FolksIndividual *individual);
     friend class DirtyContactsNotify;
 };
 

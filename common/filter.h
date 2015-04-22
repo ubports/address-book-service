@@ -19,12 +19,13 @@
 #ifndef __GALERA_FILTER_H__
 #define __GALERA_FILTER_H__
 
+#include <QtCore/QDateTime>
 #include <QtContacts/QContactFilter>
 #include <QtContacts/QContact>
 
+
 namespace galera
 {
-
 class Filter
 {
 public:
@@ -34,9 +35,10 @@ public:
 
     QString toString() const;
     QtContacts::QContactFilter toContactFilter() const;
-    bool test(const QtContacts::QContact &contact) const;
+    bool test(const QtContacts::QContact &contact, const QDateTime &deletedDate = QDateTime()) const;
     bool isValid() const;
     bool isEmpty() const;
+    bool includeRemoved() const;
 
 private:
     QtContacts::QContactFilter m_filter;

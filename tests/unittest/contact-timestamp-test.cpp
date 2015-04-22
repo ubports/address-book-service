@@ -92,6 +92,43 @@ private Q_SLOTS:
         QCOMPARE(ids.size(), 1);
         QCOMPARE(ids[0], contacts[0].id());
     }
+
+    void testDeletedDateFilter()
+    {
+        QDateTime currentDate = QDateTime::currentDateTime();
+        // wait one sec to cause a create date later
+        QTest::qWait(1000);
+        QContact contact = galera::VCardParser::vcardToContact(QStringLiteral("BEGIN:VCARD\r\n"
+                                                                              "VERSION:3.0\r\n"
+                                                                              "X-REMOTE-ID:1dd7d51a1518626a\r\n"
+                                                                              "N:;Fulano;;;\r\n"
+                                                                              "EMAIL:fulano@gmail.com\r\n"
+                                                                              "TEL:123456\r\n"
+                                                                              "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
+                                                                              "END:VCARD\r\n"));
+
+        // create a contact
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        QContactChangeLogFilter changeLogFilter;
+        changeLogFilter.setEventType(QContactChangeLogFilter::EventRemoved);
+        changeLogFilter.setSince(currentDate);
+
+        // no contact removed
+        QList<QContactId> ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 0);
+
+        // wait one more sec to remove the contact
+        QTest::qWait(1000);
+
+        result = m_manager->removeContact(contact.id());
+        QVERIFY(result);
+
+        ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 1);
+        QCOMPARE(ids[0], contact.id());
+    }
 };
 
 QTEST_MAIN(ContactTimeStampTest)

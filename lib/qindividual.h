@@ -55,6 +55,8 @@ public:
     void addListener(QObject *object, const char *slot);
     bool isValid() const;
     void flush();
+    bool markAsDeleted();
+    QDateTime deletedAt();
 
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
     static QString displayName(const QtContacts::QContact &contact);
@@ -77,6 +79,7 @@ private:
     QString m_id;
     QMetaObject::Connection m_updateConnection;
     QMutex m_contactLock;
+    QDateTime m_deletedAt;
     static bool m_autoLink;
     static QStringList m_supportedExtendedDetails;
 

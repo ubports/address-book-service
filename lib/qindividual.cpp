@@ -59,6 +59,7 @@ using namespace QtContacts;
 #define X_REMOTE_ID               "X-REMOTE-ID"
 #define X_GOOGLE_ETAG             "X-GOOGLE-ETAG"
 #define X_GROUP_ID                "X-GROUP-ID"
+#define X_DELETED_AT              "X-DELETED-AT"
 
 namespace
 {
@@ -206,10 +207,12 @@ QList<QtContacts::QContactDetail> QIndividual::getSyncTargets() const
 
         FolksPersona *p = m_personas[id];
         FolksPersonaStore *ps = folks_persona_get_store(p);
+        QString displayName = folks_persona_store_get_display_name(ps);
         QString storeId = QString::fromUtf8(folks_persona_store_get_id(ps));
 
         target.setDetailUri(QString(id).replace(":","."));
-        target.setSyncTarget(storeId);
+        target.setSyncTarget(displayName);
+        target.setValue(QContactSyncTarget::FieldSyncTarget + 1, storeId);
         details << target;
     }
     return details;
@@ -1110,6 +1113,96 @@ void QIndividual::flush()
     markAsDirty();
 }
 
+bool QIndividual::markAsDeleted()
+{
+    QString currentDate = QDateTime::currentDateTime().toString(Qt::ISODate);
+    GeeSet *personas = folks_individual_get_personas(m_individual);
+    if (!personas) {
+        return false;
+    }
+
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+    while(gee_iterator_next(iter)) {
+        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+        if (EDSF_IS_PERSONA(persona)) {
+            FolksPersonaStore *store = folks_persona_get_store(persona);
+            if (!EDSF_IS_PERSONA_STORE(store)) {
+                continue;
+            }
+
+            GError *error = NULL;
+            ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
+            EClient *client = e_book_client_connect_sync(source, NULL, &error);
+            if (error) {
+                qWarning() << "Fail to connect with EDS" << error->message;
+                g_error_free(error);
+                continue;
+            }
+
+            EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+            EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_DELETED_AT);
+            if (!attr) {
+                attr = e_vcard_attribute_new("", X_DELETED_AT);
+                e_vcard_add_attribute_with_value(E_VCARD(c), attr,
+                                                 currentDate.toUtf8().constData());
+            } else {
+                e_vcard_attribute_add_value(attr, currentDate.toUtf8().constData());
+            }
+
+            e_book_client_modify_contact_sync(E_BOOK_CLIENT(client), c, NULL, &error);
+            if (error) {
+                qWarning() << "Fail to update EDS contact:" << error->message;
+                g_error_free(error);
+            } else {
+                m_deletedAt = QDateTime::currentDateTime();
+            }
+
+            g_object_unref(client);
+        }
+        m_personas.insert(qStringFromGChar(folks_persona_get_iid(persona)), persona);
+    }
+    g_object_unref(iter);
+
+    return m_deletedAt.isValid();
+}
+
+QDateTime QIndividual::deletedAt()
+{
+    if (!m_deletedAt.isNull()) {
+        return m_deletedAt;
+    }
+
+    // make the date invalid to avoid re-check
+    // it will be null again if the QIndividual is marked as dirty
+    m_deletedAt = QDateTime(QDate(), QTime(0, 0, 0));
+
+    GeeSet *personas = folks_individual_get_personas(m_individual);
+    if (!personas) {
+        return m_deletedAt;
+    }
+
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+    while(gee_iterator_next(iter)) {
+        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+        if (EDSF_IS_PERSONA(persona)) {
+            EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+            EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_DELETED_AT);
+            if (attr) {
+                GString *value = e_vcard_attribute_get_value_decoded(attr);
+                if (value) {
+                    m_deletedAt = QDateTime::fromString(value->str, Qt::ISODate);
+                    g_string_free(value, true);
+                    // Addressbook server does not support aggregation we can return
+                    // the first person value
+                    break;
+                }
+            }
+        }
+    }
+
+    return m_deletedAt;
+}
+
 void QIndividual::setIndividual(FolksIndividual *individual)
 {
     static QList<QByteArray> individualProperties;
@@ -1660,6 +1753,7 @@ void QIndividual::markAsDirty()
 {
     delete m_contact;
     m_contact = 0;
+    m_deletedAt = QDateTime();
 }
 
 void QIndividual::enableAutoLink(bool flag)

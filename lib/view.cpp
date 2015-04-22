@@ -158,7 +158,7 @@ private:
 
     bool checkContact(ContactEntry *entry)
     {
-        return m_filter.test(entry->individual()->contact());
+        return m_filter.test(entry->individual()->contact(), entry->individual()->deletedAt());
     }
 };
 
