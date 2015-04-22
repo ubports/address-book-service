@@ -55,8 +55,13 @@ namespace
             if (detail.type() == QContactDetail::TypeSyncTarget) {
                 QContactSyncTarget syncTarget = static_cast<QContactSyncTarget>(detail);
                 QVersitProperty prop;
+                prop.setValueType(QVersitProperty::CompoundType);
+
                 prop.setName(galera::VCardParser::PidMapFieldName);
-                prop.setValue(syncTarget.syncTarget());
+                QStringList values;
+                values << syncTarget.syncTarget()
+                       << syncTarget.value(QContactSyncTarget::FieldSyncTarget + 1).toString();
+                prop.setValue(values);
                 *toBeAdded << prop;
             }
 
@@ -137,121 +142,123 @@ namespace
     };
 
 
-    class  ContactImporterPropertyHandler : public QVersitContactImporterPropertyHandlerV2
+class  ContactImporterPropertyHandler : public QVersitContactImporterPropertyHandlerV2
+{
+public:
+    virtual void propertyProcessed(const QVersitDocument& document,
+                                   const QVersitProperty& property,
+                                   const QContact& contact,
+                                   bool *alreadyProcessed,
+                                   QList<QContactDetail>* updatedDetails)
     {
-    public:
-        virtual void propertyProcessed(const QVersitDocument& document,
-                                       const QVersitProperty& property,
-                                       const QContact& contact,
-                                       bool *alreadyProcessed,
-                                       QList<QContactDetail>* updatedDetails)
-        {
-            Q_UNUSED(document);
-            Q_UNUSED(contact);
+        Q_UNUSED(document);
+        Q_UNUSED(contact);
 
-            if (!*alreadyProcessed && (property.name() == galera::VCardParser::PidMapFieldName)) {
-                QContactSyncTarget target;
-                target.setSyncTarget(property.value<QString>());
-                *updatedDetails  << target;
-                *alreadyProcessed = true;
-            }
+        if (!*alreadyProcessed && (property.name() == galera::VCardParser::PidMapFieldName)) {
+            QContactSyncTarget target;
+            QStringList values = property.value().split(QStringLiteral(";"));
+            target.setSyncTarget(values.value(0));
+            target.setValue(QContactSyncTarget::FieldSyncTarget + 1, values.value(1));
+            *updatedDetails  << target;
+            *alreadyProcessed = true;
+        }
 
-            if (!*alreadyProcessed && (property.name().startsWith("X-"))) {
-                QContactExtendedDetail xDet;
-                xDet.setName(property.name());
-                xDet.setData(property.value<QString>());
-                *updatedDetails  << xDet;
-                *alreadyProcessed = true;
-            }
+        if (!*alreadyProcessed && (property.name().startsWith("X-"))) {
+            QContactExtendedDetail xDet;
+            xDet.setName(property.name());
+            xDet.setData(property.value<QString>());
+            *updatedDetails  << xDet;
+            *alreadyProcessed = true;
+        }
 
-            if (!*alreadyProcessed) {
-                return;
-            }
+        if (!*alreadyProcessed) {
+            return;
+        }
 
-            QString pid = property.parameters().value(galera::VCardParser::PidFieldName);
-            if (!pid.isEmpty()) {
-                QContactDetail &det = updatedDetails->last();
-                det.setDetailUri(pid);
-            }
-
-            bool ro = (property.parameters().value(galera::VCardParser::ReadOnlyFieldName, "NO") == "YES");
-            bool irremovable = (property.parameters().value(galera::VCardParser::IrremovableFieldName, "NO") == "YES");
-            if (ro && irremovable) {
-                QContactDetail &det = updatedDetails->last();
-                QContactManagerEngine::setDetailAccessConstraints(&det,
-                                                                  QContactDetail::ReadOnly |
-                                                                  QContactDetail::Irremovable);
-            } else if (ro) {
-                QContactDetail &det = updatedDetails->last();
-                QContactManagerEngine::setDetailAccessConstraints(&det,
-                                                                  QContactDetail::ReadOnly);
-            } else if (irremovable) {
-                QContactDetail &det = updatedDetails->last();
-                QContactManagerEngine::setDetailAccessConstraints(&det,
-                                                                  QContactDetail::Irremovable);
-            }
-
-            if (updatedDetails->size() == 0) {
-                return;
-            }
-
-            // Remove empty phone and address subtypes
+        QString pid = property.parameters().value(galera::VCardParser::PidFieldName);
+        if (!pid.isEmpty()) {
             QContactDetail &det = updatedDetails->last();
-            switch (det.type()) {
-                case QContactDetail::TypePhoneNumber:
-                {
-                    QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(det);
-                    if (phone.subTypes().isEmpty()) {
-                        det.setValue(QContactPhoneNumber::FieldSubTypes, QVariant());
-                    }
-                    if (property.parameters().contains(galera::VCardParser::PrefParamName)) {
-                        m_prefferedPhone = phone;
-                    }
-                    break;
-                }
-                case QContactDetail::TypeAvatar:
-                {
-                    QString value = property.parameters().value("VALUE");
-                    if (value == "URL") {
-                        det.setValue(QContactAvatar::FieldImageUrl, QUrl(property.value()));
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
+            det.setDetailUri(pid);
         }
 
-        virtual void documentProcessed(const QVersitDocument& document, QContact* contact)
-        {
-            if (!m_prefferedPhone.isEmpty()) {
-                contact->setPreferredDetail(galera::VCardParser::PreferredActionNames[QContactDetail::TypePhoneNumber],
-                                            m_prefferedPhone);
-                m_prefferedPhone = QContactDetail();
-            }
-
-            if (contact->id().isNull() &&
-                !contact->detail<QContactGuid>().isEmpty()) {
-                QContactId id = QContactId::fromString(
-                            QString("qtcontacts:galera::%1").arg(contact->detail<QContactGuid>().guid()));
-                contact->setId(id);
-            }
-
-            //update contact timestamp with X-CREATED-AT
-            QContactTimestamp timestamp = contact->detail<QContactTimestamp>();
-            QDateTime createdAt = timestamp.lastModified();
-            Q_FOREACH(const QVersitProperty &prop, document.properties()) {
-                if (prop.name() == "X-CREATED-AT") {
-                    createdAt = QDateTime::fromString(prop.value(), Qt::ISODate).toUTC();
-                    break;
-                }
-            }
-            timestamp.setCreated(createdAt);
-            contact->saveDetail(&timestamp);
+        bool ro = (property.parameters().value(galera::VCardParser::ReadOnlyFieldName, "NO") == "YES");
+        bool irremovable = (property.parameters().value(galera::VCardParser::IrremovableFieldName, "NO") == "YES");
+        if (ro && irremovable) {
+            QContactDetail &det = updatedDetails->last();
+            QContactManagerEngine::setDetailAccessConstraints(&det,
+                                                              QContactDetail::ReadOnly |
+                                                              QContactDetail::Irremovable);
+        } else if (ro) {
+            QContactDetail &det = updatedDetails->last();
+            QContactManagerEngine::setDetailAccessConstraints(&det,
+                                                              QContactDetail::ReadOnly);
+        } else if (irremovable) {
+            QContactDetail &det = updatedDetails->last();
+            QContactManagerEngine::setDetailAccessConstraints(&det,
+                                                              QContactDetail::Irremovable);
         }
-    private:
-        QContactDetail m_prefferedPhone;
-    };
+
+        if (updatedDetails->size() == 0) {
+            return;
+        }
+
+        // Remove empty phone and address subtypes
+        QContactDetail &det = updatedDetails->last();
+        switch (det.type()) {
+            case QContactDetail::TypePhoneNumber:
+            {
+                QContactPhoneNumber phone = static_cast<QContactPhoneNumber>(det);
+                if (phone.subTypes().isEmpty()) {
+                    det.setValue(QContactPhoneNumber::FieldSubTypes, QVariant());
+                }
+                if (property.parameters().contains(galera::VCardParser::PrefParamName)) {
+                    m_prefferedPhone = phone;
+                }
+                break;
+            }
+            case QContactDetail::TypeAvatar:
+            {
+                QString value = property.parameters().value("VALUE");
+                if (value == "URL") {
+                    det.setValue(QContactAvatar::FieldImageUrl, QUrl(property.value()));
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    virtual void documentProcessed(const QVersitDocument& document, QContact* contact)
+    {
+        if (!m_prefferedPhone.isEmpty()) {
+            contact->setPreferredDetail(galera::VCardParser::PreferredActionNames[QContactDetail::TypePhoneNumber],
+                                        m_prefferedPhone);
+            m_prefferedPhone = QContactDetail();
+        }
+
+        if (contact->id().isNull() &&
+            !contact->detail<QContactGuid>().isEmpty()) {
+            QContactId id = QContactId::fromString(
+                        QString("qtcontacts:galera::%1").arg(contact->detail<QContactGuid>().guid()));
+            contact->setId(id);
+        }
+
+        //update contact timestamp with X-CREATED-AT
+        QContactTimestamp timestamp = contact->detail<QContactTimestamp>();
+        QDateTime createdAt = timestamp.lastModified();
+        Q_FOREACH(const QVersitProperty &prop, document.properties()) {
+            if (prop.name() == "X-CREATED-AT") {
+                createdAt = QDateTime::fromString(prop.value(), Qt::ISODate).toUTC();
+                break;
+            }
+        }
+        timestamp.setCreated(createdAt);
+        contact->saveDetail(&timestamp);
+    }
+private:
+    QContactDetail m_prefferedPhone;
+};
 }
 
 

@@ -791,7 +791,6 @@ QString UpdateContactRequest::callDetailChangeFinish(QtContacts::QContactDetail:
 
 void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *result, gpointer userdata)
 {
-    qDebug() << "UPDAE DONE";
     UpdateContactRequest *self = static_cast<UpdateContactRequest*>(userdata);
 
     QString errorMessage;

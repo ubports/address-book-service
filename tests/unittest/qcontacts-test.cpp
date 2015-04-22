@@ -125,7 +125,9 @@ private Q_SLOTS:
         QCOMPARE(createdName.lastName(), name.lastName());
 
         QContactSyncTarget target = contact.detail<QContactSyncTarget>();
-        QCOMPARE(target.syncTarget(), QString("Dummy personas"));
+        QCOMPARE(target.syncTarget(), QStringLiteral("Dummy personas"));
+        QCOMPARE(target.value(QContactSyncTarget::FieldSyncTarget + 1).toString(),
+                 QStringLiteral("dummy-store"));
     }
 
     /*
