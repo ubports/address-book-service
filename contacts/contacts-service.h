@@ -26,6 +26,8 @@
 #include <QtCore/QMutex>
 #include <QtCore/QQueue>
 
+#include <QSharedPointer>
+
 #include <QtContacts/QContact>
 #include <QtContacts/QContactManagerEngine>
 #include <QtContacts/QContactChangeSet>
