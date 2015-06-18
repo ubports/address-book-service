@@ -117,13 +117,16 @@ protected:
         // filter contacts if necessary
         if (m_filter.isValid()) {
             if (m_filter.isEmpty()) {
-                m_contacts = m_allContacts->values();
+                Q_FOREACH(ContactEntry *entry, m_allContacts->values()) {
+                    if (!entry->individual()->deletedAt().isValid()) {
+                        m_contacts << entry;
+                    }
+                }
                 if (needSort) {
                     chageSort(m_sortClause);
                 }
             } else {
-                Q_FOREACH(ContactEntry *entry, m_allContacts->values())
-                {
+                Q_FOREACH(ContactEntry *entry, m_allContacts->values()) {
                     m_stoppedLock.lockForRead();
                     if (m_stopped) {
                         m_stoppedLock.unlock();

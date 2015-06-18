@@ -115,8 +115,18 @@ private Q_SLOTS:
         changeLogFilter.setEventType(QContactChangeLogFilter::EventRemoved);
         changeLogFilter.setSince(currentDate);
 
+        QContactDetailFilter detFilter;
+        detFilter.setDetailType(QContactDetail::TypeEmailAddress,
+                                QContactEmailAddress::FieldEmailAddress);
+        detFilter.setValue(QStringLiteral("fulano@gmail.com"));
+        detFilter.setMatchFlags(QContactDetailFilter::MatchExactly);
+
         // no contact removed
         QList<QContactId> ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 0);
+
+        // test intersection filter
+        ids = m_manager->contactIds(changeLogFilter & detFilter);
         QCOMPARE(ids.size(), 0);
 
         // wait one more sec to remove the contact
@@ -126,6 +136,11 @@ private Q_SLOTS:
         QVERIFY(result);
 
         ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 1);
+        QCOMPARE(ids[0], contact.id());
+
+        // test intersection filter
+        ids = m_manager->contactIds(changeLogFilter & detFilter);
         QCOMPARE(ids.size(), 1);
         QCOMPARE(ids[0], contact.id());
     }

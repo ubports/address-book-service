@@ -139,4 +139,15 @@ bool AddressBookAdaptor::ping()
     return true;
 }
 
+void AddressBookAdaptor::purgeContacts(const QString &since, const QString &sourceId, const QDBusMessage &message)
+{
+    QDateTime sinceDate;
+    if (since.isEmpty()) {
+        sinceDate = QDateTime::fromTime_t(0);
+    } else {
+        sinceDate = QDateTime::fromString(since, Qt::ISODate);
+    }
+    m_addressBook->purgeContacts(sinceDate, sourceId, message);
+}
+
 } //namespace

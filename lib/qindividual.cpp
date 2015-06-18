@@ -1155,6 +1155,7 @@ bool QIndividual::markAsDeleted()
                 g_error_free(error);
             } else {
                 m_deletedAt = QDateTime::currentDateTime();
+                notifyUpdate();
             }
 
             g_object_unref(client);

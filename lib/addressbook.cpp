@@ -67,6 +67,7 @@ public:
     galera::AddressBook *m_addressbook;
     QDBusMessage m_message;
     int m_sucessCount;
+    bool m_softRemoval;
 };
 
 class CreateSourceData
@@ -799,6 +800,7 @@ int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessag
     data->m_message = message;
     data->m_request = contactIds;
     data->m_sucessCount = 0;
+    data->m_softRemoval = true;
     removeContactDone(0, 0, data);
     return 0;
 }
@@ -809,6 +811,8 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
 {
     GError *error = 0;
     RemoveContactsData *removeData = static_cast<RemoveContactsData*>(data);
+
+   qDebug() << "WILL DELETE" << removeData  ->m_request;
 
     if (result) {
         folks_individual_aggregator_remove_individual_finish(individualAggregator, result, &error);
@@ -825,11 +829,9 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
         QString contactId = removeData->m_request.takeFirst();
         ContactEntry *entry = removeData->m_addressbook->m_contacts->value(contactId);
         if (entry) {
-            if (entry->individual()->markAsDeleted()) {
+            if (removeData->m_softRemoval && entry->individual()->markAsDeleted()) {
                 removeContactDone(individualAggregator, 0, data);
             } else {
-                FolksIndividual *i = entry->individual()->individual();
-
                 folks_individual_aggregator_remove_individual(individualAggregator,
                                                               entry->individual()->individual(),
                                                               (GAsyncReadyCallback) removeContactDone,
@@ -873,6 +875,26 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
 
     updateContactsDone("", "");
     return QStringList();
+}
+
+void AddressBook::purgeContacts(const QDateTime &since, const QString &sourceId, const QDBusMessage &message)
+{
+    RemoveContactsData *data = new RemoveContactsData;
+    data->m_addressbook = this;
+    data->m_message = message;
+    data->m_sucessCount = 0;
+    data->m_softRemoval = false;
+
+    Q_FOREACH(const ContactEntry *entry, m_contacts->values()) {
+        if (entry->individual()->deletedAt() > since) {
+            QContactSyncTarget syncTarget = entry->individual()->contact().detail<QContactSyncTarget>();
+            if (syncTarget.value(QContactSyncTarget::FieldSyncTarget + 1).toString() == sourceId) {
+                data->m_request << entry->individual()->id();
+            }
+        }
+    }
+
+    removeContactDone(0, 0, data);
 }
 
 void AddressBook::updateContactsDone(const QString &contactId,

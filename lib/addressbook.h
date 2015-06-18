@@ -59,6 +59,7 @@ public:
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
     bool isReady() const;
 
+
     static int init();
 
 Q_SIGNALS:
@@ -75,6 +76,7 @@ public Q_SLOTS:
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message = QDBusMessage());
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
+    void purgeContacts(const QDateTime &since, const QString &sourceId, const QDBusMessage &message);
     void updateContactsDone(const QString &contactId, const QString &error);
 
 private Q_SLOTS:

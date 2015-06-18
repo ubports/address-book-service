@@ -103,6 +103,10 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"s\" name=\"parent\"/>\n"
 "      <arg direction=\"in\" type=\"as\" name=\"contacts\"/>\n"
 "    </method>\n"
+"    <method name=\"purgeContacts\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"    </method>\n"
 "  </interface>\n"
         "")
     Q_PROPERTY(bool isReady READ isReady NOTIFY readyChanged)
@@ -124,6 +128,7 @@ public Q_SLOTS:
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
     bool isReady();
     bool ping();
+    void purgeContacts(const QString &since, const QString &sourceId, const QDBusMessage &message);
 
 Q_SIGNALS:
     void contactsAdded(const QStringList &ids);

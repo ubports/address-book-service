@@ -47,6 +47,7 @@ private:
 
     bool checkIsEmpty(const QList<QtContacts::QContactFilter> filters) const;
     bool checkIsValid(const QList<QtContacts::QContactFilter> filters) const;
+    bool test(const QtContacts::QContactFilter &filter, const QtContacts::QContact &contact, const QDateTime &deletedDate) const;
 
     static QString toString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter buildFilter(const QString &filter);

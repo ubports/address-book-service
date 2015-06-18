@@ -54,19 +54,46 @@ QtContacts::QContactFilter Filter::toContactFilter() const
     return m_filter;
 }
 
+bool Filter::test(const QContactFilter &filter, const QContact &contact, const QDateTime &deletedDate) const
+{
+    switch(filter.type()) {
+    case QContactFilter::ChangeLogFilter:
+    {
+        const QContactChangeLogFilter bf(filter);
+        if (bf.eventType() == QContactChangeLogFilter::EventRemoved) {
+            return (deletedDate >= bf.since());
+        }
+        break;
+    }
+    case QContactFilter::IntersectionFilter:
+    {
+        const QContactIntersectionFilter bf(filter);
+        const QList<QContactFilter>& terms = bf.filters();
+        if (terms.count() > 0) {
+            bool changeLogResult = false;
+            for(int j = 0; j < terms.count(); j++) {
+                if (terms.at(j).type() == QContactFilter::ChangeLogFilter) {
+                    changeLogResult = test(terms.at(j), contact, deletedDate);
+                } else if (!QContactManagerEngine::testFilter(terms.at(j), contact)) {
+                    return false;
+                }
+            }
+            return changeLogResult;
+        }
+        break;
+    }
+    default:
+        return QContactManagerEngine::testFilter(m_filter, contact);
+    }
+    return false;
+}
+
 bool Filter::test(const QContact &contact, const QDateTime &deletedDate) const
 {
-    if (m_filter.type() == QContactFilter::ChangeLogFilter) {
-        const QContactChangeLogFilter clf(m_filter);
-        if (clf.eventType() == QContactChangeLogFilter::EventRemoved) {
-            return (deletedDate >= clf.since());
-        }
-    }
-
     if (!deletedDate.isValid()) {
         return QContactManagerEngine::testFilter(m_filter, contact);
     } else {
-        return false;
+        return test(m_filter, contact, deletedDate);
     }
 }
 
