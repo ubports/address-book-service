@@ -65,6 +65,10 @@ bool Filter::test(const QContactFilter &filter, const QContact &contact, const Q
         }
         break;
     }
+    // query by id return the contact even if deleted
+    case QContactFilter::IdFilter:
+        return QContactManagerEngine::testFilter(filter, contact);
+
     case QContactFilter::IntersectionFilter:
     {
         const QContactIntersectionFilter bf(filter);
@@ -82,8 +86,10 @@ bool Filter::test(const QContactFilter &filter, const QContact &contact, const Q
         }
         break;
     }
+    case QContactFilter::UnionFilter:
+        return QContactManagerEngine::testFilter(filter, contact);
     default:
-        return QContactManagerEngine::testFilter(m_filter, contact);
+        break;
     }
     return false;
 }

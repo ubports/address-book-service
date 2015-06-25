@@ -831,6 +831,8 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
         if (entry) {
             if (removeData->m_softRemoval && entry->individual()->markAsDeleted()) {
                 removeContactDone(individualAggregator, 0, data);
+                // since this will not be removed we need to send a removal singal
+                removeData->m_addressbook->m_notifyContactUpdate->insertRemovedContacts(QSet<QString>() << entry->individual()->id());
             } else {
                 folks_individual_aggregator_remove_individual(individualAggregator,
                                                               entry->individual()->individual(),
