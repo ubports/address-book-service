@@ -270,6 +270,36 @@ void UpdateContactRequest::updateAvatar()
         qDebug() << "avatar diff:"
                  << "\n\t" << originalDetails.size() << (originalDetails.size() > 0 ? originalDetails[0] : QContactDetail()) << "\n"
                  << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
+
+        // update avatar version if necessary
+        QContactExtendedDetail originalAvatarRev;
+        QContactExtendedDetail newAvatarRev;
+        Q_FOREACH(const QContactExtendedDetail &det,
+                  originalDetailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0)) {
+            if (det.name() == "X-AVATAR-REV") {
+                originalAvatarRev = det;
+                break;
+            }
+        }
+        Q_FOREACH(const QContactExtendedDetail &det,
+                  detailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0)) {
+            if (det.name() == "X-AVATAR-REV") {
+                newAvatarRev = det;
+                break;
+            }
+        }
+        // if the avatar changed and the rev still the same we need to reset it to force a sync
+        if (originalAvatarRev.data() == newAvatarRev.data()) {
+            newAvatarRev.setData("");
+            m_newContact.saveDetail(&newAvatarRev);
+        }
+
+        // continue avatar update
+        QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0);
+
+
+
+
         //Only supports one avatar
         QUrl avatarUri;
         QUrl oldAvatarUri;

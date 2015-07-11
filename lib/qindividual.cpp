@@ -60,6 +60,7 @@ using namespace QtContacts;
 #define X_GOOGLE_ETAG             "X-GOOGLE-ETAG"
 #define X_GROUP_ID                "X-GROUP-ID"
 #define X_DELETED_AT              "X-DELETED-AT"
+#define X_AVATAR_REV              "X-AVATAR-REV"
 
 namespace
 {
@@ -158,7 +159,8 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
         m_supportedExtendedDetails << X_CREATED_AT
                                    << X_REMOTE_ID
                                    << X_GOOGLE_ETAG
-                                   << X_GROUP_ID;
+                                   << X_GROUP_ID
+                                   << X_AVATAR_REV;
     }
     setIndividual(individual);
 }
