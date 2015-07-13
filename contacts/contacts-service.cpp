@@ -93,6 +93,25 @@ static QContact parseSource(const galera::Source &source, const QString &manager
     primary.setData(source.isPrimary());
     contact.saveDetail(&primary);
 
+    // Account Id
+    QContactExtendedDetail accountId;
+    accountId.setName("ACCOUNT-ID");
+    accountId.setData(source.accountId());
+    contact.saveDetail(&accountId);
+
+    // Application Id
+    QContactExtendedDetail applicationId;
+    applicationId.setName("APPLICATION-ID");
+    applicationId.setData(source.applicationId());
+    contact.saveDetail(&applicationId);
+
+    // Provider
+    QContactExtendedDetail provider;
+    provider.setName("PROVIDER");
+    qDebug() << "RECEIVED PROVIDER NAME" << source.providerName();
+    provider.setData(source.providerName());
+    contact.saveDetail(&provider);
+
     return contact;
 }
 
@@ -473,15 +492,20 @@ void GaleraContactsService::createContactsStart(QContactSaveRequestData *data)
 
     if (isGroup) {
         bool isPrimary = false;
+        uint accountId = 0;
+
         QList<QContactExtendedDetail> xDetails = data->currentContact().details<QContactExtendedDetail>();
         Q_FOREACH(const QContactExtendedDetail &xDetail, xDetails) {
             if (xDetail.name() == "IS-PRIMARY") {
                 isPrimary = xDetail.data().toBool();
-                break;
+            }
+
+            if (xDetail.name() == "ACCOUNT-ID") {
+                accountId = xDetail.data().toUInt();
             }
         }
 
-        QDBusPendingCall pcall = m_iface->asyncCall("createSource", contact, isPrimary);
+        QDBusPendingCall pcall = m_iface->asyncCall("createSourceForAccount", contact, accountId, isPrimary);
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
         data->updateWatcher(watcher);
         QObject::connect(watcher, &QDBusPendingCallWatcher::finished,

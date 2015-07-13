@@ -73,17 +73,22 @@ struct _ESourceUbuntuClass {
 };
 
 GType           e_source_ubuntu_get_type            (void) G_GNUC_CONST;
-GObject *       e_source_ubuntu_get_provider        (ESourceUbuntu *extension);
+
 guint           e_source_ubuntu_get_account_id      (ESourceUbuntu *extension);
 void            e_source_ubuntu_set_account_id      (ESourceUbuntu *extension,
-                                                     guint account_id);
-gboolean        e_source_ubuntu_get_autoremove      (ESourceUbuntu *extension);
-void            e_source_ubuntu_set_autoremove      (ESourceUbuntu *extension,
-                                                     gboolean flag);
+                                                     guint id);
+
 const gchar *   e_source_ubuntu_get_application_id  (ESourceUbuntu *extension);
 gchar *         e_source_ubuntu_dup_application_id  (ESourceUbuntu *extension);
 void            e_source_ubuntu_set_application_id  (ESourceUbuntu *extension,
                                                      const gchar *application_id);
+
+gboolean        e_source_ubuntu_get_autoremove      (ESourceUbuntu *extension);
+void            e_source_ubuntu_set_autoremove      (ESourceUbuntu *extension,
+                                                     gboolean flag);
+
+const gchar *   e_source_ubuntu_get_account_provider(ESourceUbuntu *extension);
+gchar *         e_source_ubuntu_dup_account_provider(ESourceUbuntu *extension);
 
 G_END_DECLS
 

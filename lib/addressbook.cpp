@@ -23,6 +23,7 @@
 #include "contacts-map.h"
 #include "qindividual.h"
 #include "dirtycontact-notify.h"
+#include "e-source-ubuntu.h"
 
 #include "common/vcard-parser.h"
 
@@ -75,6 +76,9 @@ class CreateSourceData
 public:
     QString m_sourceId;
     QString m_sourceName;
+    QString m_applicationId;
+    QString m_providerName;
+    uint m_accountId;
     bool m_setAsPrimary;
     galera::AddressBook *m_addressbook;
     QDBusMessage m_message;
@@ -88,7 +92,7 @@ public:
     QDBusMessage m_message;
 };
 
-ESource* create_esource_from_data(const CreateSourceData &data, ESourceRegistry **registry)
+ESource* create_esource_from_data(CreateSourceData &data, ESourceRegistry **registry)
 {
     GError *error = NULL;
     ESource *source = e_source_new_with_uid(data.m_sourceId.toUtf8().data(), NULL, &error);
@@ -100,6 +104,15 @@ ESource* create_esource_from_data(const CreateSourceData &data, ESourceRegistry 
 
     e_source_set_parent(source, "local-stub");
     e_source_set_display_name(source, data.m_sourceName.toUtf8().data());
+
+    if (data.m_accountId > 0) {
+        ESourceUbuntu *ubuntu_ex = E_SOURCE_UBUNTU(e_source_get_extension(source, E_SOURCE_EXTENSION_UBUNTU));
+        e_source_ubuntu_set_account_id(ubuntu_ex, data.m_accountId);
+        e_source_ubuntu_set_application_id(ubuntu_ex, data.m_applicationId.toUtf8());
+        e_source_ubuntu_set_autoremove(ubuntu_ex, TRUE);
+        data.m_providerName = QString::fromUtf8(e_source_ubuntu_get_account_provider(ubuntu_ex));
+    }
+
     ESourceAddressBook *ext = E_SOURCE_ADDRESS_BOOK(e_source_get_extension(source, E_SOURCE_EXTENSION_ADDRESS_BOOK));
     e_source_backend_set_backend_name(E_SOURCE_BACKEND(ext), "local");
 
@@ -207,6 +220,8 @@ bool AddressBook::start(QDBusConnection connection)
 
 bool AddressBook::start()
 {
+    g_type_ensure (E_TYPE_SOURCE_UBUNTU);
+
     return start(QDBusConnection::sessionBus());
 }
 
@@ -367,13 +382,17 @@ Source AddressBook::source(const QDBusMessage &message)
     return Source();
 }
 
-Source AddressBook::createSource(const QString &sourceName, bool setAsPrimary, const QDBusMessage &message)
+Source AddressBook::createSource(const QString &sourceName,
+                                 uint accountId,
+                                 bool setAsPrimary,
+                                 const QDBusMessage &message)
 {
     CreateSourceData *data = new CreateSourceData;
     data->m_addressbook = this;
     data->m_message = message;
     data->m_sourceName = sourceName;
     data->m_setAsPrimary = setAsPrimary;
+    data->m_accountId = accountId;
 
     FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
     QString personaStoreTypeId("dummy");
@@ -398,7 +417,7 @@ Source AddressBook::createSource(const QString &sourceName, bool setAsPrimary, c
         g_object_unref(backendStore);
         g_object_unref(dummy);
 
-        Source src(sourceName, sourceName, false, false);
+        Source src(sourceName, sourceName, QString(), QString(), data->m_accountId, false, false);
         QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(src));
         QDBusConnection::sessionBus().send(reply);
     } else if (personaStoreTypeId == "eds") {
@@ -553,7 +572,13 @@ void AddressBook::createSourceDone(GObject *source,
         if (cData->m_setAsPrimary) {
             e_source_registry_set_default_address_book(E_SOURCE_REGISTRY(source), cData->m_source);
         }
-        src = Source(cData->m_sourceId, cData->m_sourceName, false, cData->m_setAsPrimary);
+        src = Source(cData->m_sourceId,
+                     cData->m_sourceName,
+                     cData->m_applicationId,
+                     cData->m_providerName,
+                     cData->m_accountId,
+                     false,
+                     cData->m_setAsPrimary);
     }
     g_object_unref(source);
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
@@ -652,6 +677,10 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                             folks_persona_store_get_can_remove_personas(store);
             bool isPrimary = folks_persona_store_get_is_primary_store(store);
 
+            uint accountId = 0;
+            QString applicationId;
+            QString providerName;
+
             // FIXME: Due a bug on Folks we can not rely on folks_persona_store_get_is_primary_store
             // see main.cpp:68
             if (strcmp(folks_backend_get_name(backend), "eds") == 0) {
@@ -666,10 +695,22 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                     isPrimary = e_source_equal(defaultSource, source);
                     g_object_unref(defaultSource);
                     g_object_unref(r);
+
+                    if (e_source_has_extension(source, E_SOURCE_EXTENSION_UBUNTU)) {
+                        ESourceUbuntu *ubuntu_ex = E_SOURCE_UBUNTU(e_source_get_extension(source, E_SOURCE_EXTENSION_UBUNTU));
+                        if (ubuntu_ex) {
+                            applicationId = QString::fromUtf8(e_source_ubuntu_get_application_id(ubuntu_ex));
+                            providerName = QString::fromUtf8(e_source_ubuntu_get_account_provider(ubuntu_ex));
+                            accountId = e_source_ubuntu_get_account_id(ubuntu_ex);
+                        }
+                    } else {
+                        qDebug() << "SOURCE DOES NOT HAVE UBUNTU EXTENSION:"
+                                 << QString::fromUtf8(e_source_get_display_name(source));
+                    }
                 }
             }
 
-            result << Source(id, displayName, !canWrite, isPrimary);
+            result << Source(id, displayName, applicationId, providerName, accountId, !canWrite, isPrimary);
             g_object_unref(store);
         }
 

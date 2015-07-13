@@ -35,17 +35,20 @@
 
 struct _ESourceUbuntuPrivate {
     GMutex property_lock;
+
+    guint account_id;
     gchar *application_id;
-    AgAccount *account;
     gboolean auto_remove;
+    gchar *provider;
+    AgAccount *account;
 };
 
 enum {
     PROP_0,
     PROP_ACCOUNT_ID,
     PROP_APPLICATION_ID,
-    PROP_ACCOUNT,
     PROP_AUTOREMOVE,
+    PROP_ACCOUNT_PROVIDER
 };
 
 G_DEFINE_TYPE (
@@ -61,22 +64,18 @@ source_ubuntu_set_property (GObject *object,
 {
     switch (property_id) {
         case PROP_ACCOUNT_ID:
-            e_source_ubuntu_set_account_id (
-                E_SOURCE_UBUNTU (object),
-                g_value_get_uint(value));
+            e_source_ubuntu_set_account_id(E_SOURCE_UBUNTU (object),
+                                           g_value_get_uint(value));
             return;
 
         case PROP_APPLICATION_ID:
-            e_source_ubuntu_set_application_id (
-                E_SOURCE_UBUNTU (object),
-                g_value_get_string (value));
+            e_source_ubuntu_set_application_id (E_SOURCE_UBUNTU (object),
+                                                g_value_get_string (value));
             return;
 
-
         case PROP_AUTOREMOVE:
-            e_source_ubuntu_set_autoremove (
-                E_SOURCE_UBUNTU (object),
-                g_value_get_boolean (value));
+            e_source_ubuntu_set_autoremove (E_SOURCE_UBUNTU (object),
+                                            g_value_get_boolean (value));
             return;
     }
 
@@ -91,25 +90,25 @@ source_ubuntu_get_property (GObject *object,
 {
     switch (property_id) {
         case PROP_ACCOUNT_ID:
-            g_value_set_uint(
-                value,
-                e_source_ubuntu_get_account_id (
-                E_SOURCE_UBUNTU (object)));
+            g_value_set_uint (value,
+                              e_source_ubuntu_get_account_id (E_SOURCE_UBUNTU (object)));
             return;
 
         case PROP_APPLICATION_ID:
-            g_value_take_string (
-                value,
-                e_source_ubuntu_dup_application_id (
-                E_SOURCE_UBUNTU (object)));
+            g_value_take_string (value,
+                                 e_source_ubuntu_dup_application_id (E_SOURCE_UBUNTU (object)));
             return;
 
         case PROP_AUTOREMOVE:
-            g_value_set_boolean (
-                value,
-                e_source_ubuntu_get_autoremove (
-                E_SOURCE_UBUNTU (object)));
+            g_value_set_boolean (value,
+                                 e_source_ubuntu_get_autoremove (E_SOURCE_UBUNTU (object)));
             return;
+
+        case PROP_ACCOUNT_PROVIDER:
+            g_value_take_string (value,
+                                 e_source_ubuntu_dup_account_provider (E_SOURCE_UBUNTU (object)));
+            return;
+
     }
 
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -123,9 +122,12 @@ source_ubuntu_finalize (GObject *object)
     priv = E_SOURCE_UBUNTU_GET_PRIVATE (object);
 
     g_mutex_clear (&priv->property_lock);
+    if (priv->account) {
+        g_object_unref (priv->account);
+    }
 
-    g_clear_object (&priv->account);
     g_free (priv->application_id);
+    g_free (priv->provider);
 
     /* Chain up to parent's finalize() method. */
     G_OBJECT_CLASS (e_source_ubuntu_parent_class)->finalize (object);
@@ -136,8 +138,6 @@ e_source_ubuntu_class_init (ESourceUbuntuClass *klass)
 {
     GObjectClass *object_class;
     ESourceExtensionClass *extension_class;
-
-    g_debug("Registe UBUNTU CLASS>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 
     g_type_class_add_private (klass, sizeof (ESourceUbuntuPrivate));
 
@@ -151,17 +151,6 @@ e_source_ubuntu_class_init (ESourceUbuntuClass *klass)
 
     g_object_class_install_property (
         object_class,
-        PROP_ACCOUNT,
-        g_param_spec_gtype(
-            "account",
-            "Account object",
-            "The account object related with account-id",
-            AG_TYPE_ACCOUNT,
-            G_PARAM_READABLE |
-            G_PARAM_STATIC_STRINGS));
-
-    g_object_class_install_property (
-        object_class,
         PROP_ACCOUNT_ID,
         g_param_spec_uint (
             "account-id",
@@ -169,6 +158,7 @@ e_source_ubuntu_class_init (ESourceUbuntuClass *klass)
             "Online Account ID",
             0, G_MAXUINT, 0,
             G_PARAM_READWRITE |
+            G_PARAM_CONSTRUCT |
             G_PARAM_STATIC_STRINGS |
             E_SOURCE_PARAM_SETTING));
 
@@ -195,34 +185,26 @@ e_source_ubuntu_class_init (ESourceUbuntuClass *klass)
             TRUE,
             G_PARAM_READWRITE |
             G_PARAM_CONSTRUCT |
+            G_PARAM_STATIC_STRINGS |
             E_SOURCE_PARAM_SETTING));
+
+    g_object_class_install_property (
+        object_class,
+        PROP_ACCOUNT_PROVIDER,
+        g_param_spec_string (
+            "account-provider",
+            "Provider name",
+            "Online Account Provider name",
+            NULL,
+            G_PARAM_READABLE |
+            G_PARAM_STATIC_STRINGS));
 }
 
 static void
 e_source_ubuntu_init (ESourceUbuntu *extension)
 {
     extension->priv = E_SOURCE_UBUNTU_GET_PRIVATE (extension);
-    extension->priv->account = 0;
-    extension->priv->auto_remove = TRUE;
     g_mutex_init (&extension->priv->property_lock);
-}
-
-void
-e_source_ubuntu_account_deleted_cb (AgAccount *account,
-                                    ESourceUbuntu *extension)
-{
-    g_debug ("Account removed %s\n", ag_account_get_display_name (account));
-
-    if (extension->priv->auto_remove) {
-        ESource *source = e_source_extension_ref_source (E_SOURCE_EXTENSION (extension));
-        GError *error;
-        e_source_remove_sync (source, NULL, &error);
-        if (error) {
-            g_warning("Fail to remove source: %s", error->message);
-            g_error_free (error);
-        }
-    }
-
 }
 
 /**
@@ -238,15 +220,9 @@ e_source_ubuntu_account_deleted_cb (AgAccount *account,
 guint
 e_source_ubuntu_get_account_id (ESourceUbuntu *extension)
 {
-    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), NULL);
-    guint account_id = 0;
+    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), 0);
 
-    if (extension->priv->account) {
-        g_object_get (G_OBJECT(extension->priv->account),
-                      "account", &account_id, NULL);
-    }
-
-    return account_id;
+    return extension->priv->account_id;
 }
 
 
@@ -269,11 +245,8 @@ e_source_ubuntu_set_account_id (ESourceUbuntu *extension,
     g_return_if_fail (E_IS_SOURCE_UBUNTU (extension));
 
     g_mutex_lock (&extension->priv->property_lock);
-    guint old_account_id;
 
-    old_account_id = e_source_ubuntu_get_account_id (extension);
-
-    if ((old_account_id == account_id) == 0) {
+    if (extension->priv->account_id == account_id) {
         g_mutex_unlock (&extension->priv->property_lock);
         return;
     }
@@ -283,22 +256,14 @@ e_source_ubuntu_set_account_id (ESourceUbuntu *extension,
         extension->priv->account = 0;
     }
 
-    if (account_id <= 0) {
-        return;
+    extension->priv->account_id = account_id;
+    if (account_id != 0) {
+        AgManager *manager = ag_manager_new ();
+        extension->priv->account = ag_manager_get_account (manager, account_id);
     }
 
-    AgManager *manager;
-    manager = ag_manager_new ();
-
-    extension->priv->account = ag_manager_get_account (manager, account_id);
-    g_signal_connect (
-            extension->priv->account, "deleted",
-            G_CALLBACK (e_source_ubuntu_account_deleted_cb),
-            extension);
-
-
-    g_object_unref (manager);
     g_mutex_unlock (&extension->priv->property_lock);
+
     g_object_notify (G_OBJECT (extension), "account-id");
 }
 
@@ -386,6 +351,36 @@ e_source_ubuntu_set_application_id (ESourceUbuntu *extension,
     g_object_notify (G_OBJECT (extension), "application-id");
 }
 
+const gchar *
+e_source_ubuntu_get_account_provider (ESourceUbuntu *extension)
+{
+    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), NULL);
+
+    if (extension->priv->account) {
+        return ag_account_get_provider_name (extension->priv->account);
+    }
+
+    return NULL;
+}
+
+gchar *
+e_source_ubuntu_dup_account_provider (ESourceUbuntu *extension)
+{
+    const gchar *provider;
+    gchar *duplicate;
+
+    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), NULL);
+
+    g_mutex_lock (&extension->priv->property_lock);
+
+    provider = e_source_ubuntu_get_account_provider (extension);
+    duplicate = g_strdup (provider);
+
+    g_mutex_unlock (&extension->priv->property_lock);
+
+    return duplicate;
+}
+
 gboolean
 e_source_ubuntu_get_autoremove(ESourceUbuntu *extension)
 {
@@ -413,33 +408,3 @@ e_source_ubuntu_set_autoremove(ESourceUbuntu *extension,
 
     g_object_notify (G_OBJECT (extension), "auto-remove");
 }
-
-GObject*
-e_source_ubuntu_get_account(ESourceUbuntu *extension)
-{
-    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), NULL);
-
-    if (extension->priv->account) {
-        return G_OBJECT (extension->priv->account);
-    } else {
-        return 0;
-    }
-}
-
-G_MODULE_EXPORT void
-e_module_load (GTypeModule *type_module)
-{
-    g_debug ("e_module_load: ubuntu");
-    //e_source_ubuntu_register_type (type_module);
-    g_type_ensure (E_TYPE_SOURCE_UBUNTU);
-    GType tt = e_source_ubuntu_get_type();
-    g_debug ("type %ld", tt);
-    g_debug ("e_module_load: ubuntu: done");
-}
-
-G_MODULE_EXPORT void
-e_module_unload (GTypeModule *type_module)
-{
-    g_debug ("e_module_unload: ubuntu");
-}
-

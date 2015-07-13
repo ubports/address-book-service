@@ -37,6 +37,7 @@ add_library(${CONTACTS_SERVICE_LIB} STATIC
 
 target_link_libraries(${CONTACTS_SERVICE_LIB}
     galera-common
+    ubuntu-source-eds
     ${GLIB_LIBRARIES}
     ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
@@ -46,6 +47,7 @@ target_link_libraries(${CONTACTS_SERVICE_LIB}
 qt5_use_modules(${CONTACTS_SERVICE_LIB} Core Contacts DBus Versit)
 
 include_directories(
+    ${ubuntu-sources_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
     ${GLIB_INCLUDE_DIRS}

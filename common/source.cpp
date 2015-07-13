@@ -28,15 +28,26 @@ Source::Source()
 Source::Source(const Source &other)
     : m_id(other.id()),
       m_displayName(other.displayLabel()),
+      m_applicationId(other.applicationId()),
+      m_providerName(other.providerName()),
       m_isReadOnly(other.isReadOnly()),
-      m_isPrimary(other.isPrimary())
-
+      m_isPrimary(other.isPrimary()),
+      m_accountId(other.accountId())
 {
 }
 
-Source::Source(QString id, const QString &displayName, bool isReadOnly, bool isPrimary)
+Source::Source(QString id,
+               const QString &displayName,
+               const QString &applicationId,
+               const QString &providerName,
+               uint accountId,
+               bool isReadOnly,
+               bool isPrimary)
     : m_id(id),
       m_displayName(displayName),
+      m_applicationId(applicationId),
+      m_providerName(providerName),
+      m_accountId(accountId),
       m_isReadOnly(isReadOnly),
       m_isPrimary(isPrimary)
 {
@@ -51,6 +62,21 @@ bool Source::isValid() const
 bool Source::isPrimary() const
 {
     return m_isPrimary;
+}
+
+uint Source::accountId() const
+{
+    return m_accountId;
+}
+
+QString Source::applicationId() const
+{
+    return m_applicationId;
+}
+
+QString Source::providerName() const
+{
+    return m_providerName;
 }
 
 QString Source::id() const
@@ -83,6 +109,9 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Source &source)
     argument << source.m_displayName;
     argument << source.m_isReadOnly;
     argument << source.m_isPrimary;
+    argument << source.m_accountId;
+    argument << source.m_applicationId;
+    argument << source.m_providerName;
     argument.endStructure();
 
     return argument;
@@ -95,6 +124,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Source &source)
     argument >> source.m_displayName;
     argument >> source.m_isReadOnly;
     argument >> source.m_isPrimary;
+    argument >> source.m_accountId;
+    argument >> source.m_applicationId;
+    argument >> source.m_providerName;
     argument.endStructure();
 
     return argument;

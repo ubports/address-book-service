@@ -29,7 +29,13 @@ class Source
 public:
     Source();
     Source(const Source &other);
-    Source(QString id, const QString &displayName, bool isReadOnly, bool isPrimary);
+    Source(QString id,
+           const QString &displayName,
+           const QString &applicationId,
+           const QString &providerName,
+           uint accountId,
+           bool isReadOnly,
+           bool isPrimary);
     friend QDBusArgument &operator<<(QDBusArgument &argument, const Source &source);
     friend const QDBusArgument &operator>>(const QDBusArgument &argument, Source &source);
 
@@ -39,10 +45,16 @@ public:
     bool isReadOnly() const;
     bool isValid() const;
     bool isPrimary() const;
+    uint accountId() const;
+    QString applicationId() const;
+    QString providerName() const;
 
 private:
     QString m_id;
     QString m_displayName;
+    QString m_applicationId;
+    QString m_providerName;
+    uint m_accountId;
     bool m_isReadOnly;
     bool m_isPrimary;
 };
