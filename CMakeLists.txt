@@ -17,7 +17,7 @@ pkg_check_modules(GLIB REQUIRED glib-2.0>=2.32)
 pkg_check_modules(GIO REQUIRED gio-2.0>=2.32)
 pkg_check_modules(FOLKS REQUIRED folks>=0.9.0)
 pkg_check_modules(FOLKS_EDS REQUIRED folks-eds)
-pkg_check_modules(GLIB_ACCOUNTS libaccounts-glib)
+pkg_check_modules(GLIB_ACCOUNTS REQUIRED libaccounts-glib)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
