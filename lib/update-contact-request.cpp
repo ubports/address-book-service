@@ -294,12 +294,6 @@ void UpdateContactRequest::updateAvatar()
             m_newContact.saveDetail(&newAvatarRev);
         }
 
-        // continue avatar update
-        QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0);
-
-
-
-
         //Only supports one avatar
         QUrl avatarUri;
         QUrl oldAvatarUri;
