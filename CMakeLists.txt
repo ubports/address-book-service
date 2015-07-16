@@ -75,5 +75,6 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
 else()
     add_subdirectory(tests)
 endif()
+set(TEST_DATA_DIR "${CMAKE_SOURCE_DIR}/tests/data")
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

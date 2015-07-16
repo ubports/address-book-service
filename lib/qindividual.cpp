@@ -752,6 +752,7 @@ QList<QContactDetail> QIndividual::getPersonaExtendedDetails(FolksPersona *perso
             QContactExtendedDetail xDet;
             xDet.setName(xDetName);
             xDet.setData(QString::fromUtf8(attrValue->str));
+            xDet.setDetailUri(QString("%1.1").arg(index));
             g_string_free(attrValue, true);
             result << xDet;
         }
@@ -1739,6 +1740,8 @@ void QIndividual::setExtendedDetails(FolksPersona *persona,
                     e_vcard_add_attribute_with_value(E_VCARD(c),
                                                      attr,
                                                      xd.data().toString().toUtf8().constData());
+                } else {
+                    qWarning() << "Extended detail not supported" << xd.name();
                 }
             }
 

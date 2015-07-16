@@ -1,6 +1,7 @@
 #ifndef __GALERA_CONFIG_H__
 #define __GALERA_CONFIG_H__
 
-#define QT_PLUGINS_BINARY_DIR   	"@CMAKE_BINARY_DIR@"
+#define QT_PLUGINS_BINARY_DIR       "@CMAKE_BINARY_DIR@"
+#define TEST_DATA_DIR               "@TEST_DATA_DIR@"
 
 #endif
