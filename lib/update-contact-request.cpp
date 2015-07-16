@@ -309,7 +309,7 @@ void UpdateContactRequest::updateAvatar()
         }
 
         if ((avatarUri != oldAvatarUri) &&
-            avatarUri.isLocalFile()){
+            (avatarUri.isLocalFile() || avatarUri.isEmpty())){
             GFileIcon *avatarFileIcon = NULL;
             if(!avatarUri.isEmpty()) {
                 QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
