@@ -827,6 +827,7 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         }
 
         if (!errorMessage.isEmpty()) {
+            qWarning() << "Fail to update contact" << errorMessage;
             self->invokeSlot(errorMessage);
             return;
         }

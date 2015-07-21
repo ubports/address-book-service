@@ -947,7 +947,13 @@ void AddressBook::updateContactsDone(const QString &contactId,
 
     if (!error.isEmpty()) {
         // update the result with the error
-        m_updateCommandResult[currentContactIndex] = error;
+        if (currentContactIndex >= 0 &&
+            currentContactIndex < m_updateCommandResult.size()) {
+            m_updateCommandResult[currentContactIndex] = error;
+        } else {
+            qWarning() << "Invalid contact changed index" << currentContactIndex <<
+                          "Contact list size" << m_updateCommandResult.size();
+        }
     } else if (!contactId.isEmpty()){
         // update the result with the new contact info
         ContactEntry *entry = m_contacts->value(contactId);
