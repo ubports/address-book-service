@@ -319,7 +319,7 @@ void AddressBook::unprepareEds()
 void AddressBook::connectWithEDS()
 {
     // we need to keep it update with the EDS dbus service name
-    static const QString evolutionServiceName("org.gnome.evolution.dataserver.AddressBook9");
+    static const QString evolutionServiceName(EVOLUTION_ADDRESSBOOK_SERVICE_NAME);
 
     // Check if eds was disabled manually
     // If eds was disabled we should skip the check

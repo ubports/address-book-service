@@ -13,8 +13,15 @@ add_definitions(-DQT_NO_KEYWORDS)
 
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.32)
 pkg_check_modules(GIO REQUIRED gio-2.0>=2.32)
+pkg_check_modules(EDATASERVER REQUIRED libedataserver-1.2>=3.8)
 pkg_check_modules(FOLKS REQUIRED folks>=0.9.0)
 pkg_check_modules(FOLKS_EDS REQUIRED folks-eds)
+
+if(EDATASERVER_VERSION VERSION_LESS "3.16")
+    set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook6")
+else()
+    set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook9")
+endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
@@ -70,5 +77,7 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
 else()
     add_subdirectory(tests)
 endif()
+
+
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
