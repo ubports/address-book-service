@@ -109,6 +109,7 @@ private:
     QDBusConnection m_connection;
 
     // Update command
+    QMutex m_updateLock;
     QDBusMessage m_updateCommandReplyMessage;
     QStringList m_updateCommandResult;
     QStringList m_updatedIds;
@@ -132,6 +133,7 @@ private:
     void prepareUnixSignals();
     static void quitSignalHandler(int unused);
 
+    bool processUpdates();
     void prepareFolks();
     void unprepareEds();
     void connectWithEDS();

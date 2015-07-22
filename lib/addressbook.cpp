@@ -910,6 +910,12 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
 {
     //TODO: support multiple update contacts calls
     Q_ASSERT(m_updateCommandPendingContacts.isEmpty());
+    if (!processUpdates()) {
+        qWarning() << "Fail to process pending updates";
+        QDBusMessage reply = m_updateCommandReplyMessage.createReply(QStringList());
+        QDBusConnection::sessionBus().send(reply);
+        return QStringList();
+    }
 
     m_updatedIds.clear();
     m_updateCommandReplyMessage = message;
@@ -992,6 +998,7 @@ void AddressBook::updateContactsDone(const QString &contactId,
         m_updatedIds.clear();
         m_updateCommandResult.clear();
         m_updateCommandReplyMessage = QDBusMessage();
+        m_updateLock.unlock();
     }
 }
 
@@ -1150,7 +1157,20 @@ void AddressBook::quitSignalHandler(int)
  {
      char a = 1;
      ::write(m_sigQuitFd[0], &a, sizeof(a));
- }
+}
+
+bool AddressBook::processUpdates()
+{
+    int timeout = 10;
+    while(!m_updateLock.tryLock(1000)) {
+        if (timeout <= 0) {
+            return false;
+        }
+        QCoreApplication::processEvents();
+        timeout--;
+    }
+    return true;
+}
 
 int AddressBook::init()
 {
