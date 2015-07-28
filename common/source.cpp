@@ -107,11 +107,11 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Source &source)
     argument.beginStructure();
     argument << source.m_id;
     argument << source.m_displayName;
+    argument << source.m_providerName;
+    argument << source.m_applicationId;
+    argument << source.m_accountId;
     argument << source.m_isReadOnly;
     argument << source.m_isPrimary;
-    argument << source.m_accountId;
-    argument << source.m_applicationId;
-    argument << source.m_providerName;
     argument.endStructure();
 
     return argument;
@@ -122,11 +122,11 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Source &source)
     argument.beginStructure();
     argument >> source.m_id;
     argument >> source.m_displayName;
+    argument >> source.m_providerName;
+    argument >> source.m_applicationId;
+    argument >> source.m_accountId;
     argument >> source.m_isReadOnly;
     argument >> source.m_isPrimary;
-    argument >> source.m_accountId;
-    argument >> source.m_applicationId;
-    argument >> source.m_providerName;
     argument.endStructure();
 
     return argument;

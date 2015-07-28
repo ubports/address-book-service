@@ -108,7 +108,6 @@ static QContact parseSource(const galera::Source &source, const QString &manager
     // Provider
     QContactExtendedDetail provider;
     provider.setName("PROVIDER");
-    qDebug() << "RECEIVED PROVIDER NAME" << source.providerName();
     provider.setData(source.providerName());
     contact.saveDetail(&provider);
 
