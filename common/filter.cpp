@@ -65,43 +65,6 @@ bool Filter::test(const QContact &contact) const
     return testFilter(m_filter, contact);
 }
 
-QString Filter::countryCode()
-{
-    QString countryCode = QLocale::system().name().split("_").last();
-    if (countryCode.size() < 2) {
-        // fallback to US if no valid country code was provided, otherwise libphonenumber
-        // will fail to parse any numbers
-        return QString("US");
-    }
-    return countryCode;
-}
-
-bool Filter::isPhoneNumber(const QString &phoneNumber)
-{
-    static i18n::phonenumbers::PhoneNumberUtil *phonenumberUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
-    std::string formattedNumber;
-    i18n::phonenumbers::PhoneNumber number;
-    i18n::phonenumbers::PhoneNumberUtil::ErrorType error;
-    error = phonenumberUtil->Parse(phoneNumber.toStdString(), countryCode().toStdString(), &number);
-
-    switch(error) {
-    case i18n::phonenumbers::PhoneNumberUtil::INVALID_COUNTRY_CODE_ERROR:
-        qWarning() << "Invalid country code for:" << phoneNumber;
-        return false;
-    case i18n::phonenumbers::PhoneNumberUtil::NOT_A_NUMBER:
-        qWarning() << "The phone number is not a valid number:" << phoneNumber;
-        return false;
-    case i18n::phonenumbers::PhoneNumberUtil::TOO_SHORT_AFTER_IDD:
-    case i18n::phonenumbers::PhoneNumberUtil::TOO_SHORT_NSN:
-    case i18n::phonenumbers::PhoneNumberUtil::TOO_LONG_NSN:
-        qWarning() << "Invalid phone number" << phoneNumber;
-        return false;
-    default:
-        break;
-    }
-    return true;
-}
-
 bool Filter::comparePhoneNumbers(const QString &input, const QString &value, QContactFilter::MatchFlags flags)
 {
     static i18n::phonenumbers::PhoneNumberUtil *phonenumberUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
