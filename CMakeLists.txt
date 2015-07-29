@@ -1,12 +1,18 @@
 project(contatos)
 
 cmake_minimum_required(VERSION 2.8.9)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 include(FindPkgConfig)
 # Standard install paths
 include(GNUInstallDirs)
 
 find_package(Qt5Core REQUIRED)
+find_package(Qt5DBus REQUIRED)
+find_package(Qt5Versit REQUIRED)
+find_package(Qt5Contacts REQUIRED)
+find_package(LibPhoneNumber REQUIRED)
+
 find_program(DBUS_RUNNER dbus-test-runner)
 
 add_definitions(-DQT_NO_KEYWORDS)

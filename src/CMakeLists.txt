@@ -15,9 +15,9 @@ target_link_libraries(${CONTACTS_SERVICE_BIN}
     ${GLIB_LIBRARIES}
     ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
+    Qt5::Core
+    Qt5::Contacts
 )
-
-qt5_use_modules(${CONTACTS_SERVICE_BIN} Core Contacts)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}

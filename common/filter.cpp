@@ -21,12 +21,19 @@
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
+#include <QtCore/QLocale>
+#include <QtCore/QDebug>
+
 #include <QtContacts/QContactGuid>
 #include <QtContacts/QContactIdFilter>
 #include <QtContacts/QContactDetailFilter>
 #include <QtContacts/QContactUnionFilter>
 #include <QtContacts/QContactIntersectionFilter>
 #include <QtContacts/QContactManagerEngine>
+#include <QtContacts/QContactDetailRangeFilter>
+#include <QtContacts/QContactRelationshipFilter>
+
+#include <phonenumbers/phonenumberutil.h>
 
 using namespace QtContacts;
 
@@ -55,7 +62,143 @@ QtContacts::QContactFilter Filter::toContactFilter() const
 
 bool Filter::test(const QContact &contact) const
 {
-    return QContactManagerEngine::testFilter(m_filter, contact);
+    return testFilter(m_filter, contact);
+}
+
+QString Filter::countryCode()
+{
+    QString countryCode = QLocale::system().name().split("_").last();
+    if (countryCode.size() < 2) {
+        // fallback to US if no valid country code was provided, otherwise libphonenumber
+        // will fail to parse any numbers
+        return QString("US");
+    }
+    return countryCode;
+}
+
+bool Filter::isPhoneNumber(const QString &phoneNumber)
+{
+    static i18n::phonenumbers::PhoneNumberUtil *phonenumberUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
+    std::string formattedNumber;
+    i18n::phonenumbers::PhoneNumber number;
+    i18n::phonenumbers::PhoneNumberUtil::ErrorType error;
+    error = phonenumberUtil->Parse(phoneNumber.toStdString(), countryCode().toStdString(), &number);
+
+    switch(error) {
+    case i18n::phonenumbers::PhoneNumberUtil::INVALID_COUNTRY_CODE_ERROR:
+        qWarning() << "Invalid country code for:" << phoneNumber;
+        return false;
+    case i18n::phonenumbers::PhoneNumberUtil::NOT_A_NUMBER:
+        qWarning() << "The phone number is not a valid number:" << phoneNumber;
+        return false;
+    case i18n::phonenumbers::PhoneNumberUtil::TOO_SHORT_AFTER_IDD:
+    case i18n::phonenumbers::PhoneNumberUtil::TOO_SHORT_NSN:
+    case i18n::phonenumbers::PhoneNumberUtil::TOO_LONG_NSN:
+        qWarning() << "Invalid phone number" << phoneNumber;
+        return false;
+    default:
+        break;
+    }
+    return true;
+}
+
+bool Filter::comparePhoneNumbers(const QString &phoneNumberA, const QString &phoneNumberB)
+{
+    static i18n::phonenumbers::PhoneNumberUtil *phonenumberUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
+
+    if (phoneNumberA.size() < 3 || phoneNumberB.size() < 3) {
+        return (phoneNumberA == phoneNumberB);
+    }
+
+    // just do a simple string comparison if we are dealing with non phone numbers
+    if (!isPhoneNumber(phoneNumberA) || !isPhoneNumber(phoneNumberB)) {
+        return (phoneNumberA == phoneNumberB);
+    }
+
+    // phone number compare
+    i18n::phonenumbers::PhoneNumberUtil::MatchType match =
+            phonenumberUtil->IsNumberMatchWithTwoStrings(phoneNumberA.toStdString(),
+                                                         phoneNumberB.toStdString());
+    return (match > i18n::phonenumbers::PhoneNumberUtil::NO_MATCH);
+}
+
+bool Filter::testFilter(const QContactFilter& filter, const QContact &contact)
+{
+    switch(filter.type()) {
+        case QContactFilter::ContactDetailFilter:
+            {
+                const QContactDetailFilter cdf(filter);
+                if (cdf.detailType() == QContactDetail::TypeUndefined)
+                    return false;
+
+                /* See if this contact has one of these details in it */
+                const QList<QContactDetail>& details = contact.details(cdf.detailType());
+
+                if (details.count() == 0)
+                    return false; /* can't match */
+
+                /* See if we need to check the values */
+                if (cdf.detailField() == -1)
+                    return true;  /* just testing for the presence of a detail of the specified type */
+
+                if (cdf.matchFlags() & QContactFilter::MatchPhoneNumber) {
+                    /* Doing phone number filtering.  We hand roll an implementation here, backends will obviously want to override this. */
+                    QString input = cdf.value().toString();
+
+                    /* Look at every detail in the set of details and compare */
+                    for (int j = 0; j < details.count(); j++) {
+                        const QContactDetail& detail = details.at(j);
+                        const QString& valueString = detail.value(cdf.detailField()).toString();
+
+                        if (comparePhoneNumbers(input, valueString)) {
+                            return true;
+                        }
+                    }
+                } else if (QContactManagerEngine::testFilter(filter, contact)) {
+                    return true;
+                }
+            }
+            break;
+        case QContactFilter::IntersectionFilter:
+            {
+                /* XXX In theory we could reorder the terms to put the native tests first */
+                const QContactIntersectionFilter bf(filter);
+                const QList<QContactFilter>& terms = bf.filters();
+                if (terms.count() > 0) {
+                    for(int j = 0; j < terms.count(); j++) {
+                        if (!testFilter(terms.at(j), contact)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                // Fall through to end
+            }
+            break;
+
+        case QContactFilter::UnionFilter:
+            {
+                /* XXX In theory we could reorder the terms to put the native tests first */
+                const QContactUnionFilter bf(filter);
+                const QList<QContactFilter>& terms = bf.filters();
+                if (terms.count() > 0) {
+                    for(int j = 0; j < terms.count(); j++) {
+                        if (testFilter(terms.at(j), contact)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                // Fall through to end
+            }
+            break;
+        default:
+            if (QContactManagerEngine::testFilter(filter, contact)) {
+                return true;
+            }
+            break;
+    }
+    return false;
 }
 
 bool Filter::checkIsValid(const QList<QContactFilter> filters) const

@@ -35,9 +35,11 @@ include_directories(
 
 target_link_libraries(${QCONTACTS_BACKEND}
     galera-common
+    Qt5::Core
+    Qt5::Contacts
+    Qt5::DBus
+    Qt5::Versit
 )
-
-qt5_use_modules(${QCONTACTS_BACKEND} Core Contacts DBus Versit)
 
 add_definitions(-std=gnu++11)
 
