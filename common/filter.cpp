@@ -102,23 +102,50 @@ bool Filter::isPhoneNumber(const QString &phoneNumber)
     return true;
 }
 
-bool Filter::comparePhoneNumbers(const QString &phoneNumberA, const QString &phoneNumberB)
+bool Filter::comparePhoneNumbers(const QString &input, const QString &value, QContactFilter::MatchFlags flags)
 {
     static i18n::phonenumbers::PhoneNumberUtil *phonenumberUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
 
-    if (phoneNumberA.size() < 3 || phoneNumberB.size() < 3) {
-        return (phoneNumberA == phoneNumberB);
+    std::string stdPreprocessedInput(input.toStdString());
+    std::string stdProcessedValue(value.toStdString());
+
+    phonenumberUtil->NormalizeDiallableCharsOnly(&stdPreprocessedInput);
+    phonenumberUtil->NormalizeDiallableCharsOnly(&stdProcessedValue);
+
+    QString preprocessedInput = QString::fromStdString(stdPreprocessedInput);
+    QString preprocessedValue = QString::fromStdString(stdProcessedValue);
+
+    // if one of they does not contain digits return false
+    if (preprocessedInput.isEmpty() || preprocessedValue.isEmpty()) {
+        return false;
     }
 
-    // just do a simple string comparison if we are dealing with non phone numbers
-    if (!isPhoneNumber(phoneNumberA) || !isPhoneNumber(phoneNumberB)) {
-        return (phoneNumberA == phoneNumberB);
+    bool me = flags.testFlag(QContactFilter::MatchExactly);
+    bool mc = flags.testFlag(QContactFilter::MatchContains);
+    bool msw = flags.testFlag(QContactFilter::MatchStartsWith);
+    bool mew = flags.testFlag(QContactFilter::MatchEndsWith);
+
+    if (me || mc || msw || mew) {
+        bool mer = (me ? preprocessedInput == preprocessedValue : true);
+        bool mcr = (mc ? preprocessedValue.contains(preprocessedInput) : true);
+        bool mswr = (msw ? preprocessedValue.startsWith(preprocessedInput) : true);
+        bool mewr = (mew ? preprocessedValue.endsWith(preprocessedInput) : true);
+        if (mewr && mswr && mcr && mer) {
+            return true; // this detail meets all of the criteria which were required, and hence must match.
+        }
+    }
+
+    // fallback case: handle as phone number
+
+    // avoid problems with emergency numbers
+    if (input.size() < 3 || value.size() < 3) {
+        return (input == value);
     }
 
     // phone number compare
     i18n::phonenumbers::PhoneNumberUtil::MatchType match =
-            phonenumberUtil->IsNumberMatchWithTwoStrings(phoneNumberA.toStdString(),
-                                                         phoneNumberB.toStdString());
+            phonenumberUtil->IsNumberMatchWithTwoStrings(input.toStdString(),
+                                                         value.toStdString());
     return (match > i18n::phonenumbers::PhoneNumberUtil::NO_MATCH);
 }
 
@@ -150,7 +177,7 @@ bool Filter::testFilter(const QContactFilter& filter, const QContact &contact)
                         const QContactDetail& detail = details.at(j);
                         const QString& valueString = detail.value(cdf.detailField()).toString();
 
-                        if (comparePhoneNumbers(input, valueString)) {
+                        if (comparePhoneNumbers(input, valueString, cdf.matchFlags())) {
                             return true;
                         }
                     }

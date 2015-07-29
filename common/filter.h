@@ -58,7 +58,7 @@ private:
     static bool testFilter(const QtContacts::QContactFilter& filter, const QtContacts::QContact &contact);
     // phone number related
     static bool isPhoneNumber(const QString &phoneNumber);
-    static bool comparePhoneNumbers(const QString &phoneNumberA, const QString &phoneNumberB);
+    static bool comparePhoneNumbers(const QString &phoneNumberA, const QString &phoneNumberB, QtContacts::QContactFilter::MatchFlags flags);
     static QString countryCode();
 };
 

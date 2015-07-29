@@ -192,6 +192,43 @@ private Q_SLOTS:
         QVERIFY(!filter2.isEmpty());
         QVERIFY(filter2.isValid());
     }
+
+    void testPhoneNumberFilter_data()
+    {
+        QTest::addColumn<QString>("phoneNumber");
+        QTest::addColumn<QString>("query");
+        QTest::addColumn<bool>("expectedResult");
+
+        QTest::newRow("string equal") << "12345678" << "12345678" << true;
+        QTest::newRow("number with dash") << "1234-5678" << "12345678" << true;
+        QTest::newRow("number with area code") << "1231234567" << "1234567" << true;
+        QTest::newRow("number with extension") << "12345678#123" << "12345678" << true;
+        QTest::newRow("both numbers with extension") << "(123)12345678#1" << "12345678#1" << true;
+        QTest::newRow("numbers with different extension") << "1234567#1" << "1234567#2" << false;
+        QTest::newRow("short/emergency numbers") << "190" << "190" << true;
+        QTest::newRow("different short/emergency numbers") << "911" << "11" << false;
+        QTest::newRow("different numbers") << "12345678" << "1234567" << false;
+        QTest::newRow("both non phone numbers") << "abcdefg" << "abcdefg" << false;
+        QTest::newRow("different non phone numbers") << "abcdefg" << "bcdefg" << false;
+        QTest::newRow("phone number and custom string") << "abc12345678" << "12345678" << true;
+        QTest::newRow("Not match") << "+352 661 123456" << "+352 691 123456" << false;
+    }
+
+    void testPhoneNumberFilter()
+    {
+        QFETCH(QString, phoneNumber);
+        QFETCH(QString, query);
+        QFETCH(bool, expectedResult);
+
+        QContact c;
+        QContactPhoneNumber p;
+        p.setNumber(phoneNumber);
+        c.saveDetail(&p);
+
+        QContactFilter f = QContactPhoneNumber::match(query);
+        Filter myFilter(f);
+        QCOMPARE(myFilter.test(c), expectedResult);
+    }
 };
 
 QTEST_MAIN(ClauseParseTest)
