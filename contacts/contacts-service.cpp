@@ -655,7 +655,7 @@ void GaleraContactsService::removeContactDone(QContactRemoveRequestData *data,
     }
 
     if (call) {
-        QDBusPendingReply<int> reply = *call;
+        QDBusPendingReply<bool> reply = *call;
         if (reply.isError()) {
             qWarning() << reply.error().name() << reply.error().message();
             data->finish(QContactManager::UnspecifiedError);

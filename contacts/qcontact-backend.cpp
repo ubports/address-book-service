@@ -193,12 +193,6 @@ bool GaleraManagerEngine::saveContact(QtContacts::QContact *contact, QtContacts:
 
 bool GaleraManagerEngine::removeContact(const QtContacts::QContactId &contactId, QtContacts::QContactManager::Error *error)
 {
-    *error = QContactManager::NoError;
-    contact(contactId, QContactFetchHint(), error);
-    if (*error == QContactManager::DoesNotExistError) {
-        return false;
-    }
-
     QContactRemoveRequest request;
 
     request.setContactId(contactId);
