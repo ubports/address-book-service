@@ -23,3 +23,9 @@ override_dh_auto_configure:
 
 override_dh_install:
 	dh_install --fail-missing
+
+HOME=$(CURDIR)/debian/tmp-home
+
+override_dh_auto_test:
+	HOME=$(HOME) XDG_RUNTIME_DIR=$(HOME) dh_auto_test
+	rm -rf $(HOME)
