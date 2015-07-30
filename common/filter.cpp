@@ -99,13 +99,6 @@ bool Filter::comparePhoneNumbers(const QString &input, const QString &value, QCo
     }
 
     // fallback case: handle as phone number
-
-    // avoid problems with emergency numbers
-    if (input.size() < 3 || value.size() < 3) {
-        return (input == value);
-    }
-
-    // phone number compare
     i18n::phonenumbers::PhoneNumberUtil::MatchType match =
             phonenumberUtil->IsNumberMatchWithTwoStrings(input.toStdString(),
                                                          value.toStdString());

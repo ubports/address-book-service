@@ -206,12 +206,13 @@ private Q_SLOTS:
         QTest::newRow("both numbers with extension") << "(123)12345678#1" << "12345678#1" << true;
         QTest::newRow("numbers with different extension") << "1234567#1" << "1234567#2" << false;
         QTest::newRow("short/emergency numbers") << "190" << "190" << true;
-        QTest::newRow("different short/emergency numbers") << "911" << "11" << false;
+        QTest::newRow("different short/emergency numbers") << "911" << "11" << true;
         QTest::newRow("different numbers") << "12345678" << "1234567" << false;
         QTest::newRow("both non phone numbers") << "abcdefg" << "abcdefg" << false;
         QTest::newRow("different non phone numbers") << "abcdefg" << "bcdefg" << false;
         QTest::newRow("phone number and custom string") << "abc12345678" << "12345678" << true;
         QTest::newRow("Not match") << "+352 661 123456" << "+352 691 123456" << false;
+        QTest::newRow("small numbers") << "+146" << "32634546" << true;
     }
 
     void testPhoneNumberFilter()
