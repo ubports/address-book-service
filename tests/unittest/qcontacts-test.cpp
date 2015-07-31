@@ -182,7 +182,7 @@ private Q_SLOTS:
         // check result
         QList<QContact> contacts = manager.contacts(filter);
         QCOMPARE(contacts.size(), 1);
-        QCOMPARE(contacts[0].id().toString(), QStringLiteral("qtcontacts:galera::dummy-store"));
+        QCOMPARE(contacts[0].id().toString(), QStringLiteral("qtcontacts:galera::source@dummy-store"));
         QCOMPARE(contacts[0].type(), QContactType::TypeGroup);
 
         QContactDisplayLabel label = contacts[0].detail(QContactDisplayLabel::Type);
