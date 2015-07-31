@@ -197,38 +197,57 @@ private Q_SLOTS:
     {
         QTest::addColumn<QString>("phoneNumber");
         QTest::addColumn<QString>("query");
-        QTest::addColumn<bool>("expectedResult");
+        QTest::addColumn<bool>("match");            // if they have any match
+        QTest::addColumn<bool>("matchEndsWith");    // if the phone is equal but does not contains the country code
+        QTest::addColumn<bool>("matchExactly");     // if they match exacly
 
-        QTest::newRow("string equal") << "12345678" << "12345678" << true;
-        QTest::newRow("number with dash") << "1234-5678" << "12345678" << true;
-        QTest::newRow("number with area code") << "1231234567" << "1234567" << true;
-        QTest::newRow("number with extension") << "12345678#123" << "12345678" << true;
-        QTest::newRow("both numbers with extension") << "(123)12345678#1" << "12345678#1" << true;
-        QTest::newRow("numbers with different extension") << "1234567#1" << "1234567#2" << false;
-        QTest::newRow("short/emergency numbers") << "190" << "190" << true;
-        QTest::newRow("different short/emergency numbers") << "911" << "11" << true;
-        QTest::newRow("different numbers") << "12345678" << "1234567" << false;
-        QTest::newRow("both non phone numbers") << "abcdefg" << "abcdefg" << false;
-        QTest::newRow("different non phone numbers") << "abcdefg" << "bcdefg" << false;
-        QTest::newRow("phone number and custom string") << "abc12345678" << "12345678" << true;
-        QTest::newRow("Not match") << "+352 661 123456" << "+352 691 123456" << false;
-        QTest::newRow("small numbers") << "+146" << "32634546" << true;
+        QTest::newRow("string equal") << "12345678" << "12345678" << true << true << true;
+        QTest::newRow("number with dash") << "1234-5678" << "12345678" << true << true << true;
+        QTest::newRow("number with country code") << "+55(81)87042144" << "(81)87042144" << true << true << false;
+        QTest::newRow("number with area code") << "+55(81)87042144" << "(81)87042144" << true << true << false;
+        QTest::newRow("number with extension") << "12345678#123" << "12345678" << true << false << false;
+        QTest::newRow("both numbers with extension") << "(123)12345678#1" << "12345678#1" << true << false << false;
+        QTest::newRow("numbers with different extension") << "1234567#1" << "1234567#2" << false<< false << false;
+        QTest::newRow("short/emergency numbers") << "190" << "190" << true << true << true;
+        QTest::newRow("different short/emergency numbers") << "911" << "11" << true << false << false;
+        QTest::newRow("different numbers") << "12345678" << "1234567" << false << false << false;
+        QTest::newRow("both non phone numbers") << "abcdefg" << "abcdefg" << false << false << false;
+        QTest::newRow("different non phone numbers") << "abcdefg" << "bcdefg" << false << false << false;
+        QTest::newRow("phone number and custom string") << "abc12345678" << "12345678" << true << true << false;
+        QTest::newRow("Not match") << "+352 661 123456" << "+352 691 123456" << false << false << false;
+        QTest::newRow("small numbers") << "+146" << "32634546" << true << false << false;
     }
 
     void testPhoneNumberFilter()
     {
         QFETCH(QString, phoneNumber);
         QFETCH(QString, query);
-        QFETCH(bool, expectedResult);
+        QFETCH(bool, match);
+        QFETCH(bool, matchEndsWith);
+        QFETCH(bool, matchExactly);
 
         QContact c;
         QContactPhoneNumber p;
         p.setNumber(phoneNumber);
         c.saveDetail(&p);
 
+        // probably the same number
         QContactFilter f = QContactPhoneNumber::match(query);
         Filter myFilter(f);
-        QCOMPARE(myFilter.test(c), expectedResult);
+        QCOMPARE(myFilter.test(c), match);
+
+        // the same number without the contry code
+        QContactDetailFilter filterEndsWith = QContactPhoneNumber::match(query);
+        filterEndsWith.setMatchFlags(QContactFilter::MatchPhoneNumber | QContactFilter::MatchEndsWith);
+        myFilter = Filter(filterEndsWith);
+        QCOMPARE(myFilter.test(c), matchEndsWith);
+
+        // Exactly the same number
+        QContactDetailFilter filterExactly = QContactPhoneNumber::match(query);
+        filterExactly.setMatchFlags(QContactFilter::MatchPhoneNumber | QContactFilter::MatchExactly);
+        myFilter = Filter(filterExactly);
+        // Failing due the MatchFlag problem check: https://bugreports.qt.io/browse/QTBUG-47546
+        //QCOMPARE(myFilter.test(c), matchExactly);
     }
 };
 

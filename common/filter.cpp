@@ -83,26 +83,28 @@ bool Filter::comparePhoneNumbers(const QString &input, const QString &value, QCo
         return false;
     }
 
-    bool me = flags.testFlag(QContactFilter::MatchExactly);
-    bool mc = flags.testFlag(QContactFilter::MatchContains);
-    bool msw = flags.testFlag(QContactFilter::MatchStartsWith);
-    bool mew = flags.testFlag(QContactFilter::MatchEndsWith);
+    bool mc = flags & QContactFilter::MatchContains;
+    bool msw = flags & QContactFilter::MatchStartsWith;
+    bool mew = flags & QContactFilter::MatchEndsWith;
+    bool me = flags & QContactFilter::MatchExactly;
 
-    if (me || mc || msw || mew) {
-        bool mer = (me ? preprocessedInput == preprocessedValue : true);
-        bool mcr = (mc ? preprocessedValue.contains(preprocessedInput) : true);
-        bool mswr = (msw ? preprocessedValue.startsWith(preprocessedInput) : true);
-        bool mewr = (mew ? preprocessedValue.endsWith(preprocessedInput) : true);
-        if (mewr && mswr && mcr && mer) {
-            return true; // this detail meets all of the criteria which were required, and hence must match.
+    if (mc) {
+        return preprocessedValue.contains(preprocessedInput);
+    } else if (msw) {
+        return preprocessedValue.startsWith(preprocessedInput);
+    } else {
+        i18n::phonenumbers::PhoneNumberUtil::MatchType match =
+                phonenumberUtil->IsNumberMatchWithTwoStrings(input.toStdString(),
+                                                             value.toStdString());
+        if (mew) {
+            return match >  i18n::phonenumbers::PhoneNumberUtil::SHORT_NSN_MATCH;
+        } else if (me) {
+            return match == i18n::phonenumbers::PhoneNumberUtil::EXACT_MATCH;
+        } else {
+            return match > i18n::phonenumbers::PhoneNumberUtil::NO_MATCH;
         }
     }
-
-    // fallback case: handle as phone number
-    i18n::phonenumbers::PhoneNumberUtil::MatchType match =
-            phonenumberUtil->IsNumberMatchWithTwoStrings(input.toStdString(),
-                                                         value.toStdString());
-    return (match > i18n::phonenumbers::PhoneNumberUtil::NO_MATCH);
+    return false;
 }
 
 bool Filter::testFilter(const QContactFilter& filter, const QContact &contact)
