@@ -52,6 +52,8 @@
 #include <QtContacts/QContactNote>
 #include <QtContacts/QContactExtendedDetail>
 
+#include "config.h"
+
 using namespace QtVersit;
 using namespace QtContacts;
 
@@ -1135,7 +1137,7 @@ bool QIndividual::markAsDeleted()
 
             GError *error = NULL;
             ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
-            EClient *client = e_book_client_connect_sync(source, NULL, &error);
+            EClient *client = E_BOOK_CLIENT_CONNECT_SYNC(source, NULL, &error);
             if (error) {
                 qWarning() << "Fail to connect with EDS" << error->message;
                 g_error_free(error);
@@ -1705,7 +1707,7 @@ void QIndividual::setExtendedDetails(FolksPersona *persona,
     if (EDSF_IS_PERSONA_STORE(store)) {
         GError *error = NULL;
         ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
-        EClient *client = e_book_client_connect_sync(source, NULL, &error);
+        EClient *client = E_BOOK_CLIENT_CONNECT_SYNC(source, NULL, &error);
         if (error) {
             qWarning() << "Fail to connect with EDS" << error->message;
             g_error_free(error);

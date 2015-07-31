@@ -21,8 +21,10 @@ pkg_check_modules(FOLKS_EDS REQUIRED folks-eds)
 pkg_check_modules(GLIB_ACCOUNTS REQUIRED libaccounts-glib)
 
 if(EDATASERVER_VERSION VERSION_LESS "3.16")
+    set(EVOLUTION_API_3_17 "0")
     set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook6")
 else()
+    set(EVOLUTION_API_3_17 "1")
     set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook9")
 endif()
 
