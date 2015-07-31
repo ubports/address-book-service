@@ -23,7 +23,7 @@ Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/address-book-service/trun
 Package: address-book-service
 Architecture: any
 Multi-Arch: same
-Depends: evolution-data-server,
+Depends: evolution-data-server(>= 3.12.11),
          libfolks-eds25,
          ${misc:Depends},
          ${shlibs:Depends},
