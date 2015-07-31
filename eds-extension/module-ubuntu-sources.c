@@ -117,13 +117,6 @@ ubuntu_sources_config_source (EUbuntuSources *extension,
         ag_account, "id",
         source_extension, "account-id",
         G_BINDING_SYNC_CREATE);
-
-    g_debug("PROVIDER>>>: %s", ag_account_get_provider_name (ag_account));
-
-    /* The data source should not be removable by clients. */
-    e_server_side_source_set_removable (E_SERVER_SIDE_SOURCE (source),
-                                        FALSE);
-
 }
 
 static void
@@ -256,6 +249,27 @@ ubuntu_source_source_added_cb (ESourceRegistryServer *server,
 }
 
 static void
+ubuntu_source_source_removed_cb (ESourceRegistryServer *server,
+                                 ESource *source,
+                                 EUbuntuSources *extension)
+{
+    GHashTableIter iter;
+    gpointer key, value;
+
+    gchar *source_uid = e_source_get_uid(source);
+
+    g_hash_table_iter_init (&iter, extension->uoa_to_eds);
+    while (g_hash_table_iter_next (&iter, &key, &value)) {
+        GSList *sources = (GSList*) value;
+        gint index = g_slist_index (sources, source_uid);
+        if (index > -1) {
+            g_debug ("Remove source :%s for account %lu", source_uid, (gulong) value);
+            sources = g_slist_remove (sources, source_uid);
+        }
+    }
+}
+
+static void
 ubuntu_sources_bus_acquired_cb (EDBusServer *server,
                                 GDBusConnection *connection,
                                 EUbuntuSources *extension)
@@ -281,6 +295,9 @@ ubuntu_sources_bus_acquired_cb (EDBusServer *server,
     registry_server = ubuntu_sources_get_server (extension);
     g_signal_connect (registry_server, "source_added",
                       G_CALLBACK (ubuntu_source_source_added_cb),
+                      extension);
+    g_signal_connect (registry_server, "source_removed",
+                      G_CALLBACK (ubuntu_source_source_removed_cb),
                       extension);
 }
 
