@@ -256,7 +256,7 @@ ubuntu_source_source_removed_cb (ESourceRegistryServer *server,
     GHashTableIter iter;
     gpointer key, value;
 
-    gchar *source_uid = e_source_get_uid(source);
+    const gchar *source_uid = e_source_get_uid(source);
 
     g_hash_table_iter_init (&iter, extension->uoa_to_eds);
     while (g_hash_table_iter_next (&iter, &key, &value)) {
