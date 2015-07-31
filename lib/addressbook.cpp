@@ -457,8 +457,7 @@ void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &mess
         RemoveSourceData *rData = 0;
         while (gee_iterator_next(i)) {
             FolksPersonaStore *ps = FOLKS_PERSONA_STORE(gee_iterator_get(i));
-            // We need to compare using source name due the missing API to handle sources diff from contacts
-            if (g_strcmp0(folks_persona_store_get_display_name(ps), sourceId.toUtf8().constData()) == 0) {
+            if (g_strcmp0(folks_persona_store_get_id(ps), sourceId.toUtf8().constData()) == 0) {
                 rData = new RemoveSourceData;
                 rData->m_addressbook = this;
                 rData->m_message = message;

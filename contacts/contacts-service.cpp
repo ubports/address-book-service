@@ -67,7 +67,8 @@ static QContact parseSource(const galera::Source &source, const QString &manager
     contact.setType(QContactType::TypeGroup);
 
     // id
-    galera::GaleraEngineId *engineId = new galera::GaleraEngineId(source.id(), managerUri);
+    galera::GaleraEngineId *engineId = new galera::GaleraEngineId(QString("source@%1").arg(source.id()),
+                                                                  managerUri);
     QContactId newId = QContactId(engineId);
     contact.setId(newId);
 
