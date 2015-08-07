@@ -87,18 +87,22 @@ bool Filter::comparePhoneNumbers(const QString &input, const QString &value, QCo
     bool msw = flags & QContactFilter::MatchStartsWith;
     bool mew = flags & QContactFilter::MatchEndsWith;
     bool me = flags & QContactFilter::MatchExactly;
+    if (!mc && !msw && !mew && !me &&
+        ((preprocessedInput.length() < 6) || (preprocessedValue.length() < 6))) {
+        return preprocessedInput == preprocessedValue;
+    }
 
     if (mc) {
         return preprocessedValue.contains(preprocessedInput);
     } else if (msw) {
         return preprocessedValue.startsWith(preprocessedInput);
+    } else if (mew) {
+        return preprocessedValue.endsWith(preprocessedInput);
     } else {
         i18n::phonenumbers::PhoneNumberUtil::MatchType match =
                 phonenumberUtil->IsNumberMatchWithTwoStrings(input.toStdString(),
                                                              value.toStdString());
-        if (mew) {
-            return match >  i18n::phonenumbers::PhoneNumberUtil::SHORT_NSN_MATCH;
-        } else if (me) {
+        if (me) {
             return match == i18n::phonenumbers::PhoneNumberUtil::EXACT_MATCH;
         } else {
             return match > i18n::phonenumbers::PhoneNumberUtil::NO_MATCH;
