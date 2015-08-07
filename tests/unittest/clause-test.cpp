@@ -220,7 +220,7 @@ private Q_SLOTS:
         QTest::newRow("Not match") << "+352 661 123456" << "+352 691 123456" << false << false << false << false << false;
         QTest::newRow("Phone number and small value") << "32634146" << "146" << false << true << false << true << false;
         QTest::newRow("Small phone numbers numbers") << "32634911" << "911" << false << true << false << true << false;
-        QTest::newRow("Phone number and commands") << "32634911" << "+146" << false << false << false << false << false;
+        QTest::newRow("Phone number and small number") << "32634911" << "+146" << false << false << false << false << false;
     }
 
     void testPhoneNumberFilter()
