@@ -55,6 +55,8 @@ private:
     static QtContacts::QContactFilter parseIdFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseUnionFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseIntersectionFilter(const QtContacts::QContactFilter &filter);
+    static bool testFilter(const QtContacts::QContactFilter& filter, const QtContacts::QContact &contact);
+    static bool comparePhoneNumbers(const QString &phoneNumberA, const QString &phoneNumberB, QtContacts::QContactFilter::MatchFlags flags);
 };
 
 }

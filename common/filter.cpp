@@ -21,12 +21,19 @@
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
+#include <QtCore/QLocale>
+#include <QtCore/QDebug>
+
 #include <QtContacts/QContactGuid>
 #include <QtContacts/QContactIdFilter>
 #include <QtContacts/QContactDetailFilter>
 #include <QtContacts/QContactUnionFilter>
 #include <QtContacts/QContactIntersectionFilter>
 #include <QtContacts/QContactManagerEngine>
+#include <QtContacts/QContactDetailRangeFilter>
+#include <QtContacts/QContactRelationshipFilter>
+
+#include <phonenumbers/phonenumberutil.h>
 
 using namespace QtContacts;
 
@@ -55,7 +62,132 @@ QtContacts::QContactFilter Filter::toContactFilter() const
 
 bool Filter::test(const QContact &contact) const
 {
-    return QContactManagerEngine::testFilter(m_filter, contact);
+    return testFilter(m_filter, contact);
+}
+
+bool Filter::comparePhoneNumbers(const QString &input, const QString &value, QContactFilter::MatchFlags flags)
+{
+    static i18n::phonenumbers::PhoneNumberUtil *phonenumberUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
+
+    std::string stdPreprocessedInput(input.toStdString());
+    std::string stdProcessedValue(value.toStdString());
+
+    phonenumberUtil->NormalizeDiallableCharsOnly(&stdPreprocessedInput);
+    phonenumberUtil->NormalizeDiallableCharsOnly(&stdProcessedValue);
+
+    QString preprocessedInput = QString::fromStdString(stdPreprocessedInput);
+    QString preprocessedValue = QString::fromStdString(stdProcessedValue);
+
+    // if one of they does not contain digits return false
+    if (preprocessedInput.isEmpty() || preprocessedValue.isEmpty()) {
+        return false;
+    }
+
+    bool mc = flags & QContactFilter::MatchContains;
+    bool msw = flags & QContactFilter::MatchStartsWith;
+    bool mew = flags & QContactFilter::MatchEndsWith;
+    bool me = flags & QContactFilter::MatchExactly;
+    if (!mc && !msw && !mew && !me &&
+        ((preprocessedInput.length() < 6) || (preprocessedValue.length() < 6))) {
+        return preprocessedInput == preprocessedValue;
+    }
+
+    if (mc) {
+        return preprocessedValue.contains(preprocessedInput);
+    } else if (msw) {
+        return preprocessedValue.startsWith(preprocessedInput);
+    } else if (mew) {
+        return preprocessedValue.endsWith(preprocessedInput);
+    } else {
+        i18n::phonenumbers::PhoneNumberUtil::MatchType match =
+                phonenumberUtil->IsNumberMatchWithTwoStrings(input.toStdString(),
+                                                             value.toStdString());
+        if (me) {
+            return match == i18n::phonenumbers::PhoneNumberUtil::EXACT_MATCH;
+        } else {
+            return match > i18n::phonenumbers::PhoneNumberUtil::NO_MATCH;
+        }
+    }
+    return false;
+}
+
+bool Filter::testFilter(const QContactFilter& filter, const QContact &contact)
+{
+    switch(filter.type()) {
+        case QContactFilter::ContactDetailFilter:
+            {
+                const QContactDetailFilter cdf(filter);
+                if (cdf.detailType() == QContactDetail::TypeUndefined)
+                    return false;
+
+                /* See if this contact has one of these details in it */
+                const QList<QContactDetail>& details = contact.details(cdf.detailType());
+
+                if (details.count() == 0)
+                    return false; /* can't match */
+
+                /* See if we need to check the values */
+                if (cdf.detailField() == -1)
+                    return true;  /* just testing for the presence of a detail of the specified type */
+
+                if (cdf.matchFlags() & QContactFilter::MatchPhoneNumber) {
+                    /* Doing phone number filtering.  We hand roll an implementation here, backends will obviously want to override this. */
+                    QString input = cdf.value().toString();
+
+                    /* Look at every detail in the set of details and compare */
+                    for (int j = 0; j < details.count(); j++) {
+                        const QContactDetail& detail = details.at(j);
+                        const QString& valueString = detail.value(cdf.detailField()).toString();
+
+                        if (comparePhoneNumbers(input, valueString, cdf.matchFlags())) {
+                            return true;
+                        }
+                    }
+                } else if (QContactManagerEngine::testFilter(filter, contact)) {
+                    return true;
+                }
+            }
+            break;
+        case QContactFilter::IntersectionFilter:
+            {
+                /* XXX In theory we could reorder the terms to put the native tests first */
+                const QContactIntersectionFilter bf(filter);
+                const QList<QContactFilter>& terms = bf.filters();
+                if (terms.count() > 0) {
+                    for(int j = 0; j < terms.count(); j++) {
+                        if (!testFilter(terms.at(j), contact)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                // Fall through to end
+            }
+            break;
+
+        case QContactFilter::UnionFilter:
+            {
+                /* XXX In theory we could reorder the terms to put the native tests first */
+                const QContactUnionFilter bf(filter);
+                const QList<QContactFilter>& terms = bf.filters();
+                if (terms.count() > 0) {
+                    for(int j = 0; j < terms.count(); j++) {
+                        if (testFilter(terms.at(j), contact)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                // Fall through to end
+            }
+            break;
+        default:
+            if (QContactManagerEngine::testFilter(filter, contact)) {
+                return true;
+            }
+            break;
+    }
+    return false;
 }
 
 bool Filter::checkIsValid(const QList<QContactFilter> filters) const
