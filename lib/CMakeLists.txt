@@ -42,9 +42,12 @@ target_link_libraries(${CONTACTS_SERVICE_LIB}
     ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
     ${FOLKS_EDS_LIBRARIES}
+    ${LibPhoneNumber_LIBRARIES}
+    Qt5::Core
+    Qt5::Contacts
+    Qt5::DBus
+    Qt5::Versit
 )
-
-qt5_use_modules(${CONTACTS_SERVICE_LIB} Core Contacts DBus Versit)
 
 include_directories(
     ${ubuntu-sources_SOURCE_DIR}
@@ -54,4 +57,5 @@ include_directories(
     ${GIO_INCLUDE_DIRS}
     ${FOLKS_INCLUDE_DIRS}
     ${FOLKS_EDS_INCLUDE_DIRS}
+    ${LibPhoneNumber_INCLUDE_DIRS}
 )

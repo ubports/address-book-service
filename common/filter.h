@@ -47,7 +47,7 @@ private:
 
     bool checkIsEmpty(const QList<QtContacts::QContactFilter> filters) const;
     bool checkIsValid(const QList<QtContacts::QContactFilter> filters) const;
-    bool test(const QtContacts::QContactFilter &filter, const QtContacts::QContact &contact, const QDateTime &deletedDate) const;
+    //bool test(const QtContacts::QContactFilter &filter, const QtContacts::QContact &contact, const QDateTime &deletedDate) const;
 
     static QString toString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter buildFilter(const QString &filter);
@@ -58,6 +58,8 @@ private:
     static QtContacts::QContactFilter parseIdFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseUnionFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseIntersectionFilter(const QtContacts::QContactFilter &filter);
+    static bool testFilter(const QtContacts::QContactFilter& filter, const QtContacts::QContact &contact, const QDateTime &deletedDate);
+    static bool comparePhoneNumbers(const QString &phoneNumberA, const QString &phoneNumberB, QtContacts::QContactFilter::MatchFlags flags);
 };
 
 }

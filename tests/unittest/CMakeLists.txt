@@ -3,7 +3,6 @@ macro(declare_test TESTNAME RUN_SERVER)
                    ${ARGN}
                    ${TESTNAME}.cpp
     )
-    qt5_use_modules(${TESTNAME} Core Contacts Versit Test DBus)
 
     if(TEST_XML_OUTPUT)
         set(TEST_ARGS -p -xunitxml -p -o -p test_${testname}.xml)
@@ -18,6 +17,11 @@ macro(declare_test TESTNAME RUN_SERVER)
                           ${GLIB_LIBRARIES}
                           ${GIO_LIBRARIES}
                           ${FOLKS_LIBRARIES}
+                          Qt5::Core
+                          Qt5::Contacts
+                          Qt5::Versit
+                          Qt5::Test
+                          Qt5::DBus
     )
 
     if(${RUN_SERVER} STREQUAL "True")
