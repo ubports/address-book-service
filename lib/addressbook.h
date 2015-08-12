@@ -183,6 +183,7 @@ private:
                             GAsyncResult *res,
                             void *data);
     static void edsRemoveContact(FolksIndividual *individual);
+    static bool isSafeMode();
     friend class DirtyContactsNotify;
 };
 

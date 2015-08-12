@@ -32,6 +32,8 @@
 
 #include <QtContacts/QContactExtendedDetail>
 
+#include <QGSettings/QGSettings>
+
 #include <signal.h>
 #include <sys/socket.h>
 
@@ -555,6 +557,13 @@ void AddressBook::edsPrepared(GObject *source, GAsyncResult *res, void *data)
     self->prepareFolks();
 }
 
+bool AddressBook::isSafeMode()
+{
+    static QGSettings settings("com.canonical.pim.AddressBook",
+                               "/com/canonical/pim/AddressBook/");
+    return settings.get("safe-mode").toBool();
+}
+
 void AddressBook::createSourceDone(GObject *source,
                                    GAsyncResult *res,
                                    void *data)
@@ -707,6 +716,12 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                                  << QString::fromUtf8(e_source_get_display_name(source));
                     }
                 }
+            }
+
+            // If running on safe mode only the system-address-book is writable
+            if (isSafeMode() && (id != "system-address-book")) {
+                qDebug() << "Running safe mode for source" << id << displayName;
+                canWrite = false;
             }
 
             result << Source(id, displayName, applicationId, providerName, accountId, !canWrite, isPrimary);

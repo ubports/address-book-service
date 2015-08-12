@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="com.canonical.pim.AddressBook" path="/com/canonical/pim/AddressBook/">
+    <key name="safe-mode" type="b">
+      <summary>Run server on safe mode</summary>
+      <description>Safe mode will export all remote contact sources as read-only.</description>
+      <default>false</default>
+    </key>
+  </schema>
+</schemalist>
