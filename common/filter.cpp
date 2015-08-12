@@ -68,8 +68,6 @@ bool Filter::test(const QContact &contact, const QDateTime &deletedDate) const
 
 bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, const QDateTime &deletedDate)
 {
-    qDebug() << "testFilter" << filter.type() << deletedDate;
-
     switch(filter.type()) {
         // query by id return the contact even if deleted
         case QContactFilter::IdFilter:
