@@ -25,6 +25,7 @@
 #include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+#include <QtCore/QSettings>
 
 #include <QtDBus/QtDBus>
 
@@ -60,11 +61,14 @@ public:
     bool isReady() const;
 
 
+    static bool isSafeMode();
+    static void setSafeMode(bool flag);
     static int init();
 
 Q_SIGNALS:
     void stopped();
     void readyChanged();
+    void safeModeChanged();
 
 public Q_SLOTS:
     bool start();
@@ -99,6 +103,7 @@ private:
     // timer to avoid send several updates at the same time
     DirtyContactsNotify *m_notifyContactUpdate;
     QDBusServiceWatcher *m_edsWatcher;
+    static QSettings m_settings;
 
     bool m_edsIsLive;
     bool m_ready;
@@ -183,7 +188,7 @@ private:
                             GAsyncResult *res,
                             void *data);
     static void edsRemoveContact(FolksIndividual *individual);
-    static bool isSafeMode();
+
     friend class DirtyContactsNotify;
 };
 

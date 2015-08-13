@@ -32,8 +32,6 @@
 
 #include <QtContacts/QContactExtendedDetail>
 
-#include <QGSettings/QGSettings>
-
 #include <signal.h>
 #include <sys/socket.h>
 
@@ -134,6 +132,7 @@ ESource* create_esource_from_data(CreateSourceData &data, ESourceRegistry **regi
 namespace galera
 {
 int AddressBook::m_sigQuitFd[2] = {0, 0};
+QSettings AddressBook::m_settings;
 
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
@@ -559,9 +558,14 @@ void AddressBook::edsPrepared(GObject *source, GAsyncResult *res, void *data)
 
 bool AddressBook::isSafeMode()
 {
-    static QGSettings settings(GSETTINGS_DOMAIN,
-                               GSETTINGS_PATH);
-    return settings.get(GSETTINGS_SAFE_MODE_KEY).toBool();
+    return m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool();
+}
+
+void AddressBook::setSafeMode(bool flag)
+{
+    if (isSafeMode() != flag) {
+        m_settings.setValue(SETTINGS_SAFE_MODE_KEY, flag);
+    }
 }
 
 void AddressBook::createSourceDone(GObject *source,

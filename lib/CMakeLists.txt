@@ -43,7 +43,6 @@ target_link_libraries(${CONTACTS_SERVICE_LIB}
     ${FOLKS_LIBRARIES}
     ${FOLKS_EDS_LIBRARIES}
     ${LibPhoneNumber_LIBRARIES}
-    ${GSETTINGS_QT_LIBRARIES}
     Qt5::Core
     Qt5::Contacts
     Qt5::DBus
@@ -59,5 +58,4 @@ include_directories(
     ${FOLKS_INCLUDE_DIRS}
     ${FOLKS_EDS_INCLUDE_DIRS}
     ${LibPhoneNumber_INCLUDE_DIRS}
-    ${GSETTINGS_QT_INCLUDE_DIRS}
 )

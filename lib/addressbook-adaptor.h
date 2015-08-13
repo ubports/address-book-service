@@ -38,6 +38,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
     Q_CLASSINFO("D-Bus Introspection", ""
 "  <interface name=\"com.canonical.pim.AddressBook\">\n"
 "    <property name=\"isReady\" type=\"b\" access=\"read\"/>\n"
+"    <property name=\"safeMode\" type=\"b\" access=\"readwrite\"/>\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"
@@ -117,9 +118,14 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "  </interface>\n"
         "")
     Q_PROPERTY(bool isReady READ isReady NOTIFY readyChanged)
+    Q_PROPERTY(bool safeMode READ safeMode WRITE setSafeMode NOTIFY safeModeChanged)
+
 public:
     AddressBookAdaptor(const QDBusConnection &connection, AddressBook *parent);
     virtual ~AddressBookAdaptor();
+
+    bool safeMode() const;
+    void setSafeMode(bool flag);
 
 public Q_SLOTS:
     SourceList availableSources(const QDBusMessage &message);
@@ -141,6 +147,7 @@ public Q_SLOTS:
     bool ping();
     void purgeContacts(const QString &since, const QString &sourceId, const QDBusMessage &message);
 
+
 Q_SIGNALS:
     void contactsAdded(const QStringList &ids);
     void contactsRemoved(const QStringList &ids);
@@ -148,6 +155,7 @@ Q_SIGNALS:
     void asyncOperationResult(QMap<QString, QString> errors);
     void readyChanged();
     void reloaded();
+    void safeModeChanged();
 
 private:
     AddressBook *m_addressBook;

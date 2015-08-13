@@ -24,8 +24,6 @@
 #include "common/vcard-parser.h"
 
 #include <QtCore/QSettings>
-#include <QGSettings/QGSettings>
-
 
 void contactServiceMessageOutput(QtMsgType type,
                                  const QMessageLogContext &context,
@@ -67,13 +65,15 @@ void chekForSafeMode()
 
     if (useSafeMode) {
         qWarning() << "Running server in safe mode because of the Buteo migration";
-        QGSettings gSettings(GSETTINGS_DOMAIN, GSETTINGS_PATH);
-        gSettings.set(GSETTINGS_SAFE_MODE_KEY, true);
+        galera::AddressBook::setSafeMode(true);
     }
 }
 
 int main(int argc, char** argv)
 {
+    QCoreApplication::setOrganizationName("Canonical");
+    QCoreApplication::setApplicationName("Address Book Service");
+
     galera::AddressBook::init();
     QCoreApplication app(argc, argv);
 

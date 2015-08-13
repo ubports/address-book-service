@@ -1,9 +1,7 @@
 #ifndef __GALERA_CONFIG_H__
 #define __GALERA_CONFIG_H__
 
-#define GSETTINGS_DOMAIN                    "com.canonical.pim.AddressBook"
-#define GSETTINGS_PATH                      "/com/canonical/pim/AddressBook/"
-#define GSETTINGS_SAFE_MODE_KEY             "safe-mode"
+#define SETTINGS_SAFE_MODE_KEY             "safe-mode"
 
 #define QT_PLUGINS_BINARY_DIR               "@CMAKE_BINARY_DIR@"
 #define TEST_DATA_DIR                       "@TEST_DATA_DIR@"

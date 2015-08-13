@@ -30,6 +30,7 @@ AddressBookAdaptor::AddressBookAdaptor(const QDBusConnection &connection, Addres
 {
     setAutoRelaySignals(true);
     connect(m_addressBook, SIGNAL(readyChanged()), SIGNAL(readyChanged()));
+    connect(m_addressBook, SIGNAL(safeModeChanged()), SIGNAL(safeModeChanged()));
 }
 
 AddressBookAdaptor::~AddressBookAdaptor()
@@ -166,6 +167,16 @@ void AddressBookAdaptor::purgeContacts(const QString &since, const QString &sour
         sinceDate = QDateTime::fromString(since, Qt::ISODate);
     }
     m_addressBook->purgeContacts(sinceDate, sourceId, message);
+}
+
+bool AddressBookAdaptor::safeMode() const
+{
+    return m_addressBook->isSafeMode();
+}
+
+void AddressBookAdaptor::setSafeMode(bool flag)
+{
+    m_addressBook->setSafeMode(flag);
 }
 
 } //namespace
