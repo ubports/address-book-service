@@ -559,9 +559,9 @@ void AddressBook::edsPrepared(GObject *source, GAsyncResult *res, void *data)
 
 bool AddressBook::isSafeMode()
 {
-    static QGSettings settings("com.canonical.pim.AddressBook",
-                               "/com/canonical/pim/AddressBook/");
-    return settings.get("safe-mode").toBool();
+    static QGSettings settings(GSETTINGS_DOMAIN,
+                               GSETTINGS_PATH);
+    return settings.get(GSETTINGS_SAFE_MODE_KEY).toBool();
 }
 
 void AddressBook::createSourceDone(GObject *source,

@@ -19,8 +19,12 @@
 #define ADDRESS_BOOK_SERVICE_DEMO_DATA  "ADDRESS_BOOK_SERVICE_DEMO_DATA"
 #define ADDRESS_BOOK_SERVICE_DEBUG      "ADDRESS_BOOK_SERVICE_DEBUG"
 
+#include "config.h"
 #include "addressbook.h"
 #include "common/vcard-parser.h"
+
+#include <QtCore/QSettings>
+#include <QGSettings/QGSettings>
 
 
 void contactServiceMessageOutput(QtMsgType type,
@@ -48,11 +52,32 @@ void onServiceReady(galera::AddressBook *book)
     }
 }
 
+void chekForSafeMode()
+{
+    bool useSafeMode = false;
+    // due a migration from syncevolution -> Buteo, the service need to run on safe-mode until the
+    // contact sync configuration is migrated to Buteo
+
+    // The migration will be done by address-book-app
+    // Check address-book-app configuration file for the flag
+    QSettings appSetttings("com.ubuntu.address-book", "AddressBookApp");
+    if (QFile(appSetttings.fileName()).exists()) {
+        useSafeMode = !appSetttings.value("Buteo/migration_complete", false).toBool();
+    }
+
+    if (useSafeMode) {
+        qWarning() << "Running server in safe mode because of the Buteo migration";
+        QGSettings gSettings(GSETTINGS_DOMAIN, GSETTINGS_PATH);
+        gSettings.set(GSETTINGS_SAFE_MODE_KEY, true);
+    }
+}
 
 int main(int argc, char** argv)
 {
     galera::AddressBook::init();
     QCoreApplication app(argc, argv);
+
+    chekForSafeMode();
 
     // disable debug message if variable not exported
     if (qgetenv(ADDRESS_BOOK_SERVICE_DEBUG).isEmpty()) {
