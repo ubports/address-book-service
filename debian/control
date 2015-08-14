@@ -11,6 +11,7 @@ Build-Depends: cmake (>= 2.8.9),
                libfolks-eds-dev,
                libgee-0.8-dev (>= 0.8.4),
                libphonenumber-dev,
+               libphonenumber6,
                qt5-default,
                qt5-qmake,
                qtbase5-dev,
@@ -26,6 +27,7 @@ Architecture: any
 Multi-Arch: same
 Depends: evolution-data-server(>= 3.12.11),
          libfolks-eds25,
+         libphonenumber6,
          ${misc:Depends},
          ${shlibs:Depends},
 Description: Ubuntu contact service
