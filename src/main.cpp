@@ -50,25 +50,6 @@ void onServiceReady(galera::AddressBook *book)
     }
 }
 
-void chekForSafeMode()
-{
-    bool useSafeMode = false;
-    // due a migration from syncevolution -> Buteo, the service need to run on safe-mode until the
-    // contact sync configuration is migrated to Buteo
-
-    // The migration will be done by address-book-app
-    // Check address-book-app configuration file for the flag
-    QSettings appSetttings("com.ubuntu.address-book", "AddressBookApp");
-    if (QFile(appSetttings.fileName()).exists()) {
-        useSafeMode = !appSetttings.value("Buteo/migration_complete", false).toBool();
-    }
-
-    if (useSafeMode) {
-        qWarning() << "Running server in safe mode because of the Buteo migration";
-        galera::AddressBook::setSafeMode(true);
-    }
-}
-
 int main(int argc, char** argv)
 {
     QCoreApplication::setOrganizationName("Canonical");
@@ -76,8 +57,6 @@ int main(int argc, char** argv)
 
     galera::AddressBook::init();
     QCoreApplication app(argc, argv);
-
-    chekForSafeMode();
 
     // disable debug message if variable not exported
     if (qgetenv(ADDRESS_BOOK_SERVICE_DEBUG).isEmpty()) {

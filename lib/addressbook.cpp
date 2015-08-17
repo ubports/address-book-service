@@ -156,6 +156,7 @@ AddressBook::AddressBook(QObject *parent)
     }
     prepareUnixSignals();
     connectWithEDS();
+    connect(this, SIGNAL(readyChanged()), SLOT(checkCompatibility()));
 }
 
 AddressBook::~AddressBook()
@@ -257,6 +258,39 @@ void AddressBook::unprepareFolks()
         folks_individual_aggregator_unprepare(m_individualAggregator,
                                               AddressBook::folksUnprepared,
                                               this);
+    }
+}
+
+void AddressBook::checkCompatibility()
+{
+    GError *gError = NULL;
+    ESourceRegistry *r = e_source_registry_new_sync(NULL, &gError);
+    if (gError) {
+        qWarning() << "Fail to check compatibility" << gError->message;
+        g_error_free(gError);
+        return;
+    }
+
+    bool enableSafeMode = false;
+    GList *sources = e_source_registry_list_sources(r, E_SOURCE_EXTENSION_ADDRESS_BOOK);
+    for(GList *l = sources; l != NULL; l = l->next) {
+        ESource *s = E_SOURCE(l->data);
+        if ((strcmp(e_source_get_uid(s), "system-address-book") != 0)  &&
+            !e_source_has_extension(s, E_SOURCE_EXTENSION_UBUNTU)) {
+            qDebug() << "Source does not contains UBUNTU extension" << QString::fromUtf8(e_source_get_display_name(s));
+            enableSafeMode = true;
+            break;
+        }
+    }
+
+    g_list_free_full(sources, g_object_unref);
+    g_object_unref(r);
+
+    if (enableSafeMode) {
+        qDebug() << "Enabling safe mode";
+        setSafeMode(true);
+    } else {
+        qDebug() << "Safe mode not necessary";
     }
 }
 

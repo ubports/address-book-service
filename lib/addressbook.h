@@ -95,6 +95,9 @@ private Q_SLOTS:
     void checkForEds();
     void unprepareFolks();
 
+    // check compatibility and if the safe mode should be enabled
+    void checkCompatibility();
+
 private:
     FolksIndividualAggregator *m_individualAggregator;
     ContactsMap *m_contacts;
