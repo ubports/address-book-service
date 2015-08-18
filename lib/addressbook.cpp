@@ -37,6 +37,17 @@
 
 #include <folks/folks-eds.h>
 
+// Ubuntu
+#include <messaging-menu-app.h>
+#include <messaging-menu-message.h>
+#include <url-dispatcher.h>
+
+namespace C {
+#include <libintl.h>
+}
+
+#define MESSAGING_MENU_SOURCE_ID "address-book-service"
+
 using namespace QtContacts;
 
 namespace
@@ -146,7 +157,8 @@ AddressBook::AddressBook(QObject *parent)
       m_isAboutToReload(false),
       m_individualsChangedDetailedId(0),
       m_notifyIsQuiescentHandlerId(0),
-      m_connection(QDBusConnection::sessionBus())
+      m_connection(QDBusConnection::sessionBus()),
+      m_messagingMenu(0)
 {
     if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
         m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
@@ -157,10 +169,16 @@ AddressBook::AddressBook(QObject *parent)
     prepareUnixSignals();
     connectWithEDS();
     connect(this, SIGNAL(readyChanged()), SLOT(checkCompatibility()));
+    connect(this, SIGNAL(safeModeChanged()), SLOT(onSafeModeChanged()));
 }
 
 AddressBook::~AddressBook()
 {
+    if (m_messagingMenu) {
+        g_object_unref(m_messagingMenu);
+        m_messagingMenu = 0;
+    }
+
     if (m_individualAggregator) {
         qWarning() << "Addressbook destructor called while running, you should call shutdown first";
         shutdown();
@@ -292,6 +310,9 @@ void AddressBook::checkCompatibility()
     } else {
         qDebug() << "Safe mode not necessary";
     }
+
+    // check safe mode status
+    onSafeModeChanged();
 }
 
 void AddressBook::shutdown()
@@ -590,6 +611,15 @@ void AddressBook::edsPrepared(GObject *source, GAsyncResult *res, void *data)
     self->prepareFolks();
 }
 
+void AddressBook::onSafeModeMessageActivated(MessagingMenuMessage *message,
+                                             const char *actionId,
+                                             GVariant *param,
+                                             AddressBook *self)
+{
+    qDebug() << "mesage clicked launching address-book-app";
+    url_dispatch_send("application:///address-book-app.desktop", NULL, NULL);
+}
+
 bool AddressBook::isSafeMode()
 {
     return m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool();
@@ -597,8 +627,10 @@ bool AddressBook::isSafeMode()
 
 void AddressBook::setSafeMode(bool flag)
 {
-    if (isSafeMode() != flag) {
+    if (m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool() != flag) {
         m_settings.setValue(SETTINGS_SAFE_MODE_KEY, flag);
+        m_settings.sync();
+        Q_EMIT safeModeChanged();
     }
 }
 
@@ -883,6 +915,41 @@ void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &o
         unprepareFolks();
     } else {
         m_edsIsLive = true;
+    }
+}
+
+void AddressBook::onSafeModeChanged()
+{
+    if (isSafeMode()) {
+        if (m_messagingMenu) {
+            return;
+        }
+
+        GIcon *icon = g_icon_new_for_string("address-book-app", NULL);
+        m_messagingMenu = messaging_menu_app_new("address-book-app.desktop");
+        messaging_menu_app_register(m_messagingMenu);
+        messaging_menu_app_append_source(m_messagingMenu, MESSAGING_MENU_SOURCE_ID, icon, C::gettext("Address book service"));
+        g_object_unref(icon);
+
+        icon = g_themed_icon_new("address-book-app");
+        MessagingMenuMessage *message = messaging_menu_message_new("address-book-service-safe-mode",
+                                                                   icon,
+                                                                   C::gettext("Update required"),
+                                                                   NULL,
+                                                                   C::gettext("Your Contacts app needs to be upgraded. Only local contacts will be editable until upgrade is complete"),
+                                                                   QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
+
+        g_signal_connect(message, "activate", G_CALLBACK(&AddressBook::onSafeModeMessageActivated), this);
+        messaging_menu_app_append_message(m_messagingMenu, message, MESSAGING_MENU_SOURCE_ID, true);
+
+        g_object_unref(icon);
+        g_object_unref(message);
+    } else {
+        if (!m_messagingMenu) {
+            return;
+        }
+        messaging_menu_app_unregister(m_messagingMenu);
+        g_object_unref(m_messagingMenu);
     }
 }
 

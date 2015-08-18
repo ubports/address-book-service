@@ -23,6 +23,8 @@ pkg_check_modules(EDATASERVER REQUIRED libedataserver-1.2>=3.8)
 pkg_check_modules(FOLKS REQUIRED folks>=0.9.0)
 pkg_check_modules(FOLKS_EDS REQUIRED folks-eds)
 pkg_check_modules(GLIB_ACCOUNTS REQUIRED libaccounts-glib)
+pkg_check_modules(MESSAGING_MENU REQUIRED messaging-menu)
+pkg_check_modules(URL_DISPATCHER REQUIRED url-dispatcher-1)
 
 if(EDATASERVER_VERSION VERSION_LESS "3.16")
     set(EVOLUTION_API_3_17 "0")

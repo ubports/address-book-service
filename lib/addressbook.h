@@ -35,6 +35,9 @@
 #include <glib.h>
 #include <glib-object.h>
 
+typedef struct _MessagingMenuMessage MessagingMenuMessage;
+typedef struct _MessagingMenuApp MessagingMenuApp;
+
 namespace galera
 {
 class View;
@@ -59,10 +62,9 @@ public:
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
     bool isReady() const;
-
+    void setSafeMode(bool flag);
 
     static bool isSafeMode();
-    static void setSafeMode(bool flag);
     static int init();
 
 Q_SIGNALS:
@@ -87,6 +89,7 @@ private Q_SLOTS:
     void viewClosed();
     void individualChanged(QIndividual *individual);
     void onEdsServiceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
+    void onSafeModeChanged();
 
     // Unix signal handlers.
     void handleSigQuit();
@@ -106,6 +109,7 @@ private:
     // timer to avoid send several updates at the same time
     DirtyContactsNotify *m_notifyContactUpdate;
     QDBusServiceWatcher *m_edsWatcher;
+    MessagingMenuApp *m_messagingMenu;
     static QSettings m_settings;
 
     bool m_edsIsLive;
@@ -192,6 +196,10 @@ private:
                             void *data);
     static void edsRemoveContact(FolksIndividual *individual);
 
+    static void onSafeModeMessageActivated(MessagingMenuMessage *message,
+                                           const char *actionId,
+                                           GVariant *param,
+                                           AddressBook *self);
     friend class DirtyContactsNotify;
 };
 
