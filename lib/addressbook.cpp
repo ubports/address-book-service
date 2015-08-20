@@ -920,6 +920,7 @@ void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &o
 
 void AddressBook::onSafeModeChanged()
 {
+    qDebug() << "onSafeModeChanged" << isSafeMode() << (void*) m_messagingMenu;
     if (isSafeMode()) {
         if (m_messagingMenu) {
             return;
@@ -941,6 +942,7 @@ void AddressBook::onSafeModeChanged()
 
         g_signal_connect(message, "activate", G_CALLBACK(&AddressBook::onSafeModeMessageActivated), this);
         messaging_menu_app_append_message(m_messagingMenu, message, MESSAGING_MENU_SOURCE_ID, true);
+        qDebug() << "Put safe message on messaging-menu";
 
         g_object_unref(icon);
         g_object_unref(message);

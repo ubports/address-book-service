@@ -162,7 +162,7 @@ ubuntu_sources_register_source (EUbuntuSources *extension,
             e_source_get_uid(source));
 
     if (!e_source_has_extension (source, E_SOURCE_EXTENSION_UBUNTU)) {
-        return;
+        return FALSE;
     }
 
     ubuntu_ext = e_source_get_extension (source, E_SOURCE_EXTENSION_UBUNTU);
@@ -183,7 +183,7 @@ ubuntu_sources_register_source (EUbuntuSources *extension,
         if (match) {
             g_object_unref (ag_account);
             g_debug ("Source Already registered");
-            return;
+            return FALSE;
         }
 
 
