@@ -58,6 +58,7 @@ public:
     bool markAsDeleted();
     QDateTime deletedAt();
 
+    static QtContacts::QContact copy(const QtContacts::QContact &c, QList<QtContacts::QContactDetail::DetailType> fields);
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
     static QString displayName(const QtContacts::QContact &contact);
     static void setExtendedDetails(FolksPersona *persona,

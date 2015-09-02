@@ -763,84 +763,88 @@ QList<QContactDetail> QIndividual::getPersonaExtendedDetails(FolksPersona *perso
     return result;
 }
 
+
+
 QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
+{
+    return copy(contact(), fields);
+}
+
+QtContacts::QContact QIndividual::copy(const QContact &c, QList<QContactDetail::DetailType> fields)
 {
     QList<QContactDetail> details;
     QContact result;
 
-
-    if (fields.isEmpty()) {
-        result = contact();
-    } else {
-        QContact fullContact = contact();
+    result = c;
+    if (!fields.isEmpty()) {
         // this will remove the contact details but will keep the other metadata like preferred fields
-        result = fullContact;
+        result = c;
         result.clearDetails();
 
         // mandatory
-        details << fullContact.detail<QContactGuid>();
-        Q_FOREACH(QContactDetail det, fullContact.details<QContactExtendedDetail>()) {
+        details << c.detail<QContactGuid>();
+        Q_FOREACH(QContactDetail det, c.details<QContactExtendedDetail>()) {
             details << det;
         }
 
         // sync targets
-        Q_FOREACH(QContactDetail det, fullContact.details<QContactSyncTarget>()) {
+        Q_FOREACH(QContactDetail det, c.details<QContactSyncTarget>()) {
             details << det;
         }
 
         if (fields.contains(QContactDetail::TypeName)) {
-            details << fullContact.detail<QContactName>();
+            details << c.detail<QContactName>();
         }
 
 
         if (fields.contains(QContactDetail::TypeDisplayLabel)) {
-            details << fullContact.detail<QContactDisplayLabel>();
+            details << c.detail<QContactDisplayLabel>();
         }
 
         if (fields.contains(QContactDetail::TypeNickname)) {
-            details << fullContact.detail<QContactNickname>();
+            details << c.detail<QContactNickname>();
         }
 
         if (fields.contains(QContactDetail::TypeBirthday)) {
-            details << fullContact.detail<QContactBirthday>();
+            details << c.detail<QContactBirthday>();
         }
 
         if (fields.contains(QContactDetail::TypeAvatar)) {
-            details << fullContact.detail<QContactAvatar>();
+            details << c.detail<QContactAvatar>();
         }
 
         if (fields.contains(QContactDetail::TypeOrganization)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactOrganization>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactOrganization>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypeEmailAddress)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactEmailAddress>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactEmailAddress>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypePhoneNumber)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactPhoneNumber>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactPhoneNumber>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypeAddress)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactAddress>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactAddress>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypeUrl)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactUrl>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactUrl>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypeTag)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactTag>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactTag>()) {
                 details << det;
             }
         }
