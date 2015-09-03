@@ -113,7 +113,7 @@ ESource* create_esource_from_data(CreateSourceData &data, ESourceRegistry **regi
         return 0;
     }
 
-    e_source_set_parent(source, "local-stub");
+    e_source_set_parent(source, "contacts-stub");
     e_source_set_display_name(source, data.m_sourceName.toUtf8().data());
 
     if (data.m_accountId > 0) {
@@ -1224,10 +1224,11 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             g_object_unref(iter);
         }
 
+        QString cId = self->addContact(individual);
         if (visible && self->m_contacts->contains(id)) {
-            updatedIds << self->addContact(individual);
-        } else  if (visible){
-            addedIds << self->addContact(individual);
+           updatedIds <<  cId;
+        } else if (visible) {
+            addedIds << cId;
         }
 
         g_object_unref(individual);
@@ -1290,7 +1291,7 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
                 reply = createData->m_message.createReply(vcard);
             }
         } else if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
-            reply = createData->m_message.createErrorReply("Failed to retrieve the new contact", error->message);
+            reply = createData->m_message.createErrorReply("", "Failed to retrieve the new contact");
         }
     }
     //TODO: use dbus connection
