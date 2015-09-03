@@ -78,6 +78,16 @@ void ABUpdate::startUpdate()
 {
     if (isRunning()) {
         qWarning() << "Update already running.";
+        ABNotifyMessage *msg = new ABNotifyMessage(true, this);
+        if (m_waitingForIntenert) {
+            msg->show(_("Account update"),
+                      QString(_("%1 contact sync account upgrade is waiting for internet connection.")).arg("Google"),
+                      TRANSFER_ICON);
+        } else {
+            msg->show(_("Account update"),
+                      QString(_("%1 contact sync account upgrade already in progress")).arg("Google"),
+                      TRANSFER_ICON);
+        }
         return;
     }
 
@@ -130,6 +140,7 @@ bool ABUpdate::isOnline() const
 void ABUpdate::waitForInternet()
 {
     qDebug() << "Not internet connection wait before start upgrade";
+    m_waitingForIntenert = true;
     connect(m_netManager.data(), SIGNAL(onlineStateChanged(bool)), SLOT(onOnlineStateChanged(bool)));
 }
 
@@ -183,6 +194,7 @@ void ABUpdate::onModuleUpdateError(const QString &errorMessage)
 void ABUpdate::onOnlineStateChanged(bool isOnline)
 {
     if (isOnline) {
+        m_waitingForIntenert = false;
         qDebug() << "Network is online resume upddate process.";
         m_netManager->disconnect(this);
         notifyStart();
