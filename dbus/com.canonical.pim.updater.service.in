@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=com.canonical.pim.updater
+Exec=@CMAKE_INSTALL_FULL_LIBEXECDIR@/address-book-updater

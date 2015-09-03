@@ -91,6 +91,7 @@ add_subdirectory(src)
 add_subdirectory(contacts)
 add_subdirectory(updater)
 add_subdirectory(upstart)
+add_subdirectory(dbus)
 #add_subdirectory(eds-test)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
     # Some tests fail when running on PPPC check bug #1294229

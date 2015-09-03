@@ -52,6 +52,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"a(ss)\" name=\"errorMap\"/>\n"
 "    </signal>\n"
 "    <signal name=\"readyChanged\"/>\n"
+"    <signal name=\"safeModeChanged\"/>\n"
 "    <method name=\"ping\">\n"
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
@@ -124,7 +125,6 @@ public:
     AddressBookAdaptor(const QDBusConnection &connection, AddressBook *parent);
     virtual ~AddressBookAdaptor();
 
-    bool safeMode() const;
     void setSafeMode(bool flag);
 
 public Q_SLOTS:
@@ -144,6 +144,7 @@ public Q_SLOTS:
     QString linkContacts(const QStringList &contacts);
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
     bool isReady();
+    bool safeMode() const;
     bool ping();
     void purgeContacts(const QString &since, const QString &sourceId, const QDBusMessage &message);
 
