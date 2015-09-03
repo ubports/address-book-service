@@ -17,6 +17,8 @@ find_package(Qt5Test REQUIRED)
 find_package(LibPhoneNumber REQUIRED)
 
 find_program(DBUS_RUNNER dbus-test-runner)
+find_program(INTLTOOL_MERGE_EXECUTABLE intltool-merge)
+find_program(INTLTOOL_EXTRACT_EXECUTABLE intltool-extract)
 
 add_definitions(-DQT_NO_KEYWORDS)
 
@@ -29,6 +31,7 @@ pkg_check_modules(GLIB_ACCOUNTS REQUIRED libaccounts-glib)
 pkg_check_modules(MESSAGING_MENU REQUIRED messaging-menu)
 pkg_check_modules(URL_DISPATCHER REQUIRED url-dispatcher-1)
 pkg_check_modules(AccountsQt5 REQUIRED accounts-qt5)
+pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
 
 if(EDATASERVER_VERSION VERSION_LESS "3.16")
     set(EVOLUTION_API_3_17 "0")

@@ -10,6 +10,10 @@
 //updater
 #define SETTINGS_BUTEO_KEY                  "Buteo/migration_complete"
 
+//i18n
+#define GETTEXT_LOCALEDIR                   "@CMAKE_INSTALL_FULL_LOCALEDIR@"
+#define GETTEXT_PACKAGE                     "address-book-updater"
+
 #define QT_PLUGINS_BINARY_DIR               "@CMAKE_BINARY_DIR@"
 #define TEST_DATA_DIR                       "@TEST_DATA_DIR@"
 #define EVOLUTION_ADDRESSBOOK_SERVICE_NAME  "@EVOLUTION_ADDRESSBOOK_SERVICE_NAME@"

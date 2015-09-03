@@ -1,3 +1,21 @@
+/*
+ * Copyright 2015 Canonical Ltd.
+ *
+ * This file is part of address-book-service.
+ *
+ * sync-monitor is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 3.
+ *
+ * contact-service-app is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 #include <QtCore/QObject>
 #include <QtCore/QMutex>
@@ -33,6 +51,7 @@ private Q_SLOTS:
     void onModuleUpdated();
     void onModuleUpdateError(const QString &errorMessage);
     void onOnlineStateChanged(bool isOnline);
+    void updateNextModule();
 
 private:
     QScopedPointer<QNetworkConfigurationManager> m_netManager;
@@ -45,10 +64,12 @@ private:
     int m_activeModule;
     bool m_skipNetworkTest;
 
+    void notifyStart();
+    void notifyNoInternet();
     void notifyDone();
+
     void startUpdate(ABUpdateModule *module);
-    void notifyError(ABUpdateModule *module);
     bool isOnline() const;
     void waitForInternet();
-    void updateNextModule();
+
 };

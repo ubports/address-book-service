@@ -5,9 +5,13 @@ include_directories(
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/common
     ${AccountsQt5_INCLUDE_DIRS}
+    ${LIBNOTIFY_INCLUDE_DIRS}
 )
 
 set(ADDRESS_BOOK_UPDATE_LIB_SRCS
+    ab-i18n.h
+    ab-notify-message.h
+    ab-notify-message.cpp
     ab-update.h
     ab-update.cpp
     ab-update-adaptor.h
@@ -29,6 +33,7 @@ target_link_libraries(${ADDRESS_BOOK_UPDATE_LIB}
     Qt5::Xml
     Qt5::Network
     ${AccountsQt5_LIBRARIES}
+    ${LIBNOTIFY_LIBRARIES}
 )
 
 add_executable(${ADDRESS_BOOK_UPDATE_BIN}
