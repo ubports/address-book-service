@@ -36,7 +36,8 @@ ABUpdate::ABUpdate(QObject *parent)
       m_needsUpdate(false),
       m_isRunning(false),
       m_activeModule(-1),
-      m_skipNetworkTest(false)
+      m_skipNetworkTest(false),
+      m_silenceMode(false)
 {
     // load update modules (this can be a plugin system in the future)
     m_updateModules << new ButeoImport;
@@ -74,19 +75,26 @@ void ABUpdate::skipNetworkTest()
     m_skipNetworkTest = true;
 }
 
+void ABUpdate::setSilenceMode(bool flag)
+{
+    m_silenceMode = flag;
+}
+
 void ABUpdate::startUpdate()
 {
     if (isRunning()) {
         qWarning() << "Update already running.";
-        ABNotifyMessage *msg = new ABNotifyMessage(true, this);
-        if (m_waitingForIntenert) {
-            msg->show(_("Account update"),
-                      QString(_("%1 contact sync account upgrade is waiting for internet connection.")).arg("Google"),
-                      TRANSFER_ICON);
-        } else {
-            msg->show(_("Account update"),
-                      QString(_("%1 contact sync account upgrade already in progress")).arg("Google"),
-                      TRANSFER_ICON);
+        if (!m_silenceMode) {
+            ABNotifyMessage *msg = new ABNotifyMessage(true, this);
+            if (m_waitingForIntenert) {
+                msg->show(_("Account update"),
+                          QString(_("%1 contact sync account upgrade is waiting for internet connection.")).arg("Google"),
+                          TRANSFER_ICON);
+            } else {
+                msg->show(_("Account update"),
+                          QString(_("%1 contact sync account upgrade already in progress")).arg("Google"),
+                          TRANSFER_ICON);
+            }
         }
         return;
     }
@@ -168,11 +176,15 @@ void ABUpdate::onModuleUpdated()
     }
 
     qDebug() << "Update complete for:" << module->name();
-    ABNotifyMessage *msg = new ABNotifyMessage(true, this);
-    msg->show(_("Account update"),
-              _("Contact sync upgrade complete."),
-              TRANSFER_ICON);
-    connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
+    if (m_silenceMode) {
+        updateNextModule();
+    } else {
+        ABNotifyMessage *msg = new ABNotifyMessage(true, this);
+        msg->show(_("Account update"),
+                  _("Contact sync upgrade complete."),
+                  TRANSFER_ICON);
+        connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
+    }
 }
 
 void ABUpdate::onModuleUpdateError(const QString &errorMessage)
@@ -183,12 +195,16 @@ void ABUpdate::onModuleUpdateError(const QString &errorMessage)
     qWarning() << "Fail to update module" << module->name() << module->lastError();
     module->roolback();
 
-    ABNotifyMessage *msg = new ABNotifyMessage(true, this);
-    msg->show(_("Account update"),
-              QString(_("Could not complete %1 contact sync account upgrade.\nOnly local contacts will be editable until upgrade is complete.\nTo retry, open Contacts app and press the sync button.")).arg("Google"),
-              TRANSFER_ICON_ERROR);
+    if (m_silenceMode) {
+        updateNextModule();
+    } else {
+        ABNotifyMessage *msg = new ABNotifyMessage(true, this);
+        msg->show(_("Account update"),
+                  QString(_("Could not complete %1 contact sync account upgrade.\nOnly local contacts will be editable until upgrade is complete.\nTo retry, open Contacts app and press the sync button.")).arg("Google"),
+                  TRANSFER_ICON_ERROR);
 
-    connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
+        connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
+    }
 }
 
 void ABUpdate::onOnlineStateChanged(bool isOnline)
@@ -204,18 +220,22 @@ void ABUpdate::onOnlineStateChanged(bool isOnline)
 
 void ABUpdate::notifyStart()
 {
-    ABNotifyMessage *msg = new ABNotifyMessage(true, this);
-    msg->show(_("Account update"),
-              QString(_("%1 contact sync account upgrade in progress")).arg("Google"),
-              TRANSFER_ICON);
+    if (!m_silenceMode) {
+        ABNotifyMessage *msg = new ABNotifyMessage(true, this);
+        msg->show(_("Account update"),
+                  QString(_("%1 contact sync account upgrade in progress")).arg("Google"),
+                  TRANSFER_ICON);
+    }
 }
 
 void ABUpdate::notifyNoInternet()
 {
-    ABNotifyMessage *msg = new ABNotifyMessage(true, this);
-    msg->show(_("Account update"),
-              QString(_("%1 contact sync account needs upgrade. Please connect with the internet to start the update.")).arg("Google"),
-              TRANSFER_ICON_PAUSED);
+    if (!m_silenceMode) {
+        ABNotifyMessage *msg = new ABNotifyMessage(true, this);
+        msg->show(_("Account update"),
+                  QString(_("%1 contact sync account needs upgrade. Please connect with the internet to start the update.")).arg("Google"),
+                  TRANSFER_ICON_PAUSED);
+    }
 }
 
 void ABUpdate::notifyDone()

@@ -84,6 +84,7 @@ private Q_SLOTS:
     {
         ABUpdate updater;
         updater.skipNetworkTest();
+        updater.setSilenceMode(true);
 
         QCOMPARE(updater.needsUpdate().count(), 1);
         QVERIFY(!updater.isRunning());
@@ -99,6 +100,7 @@ private Q_SLOTS:
 
         ABUpdate updater;
         updater.skipNetworkTest();
+        updater.setSilenceMode(true);
 
         QSignalSpy updatedSignal(&updater, SIGNAL(updateDone()));
         QSignalSpy updateErrorSignal(&updater, SIGNAL(updateError(QString)));
@@ -135,6 +137,7 @@ private Q_SLOTS:
 
         ABUpdate updater;
         updater.skipNetworkTest();
+        updater.setSilenceMode(true);
 
         QSignalSpy updatedSignal(&updater, SIGNAL(updateDone()));
         QSignalSpy updateErrorSignal(&updater, SIGNAL(updateError(QString)));

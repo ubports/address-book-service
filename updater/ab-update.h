@@ -36,6 +36,7 @@ public:
 
     // test
     void skipNetworkTest();
+    void setSilenceMode(bool flag);
 
 public Q_SLOTS:
     void startUpdate();
@@ -63,6 +64,7 @@ private:
     bool m_waitingForIntenert;
     int m_activeModule;
     bool m_skipNetworkTest;
+    bool m_silenceMode;
 
     void notifyStart();
     void notifyNoInternet();

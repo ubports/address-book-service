@@ -32,6 +32,7 @@ private Q_SLOTS:
     {
         ABUpdate updater;
         updater.skipNetworkTest();
+        updater.setSilenceMode(true);
 
         QVERIFY(updater.needsUpdate().isEmpty());
     }

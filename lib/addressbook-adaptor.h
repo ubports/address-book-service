@@ -116,9 +116,6 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"s\"/>\n"
 "      <arg direction=\"in\" type=\"s\"/>\n"
 "    </method>\n"
-"    <method name=\"safeMode\">\n"
-"      <arg direction=\"out\" type=\"b\"/>\n"
-"    </method>\n"
 "  </interface>\n"
         "")
     Q_PROPERTY(bool isReady READ isReady NOTIFY readyChanged)
