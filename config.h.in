@@ -1,7 +1,10 @@
 #ifndef __GALERA_CONFIG_H__
 #define __GALERA_CONFIG_H__
 
+#define SETTINGS_APPLICATION               "AddressBookService"
+#define SETTINGS_ORG                       "Canonical"
 #define SETTINGS_SAFE_MODE_KEY             "safe-mode"
+#define SETTINGS_INVISIBLE_SOURCES         "invisible-sources"
 
 #define QT_PLUGINS_BINARY_DIR               "@CMAKE_BINARY_DIR@"
 #define TEST_DATA_DIR                       "@TEST_DATA_DIR@"

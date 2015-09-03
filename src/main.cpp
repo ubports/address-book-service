@@ -52,8 +52,8 @@ void onServiceReady(galera::AddressBook *book)
 
 int main(int argc, char** argv)
 {
-    QCoreApplication::setOrganizationName("Canonical");
-    QCoreApplication::setApplicationName("Address Book Service");
+    QCoreApplication::setOrganizationName(SETTINGS_ORG);
+    QCoreApplication::setApplicationName(SETTINGS_APPLICATION);
 
     galera::AddressBook::init();
     QCoreApplication app(argc, argv);

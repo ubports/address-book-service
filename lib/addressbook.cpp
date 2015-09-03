@@ -143,7 +143,7 @@ ESource* create_esource_from_data(CreateSourceData &data, ESourceRegistry **regi
 namespace galera
 {
 int AddressBook::m_sigQuitFd[2] = {0, 0};
-QSettings AddressBook::m_settings;
+QSettings AddressBook::m_settings(SETTINGS_ORG, SETTINGS_APPLICATION);
 
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
@@ -305,7 +305,7 @@ void AddressBook::checkCompatibility()
     g_object_unref(r);
 
     if (enableSafeMode) {
-        qDebug() << "Enabling safe mode";
+        qWarning() << "Enabling safe mode";
         setSafeMode(true);
     } else {
         qDebug() << "Safe mode not necessary";
@@ -629,7 +629,17 @@ void AddressBook::setSafeMode(bool flag)
 {
     if (m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool() != flag) {
         m_settings.setValue(SETTINGS_SAFE_MODE_KEY, flag);
+        bool reboot = false;
+        if (!flag) {
+            if (!m_settings.value(SETTINGS_INVISIBLE_SOURCES).toStringList().isEmpty()) {
+                m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, QStringList());
+                reboot = true;
+            }
+        }
         m_settings.sync();
+        if (reboot) {
+            unprepareFolks();
+        }
         Q_EMIT safeModeChanged();
     }
 }
@@ -657,6 +667,14 @@ void AddressBook::createSourceDone(GObject *source,
                      cData->m_accountId,
                      false,
                      cData->m_setAsPrimary);
+        // if in safe mode source will be invisible, we use that to avoid invalid states
+        if (isSafeMode()) {
+            qDebug() << "Source will be invisible until safe mode is gone" << cData->m_sourceId << e_source_get_uid(cData->m_source);
+            QStringList iSources = cData->m_addressbook->m_settings.value(SETTINGS_INVISIBLE_SOURCES).toStringList();
+            iSources << e_source_get_uid(cData->m_source);
+            cData->m_addressbook->m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, iSources);
+            cData->m_addressbook->m_settings.sync();
+        }
     }
     g_object_unref(source);
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
@@ -1159,6 +1177,11 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     QSet<QString> removedIds;
     QSet<QString> addedIds;
     QSet<QString> updatedIds;
+    QStringList invisibleSources;
+
+    if (isSafeMode()) {
+        invisibleSources = self->m_settings.value(SETTINGS_INVISIBLE_SOURCES).toStringList();
+    }
 
     GeeSet *removed = gee_multi_map_get_keys(changes);
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(removed));
@@ -1188,9 +1211,22 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             continue;
         }
 
-        if (self->m_contacts->contains(id)) {
+        bool visible = true;
+        if (!invisibleSources.isEmpty()) {
+            GeeSet *personas = folks_individual_get_personas(individual);
+            GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+            if (gee_iterator_next(iter)) {
+                FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+                FolksPersonaStore *ps = folks_persona_get_store(persona);
+                g_object_unref(persona);
+                visible = !invisibleSources.contains(folks_persona_store_get_id(ps));
+            }
+            g_object_unref(iter);
+        }
+
+        if (visible && self->m_contacts->contains(id)) {
             updatedIds << self->addContact(individual);
-        } else {
+        } else  if (visible){
             addedIds << self->addContact(individual);
         }
 
