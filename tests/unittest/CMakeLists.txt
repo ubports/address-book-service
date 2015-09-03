@@ -135,3 +135,4 @@ target_link_libraries(address-book-server-test
                       ${GIO_LIBRARIES}
                       ${FOLKS_LIBRARIES}
 )
+

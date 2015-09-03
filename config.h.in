@@ -5,6 +5,8 @@
 #define SETTINGS_ORG                       "Canonical"
 #define SETTINGS_SAFE_MODE_KEY             "safe-mode"
 #define SETTINGS_INVISIBLE_SOURCES         "invisible-sources"
+//updater
+#define SETTINGS_BUTEO_KEY                  "Buteo/migration_complete"
 
 #define QT_PLUGINS_BINARY_DIR               "@CMAKE_BINARY_DIR@"
 #define TEST_DATA_DIR                       "@TEST_DATA_DIR@"
