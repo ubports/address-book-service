@@ -30,13 +30,17 @@ private Q_SLOTS:
 
     void tst_isOutDated()
     {
-        ABUpdate import;
-        QVERIFY(import.needsUpdate().isEmpty());
+        ABUpdate updater;
+        updater.skipNetworkTest();
+
+        QVERIFY(updater.needsUpdate().isEmpty());
     }
 
     void tst_importAccount()
     {
         ABUpdate updater;
+        updater.skipNetworkTest();
+
         QSignalSpy updatedSignal(&updater, SIGNAL(updateDone()));
 
         qDebug() << "WILL START";

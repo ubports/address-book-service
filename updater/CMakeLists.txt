@@ -1,5 +1,5 @@
-set(ADDRESS_BOOK_UPDATE_LIB address-book-update-lib)
-set(ADDRESS_BOOK_UPDATE_BIN address-book-update)
+set(ADDRESS_BOOK_UPDATE_LIB address-book-updater-lib)
+set(ADDRESS_BOOK_UPDATE_BIN address-book-updater)
 
 include_directories(
     ${CMAKE_BINARY_DIR}
@@ -40,5 +40,5 @@ target_link_libraries(${ADDRESS_BOOK_UPDATE_BIN}
 )
 
 install(TARGETS ${ADDRESS_BOOK_UPDATE_BIN}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_FULL_LIBEXECDIR}
 )

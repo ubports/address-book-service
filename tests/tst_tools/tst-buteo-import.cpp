@@ -5,6 +5,7 @@
 #include <QSignalSpy>
 
 #include "ab-update.h"
+#include "config.h"
 
 #define ADDRESS_BOOK_BUS_NAME   "com.canonical.pim"
 #define ADDRESS_BOOK_OBJ        "/com/canonical/pim/AddressBook"
@@ -63,6 +64,7 @@ private Q_SLOTS:
     void init()
     {
         // we need `galera` manager to run this test
+        QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
         QVERIFY(QContactManager::availableManagers().contains("galera"));
 
         m_settingsFile = new QTemporaryFile;
@@ -81,6 +83,8 @@ private Q_SLOTS:
     void tst_isOutDated()
     {
         ABUpdate updater;
+        updater.skipNetworkTest();
+
         QCOMPARE(updater.needsUpdate().count(), 1);
         QVERIFY(!updater.isRunning());
     }
@@ -94,6 +98,7 @@ private Q_SLOTS:
         createSource("source@4", "source-4", "google", "", 0, false, false);
 
         ABUpdate updater;
+        updater.skipNetworkTest();
 
         QSignalSpy updatedSignal(&updater, SIGNAL(updateDone()));
         QSignalSpy updateErrorSignal(&updater, SIGNAL(updateError(QString)));
@@ -129,6 +134,8 @@ private Q_SLOTS:
         QTRY_COMPARE(manager.contacts(sourceFilter).size(), 4);
 
         ABUpdate updater;
+        updater.skipNetworkTest();
+
         QSignalSpy updatedSignal(&updater, SIGNAL(updateDone()));
         QSignalSpy updateErrorSignal(&updater, SIGNAL(updateError(QString)));
 

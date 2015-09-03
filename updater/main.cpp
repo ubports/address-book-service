@@ -1,6 +1,8 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QScopedPointer>
 #include <QtCore/QTimer>
+#include <QtCore/QDebug>
+#include <QtCore/QDateTime>
 #include <QtDBus/QDBusConnection>
 
 #include "ab-update-adaptor.h"
@@ -26,5 +28,7 @@ int main(int argc, char **argv)
 
     // quit app when update is done
     QObject::connect(abUpdate.data(), SIGNAL(updateDone()), &app, SLOT(quit()));
+    qDebug() << "Updater started" << QDateTime::currentDateTime();
     app.exec();
+    qDebug() << "Updater finished" << QDateTime::currentDateTime();
 }

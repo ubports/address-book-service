@@ -34,7 +34,7 @@ macro(declare_test TESTNAME RUN_SERVER)
         add_test(${TESTNAME} ${TESTNAME})
     endif()
 
-    set(TEST_ENVIRONMENT "QT_QPA_PLATFORM=minimal\;FOLKS_BACKEND_PATH=${folks-dummy-backend_BINARY_DIR}/dummy.so\;FOLKS_BACKENDS_ALLOWED=dummy")
+    set(TEST_ENVIRONMENT "QT_QPA_PLATFORM=minimal\;FOLKS_BACKEND_PATH=${folks-dummy-backend_BINARY_DIR}/dummy.so\;FOLKS_BACKENDS_ALLOWED=dummy\;ADDRESS_BOOK_SAFE_MODE=Off")
     set_tests_properties(${TESTNAME} PROPERTIES
                           ENVIRONMENT ${TEST_ENVIRONMENT}
                           TIMEOUT ${CTEST_TESTING_TIMEOUT})

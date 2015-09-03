@@ -10,7 +10,7 @@ target_link_libraries(tst-buteo-import
     Qt5::DBus
     Qt5::Test
     Qt5::Contacts
-    address-book-update-lib
+    address-book-updater-lib
 )
 
 add_test(tst-buteo-import
@@ -36,7 +36,7 @@ target_link_libraries(tst-buteo-import-no-accounts
     Qt5::DBus
     Qt5::Test
     Qt5::Contacts
-    address-book-update-lib
+    address-book-updater-lib
 )
 
 add_test(tst-buteo-import-no-accounts
