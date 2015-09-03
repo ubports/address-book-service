@@ -1,0 +1,2 @@
+usr/lib/*/address-book-service/address-book-updater
+usr/share/upstart/sessions/address-book-updater.conf
