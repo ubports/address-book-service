@@ -5,6 +5,8 @@
 #define SETTINGS_ORG                       "Canonical"
 #define SETTINGS_SAFE_MODE_KEY             "safe-mode"
 #define SETTINGS_INVISIBLE_SOURCES         "invisible-sources"
+#define ADDRESS_BOOK_SAFE_MODE             "ADDRESS_BOOK_SAFE_MODE"
+
 //updater
 #define SETTINGS_BUTEO_KEY                  "Buteo/migration_complete"
 

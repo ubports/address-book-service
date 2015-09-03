@@ -281,6 +281,10 @@ void AddressBook::unprepareFolks()
 
 void AddressBook::checkCompatibility()
 {
+    QByteArray envSafeMode = qgetenv(ADDRESS_BOOK_SAFE_MODE);
+    if (!envSafeMode.isEmpty()) {
+        return;
+    }
     GError *gError = NULL;
     ESourceRegistry *r = e_source_registry_new_sync(NULL, &gError);
     if (gError) {
@@ -622,11 +626,21 @@ void AddressBook::onSafeModeMessageActivated(MessagingMenuMessage *message,
 
 bool AddressBook::isSafeMode()
 {
-    return m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool();
+    QByteArray envSafeMode = qgetenv(ADDRESS_BOOK_SAFE_MODE);
+    if (!envSafeMode.isEmpty()) {
+        return (envSafeMode.toLower() == "on" ? true : false);
+    } else {
+        return m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool();
+    }
 }
 
 void AddressBook::setSafeMode(bool flag)
 {
+    QByteArray envSafeMode = qgetenv(ADDRESS_BOOK_SAFE_MODE);
+    if (!envSafeMode.isEmpty()) {
+        return;
+    }
+
     if (m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool() != flag) {
         m_settings.setValue(SETTINGS_SAFE_MODE_KEY, flag);
         bool reboot = false;
@@ -1224,9 +1238,10 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             g_object_unref(iter);
         }
 
+        bool exists = self->m_contacts->contains(id);
         QString cId = self->addContact(individual);
-        if (visible && self->m_contacts->contains(id)) {
-           updatedIds <<  cId;
+        if (visible && exists) {
+            updatedIds <<  cId;
         } else if (visible) {
             addedIds << cId;
         }
