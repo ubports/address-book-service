@@ -26,9 +26,10 @@
 #include <QtCore/QTimer>
 #include <QtCore/QCoreApplication>
 
-#define TRANSFER_ICON           "/usr/share/icons/suru/apps/status/scalable/transfer-progress.svg"
-#define TRANSFER_ICON_PAUSED    "/usr/share/icons/suru/apps/status/scalable/transfer-paused.svg"
-#define TRANSFER_ICON_ERROR     "/usr/share/icons/suru/apps/status/scalable/transfer-error.svg"
+#define TRANSFER_ICON           "/usr/share/icons/suru/status/scalable/transfer-progress.svg"
+#define TRANSFER_ICON_PAUSED    "/usr/share/icons/suru/status/scalable/transfer-paused.svg"
+#define TRANSFER_ICON_ERROR     "/usr/share/icons/suru/status/scalable/transfer-error.svg"
+
 
 ABUpdate::ABUpdate(QObject *parent)
     : QObject(parent),
