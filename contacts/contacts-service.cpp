@@ -194,7 +194,6 @@ void GaleraContactsService::initialize()
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
-            connect(m_iface.data(), SIGNAL(safeModeChanged()), this, SIGNAL(serviceChanged()));
             Q_EMIT serviceChanged();
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();

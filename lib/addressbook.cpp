@@ -645,8 +645,16 @@ void AddressBook::setSafeMode(bool flag)
         m_settings.setValue(SETTINGS_SAFE_MODE_KEY, flag);
         if (!flag) {
             // make all contacts visible
+            QSet<QString> ids;
             Q_FOREACH(ContactEntry *entry, m_contacts->values()) {
-                entry->individual()->setVisible(true);
+                QIndividual *i = entry->individual();
+                if (!i->isVisible()) {
+                    i->setVisible(true);
+                    ids << i->id();
+                }
+            }
+            if (!ids.isEmpty()) {
+                m_notifyContactUpdate->insertAddedContacts(ids);
             }
             // clear invisible sources list
             m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, QStringList());

@@ -49,7 +49,8 @@ private Q_SLOTS:
 
 private:
     QScopedPointer<QDBusInterface> m_buteoInterface;
-    QMap<quint32, QString> m_accountToProfiles;
+    QMap<quint32, QString> m_initialAccountToProfiles;
+    QMap<quint32, QString> m_pendingAccountToProfiles;
     QStringList m_failToSyncProfiles;
     QMutex m_importLock;
     ImportError m_lastError;
@@ -60,7 +61,6 @@ private:
     bool createAccounts(QList<quint32> ids);
     bool removeProfile(const QString &profileId);
     bool removeSources(const QStringList &sources);
-    bool restoreSession(const QStringList &activeSyncs);
     void error(const QString &accountName, ImportError errorCode);
     bool loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> &newAccounts);
     bool enableContactsService(quint32 accountId);

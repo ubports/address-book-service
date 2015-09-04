@@ -1216,7 +1216,7 @@ QDateTime QIndividual::deletedAt()
 
 bool QIndividual::setVisible(bool visible)
 {
-    m_visible = true;
+    m_visible = visible;
 }
 
 bool QIndividual::isVisible() const

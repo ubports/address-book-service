@@ -201,7 +201,7 @@ void ABUpdate::onModuleUpdateError(const QString &errorMessage)
     } else {
         ABNotifyMessage *msg = new ABNotifyMessage(true, this);
         msg->show(_("Account update"),
-                  QString(_("Could not complete %1 contact sync account upgrade.\nOnly local contacts will be editable until upgrade is complete.\nTo retry, open Contacts app and press the sync button.")).arg("Google"),
+                  QString(_("Could not complete %1 contact sync account upgrade.\nTo retry, open Contacts app and press the sync button.")).arg("Google"),
                   TRANSFER_ICON_ERROR);
 
         connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
@@ -234,7 +234,7 @@ void ABUpdate::notifyNoInternet()
     if (!m_silenceMode) {
         ABNotifyMessage *msg = new ABNotifyMessage(true, this);
         msg->show(_("Account update"),
-                  QString(_("%1 contact sync account needs upgrade. Please connect with the internet to start the update.")).arg("Google"),
+                  QString(_("%1 contact sync account needs upgrade. Please connect with the internet.")).arg("Google"),
                   TRANSFER_ICON_PAUSED);
     }
 }
