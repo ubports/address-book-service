@@ -952,7 +952,6 @@ void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &o
 
 void AddressBook::onSafeModeChanged()
 {
-    qDebug() << "onSafeModeChanged" << isSafeMode() << (void*) m_messagingMenu;
     if (isSafeMode()) {
         if (m_messagingMenu) {
             return;
@@ -1005,8 +1004,6 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
 {
     GError *error = 0;
     RemoveContactsData *removeData = static_cast<RemoveContactsData*>(data);
-
-   qDebug() << "WILL DELETE" << removeData  ->m_request;
 
     if (result) {
         folks_individual_aggregator_remove_individual_finish(individualAggregator, result, &error);

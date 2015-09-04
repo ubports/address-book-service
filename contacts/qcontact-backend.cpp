@@ -254,8 +254,6 @@ bool GaleraManagerEngine::saveContacts(QList<QContact> *contacts,
 
 bool GaleraManagerEngine::removeContacts(const QList<QtContacts::QContactId> &contactIds, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
-
     QContactRemoveRequest request;
     request.setContactIds(contactIds);
     startRequest(&request);

@@ -845,7 +845,6 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         self->updateBirthday();
         break;
     case QContactDetail::TypeDisplayLabel:
-        qDebug() << "will update full name" << QIndividual::displayName(self->m_newContact);
         self->updateFullName(QIndividual::displayName(self->m_newContact));
         break;
     case QContactDetail::TypeEmailAddress:

@@ -36,6 +36,7 @@ private Q_SLOTS:
     void initTestCase()
     {
         QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
+        qRegisterMetaType<QList<QtContacts::QContactId> >("QList<QContactId>");
         // wait for address-book-service
         QTest::qWait(1000);
     }
