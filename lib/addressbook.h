@@ -152,8 +152,8 @@ private:
     void continueShutdown();
     void setIsReady(bool isReady);
     bool registerObject(QDBusConnection &connection);
-    QString removeContact(FolksIndividual *individual);
-    QString addContact(FolksIndividual *individual);
+    QString removeContact(FolksIndividual *individual, bool *visible);
+    QString addContact(FolksIndividual *individual, bool visible);
     FolksPersonaStore *getFolksStore(const QString &source);
 
     static void availableSourcesDoneListAllSources(FolksBackendStore *backendStore,

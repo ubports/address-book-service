@@ -57,6 +57,8 @@ public:
     void flush();
     bool markAsDeleted();
     QDateTime deletedAt();
+    bool setVisible(bool visible);
+    bool isVisible() const;
 
     static QtContacts::QContact copy(const QtContacts::QContact &c, QList<QtContacts::QContactDetail::DetailType> fields);
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
@@ -81,6 +83,7 @@ private:
     QMetaObject::Connection m_updateConnection;
     QMutex m_contactLock;
     QDateTime m_deletedAt;
+    bool m_visible;
     static bool m_autoLink;
     static QStringList m_supportedExtendedDetails;
 

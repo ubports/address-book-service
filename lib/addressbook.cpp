@@ -644,9 +644,12 @@ void AddressBook::setSafeMode(bool flag)
     if (m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool() != flag) {
         m_settings.setValue(SETTINGS_SAFE_MODE_KEY, flag);
         if (!flag) {
-            if (!m_settings.value(SETTINGS_INVISIBLE_SOURCES).toStringList().isEmpty()) {
-                m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, QStringList());
+            // make all contacts visible
+            Q_FOREACH(ContactEntry *entry, m_contacts->values()) {
+                entry->individual()->setVisible(true);
             }
+            // clear invisible sources list
+            m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, QStringList());
         }
         m_settings.sync();
         Q_EMIT safeModeChanged();
@@ -930,7 +933,9 @@ void AddressBook::viewClosed()
 
 void AddressBook::individualChanged(QIndividual *individual)
 {
-    m_notifyContactUpdate->insertChangedContacts(QSet<QString>() << individual->id());
+    if (individual->isVisible()) {
+        m_notifyContactUpdate->insertChangedContacts(QSet<QString>() << individual->id());
+    }
 }
 
 void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner)
@@ -1150,26 +1155,29 @@ void AddressBook::updateContactsDone(const QString &contactId,
     }
 }
 
-QString AddressBook::removeContact(FolksIndividual *individual)
+QString AddressBook::removeContact(FolksIndividual *individual, bool *visible)
 {
     QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
     ContactEntry *ci = m_contacts->take(contactId);
     if (ci) {
+        *visible = ci->individual()->isVisible();
         delete ci;
         return contactId;
     }
     return QString();
 }
 
-QString AddressBook::addContact(FolksIndividual *individual)
+QString AddressBook::addContact(FolksIndividual *individual, bool visible)
 {
     QString id = QString::fromUtf8(folks_individual_get_id(individual));
     ContactEntry *entry = m_contacts->value(id);
     if (entry) {
         entry->individual()->setIndividual(individual);
+        entry->individual()->setVisible(visible);
     } else {
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
+        i->setVisible(visible);
         m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
     }
@@ -1200,7 +1208,11 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             continue;
         }
 
-        removedIds << self->removeContact(individual);
+        bool visible = true;
+        QString cId = self->removeContact(individual, &visible);
+        if (visible && !cId.isEmpty()) {
+            removedIds << cId;
+        }
         g_object_unref(individual);
     }
     g_object_unref(iter);
@@ -1234,7 +1246,7 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
         }
 
         bool exists = self->m_contacts->contains(id);
-        QString cId = self->addContact(individual);
+        QString cId = self->addContact(individual, visible);
         if (visible && exists) {
             updatedIds <<  cId;
         } else if (visible) {

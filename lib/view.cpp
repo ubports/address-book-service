@@ -118,7 +118,8 @@ protected:
         if (m_filter.isValid()) {
             if (m_filter.isEmpty()) {
                 Q_FOREACH(ContactEntry *entry, m_allContacts->values()) {
-                    if (!entry->individual()->deletedAt().isValid()) {
+                    if (entry->individual()->isVisible() &&
+                        !entry->individual()->deletedAt().isValid()) {
                         m_contacts << entry->individual()->contact();
                     }
                 }
@@ -136,7 +137,10 @@ protected:
                     QContact contact = entry->individual()->contact();
                     QDateTime deletedAt = entry->individual()->deletedAt();
                     m_stoppedLock.unlock();
-                    if (checkContact(contact, deletedAt)) {
+
+                    if (entry->individual()->isVisible() &&
+                        checkContact(contact, deletedAt)) {
+
                         if (needSort) {
                             addSorted(&m_contacts, contact, m_sortClause);
                         } else {

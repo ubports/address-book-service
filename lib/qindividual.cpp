@@ -155,7 +155,8 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
     : m_individual(0),
       m_aggregator(aggregator),
       m_contact(0),
-      m_currentUpdate(0)
+      m_currentUpdate(0),
+      m_visible(true)
 {
     if (m_supportedExtendedDetails.isEmpty()) {
         m_supportedExtendedDetails << X_CREATED_AT
@@ -1211,6 +1212,16 @@ QDateTime QIndividual::deletedAt()
     }
 
     return m_deletedAt;
+}
+
+bool QIndividual::setVisible(bool visible)
+{
+    m_visible = true;
+}
+
+bool QIndividual::isVisible() const
+{
+    return m_visible;
 }
 
 void QIndividual::setIndividual(FolksIndividual *individual)
