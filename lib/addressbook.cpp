@@ -643,17 +643,12 @@ void AddressBook::setSafeMode(bool flag)
 
     if (m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool() != flag) {
         m_settings.setValue(SETTINGS_SAFE_MODE_KEY, flag);
-        bool reboot = false;
         if (!flag) {
             if (!m_settings.value(SETTINGS_INVISIBLE_SOURCES).toStringList().isEmpty()) {
                 m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, QStringList());
-                reboot = true;
             }
         }
         m_settings.sync();
-        if (reboot) {
-            unprepareFolks();
-        }
         Q_EMIT safeModeChanged();
     }
 }
