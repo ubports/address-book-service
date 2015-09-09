@@ -196,7 +196,7 @@ void View::close()
             m_filterThread->stop();
             m_filterThread->wait();
         }
-        delete m_filterThread;
+        m_filterThread->deleteLater();
         m_filterThread = 0;
     }
 }
