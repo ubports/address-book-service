@@ -134,7 +134,7 @@ void QContactFetchRequestData::updateRequest(QContactAbstractRequest::State stat
 void QContactFetchRequestData::deleteView(QDBusInterface *view)
 {
     if (view) {
-        view->call("close");
+        view->asyncCall("close");
         view->deleteLater();
     }
 }
