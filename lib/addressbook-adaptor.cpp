@@ -87,9 +87,9 @@ QString AddressBookAdaptor::createContact(const QString &contact, const QString 
     return QString();
 }
 
-QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &sort, const QStringList &sources)
+QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &sort, int maxCount, const QStringList &sources)
 {
-    View *v = m_addressBook->query(clause, sort, sources);
+    View *v = m_addressBook->query(clause, sort, maxCount, sources);
     v->registerObject(m_connection);
     return QDBusObjectPath(v->dynamicObjectPath());
 }

@@ -43,9 +43,10 @@ namespace galera
 class FilterThread: public QThread
 {
 public:
-    FilterThread(QString filter, QString sort, ContactsMap *allContacts)
+    FilterThread(QString filter, QString sort, int maxCount, ContactsMap *allContacts)
         : m_filter(filter),
           m_sortClause(sort),
+          m_maxCount(maxCount),
           m_allContacts(allContacts),
           m_stopped(false)
     {
@@ -110,7 +111,6 @@ protected:
         }
 
         m_allContacts->lock();
-
         // only sort contacts if the contacts was stored in a different order into the contacts map
         bool needSort = (!m_sortClause.isEmpty() &&
                          (m_sortClause.toContactSortOrder() != m_allContacts->sort().toContactSortOrder()));
@@ -118,6 +118,9 @@ protected:
         if (m_filter.isValid()) {
             if (m_filter.isEmpty()) {
                 m_contacts = m_allContacts->values();
+                if ((m_maxCount > 0) && (m_maxCount < m_contacts.size())) {
+                    m_contacts = m_contacts.mid(0, m_maxCount);
+                }
                 if (needSort) {
                     chageSort(m_sortClause);
                 }
@@ -137,6 +140,10 @@ protected:
                         } else {
                             m_contacts.append(entry);
                         }
+
+                        if ((m_maxCount > 0) && (m_contacts.size() >= m_maxCount)) {
+                            break;
+                        }
                     }
                 }
             }
@@ -153,6 +160,7 @@ private:
     SortClause m_sortClause;
     ContactsMap *m_allContacts;
     QList<ContactEntry*> m_contacts;
+    int m_maxCount;
     bool m_stopped;
     QReadWriteLock m_stoppedLock;
 
@@ -162,10 +170,12 @@ private:
     }
 };
 
-View::View(const QString &clause, const QString &sort, const QStringList &sources, ContactsMap *allContacts, QObject *parent)
+View::View(const QString &clause, const QString &sort, int maxCount,
+           const QStringList &sources, ContactsMap *allContacts,
+           QObject *parent)
     : QObject(parent),
       m_sources(sources),
-      m_filterThread(new FilterThread(clause, sort, allContacts)),
+      m_filterThread(new FilterThread(clause, sort, maxCount, allContacts)),
       m_adaptor(0)
 {
     if (allContacts) {
