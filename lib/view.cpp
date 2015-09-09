@@ -40,16 +40,20 @@ using namespace QtVersit;
 namespace galera
 {
 
-class FilterThread: public QThread
+class FilterThread: public QRunnable
 {
 public:
-    FilterThread(QString filter, QString sort, int maxCount, ContactsMap *allContacts)
-        : m_filter(filter),
+    FilterThread(QString filter, QString sort, int maxCount, ContactsMap *allContacts, QObject *parent)
+        : m_parent(parent),
+          m_filter(filter),
           m_sortClause(sort),
           m_maxCount(maxCount),
           m_allContacts(allContacts),
-          m_stopped(false)
+          m_canceled(false),
+          m_running(false),
+          m_done(false)
     {
+        setAutoDelete(false);
     }
 
     QList<ContactEntry*> result() const
@@ -96,17 +100,36 @@ public:
         }
     }
 
-    void stop()
+    void cancel()
     {
-        m_stoppedLock.lockForWrite();
-        m_stopped = true;
-        m_stoppedLock.unlock();
+        m_canaceledLock.lockForWrite();
+        m_canceled = true;
+        m_canaceledLock.unlock();
+    }
+
+    bool isRunning() const
+    {
+        return m_running;
+    }
+
+    bool done() const
+    {
+        return m_done;
     }
 
 protected:
+    void notifyFinished()
+    {
+        m_running = false;
+        m_done = true;
+        QMetaObject::invokeMethod(m_parent, "onFilterDone", Qt::QueuedConnection);
+    }
+
     void run()
     {
+        qDebug() << "Run filter thread";
         if (!m_allContacts) {
+            notifyFinished();
             return;
         }
 
@@ -129,13 +152,14 @@ protected:
                 // if is query by phone number do a initial filter
                 Q_FOREACH(ContactEntry *entry, m_allContacts->valueByPhone(m_filter.phoneNumberToFilter()))
                 {
-                    m_stoppedLock.lockForRead();
-                    if (m_stopped) {
-                        m_stoppedLock.unlock();
+                    m_canaceledLock.lockForRead();
+                    if (m_canceled) {
+                        m_canaceledLock.unlock();
                         m_allContacts->unlock();
+                        notifyFinished();
                         return;
                     }
-                    m_stoppedLock.unlock();
+                    m_canaceledLock.unlock();
                     if (checkContact(entry)) {
                         if (needSort) {
                             addSorted(&m_contacts, entry, m_sortClause);
@@ -155,17 +179,20 @@ protected:
         }
 
         m_allContacts->unlock();
+        notifyFinished();
     }
 
 private:
+    QObject *m_parent;
     Filter m_filter;
     SortClause m_sortClause;
     ContactsMap *m_allContacts;
     QList<ContactEntry*> m_contacts;
     int m_maxCount;
-    bool m_stopped;
-    QReadWriteLock m_stoppedLock;
-
+    bool m_canceled;
+    QReadWriteLock m_canaceledLock;
+    bool m_running;
+    bool m_done;
     bool checkContact(ContactEntry *entry)
     {
         return m_filter.test(entry->individual()->contact());
@@ -177,12 +204,12 @@ View::View(const QString &clause, const QString &sort, int maxCount,
            QObject *parent)
     : QObject(parent),
       m_sources(sources),
-      m_filterThread(new FilterThread(clause, sort, maxCount, allContacts)),
-      m_adaptor(0)
+      m_filterThread(new FilterThread(clause, sort, maxCount, allContacts, this)),
+      m_adaptor(0),
+      m_waiting(0)
 {
     if (allContacts) {
-        connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
-        m_filterThread->start();
+        QThreadPool::globalInstance()->start(m_filterThread);
     }
 }
 
@@ -205,8 +232,8 @@ void View::close()
 
     if (m_filterThread) {
         if (m_filterThread->isRunning()) {
-            m_filterThread->stop();
-            m_filterThread->wait();
+            m_filterThread->cancel();
+            waitFilter();
         }
         delete m_filterThread;
         m_filterThread = 0;
@@ -226,9 +253,7 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    while(isOpen() && m_filterThread->isRunning() && !m_filterThread->wait(300)) {
-        QCoreApplication::processEvents();
-    }
+    waitFilter();
 
     if (!isOpen()) {
         return QStringList();
@@ -264,13 +289,31 @@ void View::onVCardParsed(const QStringList &vcards)
     sender->deleteLater();
 }
 
+void View::onFilterDone()
+{
+    if (m_waiting) {
+        m_waiting->quit();
+        m_waiting = 0;
+    }
+}
+
+void View::waitFilter()
+{
+    if (m_filterThread && !m_filterThread->done()) {
+        QEventLoop loop;
+        m_waiting = &loop;
+        qDebug() << "WAIT FILTER THREAD";
+        loop.exec();
+    }
+}
+
 int View::count()
 {
     if (!isOpen()) {
         return 0;
     }
 
-    m_filterThread->wait();
+    waitFilter();
 
     return m_filterThread->result().count();
 }

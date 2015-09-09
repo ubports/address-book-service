@@ -65,6 +65,7 @@ public:
 
 public Q_SLOTS:
     QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message);
+    void onFilterDone();
 
 private Q_SLOTS:
     void onVCardParsed(const QStringList &vcards);
@@ -77,6 +78,9 @@ private:
     QStringList m_sources;
     FilterThread *m_filterThread;
     ViewAdaptor *m_adaptor;
+    QEventLoop *m_waiting;
+
+    void waitFilter();
 };
 
 } //namespace
