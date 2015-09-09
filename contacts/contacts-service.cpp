@@ -745,7 +745,7 @@ void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *req
 
         // this is the only case where we still need to delete data even if the data is not in the running list anymore,
         // because we can not delete it while waiting (the pointer still be used by wait function)
-        m_runningRequests.remove(data);
+        m_runningRequests.removeOne(data);
         // the data could be removed from m_runningRequests while waiting, but we still need to destroy it
         data->deleteLater();
     }
@@ -755,7 +755,7 @@ void GaleraContactsService::releaseRequest(QContactAbstractRequest *request)
 {
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
-            m_runningRequests.remove(rData);
+            m_runningRequests.removeOne(rData);
             rData->releaseRequest();
             rData->cancel();
             rData->deleteLater();
@@ -809,7 +809,7 @@ void GaleraContactsService::destroyRequest(QContactRequestData *request)
 {
     // only destroy the resquest data if it still on the list
     // otherwise it was already destroyed
-    if (m_runningRequests.remove(request)) {
+    if (m_runningRequests.removeOne(request)) {
         request->deleteLater();
     }
 }

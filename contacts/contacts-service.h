@@ -89,7 +89,7 @@ private:
 
     QSharedPointer<QDBusInterface> m_iface;
     QString m_serviceName;
-    QSet<QContactRequestData*> m_runningRequests;
+    QList<QContactRequestData*> m_runningRequests;
 
     Q_INVOKABLE void initialize();
     Q_INVOKABLE void deinitialize();
