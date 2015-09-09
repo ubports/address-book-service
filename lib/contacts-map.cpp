@@ -74,11 +74,7 @@ QSet<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
         return values().toSet();
     }
 
-    QList<ContactEntry *> result;
-    Q_FOREACH(const QString &n, possibleNumbers(phone)) {
-        result.append(m_phoneToEntry.values(n));
-    }
-    return result.toSet();
+    return m_phoneToEntry.values(minimalNumber(phone)).toSet();
 }
 
 ContactEntry *ContactsMap::take(FolksIndividual *individual)
@@ -281,60 +277,25 @@ void ContactsMap::insertData(ContactEntry *entry)
 void ContactsMap::insertdata(const QList<QContactPhoneNumber> &numbers, ContactEntry *entry)
 {
     Q_FOREACH(const QContactPhoneNumber &phone, numbers) {
-        Q_FOREACH(const QString &n, possibleNumbers(phone.number())) {
-            if (!n.isEmpty()) {
-                m_phoneToEntry.insert(n, entry);
-            }
+        QString mNumber = minimalNumber(phone.number());
+        if (!mNumber.isEmpty()) {
+            m_phoneToEntry.insert(mNumber, entry);
         }
     }
 }
 
-QStringList ContactsMap::possibleNumbers(const QString &phone) const
+QString ContactsMap::minimalNumber(const QString &phone) const
 {
     static i18n::phonenumbers::PhoneNumberUtil *phonenumberUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
-    static std::string defaultRegion;
-
-    QStringList result;
 
     std::string stdPreprocessedPhone(phone.toStdString());
     phonenumberUtil->NormalizeDiallableCharsOnly(&stdPreprocessedPhone);
 
     if (stdPreprocessedPhone.length() <= 7) {
-        result << QString::fromStdString(stdPreprocessedPhone);
-        return result;
+        return QString::fromStdString(stdPreprocessedPhone);
     }
 
-    result << QString::fromStdString(stdPreprocessedPhone).right(7);
-
-    // use qt/system location as default region
-    if (defaultRegion.empty()) {
-        QString locale = QLocale::system().name();
-        defaultRegion = locale.split("_").last().toStdString();
-    }
-
-    std::string phoneRegion = i18n::phonenumbers::RegionCode::GetUnknown();
-    if (stdPreprocessedPhone.at(0) != '+') {
-        phoneRegion = defaultRegion;
-    }
-    i18n::phonenumbers::PhoneNumber phoneNumber;
-    i18n::phonenumbers::PhoneNumberUtil::ErrorType parseResult = phonenumberUtil->Parse(stdPreprocessedPhone,
-                                                                                        phoneRegion,
-                                                                                        &phoneNumber);
-    if (parseResult == i18n::phonenumbers::PhoneNumberUtil::NO_PARSING_ERROR) {
-        std::string subscriberNumber;
-        phonenumberUtil->GetNationalSignificantNumber(phoneNumber, &subscriberNumber);
-        int nationalCodeLenght = phonenumberUtil->GetLengthOfNationalDestinationCode(phoneNumber);
-        if (nationalCodeLenght > 0) {
-            subscriberNumber = subscriberNumber.substr(nationalCodeLenght, std::string::npos);
-        }
-
-        if ((subscriberNumber.length() == 7) &&
-            (stdPreprocessedPhone.compare(stdPreprocessedPhone.size() - 6,  std::string::npos, subscriberNumber) == 0)) {
-            result << QString::fromStdString(subscriberNumber);
-        }
-    }
-
-    return result;
+    return QString::fromStdString(stdPreprocessedPhone).right(7);
 }
 
 } //namespace

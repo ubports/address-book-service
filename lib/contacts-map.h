@@ -96,7 +96,7 @@ private:
     void removeData(ContactEntry *entry, bool del);
     void insertData(ContactEntry *entry);
     void insertdata(const QList<QtContacts::QContactPhoneNumber> &numbers, ContactEntry *entry);
-    QStringList possibleNumbers(const QString &phone) const;
+    QString minimalNumber(const QString &phone) const;
 };
 
 } //namespace
