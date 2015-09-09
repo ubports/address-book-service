@@ -23,7 +23,7 @@
 
 #include <QtCore/QString>
 #include <QtCore/QHash>
-#include <QtCore/QMutex>
+#include <QtCore/QReadWriteLock>
 
 #include <QtContacts/QContactPhoneNumber>
 
@@ -75,7 +75,7 @@ public:
     void updatePosition(ContactEntry *entry);
     int size() const;
     void clear();
-    void lock();
+    void lockForRead();
     void unlock();
     QList<ContactEntry*> values() const;
     QStringList keys() const;
@@ -91,7 +91,7 @@ private:
     // sorted contacts
     QList<ContactEntry*> m_contacts;
     SortClause m_sortClause;
-    QMutex m_mutex;
+    QReadWriteLock m_mutex;
 
     void removeData(ContactEntry *entry, bool del);
     void insertData(ContactEntry *entry);

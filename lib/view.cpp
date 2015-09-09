@@ -127,13 +127,12 @@ protected:
 
     void run()
     {
-        qDebug() << "Run filter thread";
         if (!m_allContacts) {
             notifyFinished();
             return;
         }
 
-        m_allContacts->lock();
+        m_allContacts->lockForRead();
         // only sort contacts if the contacts was stored in a different order into the contacts map
         bool needSort = (!m_sortClause.isEmpty() &&
                          (m_sortClause.toContactSortOrder() != m_allContacts->sort().toContactSortOrder()));
@@ -150,6 +149,8 @@ protected:
             } else {
                 // optmization
                 // if is query by phone number do a initial filter
+                qWarning() << "FILTER" << m_filter.toContactFilter();
+                qWarning() << "PHONE NUMBER TO FILTER" << m_filter.phoneNumberToFilter();
                 Q_FOREACH(ContactEntry *entry, m_allContacts->valueByPhone(m_filter.phoneNumberToFilter()))
                 {
                     m_canaceledLock.lockForRead();
@@ -302,7 +303,6 @@ void View::waitFilter()
     if (m_filterThread && !m_filterThread->done()) {
         QEventLoop loop;
         m_waiting = &loop;
-        qDebug() << "WAIT FILTER THREAD";
         loop.exec();
     }
 }
@@ -347,7 +347,6 @@ bool View::registerObject(QDBusConnection &connection)
             delete m_adaptor;
             m_adaptor = 0;
         } else {
-            qDebug() << "Object registered:" << objectPath();
             connect(this, SIGNAL(countChanged(int)), m_adaptor, SIGNAL(countChanged(int)));
         }
     }
@@ -358,7 +357,6 @@ bool View::registerObject(QDBusConnection &connection)
 void View::unregisterObject(QDBusConnection &connection)
 {
     if (m_adaptor) {
-        qDebug() << "Object UN-registered:" << objectPath();
         connection.unregisterObject(dynamicObjectPath());
     }
 }

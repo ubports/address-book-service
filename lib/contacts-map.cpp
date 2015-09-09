@@ -85,7 +85,7 @@ ContactEntry *ContactsMap::take(FolksIndividual *individual)
 
 ContactEntry *ContactsMap::take(const QString &id)
 {
-    QMutexLocker locker(&m_mutex);
+    QWriteLocker locker(&m_mutex);
     ContactEntry *entry = m_idToEntry.take(id);
     removeData(entry, false);
     return entry;
@@ -93,19 +93,20 @@ ContactEntry *ContactsMap::take(const QString &id)
 
 void ContactsMap::remove(const QString &id)
 {
-    QMutexLocker locker(&m_mutex);
+    QWriteLocker locker(&m_mutex);
     ContactEntry *entry = m_idToEntry.take(id);
     removeData(entry, true);
 }
 
 void ContactsMap::insert(ContactEntry *entry)
 {
-    QMutexLocker locker(&m_mutex);
+    QWriteLocker locker(&m_mutex);
     insertData(entry);
 }
 
 void ContactsMap::updatePosition(ContactEntry *entry)
 {
+    QWriteLocker locker(&m_mutex);
     if (!m_sortClause.isEmpty()) {
         int oldPos = m_contacts.indexOf(entry);
 
@@ -136,7 +137,7 @@ int ContactsMap::size() const
 
 void ContactsMap::clear()
 {
-    QMutexLocker locker(&m_mutex);
+    QWriteLocker locker(&m_mutex);
     QList<ContactEntry*> entries = m_idToEntry.values();
     m_idToEntry.clear();
     m_phoneToEntry.clear();
@@ -144,9 +145,9 @@ void ContactsMap::clear()
     qDeleteAll(entries);
 }
 
-void ContactsMap::lock()
+void ContactsMap::lockForRead()
 {
-    m_mutex.lock();
+    m_mutex.lockForRead();
 }
 
 void ContactsMap::unlock()
