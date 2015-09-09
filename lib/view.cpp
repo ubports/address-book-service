@@ -125,7 +125,9 @@ protected:
                     chageSort(m_sortClause);
                 }
             } else {
-                Q_FOREACH(ContactEntry *entry, m_allContacts->values())
+                // optmization
+                // if is query by phone number do a initial filter
+                Q_FOREACH(ContactEntry *entry, m_allContacts->valueByPhone(m_filter.phoneNumberToFilter()))
                 {
                     m_stoppedLock.lockForRead();
                     if (m_stopped) {

@@ -25,6 +25,8 @@
 #include <QtCore/QHash>
 #include <QtCore/QMutex>
 
+#include <QtContacts/QContactPhoneNumber>
+
 #include <folks/folks.h>
 #include <glib.h>
 #include <glib-object.h>
@@ -63,6 +65,7 @@ public:
 
     ContactEntry *value(FolksIndividual *individual) const;
     ContactEntry *value(const QString &id) const;
+    QSet<ContactEntry*> valueByPhone(const QString &phone) const;
 
     ContactEntry *take(FolksIndividual *individual);
     ContactEntry *take(const QString &id);
@@ -84,10 +87,16 @@ public:
 
 private:
     QHash<QString, ContactEntry*> m_idToEntry;
+    QMultiMap<QString, ContactEntry*> m_phoneToEntry;
     // sorted contacts
     QList<ContactEntry*> m_contacts;
     SortClause m_sortClause;
     QMutex m_mutex;
+
+    void removeData(ContactEntry *entry, bool del);
+    void insertData(ContactEntry *entry);
+    void insertdata(const QList<QtContacts::QContactPhoneNumber> &numbers, ContactEntry *entry);
+    QStringList possibleNumbers(const QString &phone) const;
 };
 
 } //namespace

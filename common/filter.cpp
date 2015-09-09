@@ -236,6 +236,17 @@ bool Filter::isEmpty() const
     return checkIsEmpty(QList<QContactFilter>() << m_filter);
 }
 
+QString Filter::phoneNumberToFilter()
+{
+    if (m_filter.type() == QContactFilter::ContactDetailFilter) {
+        const QContactDetailFilter cdf(m_filter);
+        if (cdf.matchFlags() & QContactFilter::MatchPhoneNumber) {
+            return cdf.value().toString();
+        }
+    }
+    return QString();
+}
+
 QString Filter::toString(const QtContacts::QContactFilter &filter)
 {
     QByteArray filterArray;

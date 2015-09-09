@@ -37,6 +37,7 @@ public:
     bool test(const QtContacts::QContact &contact) const;
     bool isValid() const;
     bool isEmpty() const;
+    QString phoneNumberToFilter();
 
 private:
     QtContacts::QContactFilter m_filter;
