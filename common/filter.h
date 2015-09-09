@@ -37,7 +37,7 @@ public:
     bool test(const QtContacts::QContact &contact) const;
     bool isValid() const;
     bool isEmpty() const;
-    QString phoneNumberToFilter();
+    QString phoneNumberToFilter() const;
 
 private:
     QtContacts::QContactFilter m_filter;
@@ -47,6 +47,7 @@ private:
     bool checkIsEmpty(const QList<QtContacts::QContactFilter> filters) const;
     bool checkIsValid(const QList<QtContacts::QContactFilter> filters) const;
 
+    static QString phoneNumberToFilter(const QtContacts::QContactFilter &filter);
     static QString toString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter buildFilter(const QString &filter);
 

@@ -236,13 +236,34 @@ bool Filter::isEmpty() const
     return checkIsEmpty(QList<QContactFilter>() << m_filter);
 }
 
-QString Filter::phoneNumberToFilter()
+QString Filter::phoneNumberToFilter() const
 {
-    if (m_filter.type() == QContactFilter::ContactDetailFilter) {
-        const QContactDetailFilter cdf(m_filter);
+    return phoneNumberToFilter(m_filter);
+}
+
+QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
+{
+    switch (filter.type()) {
+    case QContactFilter::ContactDetailFilter:
+    {
+        const QContactDetailFilter cdf(filter);
         if (cdf.matchFlags() & QContactFilter::MatchPhoneNumber) {
             return cdf.value().toString();
         }
+        break;
+    }
+    case QContactFilter::UnionFilter:
+    {
+        // if the union contains only the phone filter we still able to optimize
+        const QContactUnionFilter uf(filter);
+        if (uf.filters().size() == 1) {
+            return phoneNumberToFilter(uf.filters().first());
+        }
+        break;
+    }
+    //FIXME: handle intersection???
+    default:
+        break;
     }
     return QString();
 }
