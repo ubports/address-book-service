@@ -85,6 +85,10 @@ class ButeoSyncFw(dbus.service.Object):
     def signalProfileChanged(self, profileId, status, changedProfile):
         print("profileChanged called")
 
+    @dbus.service.signal(dbus_interface=MAIN_IFACE)
+    def safeModeChanged(self):
+        print("safeModeChanged called")
+
     def _run(self):
         self._mainloop.run()
 

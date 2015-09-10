@@ -65,8 +65,8 @@ public:
 
     ContactEntry *value(FolksIndividual *individual) const;
     ContactEntry *value(const QString &id) const;
-    QSet<ContactEntry*> valueByPhone(const QString &phone) const;
-    QSet<ContactEntry*> values(const QStringList &ids) const;
+    QList<ContactEntry*> valueByPhone(const QString &phone) const;
+    QList<ContactEntry*> values(const QStringList &ids) const;
 
     ContactEntry *take(FolksIndividual *individual);
     ContactEntry *take(const QString &id);

@@ -157,7 +157,7 @@ protected:
             }
         } else if (m_filter.isValid()) {
             // optmization
-            QSet<ContactEntry *> preFilter;
+            QList<ContactEntry *> preFilter;
 
             // check if is a query by id
             QStringList idsToFilter = m_filter.idsToFilter();
@@ -166,13 +166,19 @@ protected:
             } else {
                 // check if is a phone number query
                 QString phoneToFilter = m_filter.phoneNumberToFilter();
-                preFilter = m_allContacts->valueByPhone(phoneToFilter);
+                if (!phoneToFilter.isEmpty()) {
+                    preFilter = m_allContacts->valueByPhone(phoneToFilter);
+                } else {
+                    qWarning() << "Filter not optimized" << m_filter.toContactFilter();
+                    preFilter = m_allContacts->values();
+                }
             }
 
             Q_FOREACH(ContactEntry *entry, preFilter) {
                 m_canceledLock.lockForRead();
                 if (m_canceled) {
                     m_canceledLock.unlock();
+                    m_allContacts->unlock();
                     notifyFinished();
                     return;
                 }

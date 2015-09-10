@@ -68,18 +68,18 @@ ContactEntry *ContactsMap::value(const QString &id) const
     return m_idToEntry.value(id, 0);
 }
 
-QSet<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
+QList<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
 {
     if (phone.isEmpty()) {
-        return values().toSet();
+        return values();
     }
 
-    return m_phoneToEntry.values(minimalNumber(phone)).toSet();
+    return m_phoneToEntry.values(minimalNumber(phone));
 }
 
-QSet<ContactEntry *> ContactsMap::values(const QStringList &ids) const
+QList<ContactEntry *> ContactsMap::values(const QStringList &ids) const
 {
-    QSet<ContactEntry *> result;
+    QList<ContactEntry *> result;
     Q_FOREACH(const QString &id, ids) {
         ContactEntry *entry = m_idToEntry.value(id, 0);
         if (entry) {

@@ -340,13 +340,14 @@ QStringList Filter::idsToFilter(const QtContacts::QContactFilter &filter)
         const QContactDetailFilter cdf(filter);
         if ((cdf.detailType() == QContactDetail::TypeGuid) &&
             (cdf.detailField() == QContactGuid::FieldGuid) &&
-            (cdf.matchFlags() & QContactFilter::MatchExactly)) {
+            cdf.matchFlags().testFlag(QContactFilter::MatchExactly)) {
             result << cdf.value().toString();
         }
         break;
     }
     case QContactFilter::IdFilter:
     {
+
         const QContactIdFilter idf(filter);
         Q_FOREACH(const QContactId &id, idf.ids()) {
             result << id.toString();
@@ -355,10 +356,9 @@ QStringList Filter::idsToFilter(const QtContacts::QContactFilter &filter)
     }
     case QContactFilter::UnionFilter:
     {
-        // if the union contains only one filter we still be able to optimize it
         const QContactUnionFilter uf(filter);
-        if (uf.filters().size() == 1) {
-            result.append(idsToFilter(uf.filters().first()));
+        Q_FOREACH(const QContactFilter &f, uf.filters()) {
+            result.append(idsToFilter(f));
         }
         break;
     }

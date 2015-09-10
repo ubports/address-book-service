@@ -235,7 +235,7 @@ private Q_SLOTS:
         QFETCH(QString, query);
         QFETCH(int, numberOfMatches);
 
-        QSet<galera::ContactEntry*> entries = m_map.valueByPhone(query);
+        QList<galera::ContactEntry*> entries = m_map.valueByPhone(query);
         QCOMPARE(entries.size(), numberOfMatches);
     }
 };
