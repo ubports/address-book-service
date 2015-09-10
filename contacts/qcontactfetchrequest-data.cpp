@@ -41,7 +41,7 @@ QContactFetchRequestData::QContactFetchRequestData(QContactAbstractRequest *requ
 
 QContactFetchRequestData::~QContactFetchRequestData()
 {
-    delete m_runningParser;
+    m_runningParser->deleteLater();
 }
 
 int QContactFetchRequestData::offset() const
@@ -134,7 +134,7 @@ void QContactFetchRequestData::updateRequest(QContactAbstractRequest::State stat
 void QContactFetchRequestData::deleteView(QDBusInterface *view)
 {
     if (view) {
-        view->call("close");
+        view->asyncCall("close");
         view->deleteLater();
     }
 }

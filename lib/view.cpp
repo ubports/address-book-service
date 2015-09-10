@@ -234,7 +234,7 @@ void View::close()
             m_filterThread->cancel();
             waitFilter();
         }
-        delete m_filterThread;
+        m_filterThread->deleteLater();
         m_filterThread = 0;
     }
 }
