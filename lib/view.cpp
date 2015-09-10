@@ -102,9 +102,9 @@ public:
 
     void cancel()
     {
-        m_canaceledLock.lockForWrite();
+        m_canceledLock.lockForWrite();
         m_canceled = true;
-        m_canaceledLock.unlock();
+        m_canceledLock.unlock();
     }
 
     bool isRunning() const
@@ -151,14 +151,14 @@ protected:
                 // if it is a query by phone number do a initial filter
                 const QSet<ContactEntry *> &preFilter = m_allContacts->valueByPhone(m_filter.phoneNumberToFilter());
                 Q_FOREACH(ContactEntry *entry, preFilter) {
-                    m_canaceledLock.lockForRead();
+                    m_canceledLock.lockForRead();
                     if (m_canceled) {
-                        m_canaceledLock.unlock();
+                        m_canceledLock.unlock();
                         m_allContacts->unlock();
                         notifyFinished();
                         return;
                     }
-                    m_canaceledLock.unlock();
+                    m_canceledLock.unlock();
                     if (checkContact(entry)) {
                         if (needSort) {
                             addSorted(&m_contacts, entry, m_sortClause);
@@ -189,7 +189,7 @@ private:
     QList<ContactEntry*> m_contacts;
     int m_maxCount;
     bool m_canceled;
-    QReadWriteLock m_canaceledLock;
+    QReadWriteLock m_canceledLock;
     bool m_running;
     bool m_done;
     bool checkContact(ContactEntry *entry)
