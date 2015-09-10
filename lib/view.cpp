@@ -102,9 +102,9 @@ public:
 
     void cancel()
     {
-        m_canaceledLock.lockForWrite();
+        m_canceledLock.lockForWrite();
         m_canceled = true;
-        m_canaceledLock.unlock();
+        m_canceledLock.unlock();
     }
 
     bool isRunning() const
@@ -170,17 +170,17 @@ protected:
             }
 
             Q_FOREACH(ContactEntry *entry, preFilter) {
-                m_canaceledLock.lockForRead();
+                m_canceledLock.lockForRead();
                 if (m_canceled) {
-                    m_canaceledLock.unlock();
+                    m_canceledLock.unlock();
                     notifyFinished();
                     return;
                 }
 
                 QContact contact = entry->individual()->contact();
                 QDateTime deletedAt = entry->individual()->deletedAt();
+                m_canceledLock.unlock();
 
-                 m_canaceledLock.unlock();
                 if (entry->individual()->isVisible() &&
                     checkContact(contact, deletedAt)) {
                     if (needSort) {
@@ -188,7 +188,6 @@ protected:
                     } else {
                         m_contacts.append(contact);
                     }
-
                     if ((m_maxCount > 0) && (m_contacts.size() >= m_maxCount)) {
                         break;
                     }
@@ -212,7 +211,7 @@ private:
 
     int m_maxCount;
     bool m_canceled;
-    QReadWriteLock m_canaceledLock;
+    QReadWriteLock m_canceledLock;
     bool m_running;
     bool m_done;
 
