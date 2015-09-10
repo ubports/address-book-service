@@ -79,8 +79,8 @@ class AddressBook(dbus.service.Object):
         return count
 
     @dbus.service.method(dbus_interface=MAIN_IFACE,
-                         in_signature='ssas', out_signature='o')
-    def query(self, clause, sort, sources):
+                         in_signature='ssias', out_signature='o')
+    def query(self, clause, sort, max_count, sources):
         return VIEW_OBJ
 
     @dbus.service.method(dbus.PROPERTIES_IFACE,
