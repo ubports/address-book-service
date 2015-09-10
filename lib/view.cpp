@@ -234,7 +234,7 @@ void View::close()
             m_filterThread->cancel();
             waitFilter();
         }
-        m_filterThread->deleteLater();
+        delete m_filterThread;
         m_filterThread = 0;
     }
 }
@@ -252,11 +252,11 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    waitFilter();
-
-    if (!isOpen()) {
+    if (!m_filterThread || !isOpen()) {
         return QStringList();
     }
+
+     waitFilter();
 
     QList<ContactEntry*> entries = m_filterThread->result();
     if (startIndex < 0) {
