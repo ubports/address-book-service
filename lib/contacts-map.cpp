@@ -68,13 +68,13 @@ ContactEntry *ContactsMap::value(const QString &id) const
     return m_idToEntry[id];
 }
 
-QSet<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
+QList<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
 {
     if (phone.isEmpty()) {
-        return values().toSet();
+        return values();
     }
 
-    return m_phoneToEntry.values(minimalNumber(phone)).toSet();
+    return m_phoneToEntry.values(minimalNumber(phone));
 }
 
 ContactEntry *ContactsMap::take(FolksIndividual *individual)

@@ -149,7 +149,7 @@ protected:
             } else {
                 // optmization
                 // if it is a query by phone number do a initial filter
-                const QSet<ContactEntry *> &preFilter = m_allContacts->valueByPhone(m_filter.phoneNumberToFilter());
+                const QList<ContactEntry *> &preFilter = m_allContacts->valueByPhone(m_filter.phoneNumberToFilter());
                 Q_FOREACH(ContactEntry *entry, preFilter) {
                     m_canceledLock.lockForRead();
                     if (m_canceled) {
