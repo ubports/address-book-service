@@ -157,8 +157,17 @@ protected:
             }
         } else if (m_filter.isValid()) {
             // optmization
-            // if it is a query by phone number do a initial filter
-            const QSet<ContactEntry *> &preFilter = m_allContacts->valueByPhone(m_filter.phoneNumberToFilter());
+            QSet<ContactEntry *> preFilter;
+
+            // check if is a query by id
+            QStringList idsToFilter = m_filter.idsToFilter();
+            if (!idsToFilter.isEmpty()) {
+                preFilter = m_allContacts->values(idsToFilter);
+            } else {
+                // check if is a phone number query
+                QString phoneToFilter = m_filter.phoneNumberToFilter();
+                preFilter = m_allContacts->valueByPhone(phoneToFilter);
+            }
 
             Q_FOREACH(ContactEntry *entry, preFilter) {
                 m_canaceledLock.lockForRead();

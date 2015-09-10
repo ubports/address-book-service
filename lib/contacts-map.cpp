@@ -65,7 +65,7 @@ ContactsMap::~ContactsMap()
 
 ContactEntry *ContactsMap::value(const QString &id) const
 {
-    return m_idToEntry[id];
+    return m_idToEntry.value(id, 0);
 }
 
 QSet<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
@@ -75,6 +75,18 @@ QSet<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
     }
 
     return m_phoneToEntry.values(minimalNumber(phone)).toSet();
+}
+
+QSet<ContactEntry *> ContactsMap::values(const QStringList &ids) const
+{
+    QSet<ContactEntry *> result;
+    Q_FOREACH(const QString &id, ids) {
+        ContactEntry *entry = m_idToEntry.value(id, 0);
+        if (entry) {
+            result << entry;
+        }
+    }
+    return result;
 }
 
 ContactEntry *ContactsMap::take(FolksIndividual *individual)

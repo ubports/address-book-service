@@ -31,7 +31,8 @@
 #include <QtContacts/QContactIntersectionFilter>
 #include <QtContacts/QContactManagerEngine>
 #include <QtContacts/QContactChangeLogFilter>
-#include <QtContacts/QContactDetailRangeFilter>
+#include <QtContacts/QContactDetailFilter>
+#include <QtContacts/QContactIdFilter>
 #include <QtContacts/QContactRelationshipFilter>
 
 #include <phonenumbers/phonenumberutil.h>
@@ -287,6 +288,11 @@ QString Filter::phoneNumberToFilter() const
     return phoneNumberToFilter(m_filter);
 }
 
+QStringList Filter::idsToFilter() const
+{
+    return idsToFilter(m_filter);
+}
+
 QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
 {
     switch (filter.type()) {
@@ -322,6 +328,52 @@ QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
         break;
     }
     return QString();
+}
+
+QStringList Filter::idsToFilter(const QtContacts::QContactFilter &filter)
+{
+    QStringList result;
+
+    switch (filter.type()) {
+    case QContactFilter::ContactDetailFilter:
+    {
+        const QContactDetailFilter cdf(filter);
+        if ((cdf.detailType() == QContactDetail::TypeGuid) &&
+            (cdf.detailField() == QContactGuid::FieldGuid) &&
+            (cdf.matchFlags() & QContactFilter::MatchExactly)) {
+            result << cdf.value().toString();
+        }
+        break;
+    }
+    case QContactFilter::IdFilter:
+    {
+        const QContactIdFilter idf(filter);
+        Q_FOREACH(const QContactId &id, idf.ids()) {
+            result << id.toString();
+        }
+        break;
+    }
+    case QContactFilter::UnionFilter:
+    {
+        // if the union contains only one filter we still be able to optimize it
+        const QContactUnionFilter uf(filter);
+        if (uf.filters().size() == 1) {
+            result.append(idsToFilter(uf.filters().first()));
+        }
+        break;
+    }
+    case QContactFilter::IntersectionFilter:
+    {
+        const QContactIntersectionFilter cif(filter);
+        Q_FOREACH(const QContactFilter &f, cif.filters()) {
+            result.append(idsToFilter(f));
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return result;
 }
 
 QString Filter::toString(const QtContacts::QContactFilter &filter)
