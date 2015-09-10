@@ -275,13 +275,13 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    waitFilter();
-
-    if (!isOpen()) {
+    if (!m_filterThread || !isOpen()) {
         return QStringList();
     }
 
-    QList<QContact> contacts = m_filterThread->result();
+    waitFilter();
+
+    const QList<QContact> &contacts = m_filterThread->result();
     if (startIndex < 0) {
         startIndex = 0;
     }
@@ -291,7 +291,6 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
     }
 
     QList<QContact> pageOfContacts;
-
     for(int i = startIndex, iMax = (startIndex + pageSize); i < iMax; i++) {
         pageOfContacts << QIndividual::copy(contacts.at(i), FetchHint::parseFieldNames(fields));
     }
