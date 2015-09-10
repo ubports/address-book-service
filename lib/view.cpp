@@ -127,7 +127,7 @@ protected:
 
     void run()
     {
-        if (!m_allContacts) {
+        if (m_canceled || !m_allContacts) {
             notifyFinished();
             return;
         }
@@ -148,11 +148,9 @@ protected:
                 }
             } else {
                 // optmization
-                // if is query by phone number do a initial filter
-                qWarning() << "FILTER" << m_filter.toContactFilter();
-                qWarning() << "PHONE NUMBER TO FILTER" << m_filter.phoneNumberToFilter();
-                Q_FOREACH(ContactEntry *entry, m_allContacts->valueByPhone(m_filter.phoneNumberToFilter()))
-                {
+                // if it is a query by phone number do a initial filter
+                const QSet<ContactEntry *> &preFilter = m_allContacts->valueByPhone(m_filter.phoneNumberToFilter());
+                Q_FOREACH(ContactEntry *entry, preFilter) {
                     m_canaceledLock.lockForRead();
                     if (m_canceled) {
                         m_canaceledLock.unlock();
@@ -232,7 +230,7 @@ void View::close()
     }
 
     if (m_filterThread) {
-        if (m_filterThread->isRunning()) {
+        if (!m_filterThread->done()) {
             m_filterThread->cancel();
             waitFilter();
         }

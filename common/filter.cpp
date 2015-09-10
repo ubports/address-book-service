@@ -261,7 +261,17 @@ QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
         }
         break;
     }
-    //FIXME: handle intersection???
+    case QContactFilter::IntersectionFilter:
+    {
+        const QContactIntersectionFilter cif(filter);
+        Q_FOREACH(const QContactFilter &f, cif.filters()) {
+            QString phoneToFilter = phoneNumberToFilter(f);
+            if (!phoneToFilter.isEmpty()) {
+                return phoneToFilter;
+            }
+        }
+        break;
+    }
     default:
         break;
     }
