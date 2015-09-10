@@ -929,6 +929,9 @@ QString AddressBook::addContact(FolksIndividual *individual)
     ContactEntry *entry = m_contacts->value(id);
     if (entry) {
         entry->individual()->setIndividual(individual);
+
+        // update contact position on map
+        m_contacts->updatePosition(entry);
     } else {
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
