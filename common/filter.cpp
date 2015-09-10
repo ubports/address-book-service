@@ -282,6 +282,48 @@ bool Filter::includeRemoved() const
     return (m_filter.type() == QContactFilter::ChangeLogFilter);
 }
 
+QString Filter::phoneNumberToFilter() const
+{
+    return phoneNumberToFilter(m_filter);
+}
+
+QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
+{
+    switch (filter.type()) {
+    case QContactFilter::ContactDetailFilter:
+    {
+        const QContactDetailFilter cdf(filter);
+        if (cdf.matchFlags() & QContactFilter::MatchPhoneNumber) {
+            return cdf.value().toString();
+        }
+        break;
+    }
+    case QContactFilter::UnionFilter:
+    {
+        // if the union contains only the phone filter we still able to optimize
+        const QContactUnionFilter uf(filter);
+        if (uf.filters().size() == 1) {
+            return phoneNumberToFilter(uf.filters().first());
+        }
+        break;
+    }
+    case QContactFilter::IntersectionFilter:
+    {
+        const QContactIntersectionFilter cif(filter);
+        Q_FOREACH(const QContactFilter &f, cif.filters()) {
+            QString phoneToFilter = phoneNumberToFilter(f);
+            if (!phoneToFilter.isEmpty()) {
+                return phoneToFilter;
+            }
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return QString();
+}
+
 QString Filter::toString(const QtContacts::QContactFilter &filter)
 {
     QByteArray filterArray;

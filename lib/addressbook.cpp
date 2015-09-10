@@ -926,9 +926,9 @@ QString AddressBook::linkContacts(const QStringList &contacts)
     return "";
 }
 
-View *AddressBook::query(const QString &clause, const QString &sort, const QStringList &sources)
+View *AddressBook::query(const QString &clause, const QString &sort, int maxCount, const QStringList &sources)
 {
-    View *view = new View(clause, sort, sources, m_ready ? m_contacts : 0, this);
+    View *view = new View(clause, sort, maxCount, sources, m_ready ? m_contacts : 0, this);
     m_views << view;
     connect(view, SIGNAL(closed()), this, SLOT(viewClosed()));
     return view;
@@ -1179,6 +1179,9 @@ QString AddressBook::addContact(FolksIndividual *individual, bool visible)
     if (entry) {
         entry->individual()->setIndividual(individual);
         entry->individual()->setVisible(visible);
+
+        // update contact position on map
+        m_contacts->updatePosition(entry);
     } else {
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
         i->addListener(this, SLOT(individualChanged(QIndividual*)));

@@ -65,10 +65,49 @@ private:
         contact.saveDetail(&email);
 
         QtContacts::QContactPhoneNumber phone;
-        phone.setNumber("33331410");
+        phone.setNumber(QString("33331410%1").arg(suffix));
         contact.saveDetail(&phone);
 
         m_dummy->createContact(contact);
+    }
+
+    void createContactWithPhone(const QString &phoneNumber)
+    {
+        QtContacts::QContact contact;
+        QtContacts::QContactName name;
+        name.setFirstName("Foo");
+        name.setLastName("Bar");
+        contact.saveDetail(&name);
+
+        QtContacts::QContactEmailAddress email;
+        email.setEmailAddress("foo@ubuntu.com");
+        contact.saveDetail(&email);
+
+        QtContacts::QContactPhoneNumber phone;
+        phone.setNumber(phoneNumber);
+        contact.saveDetail(&phone);
+
+        m_dummy->createContact(contact);
+    }
+
+    QStringList allPhones()
+    {
+        QStringList phones;
+        phones << "12345678"
+               << "1234-5678"
+               << "+55(81)87042155"
+               << "(81)87042155"
+               << "12345678#123"
+               << "(123)12345678#1"
+               << "1234567#1"
+               << "190"
+               << "911"
+               << "abcdefg"
+               << "abc12345678"
+               << "+352 691 123456"
+               << "32634146"
+               << "32634911";
+        return phones;
     }
 
 private Q_SLOTS:
@@ -155,6 +194,49 @@ private Q_SLOTS:
         galera::ContactEntry *entry = m_map.valueFromVCard(vcard);
         QVERIFY(entry);
         QVERIFY(entry->individual()->individual() == individual);
+    }
+
+    void testLookupByPhone_data()
+    {
+        QStringList phones = allPhones();
+        Q_FOREACH(const QString &phone, phones) {
+            createContactWithPhone(phone);
+        }
+        Q_FOREACH(galera::QIndividual *i, m_dummy->individuals()) {
+            m_map.insert(new galera::ContactEntry(new galera::QIndividual(i->individual(), m_dummy->aggregator())));
+            m_individuals << i->individual();
+        }
+
+        QTest::addColumn<QString>("query");
+        QTest::addColumn<int>("numberOfMatches");
+
+        QTest::newRow("string equal") << "12345678" << 3;
+        QTest::newRow("number with dash") << "1234-5678" << 3;
+        QTest::newRow("plain number") << "87042155" << 2;
+        QTest::newRow("number with area code") << "(81)87042155" << 2;
+        QTest::newRow("number with country code") << "+55(81)87042155" << 2;
+        QTest::newRow("number with extension") << "12345678" << 3;
+        QTest::newRow("both numbers with extension") << "12345678#1" << 1;
+        QTest::newRow("numbers with different extension") << "1234567#2" << 0;
+        QTest::newRow("short/emergency numbers") << "190" << 1;
+        QTest::newRow("different short/emergency numbers") << "11" << 0;
+        QTest::newRow("different numbers") << "1234567" << 0;
+        QTest::newRow("both non phone numbers") << "abcdefg" << 0;
+        QTest::newRow("different non phone numbers") << "bcdefg" << 0;
+        QTest::newRow("phone number and custom string") << "bcdefg12345678" << 3;
+        QTest::newRow("partial match") << "+352 691 123456" << 1;
+        QTest::newRow("Phone number and small value") << "146" << 0;
+        QTest::newRow("Small phone numbers") << "911" << 1;
+        QTest::newRow("Phone number and small number") << "+146" << 0;
+    }
+
+    void testLookupByPhone()
+    {
+        QFETCH(QString, query);
+        QFETCH(int, numberOfMatches);
+
+        QSet<galera::ContactEntry*> entries = m_map.valueByPhone(query);
+        QCOMPARE(entries.size(), numberOfMatches);
     }
 };
 

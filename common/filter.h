@@ -39,6 +39,7 @@ public:
     bool isValid() const;
     bool isEmpty() const;
     bool includeRemoved() const;
+    QString phoneNumberToFilter() const;
 
 private:
     QtContacts::QContactFilter m_filter;
@@ -49,6 +50,7 @@ private:
     bool checkIsValid(const QList<QtContacts::QContactFilter> filters) const;
     //bool test(const QtContacts::QContactFilter &filter, const QtContacts::QContact &contact, const QDateTime &deletedDate) const;
 
+    static QString phoneNumberToFilter(const QtContacts::QContactFilter &filter);
     static QString toString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter buildFilter(const QString &filter);
 

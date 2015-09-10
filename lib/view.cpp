@@ -40,15 +40,20 @@ using namespace QtVersit;
 namespace galera
 {
 
-class FilterThread: public QThread
+class FilterThread: public QRunnable
 {
 public:
-    FilterThread(QString filter, QString sort, ContactsMap *allContacts)
-        : m_filter(filter),
+    FilterThread(QString filter, QString sort, int maxCount, ContactsMap *allContacts, QObject *parent)
+        : m_parent(parent),
+          m_filter(filter),
           m_sortClause(sort),
+          m_maxCount(maxCount),
           m_allContacts(allContacts),
-          m_stopped(false)
+          m_canceled(false),
+          m_running(false),
+          m_done(false)
     {
+        setAutoDelete(false);
     }
 
     QList<QContact> result() const
@@ -95,57 +100,88 @@ public:
         }
     }
 
-    void stop()
+    void cancel()
     {
-        m_stoppedLock.lockForWrite();
-        m_stopped = true;
-        m_stoppedLock.unlock();
+        m_canaceledLock.lockForWrite();
+        m_canceled = true;
+        m_canaceledLock.unlock();
+    }
+
+    bool isRunning() const
+    {
+        return m_running;
+    }
+
+    bool done() const
+    {
+        return m_done;
     }
 
 protected:
+    void notifyFinished()
+    {
+        m_running = false;
+        m_done = true;
+        QMetaObject::invokeMethod(m_parent, "onFilterDone", Qt::QueuedConnection);
+    }
+
     void run()
     {
-        if (!m_allContacts) {
+        if (m_canceled || !m_allContacts) {
+            notifyFinished();
             return;
         }
 
-        m_allContacts->lock();
-
+        m_allContacts->lockForRead();
         // only sort contacts if the contacts was stored in a different order into the contacts map
         bool needSort = (!m_sortClause.isEmpty() &&
                          (m_sortClause.toContactSortOrder() != m_allContacts->sort().toContactSortOrder()));
         // filter contacts if necessary
-        if (m_filter.isValid()) {
-            if (m_filter.isEmpty()) {
-                Q_FOREACH(ContactEntry *entry, m_allContacts->values()) {
-                    if (entry->individual()->isVisible() &&
-                        !entry->individual()->deletedAt().isValid()) {
-                        m_contacts << entry->individual()->contact();
-                    }
-                }
-                if (needSort) {
-                    chageSort(m_sortClause);
-                }
-            } else {
-                Q_FOREACH(ContactEntry *entry, m_allContacts->values()) {
-                    m_stoppedLock.lockForRead();
-                    if (m_stopped) {
-                        m_stoppedLock.unlock();
-                        m_allContacts->unlock();
-                        return;
-                    }
+        if (m_filter.isValid() && m_filter.isEmpty()) {
+            Q_FOREACH(ContactEntry *entry, m_allContacts->values()) {
+                if (entry->individual()->isVisible() &&
+                    !entry->individual()->deletedAt().isValid()) {
+
                     QContact contact = entry->individual()->contact();
-                    QDateTime deletedAt = entry->individual()->deletedAt();
-                    m_stoppedLock.unlock();
 
-                    if (entry->individual()->isVisible() &&
-                        checkContact(contact, deletedAt)) {
+                    if (needSort) {
+                        addSorted(&m_contacts, contact, m_sortClause);
+                    } else {
+                        m_contacts.append(contact);
+                    }
 
-                        if (needSort) {
-                            addSorted(&m_contacts, contact, m_sortClause);
-                        } else {
-                            m_contacts.append(contact);
-                        }
+                    if ((m_maxCount > 0) && (m_maxCount >= m_contacts.size())) {
+                        break;
+                    }
+                }
+            }
+        } else if (m_filter.isValid()) {
+            // optmization
+            // if it is a query by phone number do a initial filter
+            const QSet<ContactEntry *> &preFilter = m_allContacts->valueByPhone(m_filter.phoneNumberToFilter());
+
+            Q_FOREACH(ContactEntry *entry, preFilter) {
+                m_canaceledLock.lockForRead();
+                if (m_canceled) {
+                    m_canaceledLock.unlock();
+                    notifyFinished();
+                    return;
+                }
+
+                QContact contact = entry->individual()->contact();
+                QDateTime deletedAt = entry->individual()->deletedAt();
+
+                 m_canaceledLock.unlock();
+                if (entry->individual()->isVisible() &&
+                    checkContact(contact, deletedAt)) {
+                    if (needSort) {
+                        addSorted(&m_contacts, contact, m_sortClause);
+                    } else {
+                        m_contacts.append(contact);
+                    }
+
+                    if ((m_maxCount > 0) && (m_contacts.size() >= m_maxCount)) {
+                        break;
                     }
                 }
             }
@@ -155,15 +191,21 @@ protected:
         }
 
         m_allContacts->unlock();
+        notifyFinished();
     }
 
 private:
+    QObject *m_parent;
     Filter m_filter;
     SortClause m_sortClause;
     ContactsMap *m_allContacts;
     QList<QContact> m_contacts;
-    bool m_stopped;
-    QReadWriteLock m_stoppedLock;
+
+    int m_maxCount;
+    bool m_canceled;
+    QReadWriteLock m_canaceledLock;
+    bool m_running;
+    bool m_done;
 
     bool checkContact(const QContact &contact, const QDateTime &deletedAt)
     {
@@ -171,15 +213,17 @@ private:
     }
 };
 
-View::View(const QString &clause, const QString &sort, const QStringList &sources, ContactsMap *allContacts, QObject *parent)
+View::View(const QString &clause, const QString &sort, int maxCount,
+           const QStringList &sources, ContactsMap *allContacts,
+           QObject *parent)
     : QObject(parent),
       m_sources(sources),
-      m_filterThread(new FilterThread(clause, sort, allContacts)),
-      m_adaptor(0)
+      m_filterThread(new FilterThread(clause, sort, maxCount, allContacts, this)),
+      m_adaptor(0),
+      m_waiting(0)
 {
     if (allContacts) {
-        connect(m_filterThread, SIGNAL(finished()), SIGNAL(countChanged()));
-        m_filterThread->start();
+        QThreadPool::globalInstance()->start(m_filterThread);
     }
 }
 
@@ -201,9 +245,9 @@ void View::close()
     }
 
     if (m_filterThread) {
-        if (m_filterThread->isRunning()) {
-            m_filterThread->stop();
-            m_filterThread->wait();
+        if (!m_filterThread->done()) {
+            m_filterThread->cancel();
+            waitFilter();
         }
         delete m_filterThread;
         m_filterThread = 0;
@@ -223,9 +267,7 @@ QString View::contactDetails(const QStringList &fields, const QString &id)
 
 QStringList View::contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message)
 {
-    while(isOpen() && m_filterThread->isRunning() && !m_filterThread->wait(300)) {
-        QCoreApplication::processEvents();
-    }
+    waitFilter();
 
     if (!isOpen()) {
         return QStringList();
@@ -262,13 +304,30 @@ void View::onVCardParsed(const QStringList &vcards)
     sender->deleteLater();
 }
 
+void View::onFilterDone()
+{
+    if (m_waiting) {
+        m_waiting->quit();
+        m_waiting = 0;
+    }
+}
+
+void View::waitFilter()
+{
+    if (m_filterThread && !m_filterThread->done()) {
+        QEventLoop loop;
+        m_waiting = &loop;
+        loop.exec();
+    }
+}
+
 int View::count()
 {
     if (!isOpen()) {
         return 0;
     }
 
-    m_filterThread->wait();
+    waitFilter();
 
     return m_filterThread->result().count();
 }
@@ -302,7 +361,6 @@ bool View::registerObject(QDBusConnection &connection)
             delete m_adaptor;
             m_adaptor = 0;
         } else {
-            qDebug() << "Object registered:" << objectPath();
             connect(this, SIGNAL(countChanged(int)), m_adaptor, SIGNAL(countChanged(int)));
         }
     }

@@ -58,7 +58,7 @@ public:
 
     // Adaptor
     QString linkContacts(const QStringList &contacts);
-    View *query(const QString &clause, const QString &sort, const QStringList &sources);
+    View *query(const QString &clause, const QString &sort, int maxCount, const QStringList &sources);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
     bool isReady() const;
