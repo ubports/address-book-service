@@ -61,15 +61,10 @@ macro(declare_eds_test TESTNAME)
                           ${FOLKS_LIBRARIES}
     )
 
-    add_test(${TESTNAME}
-             ${DBUS_RUNNER}
-             --keep-env
-             --task ${EVOLUTION_ADDRESSBOOK_FACTORY_BIN} --task-name "evolution-addressbook" -r
-             --task ${address-book-service_BINARY_DIR}/address-book-service --wait-for=${EVOLUTION_ADDRESSBOOK_SERVICE_NAME} -r
-             --task ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TEST_ARGS} --wait-for=com.canonical.pim --wait-until-complete)
-
     execute_process(COMMAND mktemp -d /tmp/${TESTNAME}_XXXX
-                    OUTPUT_VARIABLE TMP_HOME_DIR)
+                    OUTPUT_VARIABLE TMP_HOME_DIR
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(TEST_ENVIRONMENT_LIST "")
     list(APPEND TEST_ENVIRONMENT_LIST "QT_QPA_PLATFORM=minimal")
     list(APPEND TEST_ENVIRONMENT_LIST "FOLKS_BACKENDS_ALLOWED=eds")
     list(APPEND TEST_ENVIRONMENT_LIST "HOME=${TMP_HOME_DIR}")
@@ -86,9 +81,15 @@ macro(declare_eds_test TESTNAME)
     list(APPEND TEST_ENVIRONMENT_LIST "XDG_VIDEOS_DIR=${TMP_HOME_DIR}")
     list(APPEND TEST_ENVIRONMENT_LIST "QORGANIZER_EDS_DEBUG=On")
 
-    set_tests_properties(${TESTNAME} PROPERTIES
-                          ENVIRONMENT ${TEST_ENVIRONMENT_LIST}
-                          TIMEOUT ${CTEST_TESTING_TIMEOUT})
+    add_test(${TESTNAME}
+             ${DBUS_RUNNER}
+             --keep-env
+             --task ${EVOLUTION_ADDRESSBOOK_FACTORY_BIN} --task-name "evolution-addressbook" -r
+             --task ${address-book-service_BINARY_DIR}/address-book-service --wait-for=${EVOLUTION_ADDRESSBOOK_SERVICE_NAME} -r
+             --task ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TEST_ARGS} --wait-for=com.canonical.pim --wait-until-complete)
+
+    message(STATUS "ENV: ${TEST_ENVIRONMENT_LIST}")
+    set_property(TEST ${TESTNAME} APPEND PROPERTY ENVIRONMENT ${TEST_ENVIRONMENT_LIST})
 endmacro()
 
 include_directories(
