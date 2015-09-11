@@ -61,8 +61,11 @@ macro(declare_eds_test TESTNAME)
     )
 
     add_test(${TESTNAME}
-             ${CMAKE_CURRENT_SOURCE_DIR}/run-eds-test.sh ${DBUS_RUNNER} ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TESTNAME}
+             ${CMAKE_CURRENT_SOURCE_DIR}/run-eds-test.sh
+             ${DBUS_RUNNER}
+             ${CMAKE_CURRENT_BINARY_DIR}/${TESTNAME} ${TESTNAME}
              ${EVOLUTION_ADDRESSBOOK_FACTORY_BIN} ${EVOLUTION_ADDRESSBOOK_SERVICE_NAME}
+             ${EVOLUTION_SOURCE_REGISTRY} ${EVOLUTION_SOURCE_SERVICE_NAME}
              ${address-book-service_BINARY_DIR}/address-book-service)
 endmacro()
 

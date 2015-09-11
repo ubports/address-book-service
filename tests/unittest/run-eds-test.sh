@@ -6,7 +6,9 @@ echo ARG2=$2 # full executable path of test app
 echo ARG3=$3 # test name
 echo ARG4=$4 # full executable path of evolution-addressbook-factory
 echo ARG5=$5 # bus service name of AddressBook factory
-echo ARG6=$6 # full exectuable path of qtpim-service    
+echo ARG6=$6 # full exectuable path of evolution-source-registry
+echo ARG7=$7 # bus service name of evolution-source-registry
+echo ARG7=$8 # bus service name of evolution-source-registry
 
 # set up the tmpdir and tell the shell to purge it when we exit
 export TEST_TMP_DIR=$(mktemp -p "${TMPDIR:-/tmp}" -d $3-XXXXXXXXXX) || exit 1
@@ -35,11 +37,12 @@ echo HOMEDIR=${HOME}
 rm -rf ${XDG_DATA_HOME}
 
 # run dbus-test-runner
+# run dbus-test-runner
 $1 --keep-env --max-wait=90 \
---task $2 --task-name $3 --wait-until-complete --wait-for=com.canonical.pim \
---task $6 --task-name "ubuntu-pim" --wait-for=$5  -r \
---task $4 --task-name "evolution-addressbook" -r
-
+--task $2 --task-name $3 --wait-until-complete --wait-for=$5 \
+--task $8 --task-name "ubuntu-pim" --wait-for=$5  -r \
+--task $4 --task-name "evolution-addressbook" --wait-for=$7 -r \
+--task $6 --task-name "source-registry" -r
 rv=$?
 
 # if the test passed, blow away the tmpdir

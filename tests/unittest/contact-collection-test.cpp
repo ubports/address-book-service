@@ -20,8 +20,15 @@
 #include <QtTest>
 #include <QDebug>
 #include <QtContacts>
+#include <QDBusMessage>
+#include <QDBusReply>
+#include <QDBusConnection>
 
 #include "config.h"
+
+#define ADDRESS_BOOK_BUS_NAME   "com.canonical.pim"
+#define ADDRESS_BOOK_OBJ        "/com/canonical/pim/AddressBook"
+#define ADDRESS_BOOK_IFACE      "com.canonical.pim.AddressBook"
 
 using namespace QtContacts;
 
@@ -30,6 +37,16 @@ class ContactCollectionTest : public QObject
     Q_OBJECT
 private:
     QContactManager *m_manager;
+
+    bool isReady()
+    {
+        QDBusMessage callIsReady = QDBusMessage::createMethodCall(ADDRESS_BOOK_BUS_NAME,
+                                                                   ADDRESS_BOOK_OBJ,
+                                                                   ADDRESS_BOOK_IFACE,
+                                                                   "isReady");
+         QDBusReply<bool> reply = QDBusConnection::sessionBus().call(callIsReady);
+         return reply.value();
+    }
 
 private Q_SLOTS:
     void initTestCase()
@@ -42,6 +59,8 @@ private Q_SLOTS:
     void init()
     {
         m_manager = new QContactManager("galera");
+        // wait to be ready
+        QTRY_VERIFY(isReady());
     }
 
     void cleanup()
