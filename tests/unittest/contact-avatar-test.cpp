@@ -20,9 +20,13 @@
 #include <QtTest>
 #include <QDebug>
 #include <QtContacts>
+#include <QDBusMessage>
+#include <QDBusReply>
+#include <QDBusConnection>
 
 #include "config.h"
 #include "common/vcard-parser.h"
+#include "common/dbus-service-defs.h"
 
 using namespace QtContacts;
 
@@ -31,6 +35,16 @@ class ContactAvatarTest : public QObject
     Q_OBJECT
 private:
     QContactManager *m_manager;
+
+    bool isReady()
+    {
+        QDBusMessage callIsReady = QDBusMessage::createMethodCall(CPIM_SERVICE_NAME,
+                                                                  CPIM_ADDRESSBOOK_OBJECT_PATH,
+                                                                  CPIM_ADDRESSBOOK_IFACE_NAME,
+                                                                  "isReady");
+         QDBusReply<bool> reply = QDBusConnection::sessionBus().call(callIsReady);
+         return reply.value();
+    }
 
 private Q_SLOTS:
     void initTestCase()
@@ -44,6 +58,8 @@ private Q_SLOTS:
     void init()
     {
         m_manager = new QContactManager("galera");
+        // wait to be ready
+        QTRY_VERIFY_WITH_TIMEOUT(isReady(), 60000);
     }
 
     void cleanup()

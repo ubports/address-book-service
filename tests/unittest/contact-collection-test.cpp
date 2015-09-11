@@ -24,11 +24,8 @@
 #include <QDBusReply>
 #include <QDBusConnection>
 
+#include "common/dbus-service-defs.h"
 #include "config.h"
-
-#define ADDRESS_BOOK_BUS_NAME   "com.canonical.pim"
-#define ADDRESS_BOOK_OBJ        "/com/canonical/pim/AddressBook"
-#define ADDRESS_BOOK_IFACE      "com.canonical.pim.AddressBook"
 
 using namespace QtContacts;
 
@@ -40,10 +37,10 @@ private:
 
     bool isReady()
     {
-        QDBusMessage callIsReady = QDBusMessage::createMethodCall(ADDRESS_BOOK_BUS_NAME,
-                                                                   ADDRESS_BOOK_OBJ,
-                                                                   ADDRESS_BOOK_IFACE,
-                                                                   "isReady");
+        QDBusMessage callIsReady = QDBusMessage::createMethodCall(CPIM_SERVICE_NAME,
+                                                                  CPIM_ADDRESSBOOK_OBJECT_PATH,
+                                                                  CPIM_ADDRESSBOOK_IFACE_NAME,
+                                                                  "isReady");
          QDBusReply<bool> reply = QDBusConnection::sessionBus().call(callIsReady);
          return reply.value();
     }
