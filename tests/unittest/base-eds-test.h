@@ -55,6 +55,7 @@ protected:
     {
         QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
         qRegisterMetaType<QList<QtContacts::QContactId> >("QList<QContactId>");
+        QTRY_VERIFY_WITH_TIMEOUT(isReady(), 60000);
     }
 
     void cleanupTestCaseImpl()
@@ -65,7 +66,6 @@ protected:
     void initImpl()
     {
         m_manager = new QContactManager("galera");
-        QTRY_VERIFY_WITH_TIMEOUT(isReady(), 60000);
     }
 
     void cleanupImpl()
