@@ -20,53 +20,40 @@
 #include <QtTest>
 #include <QDebug>
 #include <QtContacts>
-#include <QDBusMessage>
-#include <QDBusReply>
-#include <QDBusConnection>
 
 #include "config.h"
 #include "common/vcard-parser.h"
-#include "common/dbus-service-defs.h"
+#include "base-eds-test.h"
 
 using namespace QtContacts;
 
-class ContactAvatarTest : public QObject
+class ContactAvatarTest : public QObject, public BaseEDSTest
 {
     Q_OBJECT
 private:
-    QContactManager *m_manager;
 
-    bool isReady()
-    {
-        QDBusMessage callIsReady = QDBusMessage::createMethodCall(CPIM_SERVICE_NAME,
-                                                                  CPIM_ADDRESSBOOK_OBJECT_PATH,
-                                                                  CPIM_ADDRESSBOOK_IFACE_NAME,
-                                                                  "isReady");
-         QDBusReply<bool> reply = QDBusConnection::sessionBus().call(callIsReady);
-         return reply.value();
-    }
 
 private Q_SLOTS:
     void initTestCase()
     {
-        QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
-        qRegisterMetaType<QList<QtContacts::QContactId> >("QList<QContactId>");
-        // wait for address-book-service
-        QTest::qWait(1000);
+        BaseEDSTest::initTestCaseImpl();
+    }
+
+    void cleanupTestCase()
+    {
+        BaseEDSTest::cleanupTestCaseImpl();
     }
 
     void init()
     {
-        m_manager = new QContactManager("galera");
-        // wait to be ready
-        QTRY_VERIFY_WITH_TIMEOUT(isReady(), 60000);
+        BaseEDSTest::initImpl();
     }
 
     void cleanup()
     {
         QList<QContactId> contacts = m_manager->contactIds();
         m_manager->removeContacts(contacts);
-        delete m_manager;
+        BaseEDSTest::cleanupImpl();
     }
 
     void testCreateAvatarWithRevision()

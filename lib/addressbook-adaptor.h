@@ -117,6 +117,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"s\"/>\n"
 "      <arg direction=\"in\" type=\"s\"/>\n"
 "    </method>\n"
+"    <method name=\"shutDown\"/>\n"
 "  </interface>\n"
         "")
     Q_PROPERTY(bool isReady READ isReady NOTIFY readyChanged)
@@ -148,6 +149,7 @@ public Q_SLOTS:
     bool safeMode() const;
     bool ping();
     void purgeContacts(const QString &since, const QString &sourceId, const QDBusMessage &message);
+    void shutDown() const;
 
 
 Q_SIGNALS:

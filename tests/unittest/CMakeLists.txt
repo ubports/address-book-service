@@ -43,6 +43,7 @@ endmacro()
 macro(declare_eds_test TESTNAME)
     add_executable(${TESTNAME}
                    ${TESTNAME}.cpp
+                   base-eds-test.h
     )
     qt5_use_modules(${TESTNAME} Core Contacts Versit Test DBus)
 

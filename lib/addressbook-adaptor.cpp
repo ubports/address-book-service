@@ -169,6 +169,11 @@ void AddressBookAdaptor::purgeContacts(const QString &since, const QString &sour
     m_addressBook->purgeContacts(sinceDate, sourceId, message);
 }
 
+void AddressBookAdaptor::shutDown() const
+{
+    m_addressBook->shutdown();
+}
+
 bool AddressBookAdaptor::safeMode() const
 {
     return m_addressBook->isSafeMode();

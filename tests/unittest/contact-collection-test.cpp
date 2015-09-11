@@ -20,49 +20,35 @@
 #include <QtTest>
 #include <QDebug>
 #include <QtContacts>
-#include <QDBusMessage>
-#include <QDBusReply>
-#include <QDBusConnection>
 
-#include "common/dbus-service-defs.h"
+#include "base-eds-test.h"
 #include "config.h"
+
 
 using namespace QtContacts;
 
-class ContactCollectionTest : public QObject
+class ContactCollectionTest : public QObject, public BaseEDSTest
 {
     Q_OBJECT
-private:
-    QContactManager *m_manager;
-
-    bool isReady()
-    {
-        QDBusMessage callIsReady = QDBusMessage::createMethodCall(CPIM_SERVICE_NAME,
-                                                                  CPIM_ADDRESSBOOK_OBJECT_PATH,
-                                                                  CPIM_ADDRESSBOOK_IFACE_NAME,
-                                                                  "isReady");
-         QDBusReply<bool> reply = QDBusConnection::sessionBus().call(callIsReady);
-         return reply.value();
-    }
-
 private Q_SLOTS:
     void initTestCase()
     {
-        QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
-        // wait for address-book-service
-        QTest::qWait(1000);
+        BaseEDSTest::initTestCaseImpl();
+    }
+
+    void cleanupTestCase()
+    {
+        BaseEDSTest::cleanupTestCaseImpl();
     }
 
     void init()
     {
-        m_manager = new QContactManager("galera");
-        // wait to be ready
-        QTRY_VERIFY_WITH_TIMEOUT(isReady(), 60000);
+        BaseEDSTest::initImpl();
     }
 
     void cleanup()
     {
-        delete m_manager;
+        BaseEDSTest::cleanupImpl();
     }
 
     /*

@@ -40,8 +40,8 @@ rm -rf ${XDG_DATA_HOME}
 # run dbus-test-runner
 $1 --keep-env --max-wait=90 \
 --task $2 --task-name $3 --wait-until-complete --wait-for=$5 \
---task $8 --task-name "ubuntu-pim" --wait-for=$5  -r \
---task $4 --task-name "evolution-addressbook" --wait-for=$7 -r \
+--task $8 --task-name "ubuntu-pim" --wait-until-complete  --wait-for=$5  -r \
+--task $4 --task-name "evolution-addressbook" --wait-until-complete  --wait-for=$7 -r \
 --task $6 --task-name "source-registry" -r
 rv=$?
 
