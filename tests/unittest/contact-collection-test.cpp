@@ -60,7 +60,7 @@ private Q_SLOTS:
     {
         m_manager = new QContactManager("galera");
         // wait to be ready
-        QTRY_VERIFY(isReady());
+        QTRY_VERIFY_WITH_TIMEOUT(isReady(), 60000);
     }
 
     void cleanup()
