@@ -169,7 +169,7 @@ protected:
                 if (!phoneToFilter.isEmpty()) {
                     preFilter = m_allContacts->valueByPhone(phoneToFilter);
                 } else {
-                    qWarning() << "Filter not optimized" << m_filter.toContactFilter();
+                    qDebug() << "Filter not optimized" << m_filter.toContactFilter();
                     preFilter = m_allContacts->values();
                 }
             }

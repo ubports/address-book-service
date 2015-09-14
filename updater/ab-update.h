@@ -52,6 +52,7 @@ private Q_SLOTS:
     void onModuleUpdated();
     void onModuleUpdateError(const QString &errorMessage);
     void onOnlineStateChanged(bool isOnline);
+    void continueUpdateWithInternet();
     void updateNextModule();
 
 private:

@@ -1,4 +1,4 @@
-﻿/*
+﻿    /*
  * Copyright 2015 Canonical Ltd.
  *
  * This file is part of address-book-service.
@@ -214,8 +214,17 @@ void ABUpdate::onOnlineStateChanged(bool isOnline)
         m_waitingForIntenert = false;
         qDebug() << "Network is online resume upddate process.";
         m_netManager->disconnect(this);
+        QTimer::singleShot(5000, this, SLOT(continueUpdateWithInternet()));
+    }
+}
+
+void ABUpdate::continueUpdateWithInternet()
+{
+    if (isOnline()) {
         notifyStart();
         updateNextModule();
+    } else {
+        waitForInternet();
     }
 }
 

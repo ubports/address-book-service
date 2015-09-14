@@ -34,7 +34,7 @@ namespace C {
 
 int main(int argc, char **argv)
 {
-    QCoreApplication::setOrganizationName("Canonical");
+    QCoreApplication::setOrganizationName(SETTINGS_ORG);
     QCoreApplication::setApplicationName("AddressBookUpdate");
 
     setlocale(LC_ALL, "");
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     QDBusConnection::sessionBus().registerObject(CPIM_UPDATE_OBJECT_PATH, abUpdate.data());
 
     // TODO: implement support for app args (Example: --wipe)
-    QTimer::singleShot(0, abUpdate.data(), SLOT(startUpdate()));
+    QTimer::singleShot(5000, abUpdate.data(), SLOT(startUpdate()));
 
     // quit app when update is done
     QObject::connect(abUpdate.data(), SIGNAL(updateDone()), &app, SLOT(quit()));
