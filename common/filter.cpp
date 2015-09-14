@@ -25,6 +25,7 @@
 #include <QtCore/QDebug>
 
 #include <QtContacts/QContactGuid>
+#include <QtContacts/QContactExtendedDetail>
 #include <QtContacts/QContactIdFilter>
 #include <QtContacts/QContactDetailFilter>
 #include <QtContacts/QContactUnionFilter>
@@ -281,6 +282,43 @@ bool Filter::includeRemoved() const
 {
     // Only return removed contacts if the filter type is ChangeLogFilter
     return (m_filter.type() == QContactFilter::ChangeLogFilter);
+}
+
+bool Filter::showInvisibleContacts() const
+{
+    // we show invisible contacts to buteo only
+    // (buteo uses this specific filter to query for remote contacts)
+    return showInvisibleContacts(m_filter);
+}
+
+bool Filter::showInvisibleContacts(const QtContacts::QContactFilter &filter)
+{
+    switch(filter.type()) {
+    case QContactFilter::IntersectionFilter:
+    {
+        QContactIntersectionFilter iFilter(filter);
+        Q_FOREACH(const QContactFilter &f, iFilter.filters()) {
+            if (showInvisibleContacts(f)) {
+                return true;
+            }
+        }
+        break;
+    }
+    case QContactFilter::ContactDetailFilter:
+    {
+        QContactDetailFilter dFilter(filter);
+        if ((dFilter.detailType() == QContactExtendedDetail::Type) &&
+            (dFilter.detailField() == QContactExtendedDetail::FieldName) &&
+            (dFilter.value() == "X-REMOTE-ID")) {
+            return true;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+
+    return false;
 }
 
 QString Filter::phoneNumberToFilter() const

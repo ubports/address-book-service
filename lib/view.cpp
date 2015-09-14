@@ -187,7 +187,7 @@ protected:
                 QDateTime deletedAt = entry->individual()->deletedAt();
                 m_canceledLock.unlock();
 
-                if (entry->individual()->isVisible() &&
+                if ((m_filter.showInvisibleContacts() || entry->individual()->isVisible()) &&
                     checkContact(contact, deletedAt)) {
                     if (needSort) {
                         addSorted(&m_contacts, contact, m_sortClause);

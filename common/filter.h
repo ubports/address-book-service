@@ -39,6 +39,7 @@ public:
     bool isValid() const;
     bool isEmpty() const;
     bool includeRemoved() const;
+    bool showInvisibleContacts() const;
 
     // optimization by index
     QString phoneNumberToFilter() const;
@@ -57,6 +58,7 @@ private:
     static QStringList idsToFilter(const QtContacts::QContactFilter &filter);
     static QString toString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter buildFilter(const QString &filter);
+    static bool showInvisibleContacts(const QtContacts::QContactFilter &filter);
 
     static QString detailFilterToString(const QtContacts::QContactFilter &filter);
     static QString unionFilterToString(const QtContacts::QContactFilter &filter);

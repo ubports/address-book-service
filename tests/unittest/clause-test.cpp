@@ -267,7 +267,7 @@ private Q_SLOTS:
 
     void testExtractIds()
     {
-        QContactIdFilter originalFilter = QContactIdFilter();
+        QContactIdFilter originalFilter;
         originalFilter.setIds(QList<QContactId>()
                               << QContactId::fromString("qtcontacts:memory::1")
                               << QContactId::fromString("qtcontacts:memory::2")
@@ -282,6 +282,34 @@ private Q_SLOTS:
             ids.removeOne(id.toString().split(":").last());
         }
         QCOMPARE(ids.size(), 0);
+    }
+
+    void testShowInvisibleContactsForButeo()
+    {
+        QContactIntersectionFilter originalFilter;
+        QCOMPARE(Filter(originalFilter).showInvisibleContacts(), false);
+
+
+        QContactDetailFilter xDetailNameFilter;
+        xDetailNameFilter.setDetailType(QContactExtendedDetail::Type,
+                                        QContactExtendedDetail::FieldName);
+        xDetailNameFilter.setValue("X-REMOTE-ID");
+
+        QContactDetailFilter xDetailValueFilter;
+        xDetailValueFilter.setDetailType(QContactExtendedDetail::Type,
+                                         QContactExtendedDetail::FieldData);
+        xDetailValueFilter.setValue("123");
+
+        originalFilter << xDetailNameFilter
+                        << xDetailValueFilter;
+
+        QCOMPARE(Filter(originalFilter).showInvisibleContacts(), true);
+
+        QContactDetailFilter detailFilterDefaultSyncTarget;
+        detailFilterDefaultSyncTarget.setDetailType(QContactSyncTarget::Type,
+                                                    QContactSyncTarget::FieldSyncTarget + 1);
+        detailFilterDefaultSyncTarget.setValue("my-sync-target");
+        QCOMPARE(Filter(originalFilter & detailFilterDefaultSyncTarget).showInvisibleContacts(), true);
     }
 };
 
