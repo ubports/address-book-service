@@ -225,6 +225,11 @@ bool ButeoImport::matchFavorites()
         QContactIntersectionFilter iFilter;
 
         qDebug() << "Try to match contact" << f;
+        // show invisible contacts
+        QContactDetailFilter invisilbeContacts;
+        invisilbeContacts.setDetailType(QContactDetail::TypeExtendedDetail, QContactExtendedDetail::FieldName);
+        invisilbeContacts.setValue("X-SHOW-INVISIBLE");
+        iFilter.append(invisilbeContacts);
 
         // No favorite
         QContactDetailFilter noFavorite;
@@ -282,6 +287,22 @@ bool ButeoImport::matchFavorites()
 
 }
 
+ABUpdateModule::ImportError ButeoImport::parseError(int errorCode) const
+{
+    switch (errorCode)
+    {
+    case 9: //SYNC_AUTHENTICATION_FAILURE:
+        return ABUpdateModule::FailToAuthenticate;
+    case 11: //SYNC_CONNECTION_ERROR:
+        return ABUpdateModule::ConnectionError;
+    case 14: //SYNC_PLUGIN_ERROR:
+    case 15: //SYNC_PLUGIN_TIMEOUT:
+        return ABUpdateModule::FailToConnectWithButeo;
+    default:
+        return ABUpdateModule::SyncError;
+    }
+}
+
 bool ButeoImport::needsUpdate()
 {
     // check settings
@@ -309,6 +330,11 @@ bool ButeoImport::needsUpdate()
         qWarning() << "Fail to load online accounts";
     }
 
+    return true;
+}
+
+bool ButeoImport::prepareToUpdate()
+{
     return true;
 }
 
@@ -382,6 +408,7 @@ QMap<QString, quint32> ButeoImport::sources() const
     sourceFilter.setValue( QContactType::TypeGroup);
     Q_FOREACH(const QContact &c, manager->contacts(sourceFilter)) {
         uint accountId = 0;
+        // skip local source
         if (c.id().toString().endsWith("source@system-address-book")) {
             continue;
         }
@@ -486,14 +513,16 @@ bool ButeoImport::removeProfile(const QString &profileId)
     }
 
     // remove profile
+    return buteoRemoveProfile(profileId);
+}
+
+bool ButeoImport::buteoRemoveProfile(const QString &profileId) const
+{
     QDBusReply<bool> result = m_buteoInterface->call("removeProfile", profileId);
     if (result.error().isValid()) {
         qWarning() << "Fail to remove profile" << profileId << result.error();
         return false;
-    } else {
-        qDebug() << "Recent created profile removed" << profileId;
     }
-
     return true;
 }
 
@@ -581,7 +610,6 @@ void ButeoImport::error(const QString &accountName, ButeoImport::ImportError err
     Q_EMIT updateError(accountName, errorCode);
 }
 
-
 bool ButeoImport::requireInternetConnection()
 {
     return true;
@@ -648,11 +676,11 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
     Q_UNUSED(message);
     Q_UNUSED(moreDetails);
 
-    if (!m_initialAccountToProfiles.values().contains(profileName)) {
+    if (!m_pendingAccountToProfiles.values().contains(profileName)) {
         qDebug() << "Profile not found" << profileName;
         return;
     }
-    quint32 accountId = m_initialAccountToProfiles.key(profileName, 0);
+    quint32 accountId = m_pendingAccountToProfiles.key(profileName, 0);
     qDebug() << "SyncStatus"
              << "\n\tProfile:" << profileName
              << "\n\tAccount:" << accountId
@@ -677,6 +705,7 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
     case 3:
         qWarning() << "Sync error for account:" << accountId  << "and profile" << profileName;
         m_failToSyncProfiles << profileName;
+        m_lastError = parseError(moreDetails);
         break;
     case 4:
         qDebug() << "Sync finished for account:" << accountId  << "and profile" << profileName;
@@ -694,7 +723,7 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
             if (m_failToSyncProfiles.isEmpty()) {
                 Q_EMIT updated();
             } else {
-                error("", ABUpdateModule::SyncError);
+                error("", m_lastError);
             }
         }
     }

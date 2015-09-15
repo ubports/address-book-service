@@ -33,15 +33,13 @@ public:
 
     QString name() const override;
     bool needsUpdate() override;
+    bool prepareToUpdate() override;
     bool update() override;
     bool requireInternetConnection() override;
     bool canUpdate() override;
     bool commit() override;
     bool roolback() override;
     ImportError lastError() const override;
-
-Q_SIGNALS:
-    void updateError(const QString &accountName, ButeoImport::ImportError errorCode);
 
 private Q_SLOTS:
     void onProfileChanged(const QString &profileName, int changeType, const QString &profileAsXml);
@@ -60,6 +58,7 @@ private:
     bool prepareButeo();
     bool createAccounts(QList<quint32> ids);
     bool removeProfile(const QString &profileId);
+    bool buteoRemoveProfile(const QString &profileId) const;
     bool removeSources(const QStringList &sources);
     void error(const QString &accountName, ImportError errorCode);
     bool loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> &newAccounts);
@@ -70,4 +69,5 @@ private:
     QString profileName(quint32 accountId) const;
     bool startSync(const QString &profile) const;
     bool matchFavorites();
+    ImportError parseError(int errorCode) const;
 };

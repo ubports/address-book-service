@@ -27,8 +27,10 @@ class ABUpdateModule : public QObject
 public:
     enum ImportError {
         ApplicationAreadyUpdated = 0,
+        ConnectionError,
         FailToConnectWithButeo,
         FailToCreateButeoProfiles,
+        FailToAuthenticate,
         InernalError,
         OnlineAccountNotFound,
         SyncAlreadyRunning,
@@ -40,6 +42,7 @@ public:
 
     virtual QString name() const = 0;
     virtual bool needsUpdate() = 0;
+    virtual bool prepareToUpdate() = 0;
     virtual bool update() = 0;
     virtual bool canUpdate() = 0;
     virtual bool requireInternetConnection() = 0;
@@ -49,5 +52,5 @@ public:
 
 Q_SIGNALS:
     void updated();
-    void updateError(ImportError errorCode);
+    void updateError(const QString &accountName,  ABUpdateModule::ImportError errorCode);
 };

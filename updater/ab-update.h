@@ -17,12 +17,14 @@
  */
 
 #pragma once
+
+#include "ab-update-module.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QMutex>
 #include <QtCore/QScopedPointer>
 #include <QtNetwork/QNetworkConfigurationManager>
 
-class ABUpdateModule;
 
 class ABUpdate : public QObject
 {
@@ -46,14 +48,16 @@ Q_SIGNALS:
     void onNeedsUpdateChanged();
     void onIsRunningChanged();
     void updateDone();
-    void updateError(const QString &errorMessage);
+    void updateError(const QString &accountName, ABUpdateModule::ImportError);
 
 private Q_SLOTS:
     void onModuleUpdated();
-    void onModuleUpdateError(const QString &errorMessage);
+    void onModuleUpdateError(const QString &accountName, ABUpdateModule::ImportError);
     void onOnlineStateChanged(bool isOnline);
     void continueUpdateWithInternet();
     void updateNextModule();
+    void onModuleUpdateRetry();
+    void onModuleUpdateNoRetry();
 
 private:
     QScopedPointer<QNetworkConfigurationManager> m_netManager;

@@ -129,15 +129,20 @@ void ABUpdate::startUpdate(ABUpdateModule *module)
         waitForInternet();
     } else if (!module->canUpdate()) {
         qWarning() << "Module can not be updated" << module->name();
-        onModuleUpdateError(_("Internal error"));
+        onModuleUpdateError("", ABUpdateModule::InernalError);
     } else {
-        connect(module,
-                SIGNAL(updated()),
-                SLOT(onModuleUpdated()));
-        connect(module,
-                SIGNAL(updateError(QString,ButeoImport::ImportError)),
-                SLOT(onModuleUpdateError(QString)));
-        module->update();
+        if (!module->prepareToUpdate()) {
+            qWarning() << "Fail to prepare to update:" << module->name();
+            updateNextModule();
+        } else {
+            connect(module,
+                    SIGNAL(updated()),
+                    SLOT(onModuleUpdated()));
+            connect(module,
+                    SIGNAL(updateError(QString,  ABUpdateModule::ImportError)),
+                    SLOT(onModuleUpdateError(QString,  ABUpdateModule::ImportError)));
+            module->update();
+        }
     }
 }
 
@@ -162,6 +167,7 @@ void ABUpdate::updateNextModule()
     }
 }
 
+
 void ABUpdate::cancelUpdate()
 {
 }
@@ -172,7 +178,7 @@ void ABUpdate::onModuleUpdated()
     module->disconnect(this);
     if (!module->commit()) {
         qDebug() << "Fail to commit final changes for module" << module->name();
-        onModuleUpdateError(_("Internal Error"));
+        onModuleUpdateError("", ABUpdateModule::InernalError);
         return;
     }
 
@@ -188,24 +194,42 @@ void ABUpdate::onModuleUpdated()
     }
 }
 
-void ABUpdate::onModuleUpdateError(const QString &errorMessage)
+void ABUpdate::onModuleUpdateError(const QString &accountName, ABUpdateModule::ImportError)
 {
     ABUpdateModule *module = m_updateModules.at(m_activeModule);
     module->disconnect(this);
 
-    qWarning() << "Fail to update module" << module->name() << module->lastError();
+    qWarning() << "Fail to update module" << module->name() << accountName << module->lastError();
     module->roolback();
 
     if (m_silenceMode) {
         updateNextModule();
     } else {
         ABNotifyMessage *msg = new ABNotifyMessage(true, this);
-        msg->show(_("Account update"),
-                  QString(_("Could not complete %1 contact sync account upgrade.\nTo retry, open Contacts app and press the sync button.")).arg("Google"),
-                  TRANSFER_ICON_ERROR);
-
-        connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
+        msg->setProperty("MODULE", QVariant::fromValue<QObject*>(module));
+        msg->askYesOrNo(_("Account update"),
+                        QString(_("Could not complete %1 contact sync account upgrade.\nDo you want to retry now?")).arg("Google"),
+                        TRANSFER_ICON_ERROR);
+        connect(msg, SIGNAL(questionAccepted()), this, SLOT(onModuleUpdateRetry()));
+        connect(msg, SIGNAL(questionRejected()), SLOT(onModuleUpdateNoRetry()));
     }
+}
+
+void ABUpdate::onModuleUpdateRetry()
+{
+    QObject *msg = QObject::sender();
+    ABUpdateModule *module = qobject_cast<ABUpdateModule*>(msg->property("MODULE").value<QObject*>());
+    m_modulesToUpdate << module;
+    updateNextModule();
+}
+
+void ABUpdate::onModuleUpdateNoRetry()
+{
+    ABNotifyMessage *msg = new ABNotifyMessage(true, this);
+    msg->show(_("Account update"),
+              _("To retry later you can open Contacts app and press the sync button."),
+              TRANSFER_ICON);
+    connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
 }
 
 void ABUpdate::onOnlineStateChanged(bool isOnline)
