@@ -289,7 +289,6 @@ private Q_SLOTS:
         QContactIntersectionFilter originalFilter;
         QCOMPARE(Filter(originalFilter).showInvisibleContacts(), false);
 
-
         QContactDetailFilter xDetailNameFilter;
         xDetailNameFilter.setDetailType(QContactExtendedDetail::Type,
                                         QContactExtendedDetail::FieldName);
@@ -300,10 +299,18 @@ private Q_SLOTS:
                                          QContactExtendedDetail::FieldData);
         xDetailValueFilter.setValue("123");
 
+        QContactDetailFilter xShowInvisible;
+        xShowInvisible.setDetailType(QContactExtendedDetail::Type,
+                                     QContactExtendedDetail::FieldName);
+        xShowInvisible.setValue("X-SHOW-INVISIBLE");
+
         originalFilter << xDetailNameFilter
-                        << xDetailValueFilter;
+                       << xDetailValueFilter
+                       << xShowInvisible;
 
         QCOMPARE(Filter(originalFilter).showInvisibleContacts(), true);
+        QCOMPARE(Filter(originalFilter).toContactFilter().type(), QContactFilter::IntersectionFilter);
+        QCOMPARE(QContactIntersectionFilter(Filter(originalFilter).toContactFilter()).filters().size(), 2);
 
         QContactDetailFilter detailFilterDefaultSyncTarget;
         detailFilterDefaultSyncTarget.setDetailType(QContactSyncTarget::Type,

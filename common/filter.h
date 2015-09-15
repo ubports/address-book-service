@@ -47,6 +47,7 @@ public:
 
 private:
     QtContacts::QContactFilter m_filter;
+    bool m_showInvisible;
 
     Filter();
 
@@ -57,15 +58,14 @@ private:
     static QString phoneNumberToFilter(const QtContacts::QContactFilter &filter);
     static QStringList idsToFilter(const QtContacts::QContactFilter &filter);
     static QString toString(const QtContacts::QContactFilter &filter);
-    static QtContacts::QContactFilter buildFilter(const QString &filter);
-    static bool showInvisibleContacts(const QtContacts::QContactFilter &filter);
+    static QtContacts::QContactFilter buildFilter(const QString &filter, bool &showInvisilbe);
 
     static QString detailFilterToString(const QtContacts::QContactFilter &filter);
     static QString unionFilterToString(const QtContacts::QContactFilter &filter);
-    static QtContacts::QContactFilter parseFilter(const QtContacts::QContactFilter &filter);
+    static QtContacts::QContactFilter parseFilter(const QtContacts::QContactFilter &filter, bool &showInvisible);
     static QtContacts::QContactFilter parseIdFilter(const QtContacts::QContactFilter &filter);
-    static QtContacts::QContactFilter parseUnionFilter(const QtContacts::QContactFilter &filter);
-    static QtContacts::QContactFilter parseIntersectionFilter(const QtContacts::QContactFilter &filter);
+    static QtContacts::QContactFilter parseUnionFilter(const QtContacts::QContactFilter &filter, bool &showInvisible);
+    static QtContacts::QContactFilter parseIntersectionFilter(const QtContacts::QContactFilter &filter, bool &showInvisible);
     static bool testFilter(const QtContacts::QContactFilter& filter, const QtContacts::QContact &contact, const QDateTime &deletedDate);
     static bool comparePhoneNumbers(const QString &phoneNumberA, const QString &phoneNumberB, QtContacts::QContactFilter::MatchFlags flags);
 };
