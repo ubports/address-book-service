@@ -101,6 +101,15 @@ void ABNotifyMessage::askYesOrNo(const QString &title,
                            this);
 }
 
+int ABNotifyMessage::closedReason() const
+{
+    if (m_notification) {
+        return notify_notification_get_closed_reason(m_notification);
+    } else {
+        return 0;
+    }
+}
+
 void ABNotifyMessage::onQuestionAccepted(NotifyNotification *notification, char *action, ABNotifyMessage *self)
 {
     Q_UNUSED(notification)
@@ -119,6 +128,7 @@ void ABNotifyMessage::onQuestionRejected(NotifyNotification *notification, char 
 
 void ABNotifyMessage::onNotificationClosed(NotifyNotification *notification, ABNotifyMessage *self)
 {
+    Q_UNUSED(notification)
     Q_EMIT self->messageClosed();
     if (self->m_singleMessage) {
         self->deleteLater();

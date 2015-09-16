@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     }
 
     if (app.arguments().contains("--sync")) {
-        QTimer::singleShot(0, abUpdate.data(), SLOT(startUpdate()));
+        QTimer::singleShot(0, abUpdate.data(), SLOT(startUpdateWhenConnected()));
     }
     QObject::connect(abUpdate.data(), SIGNAL(updateDone()),
                      &app, SLOT(quit()));

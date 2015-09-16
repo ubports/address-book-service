@@ -31,6 +31,7 @@ public:
 
     void show(const QString &title, const QString &msg, const QString &iconName);
     void askYesOrNo(const QString &title, const QString &msg, const QString &iconName);
+    int closedReason() const;
 
 Q_SIGNALS:
     void questionAccepted();

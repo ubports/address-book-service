@@ -25,6 +25,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QTimer>
 #include <QtCore/QCoreApplication>
+#include <QtNetwork/QNetworkConfiguration>
 
 #define TRANSFER_ICON           "/usr/share/icons/suru/status/scalable/transfer-progress.svg"
 #define TRANSFER_ICON_PAUSED    "/usr/share/icons/suru/status/scalable/transfer-paused.svg"
@@ -83,19 +84,21 @@ void ABUpdate::setSilenceMode(bool flag)
 
 void ABUpdate::startUpdate()
 {
+    qDebug() << "Start update...";
+
+    if (m_waitingForIntenert) {
+        m_waitingForIntenert = false;
+        m_netManager->disconnect(this);
+    }
+
     if (isRunning()) {
         qWarning() << "Update already running.";
         if (!m_silenceMode) {
             ABNotifyMessage *msg = new ABNotifyMessage(true, this);
-            if (m_waitingForIntenert) {
-                msg->show(_("Account update"),
-                          QString(_("%1 contact sync account upgrade is waiting for internet connection.")).arg("Google"),
-                          TRANSFER_ICON);
-            } else {
-                msg->show(_("Account update"),
-                          QString(_("%1 contact sync account upgrade already in progress")).arg("Google"),
-                          TRANSFER_ICON);
-            }
+            //if force is set and the app is waiting for internet continue anyway
+            msg->show(_("Account update"),
+                      QString(_("%1 contact sync account upgrade already in progress")).arg("Google"),
+                      TRANSFER_ICON);
         }
         return;
     }
@@ -111,11 +114,28 @@ void ABUpdate::startUpdate()
     m_lock.lock();
     m_modulesToUpdate = modulesToUpdate;
     qDebug() << "Modules to update" << m_modulesToUpdate.size();
-    if (!isOnline()) {
-        notifyNoInternet();
-        waitForInternet();
-    } else {
+    if (isOnline(false)) {
         notifyStart();
+    } else {
+        qWarning() << "No internet abort";
+        notifyNoInternet();
+        updateNextModule();
+    }
+}
+
+void ABUpdate::startUpdateWhenConnected()
+{
+    qDebug() << "Start update when connected...";
+
+    if (isRunning()) {
+        qWarning() << "Update already running.";
+        return;
+    }
+
+    if (isOnline(true)) {
+        startUpdate();
+    } else {
+        waitForInternet();
     }
 }
 
@@ -123,10 +143,7 @@ void ABUpdate::startUpdate(ABUpdateModule *module)
 {
     qDebug() << "Start update for" << module->name();
     m_activeModule = m_updateModules.indexOf(module);
-    if (!isOnline()) {
-        m_modulesToUpdate << module;
-        waitForInternet();
-    } else if (!module->canUpdate()) {
+    if (!module->canUpdate()) {
         qWarning() << "Module can not be updated" << module->name();
         onModuleUpdateError("", ABUpdateModule::InernalError);
     } else {
@@ -145,16 +162,35 @@ void ABUpdate::startUpdate(ABUpdateModule *module)
     }
 }
 
-bool ABUpdate::isOnline() const
+bool ABUpdate::isOnline(bool checkConnectionType) const
 {
-    return (m_skipNetworkTest || m_netManager->isOnline());
+    if (m_skipNetworkTest) {
+        return true;
+    }
+
+    if (!m_netManager->isOnline()) {
+        return false;
+    } else if (checkConnectionType) {
+        QNetworkConfiguration::BearerType bearerType = m_netManager->defaultConfiguration().bearerType();
+        return ((bearerType == QNetworkConfiguration::BearerWLAN) ||
+                (bearerType == QNetworkConfiguration::BearerEthernet));
+    } else {
+        return true;
+    }
 }
 
 void ABUpdate::waitForInternet()
 {
     qDebug() << "Not internet connection wait before start upgrade";
     m_waitingForIntenert = true;
-    connect(m_netManager.data(), SIGNAL(onlineStateChanged(bool)), SLOT(onOnlineStateChanged(bool)));
+    connect(m_netManager.data(),
+            SIGNAL(onlineStateChanged(bool)),
+            SLOT(onOnlineStateChanged()));
+    connect(m_netManager.data(),
+            SIGNAL(updateCompleted()),
+            SLOT(onOnlineStateChanged()));
+
+
 }
 
 QString ABUpdate::errorMessage(ABUpdateModule::ImportError error) const
@@ -238,19 +274,25 @@ void ABUpdate::onModuleUpdateError(const QString &accountName, ABUpdateModule::I
                         TRANSFER_ICON_ERROR);
         connect(msg, SIGNAL(questionAccepted()), this, SLOT(onModuleUpdateRetry()));
         connect(msg, SIGNAL(questionRejected()), SLOT(onModuleUpdateNoRetry()));
+        connect(msg, SIGNAL(messageClosed()), SLOT(onModuleUpdateNoRetry()));
     }
 }
 
 void ABUpdate::onModuleUpdateRetry()
 {
-    QObject *msg = QObject::sender();
-    ABUpdateModule *module = qobject_cast<ABUpdateModule*>(msg->property("MODULE").value<QObject*>());
+    QObject *sender = QObject::sender();
+    disconnect(sender);
+
+    ABUpdateModule *module = qobject_cast<ABUpdateModule*>(sender->property("MODULE").value<QObject*>());
     m_modulesToUpdate << module;
     updateNextModule();
 }
 
 void ABUpdate::onModuleUpdateNoRetry()
 {
+    QObject *sender = QObject::sender();
+    disconnect(sender);
+
     ABNotifyMessage *msg = new ABNotifyMessage(true, this);
     msg->show(_("Fail to update"),
               _("To retry later open Contacts app and press the sync button."),
@@ -258,11 +300,11 @@ void ABUpdate::onModuleUpdateNoRetry()
     connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
 }
 
-void ABUpdate::onOnlineStateChanged(bool isOnline)
+void ABUpdate::onOnlineStateChanged()
 {
-    if (isOnline) {
-        m_waitingForIntenert = false;
+    if (isOnline(true)) {
         qDebug() << "Network is online resume upddate process.";
+        m_waitingForIntenert = false;
         m_netManager->disconnect(this);
         QTimer::singleShot(5000, this, SLOT(continueUpdateWithInternet()));
     }
@@ -270,7 +312,7 @@ void ABUpdate::onOnlineStateChanged(bool isOnline)
 
 void ABUpdate::continueUpdateWithInternet()
 {
-    if (isOnline()) {
+    if (isOnline(true)) {
         notifyStart();
     } else {
         waitForInternet();

@@ -42,6 +42,7 @@ public:
 
 public Q_SLOTS:
     void startUpdate();
+    void startUpdateWhenConnected();
     void cancelUpdate();
 
 Q_SIGNALS:
@@ -53,7 +54,7 @@ Q_SIGNALS:
 private Q_SLOTS:
     void onModuleUpdated();
     void onModuleUpdateError(const QString &accountName, ABUpdateModule::ImportError error);
-    void onOnlineStateChanged(bool isOnline);
+    void onOnlineStateChanged();
     void continueUpdateWithInternet();
     void updateNextModule();
     void onModuleUpdateRetry();
@@ -76,8 +77,9 @@ private:
     void notifyDone();
 
     void startUpdate(ABUpdateModule *module);
-    bool isOnline() const;
+    bool isOnline(bool checkConnectionType) const;
     void waitForInternet();
     QString errorMessage(ABUpdateModule::ImportError error) const;
 
 };
+
