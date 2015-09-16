@@ -108,15 +108,14 @@ void ABUpdate::startUpdate()
         return;
     }
 
-
     m_lock.lock();
     m_modulesToUpdate = modulesToUpdate;
+    qDebug() << "Modules to update" << m_modulesToUpdate.size();
     if (!isOnline()) {
         notifyNoInternet();
         waitForInternet();
     } else {
         notifyStart();
-        updateNextModule();
     }
 }
 
@@ -273,7 +272,6 @@ void ABUpdate::continueUpdateWithInternet()
 {
     if (isOnline()) {
         notifyStart();
-        updateNextModule();
     } else {
         waitForInternet();
     }
@@ -281,11 +279,14 @@ void ABUpdate::continueUpdateWithInternet()
 
 void ABUpdate::notifyStart()
 {
-    if (!m_silenceMode) {
+    if (m_silenceMode) {
+        updateNextModule();
+    } else {
         ABNotifyMessage *msg = new ABNotifyMessage(true, this);
         msg->show(_("Account update"),
                   QString(_("%1 contact sync account upgrade in progress")).arg("Google"),
                   TRANSFER_ICON);
+        connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
     }
 }
 

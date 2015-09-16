@@ -62,8 +62,9 @@ int main(int argc, char **argv)
         return -2;
     }
 
-    // TODO: implement support for app args (Example: --wipe)
-    QTimer::singleShot(0, abUpdate.data(), SLOT(startUpdate()));
+    if (app.arguments().contains("--sync")) {
+        QTimer::singleShot(0, abUpdate.data(), SLOT(startUpdate()));
+    }
     QObject::connect(abUpdate.data(), SIGNAL(updateDone()),
                      &app, SLOT(quit()));
 
