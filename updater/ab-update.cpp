@@ -189,8 +189,15 @@ void ABUpdate::waitForInternet()
     connect(m_netManager.data(),
             SIGNAL(updateCompleted()),
             SLOT(onOnlineStateChanged()));
-
-
+    connect(m_netManager.data(),
+            SIGNAL(configurationAdded(QNetworkConfiguration)),
+            SLOT(onOnlineStateChanged()));
+    connect(m_netManager.data(),
+            SIGNAL(configurationChanged(QNetworkConfiguration)),
+            SLOT(onOnlineStateChanged()));
+    connect(m_netManager.data(),
+            SIGNAL(configurationRemoved(QNetworkConfiguration)),
+            SLOT(onOnlineStateChanged()));
 }
 
 QString ABUpdate::errorMessage(ABUpdateModule::ImportError error) const
