@@ -305,18 +305,23 @@ private Q_SLOTS:
         xShowInvisible.setValue("X-SHOW-INVISIBLE");
 
         originalFilter << xDetailNameFilter
-                       << xDetailValueFilter
-                       << xShowInvisible;
+                       << xDetailValueFilter;
 
-        QCOMPARE(Filter(originalFilter).showInvisibleContacts(), true);
+        QCOMPARE(Filter(originalFilter).showInvisibleContacts(), false);
         QCOMPARE(Filter(originalFilter).toContactFilter().type(), QContactFilter::IntersectionFilter);
-        QCOMPARE(QContactIntersectionFilter(Filter(originalFilter).toContactFilter()).filters().size(), 2);
+
+        QContactFilter detailAndInvisibleFilter = originalFilter & xShowInvisible;
+        QCOMPARE(Filter(detailAndInvisibleFilter).showInvisibleContacts(), true);
+        QCOMPARE(QContactIntersectionFilter(Filter(detailAndInvisibleFilter).toContactFilter()).filters().size(), 1);
 
         QContactDetailFilter detailFilterDefaultSyncTarget;
         detailFilterDefaultSyncTarget.setDetailType(QContactSyncTarget::Type,
                                                     QContactSyncTarget::FieldSyncTarget + 1);
         detailFilterDefaultSyncTarget.setValue("my-sync-target");
-        QCOMPARE(Filter(originalFilter & detailFilterDefaultSyncTarget).showInvisibleContacts(), true);
+        QCOMPARE(Filter(originalFilter & detailFilterDefaultSyncTarget).showInvisibleContacts(), false);
+
+        QContactFilter syncTargetAndInvisibleFilter = detailFilterDefaultSyncTarget & xShowInvisible;
+        QCOMPARE(Filter(originalFilter & syncTargetAndInvisibleFilter).showInvisibleContacts(), true);
     }
 };
 
