@@ -55,8 +55,13 @@ void ABNotifyMessage::show(const QString &title, const QString &msg, const QStri
                                              msg.toUtf8().data(),
                                              iconName.isEmpty() ? (const char*) 0 : iconName.toUtf8().constData());
 
+    GError *error = 0;
     notify_notification_set_timeout(m_notification, NOTIFY_EXPIRES_DEFAULT);
-    notify_notification_show(m_notification, 0);
+    notify_notification_show(m_notification, &error);
+    if (error) {
+        qWarning() << "Fail to launch notification" << error->message;
+        g_error_free(error);
+    }
     g_signal_connect_after(m_notification,
                            "closed",
                            (GCallback) ABNotifyMessage::onNotificationClosed,

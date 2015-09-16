@@ -6,6 +6,7 @@
 #define SETTINGS_SAFE_MODE_KEY             "safe-mode"
 #define SETTINGS_INVISIBLE_SOURCES         "invisible-sources"
 #define ADDRESS_BOOK_SAFE_MODE             "ADDRESS_BOOK_SAFE_MODE"
+#define ADDRESS_BOOK_SHOW_INVISIBLE_PROP   "show-invisible"
 
 //updater
 #define SETTINGS_BUTEO_KEY                  "Buteo/migration_complete"

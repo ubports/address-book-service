@@ -35,6 +35,7 @@
 
 #include "contacts-service.h"
 #include "qcontact-engineid.h"
+#include "config.h"
 
 using namespace QtContacts;
 
@@ -63,7 +64,7 @@ QString GaleraEngineFactory::managerName() const
 GaleraManagerEngine* GaleraManagerEngine::createEngine(const QMap<QString, QString> &parameters)
 {
     GaleraManagerEngine *engine = new GaleraManagerEngine();
-    engine->m_service->setShowInvisibleContacts(parameters.value("show-invisible", "false").toLower() == "true");
+    engine->m_service->setShowInvisibleContacts(parameters.value(ADDRESS_BOOK_SHOW_INVISIBLE_PROP, "false").toLower() == "true");
     return engine;
 }
 

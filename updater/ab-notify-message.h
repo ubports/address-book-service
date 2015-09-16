@@ -40,7 +40,6 @@ Q_SIGNALS:
 private:
     NotifyNotification *m_notification;
     bool m_singleMessage;
-
     static int m_instanceCount;
 
     static void onQuestionAccepted(NotifyNotification *notification,

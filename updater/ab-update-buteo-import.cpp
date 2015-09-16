@@ -204,8 +204,8 @@ bool ButeoImport::startSync(const QString &profile) const
 bool ButeoImport::matchFavorites()
 {
     QMap<QString, QString> paramenters;
-    paramenters.insert("show-invisilbe", "true");
-    QScopedPointer<QContactManager> manager(new QContactManager("galera", paramenters)  );
+    paramenters.insert(ADDRESS_BOOK_SHOW_INVISIBLE_PROP, "true");
+    QScopedPointer<QContactManager> manager(new QContactManager("galera", paramenters));
 
     // load old favorites
     QContactDetailFilter folksFavorite;
