@@ -63,6 +63,7 @@ QString GaleraEngineFactory::managerName() const
 GaleraManagerEngine* GaleraManagerEngine::createEngine(const QMap<QString, QString> &parameters)
 {
     GaleraManagerEngine *engine = new GaleraManagerEngine();
+    engine->m_service->setShowInvisibleContacts(parameters.value("show-invisible", "false").toLower() == "true");
     return engine;
 }
 

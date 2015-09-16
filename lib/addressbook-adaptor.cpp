@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2013 Canonical Ltd.
  *
  * This file is part of contact-service-app.
@@ -106,9 +106,9 @@ QString AddressBookAdaptor::createContact(const QString &contact, const QString 
     return QString();
 }
 
-QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &sort, int maxCount, const QStringList &sources)
+QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources)
 {
-    View *v = m_addressBook->query(clause, sort, maxCount, sources);
+    View *v = m_addressBook->query(clause, sort, maxCount, showInvisible, sources);
     v->registerObject(m_connection);
     return QDBusObjectPath(v->dynamicObjectPath());
 }

@@ -43,12 +43,13 @@ namespace galera
 class FilterThread: public QRunnable
 {
 public:
-    FilterThread(QString filter, QString sort, int maxCount, ContactsMap *allContacts, QObject *parent)
+    FilterThread(QString filter, QString sort, int maxCount, bool showInvisible, ContactsMap *allContacts, QObject *parent)
         : m_parent(parent),
           m_filter(filter),
           m_sortClause(sort),
           m_maxCount(maxCount),
           m_allContacts(allContacts),
+          m_showInvisible(showInvisible),
           m_canceled(false),
           m_running(false),
           m_done(false)
@@ -139,7 +140,7 @@ protected:
         // filter contacts if necessary
         if (m_filter.isValid() && m_filter.isEmpty()) {
             Q_FOREACH(ContactEntry *entry, m_allContacts->values()) {
-                if (entry->individual()->isVisible() &&
+                if ((m_showInvisible || entry->individual()->isVisible()) &&
                     !entry->individual()->deletedAt().isValid()) {
 
                     QContact contact = entry->individual()->contact();
@@ -187,7 +188,7 @@ protected:
                 QDateTime deletedAt = entry->individual()->deletedAt();
                 m_canceledLock.unlock();
 
-                if ((m_filter.showInvisibleContacts() || entry->individual()->isVisible()) &&
+                if ((m_showInvisible || entry->individual()->isVisible()) &&
                     checkContact(contact, deletedAt)) {
                     if (needSort) {
                         addSorted(&m_contacts, contact, m_sortClause);
@@ -216,6 +217,7 @@ private:
     QList<QContact> m_contacts;
 
     int m_maxCount;
+    bool m_showInvisible;
     bool m_canceled;
     QReadWriteLock m_canceledLock;
     bool m_running;
@@ -227,12 +229,12 @@ private:
     }
 };
 
-View::View(const QString &clause, const QString &sort, int maxCount,
+View::View(const QString &clause, const QString &sort, int maxCount, bool showInvisible,
            const QStringList &sources, ContactsMap *allContacts,
            QObject *parent)
     : QObject(parent),
       m_sources(sources),
-      m_filterThread(new FilterThread(clause, sort, maxCount, allContacts, this)),
+      m_filterThread(new FilterThread(clause, sort, maxCount, showInvisible, allContacts, this)),
       m_adaptor(0),
       m_waiting(0)
 {

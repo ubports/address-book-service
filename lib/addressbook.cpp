@@ -921,9 +921,9 @@ QString AddressBook::linkContacts(const QStringList &contacts)
     return "";
 }
 
-View *AddressBook::query(const QString &clause, const QString &sort, int maxCount, const QStringList &sources)
+View *AddressBook::query(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources)
 {
-    View *view = new View(clause, sort, maxCount, sources, m_ready ? m_contacts : 0, this);
+    View *view = new View(clause, sort, maxCount, showInvisible, sources, m_ready ? m_contacts : 0, this);
     m_views << view;
     connect(view, SIGNAL(closed()), this, SLOT(viewClosed()));
     return view;

@@ -44,15 +44,13 @@ namespace galera
 {
 
 Filter::Filter(const QString &filter)
-    : m_showInvisible(false)
 {
-    m_filter = buildFilter(filter, m_showInvisible);
+    m_filter = buildFilter(filter);
 }
 
 Filter::Filter(const QtContacts::QContactFilter &filter)
-    : m_showInvisible(false)
 {
-    m_filter = parseFilter(filter, m_showInvisible);
+    m_filter = parseFilter(filter);
 }
 
 QString Filter::toString() const
@@ -286,11 +284,6 @@ bool Filter::includeRemoved() const
     return (m_filter.type() == QContactFilter::ChangeLogFilter);
 }
 
-bool Filter::showInvisibleContacts() const
-{
-    return m_showInvisible;
-}
-
 QString Filter::phoneNumberToFilter() const
 {
     return phoneNumberToFilter(m_filter);
@@ -394,16 +387,16 @@ QString Filter::toString(const QtContacts::QContactFilter &filter)
     return QString::fromLatin1(filterArray.toBase64());
 }
 
-QtContacts::QContactFilter Filter::buildFilter(const QString &filter, bool &showInvisilbe)
+QtContacts::QContactFilter Filter::buildFilter(const QString &filter)
 {
     QContactFilter filterObject;
     QByteArray filterArray = QByteArray::fromBase64(filter.toLatin1());
     QDataStream filterData(&filterArray, QIODevice::ReadOnly);
     filterData >> filterObject;
-    return parseFilter(filterObject, showInvisilbe);
+    return filterObject;
 }
 
-QtContacts::QContactFilter Filter::parseFilter(const QtContacts::QContactFilter &filter, bool &showInvisible)
+QtContacts::QContactFilter Filter::parseFilter(const QtContacts::QContactFilter &filter)
 {
     QContactFilter newFilter;
     switch (filter.type()) {
@@ -411,51 +404,33 @@ QtContacts::QContactFilter Filter::parseFilter(const QtContacts::QContactFilter 
         newFilter = parseIdFilter(filter);
         break;
     case QContactFilter::UnionFilter:
-        newFilter = parseUnionFilter(filter, showInvisible);
+        newFilter = parseUnionFilter(filter);
         break;
     case QContactFilter::IntersectionFilter:
-        newFilter = parseIntersectionFilter(filter, showInvisible);
+        newFilter = parseIntersectionFilter(filter);
         break;
-    case QContactFilter::ContactDetailFilter:
-    {
-        // WORKAROUND: check if filter contains the flag "X-SHOW-INVISIBLE"
-        // remove it if necessary and update the m_showInvisible
-        QContactDetailFilter dFilter(filter);
-        if ((dFilter.detailType() == QContactExtendedDetail::Type) &&
-            (dFilter.detailField() == QContactExtendedDetail::FieldName) &&
-            (dFilter.value() == "X-SHOW-INVISIBLE")) {
-            showInvisible = true;
-            break;
-        }
-    }
     default:
         return filter;
     }
     return newFilter;
 }
 
-QtContacts::QContactFilter Filter::parseUnionFilter(const QtContacts::QContactFilter &filter, bool &showInvisible)
+QtContacts::QContactFilter Filter::parseUnionFilter(const QtContacts::QContactFilter &filter)
 {
     QContactUnionFilter newFilter;
     const QContactUnionFilter *unionFilter = static_cast<const QContactUnionFilter*>(&filter);
     Q_FOREACH(const QContactFilter &f, unionFilter->filters()) {
-        QContactFilter result = parseFilter(f, showInvisible);
-        if (result.type() != QContactFilter::DefaultFilter) {
-            newFilter << result;
-        }
+        newFilter << parseFilter(f);
     }
     return newFilter;
 }
 
-QtContacts::QContactFilter Filter::parseIntersectionFilter(const QtContacts::QContactFilter &filter, bool &showInvisible)
+QtContacts::QContactFilter Filter::parseIntersectionFilter(const QtContacts::QContactFilter &filter)
 {
     QContactIntersectionFilter newFilter;
     const QContactIntersectionFilter intersectFilter(filter);
     Q_FOREACH(const QContactFilter &f, intersectFilter.filters()) {
-        QContactFilter result = parseFilter(f, showInvisible);
-        if (result.type() != QContactFilter::DefaultFilter) {
-            newFilter << result;
-        }
+        newFilter << parseFilter(f);
     }
     return newFilter;
 }

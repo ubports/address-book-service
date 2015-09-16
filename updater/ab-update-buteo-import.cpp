@@ -203,7 +203,9 @@ bool ButeoImport::startSync(const QString &profile) const
 
 bool ButeoImport::matchFavorites()
 {
-    QScopedPointer<QContactManager> manager(new QContactManager("galera"));
+    QMap<QString, QString> paramenters;
+    paramenters.insert("show-invisilbe", "true");
+    QScopedPointer<QContactManager> manager(new QContactManager("galera", paramenters)  );
 
     // load old favorites
     QContactDetailFilter folksFavorite;
@@ -225,12 +227,6 @@ bool ButeoImport::matchFavorites()
         QContactIntersectionFilter iFilter;
 
         qDebug() << "Try to match contact" << f;
-        // show invisible contacts
-        QContactDetailFilter invisilbeContacts;
-        invisilbeContacts.setDetailType(QContactDetail::TypeExtendedDetail, QContactExtendedDetail::FieldName);
-        invisilbeContacts.setValue("X-SHOW-INVISIBLE");
-        iFilter.append(invisilbeContacts);
-
         // No favorite
         QContactDetailFilter noFavorite;
         noFavorite.setDetailType(QContactDetail::TypeFavorite, QContactFavorite::FieldFavorite);

@@ -283,46 +283,6 @@ private Q_SLOTS:
         }
         QCOMPARE(ids.size(), 0);
     }
-
-    void testShowInvisibleContactsForButeo()
-    {
-        QContactIntersectionFilter originalFilter;
-        QCOMPARE(Filter(originalFilter).showInvisibleContacts(), false);
-
-        QContactDetailFilter xDetailNameFilter;
-        xDetailNameFilter.setDetailType(QContactExtendedDetail::Type,
-                                        QContactExtendedDetail::FieldName);
-        xDetailNameFilter.setValue("X-REMOTE-ID");
-
-        QContactDetailFilter xDetailValueFilter;
-        xDetailValueFilter.setDetailType(QContactExtendedDetail::Type,
-                                         QContactExtendedDetail::FieldData);
-        xDetailValueFilter.setValue("123");
-
-        QContactDetailFilter xShowInvisible;
-        xShowInvisible.setDetailType(QContactExtendedDetail::Type,
-                                     QContactExtendedDetail::FieldName);
-        xShowInvisible.setValue("X-SHOW-INVISIBLE");
-
-        originalFilter << xDetailNameFilter
-                       << xDetailValueFilter;
-
-        QCOMPARE(Filter(originalFilter).showInvisibleContacts(), false);
-        QCOMPARE(Filter(originalFilter).toContactFilter().type(), QContactFilter::IntersectionFilter);
-
-        QContactFilter detailAndInvisibleFilter = originalFilter & xShowInvisible;
-        QCOMPARE(Filter(detailAndInvisibleFilter).showInvisibleContacts(), true);
-        QCOMPARE(QContactIntersectionFilter(Filter(detailAndInvisibleFilter).toContactFilter()).filters().size(), 1);
-
-        QContactDetailFilter detailFilterDefaultSyncTarget;
-        detailFilterDefaultSyncTarget.setDetailType(QContactSyncTarget::Type,
-                                                    QContactSyncTarget::FieldSyncTarget + 1);
-        detailFilterDefaultSyncTarget.setValue("my-sync-target");
-        QCOMPARE(Filter(originalFilter & detailFilterDefaultSyncTarget).showInvisibleContacts(), false);
-
-        QContactFilter syncTargetAndInvisibleFilter = detailFilterDefaultSyncTarget & xShowInvisible;
-        QCOMPARE(Filter(originalFilter & syncTargetAndInvisibleFilter).showInvisibleContacts(), true);
-    }
 };
 
 QTEST_MAIN(ClauseParseTest)
