@@ -47,15 +47,30 @@ int main(int argc, char **argv)
     QScopedPointer<ABUpdate> abUpdate(new ABUpdate);
     QScopedPointer<ABUpdateAdaptor> abUpdateAdaptor(new ABUpdateAdaptor(abUpdate.data()));
 
+
     // connect to D-Bus and register as an object:
-    QDBusConnection::sessionBus().registerObject(CPIM_UPDATE_OBJECT_PATH, abUpdate.data());
+    QDBusConnection connection = QDBusConnection::sessionBus();
+    bool ret = connection.registerService(CPIM_UPDATE_SERVICE_NAME);
+    if (!ret) {
+        qWarning() << "Fail to register service:" << CPIM_UPDATE_SERVICE_NAME;
+        return -1;
+    }
+
+    ret = connection.registerObject(CPIM_UPDATE_OBJECT_PATH, abUpdate.data());
+    if (!ret) {
+        qWarning() << "Fail to register object:" << CPIM_UPDATE_SERVICE_NAME;
+        return -2;
+    }
 
     // TODO: implement support for app args (Example: --wipe)
-    QTimer::singleShot(5000, abUpdate.data(), SLOT(startUpdate()));
+    QTimer::singleShot(0, abUpdate.data(), SLOT(startUpdate()));
+    QObject::connect(abUpdate.data(), SIGNAL(updateDone()),
+                     &app, SLOT(quit()));
 
-    // quit app when update is done
-    QObject::connect(abUpdate.data(), SIGNAL(updateDone()), &app, SLOT(quit()));
     qDebug() << "Updater started" << QDateTime::currentDateTime();
     app.exec();
     qDebug() << "Updater finished" << QDateTime::currentDateTime();
+
+    connection.unregisterObject(CPIM_UPDATE_OBJECT_PATH);
+    connection.unregisterService(CPIM_UPDATE_SERVICE_NAME);
 }

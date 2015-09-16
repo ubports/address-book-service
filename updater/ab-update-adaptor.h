@@ -45,6 +45,7 @@ class ABUpdateAdaptor : public QDBusAbstractAdaptor
 
 public:
     ABUpdateAdaptor(ABUpdate *parent = 0);
+    ~ABUpdateAdaptor();
 
     bool needsUpdate() const;
     bool isRunning() const;

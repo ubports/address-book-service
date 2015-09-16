@@ -52,7 +52,7 @@ Q_SIGNALS:
 
 private Q_SLOTS:
     void onModuleUpdated();
-    void onModuleUpdateError(const QString &accountName, ABUpdateModule::ImportError);
+    void onModuleUpdateError(const QString &accountName, ABUpdateModule::ImportError error);
     void onOnlineStateChanged(bool isOnline);
     void continueUpdateWithInternet();
     void updateNextModule();
@@ -78,5 +78,6 @@ private:
     void startUpdate(ABUpdateModule *module);
     bool isOnline() const;
     void waitForInternet();
+    QString errorMessage(ABUpdateModule::ImportError error) const;
 
 };

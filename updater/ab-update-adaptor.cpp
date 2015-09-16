@@ -18,12 +18,15 @@
 
 #include "ab-update-adaptor.h"
 
-
 ABUpdateAdaptor::ABUpdateAdaptor(ABUpdate *parent)
     : QDBusAbstractAdaptor(parent),
       m_abUpdate(parent)
 {
     setAutoRelaySignals(true);
+}
+
+ABUpdateAdaptor::~ABUpdateAdaptor()
+{
 }
 
 bool ABUpdateAdaptor::needsUpdate() const

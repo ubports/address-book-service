@@ -158,8 +158,35 @@ void ABUpdate::waitForInternet()
     connect(m_netManager.data(), SIGNAL(onlineStateChanged(bool)), SLOT(onOnlineStateChanged(bool)));
 }
 
+QString ABUpdate::errorMessage(ABUpdateModule::ImportError error) const
+{
+    switch (error)
+    {
+    case ABUpdateModule::ApplicationAreadyUpdated:
+        return _("Contacts app is updated already!");
+    case ABUpdateModule::ConnectionError:
+        return _("Fail to connect to internet!");
+    case ABUpdateModule::FailToConnectWithButeo:
+        return _("Fail to connect to contact sync service!");
+    case ABUpdateModule::FailToCreateButeoProfiles:
+        return _("Fail to create sync profile!");
+    case ABUpdateModule::FailToAuthenticate:
+        return _("Fail to authenticate!");
+    case ABUpdateModule::InernalError:
+        return _("Internal error during the sync!");
+    case ABUpdateModule::OnlineAccountNotFound:
+        return _("Online account not found!");
+    case ABUpdateModule::SyncAlreadyRunning:
+        return _("Update already in progress!");
+    case ABUpdateModule::SyncError:
+    default:
+        return _("Fail to sync contacts!");
+    }
+}
+
 void ABUpdate::updateNextModule()
 {
+    qDebug() << "Update next module" << m_modulesToUpdate.size();
     if (m_modulesToUpdate.isEmpty()) {
         notifyDone();
     } else {
@@ -194,7 +221,7 @@ void ABUpdate::onModuleUpdated()
     }
 }
 
-void ABUpdate::onModuleUpdateError(const QString &accountName, ABUpdateModule::ImportError)
+void ABUpdate::onModuleUpdateError(const QString &accountName, ABUpdateModule::ImportError error)
 {
     ABUpdateModule *module = m_updateModules.at(m_activeModule);
     module->disconnect(this);
@@ -207,8 +234,8 @@ void ABUpdate::onModuleUpdateError(const QString &accountName, ABUpdateModule::I
     } else {
         ABNotifyMessage *msg = new ABNotifyMessage(true, this);
         msg->setProperty("MODULE", QVariant::fromValue<QObject*>(module));
-        msg->askYesOrNo(_("Account update"),
-                        QString(_("Could not complete %1 contact sync account upgrade.\nDo you want to retry now?")).arg("Google"),
+        msg->askYesOrNo(_("Fail to update"),
+                        QString(_("%1.\nDo you want to retry now?")).arg(errorMessage(error)),
                         TRANSFER_ICON_ERROR);
         connect(msg, SIGNAL(questionAccepted()), this, SLOT(onModuleUpdateRetry()));
         connect(msg, SIGNAL(questionRejected()), SLOT(onModuleUpdateNoRetry()));
@@ -226,8 +253,8 @@ void ABUpdate::onModuleUpdateRetry()
 void ABUpdate::onModuleUpdateNoRetry()
 {
     ABNotifyMessage *msg = new ABNotifyMessage(true, this);
-    msg->show(_("Account update"),
-              _("To retry later you can open Contacts app and press the sync button."),
+    msg->show(_("Fail to update"),
+              _("To retry later open Contacts app and press the sync button."),
               TRANSFER_ICON);
     connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
 }
@@ -276,5 +303,6 @@ void ABUpdate::notifyDone()
 {
     m_activeModule = -1;
     m_lock.unlock();
-    updateDone();
+    qDebug() << "Send update done";
+    Q_EMIT updateDone();
 }
