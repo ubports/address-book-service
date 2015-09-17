@@ -135,6 +135,7 @@ void ABUpdate::startUpdateWhenConnected()
     if (isOnline(true)) {
         startUpdate();
     } else {
+        notifyNoInternet();
         waitForInternet();
     }
 }
@@ -320,7 +321,7 @@ void ABUpdate::onOnlineStateChanged()
 void ABUpdate::continueUpdateWithInternet()
 {
     if (isOnline(true)) {
-        notifyStart();
+        startUpdate();
     } else {
         waitForInternet();
     }
