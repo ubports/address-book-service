@@ -24,6 +24,7 @@
 
 #include <QtCore/QDebug>
 #include <QtCore/QScopedPointer>
+#include <QtCore/QTimer>
 
 #include <QtDBus/QDBusReply>
 
@@ -586,7 +587,9 @@ bool ButeoImport::commit()
         qDebug() << "Server safe mode disabled";
     }
 
-    Q_EMIT updated();
+    // WORKAROUND: wait 4 secs to fire update done, this is necessary because the contacts will be set as favorite
+    // just after the signal be fired and the changes can not have the same timestamp that the creation
+    QTimer::singleShot(4000, this, SIGNAL(updated()));
     return true;
 }
 
