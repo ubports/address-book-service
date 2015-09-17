@@ -191,7 +191,7 @@ void GaleraContactsService::initialize()
         if (!m_iface->lastError().isValid()) {
             m_serviceIsReady = m_iface.data()->property("isReady").toBool();
             connect(m_iface.data(), SIGNAL(readyChanged()), this, SLOT(onServiceReady()));
-            connect(m_iface.data(), SIGNAL(safeModeChanged()), this, SLOT(onServiceReady()));
+            connect(m_iface.data(), SIGNAL(safeModeChanged()), this, SIGNAL(serviceChanged()));
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
