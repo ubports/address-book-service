@@ -110,6 +110,7 @@ private:
     DirtyContactsNotify *m_notifyContactUpdate;
     QDBusServiceWatcher *m_edsWatcher;
     MessagingMenuApp *m_messagingMenu;
+    MessagingMenuMessage *m_messagingMenuMessage;
     static QSettings m_settings;
 
     bool m_edsIsLive;

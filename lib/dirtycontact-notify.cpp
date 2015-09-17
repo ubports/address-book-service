@@ -62,6 +62,7 @@ void DirtyContactsNotify::flush()
 
 void DirtyContactsNotify::clear()
 {
+    m_timer.stop();
     m_contactsChanged.clear();
     m_contactsAdded.clear();
     m_contactsRemoved.clear();

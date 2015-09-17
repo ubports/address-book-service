@@ -158,7 +158,8 @@ AddressBook::AddressBook(QObject *parent)
       m_individualsChangedDetailedId(0),
       m_notifyIsQuiescentHandlerId(0),
       m_connection(QDBusConnection::sessionBus()),
-      m_messagingMenu(0)
+      m_messagingMenu(0),
+      m_messagingMenuMessage(0)
 {
     if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
         m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
@@ -174,6 +175,11 @@ AddressBook::AddressBook(QObject *parent)
 
 AddressBook::~AddressBook()
 {
+    if (m_messagingMenuMessage) {
+        g_object_unref(m_messagingMenuMessage);
+        m_messagingMenuMessage = 0;
+    }
+
     if (m_messagingMenu) {
         g_object_unref(m_messagingMenu);
         m_messagingMenu = 0;
@@ -311,12 +317,10 @@ void AddressBook::checkCompatibility()
     if (enableSafeMode) {
         qWarning() << "Enabling safe mode";
         setSafeMode(true);
+        Q_EMIT safeModeChanged();
     } else {
         qDebug() << "Safe mode not necessary";
     }
-
-    // check safe mode status
-    onSafeModeChanged();
 }
 
 void AddressBook::shutdown()
@@ -620,6 +624,18 @@ void AddressBook::onSafeModeMessageActivated(MessagingMenuMessage *message,
                                              GVariant *param,
                                              AddressBook *self)
 {
+    if (self->m_messagingMenu) {
+        if (self->m_messagingMenuMessage) {
+             messaging_menu_app_remove_message(self->m_messagingMenu, self->m_messagingMenuMessage);
+             g_object_unref(self->m_messagingMenuMessage);
+             self->m_messagingMenuMessage = 0;
+        }
+
+        messaging_menu_app_unregister(self->m_messagingMenu);
+        g_object_unref(self->m_messagingMenu);
+        self->m_messagingMenu = 0;
+    }
+
     qDebug() << "mesage clicked launching address-book-app";
     url_dispatch_send("application:///address-book-app.desktop", NULL, NULL);
 }
@@ -958,38 +974,40 @@ void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &o
 
 void AddressBook::onSafeModeChanged()
 {
-    if (isSafeMode()) {
-        if (m_messagingMenu) {
-            return;
-        }
+    GIcon *icon = g_themed_icon_new("address-book-app");
+    bool showUpdateComplete = false;
 
-        GIcon *icon = g_icon_new_for_string("address-book-app", NULL);
+    if (m_messagingMenu == 0) {
         m_messagingMenu = messaging_menu_app_new("address-book-app.desktop");
         messaging_menu_app_register(m_messagingMenu);
         messaging_menu_app_append_source(m_messagingMenu, MESSAGING_MENU_SOURCE_ID, icon, C::gettext("Address book service"));
-        g_object_unref(icon);
-
-        icon = g_themed_icon_new("address-book-app");
-        MessagingMenuMessage *message = messaging_menu_message_new("address-book-service-safe-mode",
-                                                                   icon,
-                                                                   C::gettext("Update required"),
-                                                                   NULL,
-                                                                   C::gettext("Your Contacts app needs to be upgraded. Only local contacts will be editable until upgrade is complete"),
-                                                                   QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
-
-        g_signal_connect(message, "activate", G_CALLBACK(&AddressBook::onSafeModeMessageActivated), this);
-        messaging_menu_app_append_message(m_messagingMenu, message, MESSAGING_MENU_SOURCE_ID, true);
-        qDebug() << "Put safe message on messaging-menu";
-
-        g_object_unref(icon);
-        g_object_unref(message);
-    } else {
-        if (!m_messagingMenu) {
-            return;
-        }
-        messaging_menu_app_unregister(m_messagingMenu);
-        g_object_unref(m_messagingMenu);
     }
+
+    if (m_messagingMenuMessage) {
+        messaging_menu_app_remove_message(m_messagingMenu, m_messagingMenuMessage);
+        g_object_unref (m_messagingMenuMessage);
+        m_messagingMenuMessage = 0;
+    }
+
+    if (isSafeMode()) {
+        m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
+                                                            icon,
+                                                            C::gettext("Update required"),
+                                                            NULL,
+                                                            C::gettext("Your Contacts app needs to be upgraded. Only local contacts will be editable until upgrade is complete"),
+                                                            QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
+    } else {
+        m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
+                                                            icon,
+                                                            C::gettext("Update complete"),
+                                                            NULL,
+                                                            C::gettext("Your Contacts app upldate is complete."),
+                                                            QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
+    }
+
+    g_signal_connect(m_messagingMenuMessage, "activate", G_CALLBACK(&AddressBook::onSafeModeMessageActivated), this);
+    messaging_menu_app_append_message(m_messagingMenu, m_messagingMenuMessage, MESSAGING_MENU_SOURCE_ID, true);
+    g_object_unref(icon);
 }
 
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
