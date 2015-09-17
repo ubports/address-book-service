@@ -60,6 +60,13 @@ void DirtyContactsNotify::flush()
     emitSignals();
 }
 
+void DirtyContactsNotify::clear()
+{
+    m_contactsChanged.clear();
+    m_contactsAdded.clear();
+    m_contactsRemoved.clear();
+}
+
 void DirtyContactsNotify::insertRemovedContacts(QSet<QString> ids)
 {
     if (!m_adaptor->isReady()) {

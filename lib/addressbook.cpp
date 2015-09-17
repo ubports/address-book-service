@@ -655,6 +655,9 @@ void AddressBook::setSafeMode(bool flag)
             m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, QStringList());
         }
         m_settings.sync();
+        // avoid send a ton of signals since the service will be reseted after the
+        // 'safeModeChanged' signal
+        m_notifyContactUpdate->clear();
         Q_EMIT safeModeChanged();
     }
 }
