@@ -156,8 +156,13 @@ GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
 
 GaleraContactsService::~GaleraContactsService()
 {
-    m_runningRequests.clear();
     delete m_serviceWatcher;
+    Q_FOREACH(QContactRequestData *r, m_runningRequests) {
+        r->cancel();
+        r->wait();
+    }
+
+    m_runningRequests.clear();
 }
 
 void GaleraContactsService::serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner)
