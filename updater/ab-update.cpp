@@ -25,6 +25,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QTimer>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
 #include <QtNetwork/QNetworkConfiguration>
 
 #define TRANSFER_ICON           "/usr/share/icons/suru/status/scalable/transfer-progress.svg"
@@ -39,10 +40,12 @@ ABUpdate::ABUpdate(QObject *parent)
       m_isRunning(false),
       m_activeModule(-1),
       m_skipNetworkTest(false),
-      m_silenceMode(false)
+      m_silenceMode(false),
+      m_lockFile(QDir::tempPath() + "/address-book-updater.lock")
 {
     // load update modules (this can be a plugin system in the future)
     m_updateModules << new ButeoImport;
+    m_lockFile.setStaleLockTime(0);
 }
 
 ABUpdate::~ABUpdate()
@@ -85,6 +88,11 @@ void ABUpdate::setSilenceMode(bool flag)
 void ABUpdate::startUpdate()
 {
     qDebug() << "Start update...";
+    if (!m_lockFile.tryLock()) {
+        qWarning() << "Lock file is locked. Removing it...";
+        m_lockFile.removeStaleLockFile();
+    }
+    m_lockFile.lock();
 
     if (m_waitingForIntenert) {
         m_waitingForIntenert = false;

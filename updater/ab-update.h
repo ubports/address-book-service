@@ -22,6 +22,7 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QMutex>
+#include <QtCore/QLockFile>
 #include <QtCore/QScopedPointer>
 #include <QtNetwork/QNetworkConfigurationManager>
 
@@ -65,6 +66,7 @@ private:
     QList<ABUpdateModule*> m_updateModules;
     QList<ABUpdateModule*> m_modulesToUpdate;
     QMutex m_lock;
+    QLockFile m_lockFile;
     bool m_needsUpdate;
     bool m_isRunning;
     bool m_waitingForIntenert;
