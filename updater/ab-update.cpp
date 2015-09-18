@@ -92,7 +92,6 @@ void ABUpdate::startUpdate()
         qWarning() << "Lock file is locked. Removing it...";
         m_lockFile.removeStaleLockFile();
     }
-    m_lockFile.lock();
 
     if (m_waitingForIntenert) {
         m_waitingForIntenert = false;
