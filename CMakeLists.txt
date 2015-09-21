@@ -1,7 +1,7 @@
-project(contatos)
+project(address-book-service C CXX)
 
 cmake_minimum_required(VERSION 2.8.9)
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 include(FindPkgConfig)
 # Standard install paths
@@ -42,6 +42,11 @@ else()
     set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook9")
     set(EVOLUTION_SOURCE_SERVICE_NAME "org.gnome.evolution.dataserver.Sources4")
 endif()
+
+set(PACKAGE ${CMAKE_PROJECT_NAME})
+set(GETTEXT_PACKAGE "address-book-service")
+add_definitions(-DGETTEXT_PACKAGE="${GETTEXT_PACKAGE}"
+                -DGETTEXT_LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
@@ -94,6 +99,7 @@ add_subdirectory(contacts)
 add_subdirectory(updater)
 add_subdirectory(upstart)
 add_subdirectory(dbus)
+add_subdirectory(po)
 #add_subdirectory(eds-test)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
     # Some tests fail when running on PPPC check bug #1294229
