@@ -1,5 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Copyright (C) YEAR Canonical Ltd.
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-21 11:15-0300\n"
+"POT-Creation-Date: 2015-09-21 12:10-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,85 +17,108 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-notify-message.cpp:88
-msgid "Yes"
+#: ../updater/ab-update.cpp:355
+#, qt-format
+msgid ""
+"%1 contact sync account needs upgrade. Please connect with the internet."
 msgstr ""
 
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-notify-message.cpp:93
-msgid "No"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:106
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:267
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:343
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:354
-msgid "Account update"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:107
+#: ../updater/ab-update.cpp:107
+#, qt-format
 msgid "%1 contact sync account upgrade already in progress"
 msgstr ""
 
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:216
-msgid "Contacts app is updated already!"
+#: ../updater/ab-update.cpp:344
+#, qt-format
+msgid "%1 contact sync account upgrade in progress"
 msgstr ""
 
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:218
-msgid "Fail to connect to internet!"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:220
-msgid "Fail to connect to contact sync service!"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:222
-msgid "Fail to create sync profile!"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:224
-msgid "Fail to authenticate!"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:226
-msgid "Internal error during the sync!"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:228
-msgid "Online account not found!"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:230
-msgid "Update already in progress!"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:233
-msgid "Fail to sync contacts!"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:268
-msgid "Contact sync upgrade complete."
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:287
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:312
-msgid "Fail to update"
-msgstr ""
-
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:288
+#: ../updater/ab-update.cpp:288
+#, qt-format
 msgid ""
 "%1.\n"
 "Do you want to retry now?"
 msgstr ""
 
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:313
+#: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
+#: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
+msgid "Account update"
+msgstr ""
+
+#: ../lib/addressbook.cpp:983
+msgid "Address book service"
+msgstr ""
+
+#: ../updater/ab-update.cpp:268
+msgid "Contact sync upgrade complete."
+msgstr ""
+
+#: ../updater/ab-update.cpp:216
+msgid "Contacts app is updated already!"
+msgstr ""
+
+#: ../updater/ab-update.cpp:224
+msgid "Fail to authenticate!"
+msgstr ""
+
+#: ../updater/ab-update.cpp:220
+msgid "Fail to connect to contact sync service!"
+msgstr ""
+
+#: ../updater/ab-update.cpp:218
+msgid "Fail to connect to internet!"
+msgstr ""
+
+#: ../updater/ab-update.cpp:222
+msgid "Fail to create sync profile!"
+msgstr ""
+
+#: ../updater/ab-update.cpp:233
+msgid "Fail to sync contacts!"
+msgstr ""
+
+#: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
+msgid "Fail to update"
+msgstr ""
+
+#: ../updater/ab-update.cpp:226
+msgid "Internal error during the sync!"
+msgstr ""
+
+#: ../updater/ab-notify-message.cpp:93
+msgid "No"
+msgstr ""
+
+#: ../updater/ab-update.cpp:228
+msgid "Online account not found!"
+msgstr ""
+
+#: ../updater/ab-update.cpp:313
 msgid "To retry later open Contacts app and press the sync button."
 msgstr ""
 
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:344
-msgid "%1 contact sync account upgrade in progress"
+#: ../updater/ab-update.cpp:230
+msgid "Update already in progress!"
 msgstr ""
 
-#: /home/renato/projects/phablet/address-book-service/changes-necessary-to-work-with-buteo/po/../updater/ab-update.cpp:355
+#: ../lib/addressbook.cpp:1002
+msgid "Update complete"
+msgstr ""
+
+#: ../lib/addressbook.cpp:995
+msgid "Update required"
+msgstr ""
+
+#: ../updater/ab-notify-message.cpp:88
+msgid "Yes"
+msgstr ""
+
+#: ../lib/addressbook.cpp:997
 msgid ""
-"%1 contact sync account needs upgrade. Please connect with the internet."
+"Your Contacts app needs to be upgraded. Only local contacts will be editable "
+"until upgrade is complete"
+msgstr ""
+
+#: ../lib/addressbook.cpp:1004
+msgid "Your Contacts app upldate is complete."
 msgstr ""
