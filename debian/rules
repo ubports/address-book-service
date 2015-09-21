@@ -27,5 +27,5 @@ override_dh_install:
 HOME=$(CURDIR)/debian/tmp-home
 
 override_dh_auto_test:
-	HOME=$(HOME) XDG_RUNTIME_DIR=$(HOME) dh_auto_test
+	HOME=$(HOME) XDG_RUNTIME_DIR=$(HOME) ctest -j1 --output-on-failure
 	rm -rf $(HOME)
