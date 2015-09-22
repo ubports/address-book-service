@@ -1,7 +1,7 @@
-project(contatos)
+project(address-book-service C CXX)
 
 cmake_minimum_required(VERSION 2.8.9)
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 include(FindPkgConfig)
 # Standard install paths
@@ -29,6 +29,10 @@ else()
     set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook9")
 endif()
 
+set(PACKAGE ${CMAKE_PROJECT_NAME})
+set(GETTEXT_PACKAGE "address-book-service")
+add_definitions(-DGETTEXT_PACKAGE="${GETTEXT_PACKAGE}"
+                -DGETTEXT_LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 add_definitions(-std=c++11)
@@ -77,6 +81,7 @@ add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(contacts)
 add_subdirectory(upstart)
+add_subdirectory(po)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
     # Some tests fail when running on PPPC check bug #1294229
     message(STATUS "Tests disable for ppc")
