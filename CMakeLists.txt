@@ -43,14 +43,16 @@ else()
     set(EVOLUTION_SOURCE_SERVICE_NAME "org.gnome.evolution.dataserver.Sources4")
 endif()
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+add_definitions(-std=c++11)
+
+# I18n
 set(PACKAGE ${CMAKE_PROJECT_NAME})
 set(GETTEXT_PACKAGE "address-book-service")
 add_definitions(-DGETTEXT_PACKAGE="${GETTEXT_PACKAGE}"
                 -DGETTEXT_LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}")
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-add_definitions(-std=c++11)
 
 # Coverage tools
 OPTION(ENABLE_COVERAGE "Build with coverage analysis support" OFF)
@@ -85,10 +87,8 @@ enable_testing()
 
 add_custom_target(check)
 add_custom_command(TARGET check
-    COMMAND ctest -V
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-
+		   COMMAND ctest -V
+		   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_subdirectory(3rd_party)
 add_subdirectory(common)
@@ -101,6 +101,7 @@ add_subdirectory(upstart)
 add_subdirectory(dbus)
 add_subdirectory(po)
 #add_subdirectory(eds-test)
+
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
     # Some tests fail when running on PPPC check bug #1294229
     message(STATUS "Tests disable for ppc")
@@ -108,7 +109,5 @@ else()
     add_subdirectory(tests)
 endif()
 set(TEST_DATA_DIR "${CMAKE_SOURCE_DIR}/tests/data")
-
-
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
