@@ -26,12 +26,19 @@
 #include <QtCore/QEventLoop>
 
 #include <QtContacts/QContact>
+#include <QtContacts/QContactDetail>
 
 #include <folks/folks.h>
 
 namespace galera {
 
 class QIndividual;
+
+template<int N>
+bool sortDetails(const QtContacts::QContactDetail &d1, const QtContacts::QContactDetail &d2)
+{
+    return d1.value(0) < d2.value(0);
+}
 
 class UpdateContactRequest : public QObject
 {
@@ -62,7 +69,6 @@ private:
     int m_currentPersonaIndex;
 
     void invokeSlot(const QString &errorMessage = QString());
-
     static bool isEqual(QList<QtContacts::QContactDetail> listA,
                         const QtContacts::QContactDetail &prefA,
                         QList<QtContacts::QContactDetail> listB,

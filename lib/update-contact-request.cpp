@@ -29,6 +29,21 @@ using namespace QtContacts;
 
 namespace galera {
 
+template<>
+bool sortDetails<QContactDetail::TypePhoneNumber>(const QContactDetail &d1, const QContactDetail &d2)
+{
+    return d1.value(QtContacts::QContactPhoneNumber::FieldNumber).toString() <
+           d2.value(QtContacts::QContactPhoneNumber::FieldNumber).toString();
+}
+
+template<>
+bool sortDetails<QContactDetail::TypeEmailAddress>(const QContactDetail &d1, const QContactDetail &d2)
+{
+    return d1.value(QtContacts::QContactEmailAddress::FieldEmailAddress).toString() <
+           d2.value(QtContacts::QContactEmailAddress::FieldEmailAddress).toString();
+}
+
+
 UpdateContactRequest::UpdateContactRequest(QtContacts::QContact newContact, QIndividual *parent, QObject *listener, const char *slot)
     : QObject(),
       m_parent(parent),
@@ -100,16 +115,14 @@ void UpdateContactRequest::notifyError(const QString &errorMessage)
 }
 
 bool UpdateContactRequest::isEqual(const QtContacts::QContactDetail &detailA,
-                                         const QtContacts::QContactDetail &detailB)
+                                   const QtContacts::QContactDetail &detailB)
 {
     if (detailA.type() != detailB.type()) {
         return false;
     }
-
-
     switch(detailA.type()) {
     case QContactDetail::TypeFavorite:
-        return detailA.value(QContactFavorite::FieldFavorite) == detailB.value(QContactFavorite::FieldFavorite);
+        return detailA.value(QContactFavorite::FieldFavorite).toBool() == detailB.value(QContactFavorite::FieldFavorite).toBool();
     default:
     {
         // clear detail uri to compare only the field value
@@ -128,6 +141,26 @@ bool UpdateContactRequest::isEqual(QList<QtContacts::QContactDetail> listA,
 {
     if (listA.size() != listB.size()) {
         return false;
+    }
+
+    if (listA.size() == 0) {
+        return true;
+    }
+
+    const int detailType = listA.first().type();
+    switch(detailType) {
+    case QContactDetail::TypePhoneNumber:
+        qSort(listA.begin(), listA.end(), sortDetails<QContactDetail::TypePhoneNumber>);
+        qSort(listB.begin(), listB.end(), sortDetails<QContactDetail::TypePhoneNumber>);
+        break;
+    case QContactDetail::TypeEmailAddress:
+        qSort(listA.begin(), listA.end(), sortDetails<QContactDetail::TypeEmailAddress>);
+        qSort(listB.begin(), listB.end(), sortDetails<QContactDetail::TypeEmailAddress>);
+        break;
+    default:
+        qSort(listA.begin(), listA.end(), sortDetails<0>);
+        qSort(listB.begin(), listB.end(), sortDetails<0>);
+        break;
     }
 
     for(int i=0; i < listA.size(); i++) {
@@ -702,6 +735,13 @@ void UpdateContactRequest::updateFavorite()
 {
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeFavorite, m_currentPersonaIndex, 0);
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeFavorite, m_currentPersonaIndex, 0);
+
+    // as default all contacts has favorte set to false
+    if (newDetails.isEmpty()) {
+        QContactFavorite fav;
+        fav.setFavorite(false);
+        newDetails << fav;
+    }
 
     if (m_currentPersona &&
         FOLKS_IS_FAVOURITE_DETAILS(m_currentPersona) &&

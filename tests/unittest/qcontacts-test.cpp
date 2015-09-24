@@ -145,6 +145,7 @@ private Q_SLOTS:
         QCOMPARE(result, true);
         QTRY_COMPARE(spyContactAdded.count(), 1);
 
+        // modify contact
         QContactName name = contact.detail<QContactName>();
         name.setMiddleName("da");
         name.setLastName("Silva");
@@ -517,6 +518,62 @@ private Q_SLOTS:
         addr = contact.detail<QContactAddress>();
         QCOMPARE(addr.country(), QStringLiteral("Line1Line2Line3"));
     }
+
+    void testUpdateAcontactWithoutChange()
+    {
+        // filter all contacts
+        QContactFilter filter;
+
+        // create a contact
+        QContactPhoneNumber pn;
+        QContact contact = testContact();
+
+        pn.setNumber("1234567");
+        pn.setContexts(QList<int>() << 0);
+        contact.saveDetail(&pn);
+
+        pn = QContactPhoneNumber();
+        pn.setNumber("12345678");
+        pn.setContexts(QList<int>() << 1);
+        contact.saveDetail(&pn);
+
+        QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+        QTRY_COMPARE(spyContactAdded.count(), 1);
+
+        // save contact again without any change
+        QContact contact2 = testContact();
+
+        pn = QContactPhoneNumber();
+        pn.setNumber("12345678");
+        pn.setContexts(QList<int>() << 1);
+        contact2.saveDetail(&pn);
+
+        pn = QContactPhoneNumber();
+        pn.setNumber("1234567");
+        pn.setContexts(QList<int>() << 0);
+        contact2.saveDetail(&pn);
+
+        contact2.setId(contact.id());
+        QSignalSpy spyContactChanged(m_manager, SIGNAL(contactsChanged(QList<QContactId>)));
+        result = m_manager->saveContact(&contact2);
+        QCOMPARE(result, true);
+        QTRY_COMPARE(spyContactChanged.count(), 1);
+
+        // query for the contacts
+        QList<QContact> contacts = m_manager->contacts(filter);
+        QCOMPARE(contacts.size(), 1);
+        QContact updatedContact = contacts[0];
+
+        // name
+        QContactName name = contact.detail<QContactName>();
+        QContactName updatedName = updatedContact.detail<QContactName>();
+        QCOMPARE(updatedName.firstName(), name.firstName());
+        QCOMPARE(updatedName.middleName(), name.middleName());
+        QCOMPARE(updatedName.lastName(), name.lastName());
+    }
+
 };
 
 QTEST_MAIN(QContactsTest)
