@@ -509,6 +509,22 @@ private Q_SLOTS:
         addr = contact.detail<QContactAddress>();
         QCOMPARE(addr.country(), QStringLiteral("Line1Line2Line3"));
     }
+
+    void testAddressWithMultipleSubTypes()
+    {
+        // create a contact
+        QContact contact = testContact();
+        QContactAddress addr;
+        addr.setLocality("8777 West Six Mile Road");
+        addr.setContexts(QList<int>() << QContactDetail::ContextWork);
+        addr.setSubTypes(QList<int>() << QContactAddress::SubTypeParcel << QContactAddress::SubTypeDomestic);
+        contact.saveDetail(&addr);
+
+        QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+        QTRY_COMPARE(spyContactAdded.count(), 1);
+    }
 };
 
 QTEST_MAIN(QContactsTest)
