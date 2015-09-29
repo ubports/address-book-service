@@ -369,7 +369,7 @@ private Q_SLOTS:
         QCOMPARE(timestamps.size(), 1);
 
         QContactTimestamp timestamp = timestamps.at(0);
-        //QCOMPARE(timestamp.created(), QDateTime::fromString("2015-04-14T16:16:44Z", Qt::ISODate));
+        QCOMPARE(timestamp.created(), QDateTime::fromString("2015-04-14T16:16:44Z", Qt::ISODate));
         QCOMPARE(timestamp.lastModified(), QDateTime::fromString("2015-04-14T21:56:56Z(2300)", Qt::ISODate));
     }
 

@@ -38,12 +38,13 @@ public:
     bool requireInternetConnection() override;
     bool canUpdate() override;
     bool commit() override;
-    bool roolback() override;
+    bool rollback() override;
     ImportError lastError() const override;
 
 private Q_SLOTS:
     void onProfileChanged(const QString &profileName, int changeType, const QString &profileAsXml);
     void onSyncStatusChanged(const QString &aProfileName, int aStatus, const QString &aMessage, int aMoreDetails);
+    void onError(const QString &accountName, int errorCode);
 
 private:
     QScopedPointer<QDBusInterface> m_buteoInterface;
@@ -60,7 +61,7 @@ private:
     bool removeProfile(const QString &profileId);
     bool buteoRemoveProfile(const QString &profileId) const;
     bool removeSources(const QStringList &sources);
-    void error(const QString &accountName, ImportError errorCode);
+
     bool loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> &newAccounts);
     bool enableContactsService(quint32 accountId);
     QString accountName(quint32 accountId);

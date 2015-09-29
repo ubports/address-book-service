@@ -277,7 +277,7 @@ void ABUpdate::onModuleUpdateError(const QString &accountName, ABUpdateModule::I
     module->disconnect(this);
 
     qWarning() << "Fail to update module" << module->name() << accountName << module->lastError();
-    module->roolback();
+    module->rollback();
 
     if (m_silenceMode) {
         updateNextModule();

@@ -47,7 +47,7 @@ public:
     virtual bool canUpdate() = 0;
     virtual bool requireInternetConnection() = 0;
     virtual bool commit() = 0;
-    virtual bool roolback() = 0;
+    virtual bool rollback() = 0;
     virtual ImportError lastError() const = 0;
 
 Q_SIGNALS:

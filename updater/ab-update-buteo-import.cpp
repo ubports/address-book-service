@@ -65,7 +65,7 @@ QString ButeoImport::name() const
 
 bool ButeoImport::loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> &newAccounts)
 {
-    // check whitch account already has a source
+    // check which account already has a source
     Accounts::Manager mgr;
     accountsToUpdate = mgr.accountList("contacts");
 
@@ -189,7 +189,7 @@ QString ButeoImport::profileName(quint32 accountId) const
 bool ButeoImport::startSync(const QString &profile) const
 {
     if (m_buteoInterface.isNull()) {
-        qWarning() << "Buteo inteface is not valid";
+        qWarning() << "Buteo interface is not valid";
         return false;
     }
 
@@ -204,9 +204,9 @@ bool ButeoImport::startSync(const QString &profile) const
 
 bool ButeoImport::matchFavorites()
 {
-    QMap<QString, QString> paramenters;
-    paramenters.insert(ADDRESS_BOOK_SHOW_INVISIBLE_PROP, "true");
-    QScopedPointer<QContactManager> manager(new QContactManager("galera", paramenters));
+    QMap<QString, QString> parameters;
+    parameters.insert(ADDRESS_BOOK_SHOW_INVISIBLE_PROP, "true");
+    QScopedPointer<QContactManager> manager(new QContactManager("galera", parameters));
 
     // load old favorites
     QContactDetailFilter folksFavorite;
@@ -339,7 +339,7 @@ bool ButeoImport::update()
 {
     if (!m_importLock.tryLock()) {
         qWarning() << "Fail to lock import mutex";
-        error("", ButeoImport::InernalError);
+        onError("", ButeoImport::InernalError);
         return false;
     }
 
@@ -353,7 +353,7 @@ bool ButeoImport::update()
         // fail to load accounts information
         m_importLock.unlock();
         qWarning() << "Fail to load accounts information";
-        error("", ButeoImport::OnlineAccountNotFound);
+        onError("", ButeoImport::OnlineAccountNotFound);
         return false;
     }
 
@@ -373,7 +373,7 @@ bool ButeoImport::update()
             // fail to create profiles
             m_importLock.unlock();
             qWarning() << "Fail to create profiles";
-            error("", ButeoImport::FailToCreateButeoProfiles);
+            onError("", ButeoImport::FailToCreateButeoProfiles);
             return false;
         }
     }
@@ -461,7 +461,7 @@ QMap<quint32, QString> ButeoImport::createProfileForAccounts(QList<quint32> ids)
 
     Q_FOREACH(quint32 id, ids) {
         if (!enableContactsService(id)) {
-            qWarning() << "Fail to enable contacts service for acccount:" << id;
+            qWarning() << "Fail to enable contacts service for account:" << id;
             continue;
         }
 
@@ -562,7 +562,7 @@ bool ButeoImport::commit()
     }
     removeSources(oldSources);
 
-    // all acconts synced
+    // all accounts synced
     m_importLock.unlock();
 
     // update settings key
@@ -593,7 +593,7 @@ bool ButeoImport::commit()
     return true;
 }
 
-bool ButeoImport::roolback()
+bool ButeoImport::rollback()
 {
     // remove all profiles and new sources
     Q_FOREACH(const QString &profile, m_failToSyncProfiles) {
@@ -603,10 +603,10 @@ bool ButeoImport::roolback()
     return true;
 }
 
-void ButeoImport::error(const QString &accountName, ButeoImport::ImportError errorCode)
+void ButeoImport::onError(const QString &accountName, int errorCode)
 {
-    m_lastError = errorCode;
-    Q_EMIT updateError(accountName, errorCode);
+    m_lastError = ABUpdateModule::ImportError(errorCode);
+    Q_EMIT updateError(accountName, m_lastError);
 }
 
 bool ButeoImport::requireInternetConnection()
@@ -658,7 +658,7 @@ void ButeoImport::onProfileChanged(const QString &profileName, int changeType, c
                 qDebug() << "Profile removed" << accountId << profileName;
                 m_pendingAccountToProfiles.remove(accountId);
                 if (m_pendingAccountToProfiles.isEmpty()) {
-                    // all acconts removed
+                    // all accounts removed
                     m_importLock.unlock();
                 }
             }
@@ -722,7 +722,8 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
             if (m_failToSyncProfiles.isEmpty()) {
                 Q_EMIT updated();
             } else {
-                error("", m_lastError);
+                QMetaObject::invokeMethod(this, "onError", Qt::QueuedConnection,
+                                          Q_ARG(QString, ""), Q_ARG(int, m_lastError));
             }
         }
     }
