@@ -139,7 +139,7 @@ void ContactsMap::updatePosition(ContactEntry *entry)
     Q_FOREACH(const QString &key, m_phoneToEntry.keys(entry)) {
         m_phoneToEntry.remove(key, entry);
     }
-    insertdata(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
+    insertData(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
 }
 
 int ContactsMap::size() const
@@ -292,11 +292,11 @@ void ContactsMap::insertData(ContactEntry *entry)
         }
 
         // fill phone map
-        insertdata(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
+        insertData(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
     }
 }
 
-void ContactsMap::insertdata(const QList<QContactPhoneNumber> &numbers, ContactEntry *entry)
+void ContactsMap::insertData(const QList<QContactPhoneNumber> &numbers, ContactEntry *entry)
 {
     Q_FOREACH(const QContactPhoneNumber &phone, numbers) {
         QString mNumber = minimalNumber(phone.number());

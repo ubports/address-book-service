@@ -51,7 +51,6 @@ private:
 
     bool checkIsEmpty(const QList<QtContacts::QContactFilter> filters) const;
     bool checkIsValid(const QList<QtContacts::QContactFilter> filters) const;
-    //bool test(const QtContacts::QContactFilter &filter, const QtContacts::QContact &contact, const QDateTime &deletedDate) const;
 
     static QString phoneNumberToFilter(const QtContacts::QContactFilter &filter);
     static QStringList idsToFilter(const QtContacts::QContactFilter &filter);

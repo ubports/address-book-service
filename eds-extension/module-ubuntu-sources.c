@@ -158,7 +158,7 @@ ubuntu_sources_register_source (EUbuntuSources *extension,
     AgAccountId ag_account_id;
     AgAccount *ag_account;
 
-    g_debug("REgister new source: %s/%s", e_source_get_display_name(source),
+    g_debug("Register new source: %s/%s", e_source_get_display_name(source),
             e_source_get_uid(source));
 
     if (!e_source_has_extension (source, E_SOURCE_EXTENSION_UBUNTU)) {

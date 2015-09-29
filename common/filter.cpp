@@ -307,7 +307,7 @@ QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
     }
     case QContactFilter::UnionFilter:
     {
-        // if the union contains only the phone filter we still able to optimize
+        // if the union contains only the phone filter we'are still able to optimize
         const QContactUnionFilter uf(filter);
         if (uf.filters().size() == 1) {
             return phoneNumberToFilter(uf.filters().first());

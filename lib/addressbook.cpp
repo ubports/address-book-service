@@ -636,7 +636,6 @@ void AddressBook::onSafeModeMessageActivated(MessagingMenuMessage *message,
         self->m_messagingMenu = 0;
     }
 
-    qDebug() << "mesage clicked launching address-book-app";
     url_dispatch_send("application:///address-book-app.desktop", NULL, NULL);
 }
 
@@ -1001,7 +1000,7 @@ void AddressBook::onSafeModeChanged()
                                                             icon,
                                                             C::gettext("Update complete"),
                                                             NULL,
-                                                            C::gettext("Your Contacts app upldate is complete."),
+                                                            C::gettext("Your Contacts app update is complete."),
                                                             QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
     }
 
