@@ -1,4 +1,4 @@
-﻿    /*
+/*
  * Copyright 2015 Canonical Ltd.
  *
  * This file is part of address-book-service.
