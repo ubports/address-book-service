@@ -13,7 +13,7 @@ com.meego.msyncd object. You can specify D-BUS property values
 # of the license.
 
 __author__ = 'Renato Araujo Oliveira Filho'
-__email__ = 'renatofilho@canonical.com'
+__email__ = 'renato.filho@canonical.com'
 __copyright__ = '(c) 2015 Canonical Ltd.'
 __license__ = 'LGPL 3+'
 
