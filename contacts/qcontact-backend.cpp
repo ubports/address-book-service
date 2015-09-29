@@ -76,7 +76,7 @@ GaleraManagerEngine::GaleraManagerEngine()
     connect(m_service, SIGNAL(contactsAdded(QList<QContactId>)), this, SIGNAL(contactsAdded(QList<QContactId>)));
     connect(m_service, SIGNAL(contactsRemoved(QList<QContactId>)), this, SIGNAL(contactsRemoved(QList<QContactId>)));
     connect(m_service, SIGNAL(contactsUpdated(QList<QContactId>)), this, SIGNAL(contactsChanged(QList<QContactId>)));
-    connect(m_service, SIGNAL(serviceChanged()), this, SIGNAL(dataChanged()));
+    connect(m_service, SIGNAL(serviceChanged()), this, SIGNAL(dataChanged()), Qt::QueuedConnection);
 }
 
 /*! Frees any memory used by this engine */
