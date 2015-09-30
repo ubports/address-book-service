@@ -211,7 +211,7 @@ void GaleraContactsService::deinitialize()
 
 bool GaleraContactsService::isOnline() const
 {
-    return !m_iface.isNull();
+    return !m_iface.isNull() && m_serviceIsReady;
 }
 
 void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdRequest *request)
