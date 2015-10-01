@@ -66,6 +66,7 @@ public:
     void cancelRequest(QtContacts::QContactAbstractRequest *request);
     void waitRequest(QtContacts::QContactAbstractRequest *request);
     void releaseRequest(QtContacts::QContactAbstractRequest *request);
+    void setShowInvisibleContacts(bool show);
 
 Q_SIGNALS:
     void contactsAdded(QList<QContactId> ids);
@@ -86,10 +87,11 @@ private:
     QDBusServiceWatcher *m_serviceWatcher;
     bool m_serviceIsReady;
     int m_pageSize;
+    bool m_showInvisibleContacts;
 
     QSharedPointer<QDBusInterface> m_iface;
     QString m_serviceName;
-    QSet<QContactRequestData*> m_runningRequests;
+    QList<QContactRequestData*> m_runningRequests;
 
     Q_INVOKABLE void initialize();
     Q_INVOKABLE void deinitialize();

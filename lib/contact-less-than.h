@@ -35,6 +35,17 @@ class ContactLessThan
 public:
     ContactLessThan(const SortClause &sortClause);
 
+    bool operator()(const QtContacts::QContact &contactA, const QtContacts::QContact &contactB);
+
+private:
+    SortClause m_sortClause;
+};
+
+class ContactEntryLessThan
+{
+public:
+    ContactEntryLessThan(const SortClause &sortClause);
+
     bool operator()(ContactEntry *entryA, ContactEntry *entryB);
 
 private:

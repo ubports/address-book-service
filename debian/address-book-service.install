@@ -1,2 +1,4 @@
+usr/lib/*/libubuntu-source-eds.so
+usr/lib/evolution-data-server/registry-modules/module-ubuntu-sources.so
 usr/lib/*/address-book-service/address-book-service
 usr/share/upstart/sessions/address-book-service.conf

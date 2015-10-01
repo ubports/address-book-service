@@ -55,8 +55,20 @@ namespace
             if (detail.type() == QContactDetail::TypeSyncTarget) {
                 QContactSyncTarget syncTarget = static_cast<QContactSyncTarget>(detail);
                 QVersitProperty prop;
+                prop.setValueType(QVersitProperty::CompoundType);
+
                 prop.setName(galera::VCardParser::PidMapFieldName);
-                prop.setValue(syncTarget.syncTarget());
+                QStringList values;
+                values << syncTarget.syncTarget()
+                       << syncTarget.value(QContactSyncTarget::FieldSyncTarget + 1).toString();
+                prop.setValue(values);
+                *toBeAdded << prop;
+            }
+
+            if (detail.type() == QContactDetail::TypeExtendedDetail) {
+                QVersitProperty prop;
+                prop.setName(detail.value(QContactExtendedDetail::FieldName).toString());
+                prop.setValue(detail.value(QContactExtendedDetail::FieldData).toString());
                 *toBeAdded << prop;
             }
 
@@ -116,6 +128,14 @@ namespace
 
         virtual void contactProcessed(const QContact& contact, QVersitDocument* document)
         {
+            if (!contact.id().isNull() &&
+                contact.details<QContactGuid>().isEmpty()) {
+                // translate contact id to uid vcard
+                QVersitProperty prop;
+                prop.setName("UID");
+                prop.setValue(contact.id().toString().split("::").last());
+                document->addProperty(prop);
+            }
             Q_UNUSED(contact);
             document->removeProperties("X-QTPROJECT-EXTENDED-DETAIL");
         }
@@ -136,8 +156,18 @@ namespace
 
             if (!*alreadyProcessed && (property.name() == galera::VCardParser::PidMapFieldName)) {
                 QContactSyncTarget target;
-                target.setSyncTarget(property.value<QString>());
+                QStringList values = property.value().split(QStringLiteral(";"));
+                target.setSyncTarget(values.value(0));
+                target.setValue(QContactSyncTarget::FieldSyncTarget + 1, values.value(1));
                 *updatedDetails  << target;
+                *alreadyProcessed = true;
+            }
+
+            if (!*alreadyProcessed && (property.name().startsWith("X-"))) {
+                QContactExtendedDetail xDet;
+                xDet.setName(property.name());
+                xDet.setData(property.value<QString>());
+                *updatedDetails  << xDet;
                 *alreadyProcessed = true;
             }
 
@@ -201,19 +231,35 @@ namespace
 
         virtual void documentProcessed(const QVersitDocument& document, QContact* contact)
         {
-            Q_UNUSED(document);
-            Q_UNUSED(contact);
             if (!m_prefferedPhone.isEmpty()) {
                 contact->setPreferredDetail(galera::VCardParser::PreferredActionNames[QContactDetail::TypePhoneNumber],
                                             m_prefferedPhone);
                 m_prefferedPhone = QContactDetail();
             }
+
+            if (contact->id().isNull() &&
+                !contact->detail<QContactGuid>().isEmpty()) {
+                QContactId id = QContactId::fromString(
+                            QString("qtcontacts:galera::%1").arg(contact->detail<QContactGuid>().guid()));
+                contact->setId(id);
+            }
+
+            //update contact timestamp with X-CREATED-AT
+            QContactTimestamp timestamp = contact->detail<QContactTimestamp>();
+            QDateTime createdAt = timestamp.lastModified();
+            Q_FOREACH(const QVersitProperty &prop, document.properties()) {
+                if (prop.name() == "X-CREATED-AT") {
+                    createdAt = QDateTime::fromString(prop.value(), Qt::ISODate).toUTC();
+                    break;
+                }
+            }
+            timestamp.setCreated(createdAt);
+            contact->saveDetail(&timestamp);
         }
     private:
         QContactDetail m_prefferedPhone;
     };
 }
-
 
 namespace galera
 {

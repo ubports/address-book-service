@@ -42,7 +42,7 @@ class View : public QObject
     Q_PROPERTY(int count READ count NOTIFY countChanged)
 
 public:
-    View(const QString &clause, const QString &sort, const QStringList &sources, ContactsMap *allContacts, QObject *parent);
+    View(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources, ContactsMap *allContacts, QObject *parent);
     ~View();
 
     static QString objectPath();
@@ -65,6 +65,7 @@ public:
 
 public Q_SLOTS:
     QStringList contactsDetails(const QStringList &fields, int startIndex, int pageSize, const QDBusMessage &message);
+    void onFilterDone();
 
 private Q_SLOTS:
     void onVCardParsed(const QStringList &vcards);
@@ -77,6 +78,9 @@ private:
     QStringList m_sources;
     FilterThread *m_filterThread;
     ViewAdaptor *m_adaptor;
+    QEventLoop *m_waiting;
+
+    void waitFilter();
 };
 
 } //namespace

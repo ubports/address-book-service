@@ -11,9 +11,14 @@ find_package(Qt5Core REQUIRED)
 find_package(Qt5DBus REQUIRED)
 find_package(Qt5Versit REQUIRED)
 find_package(Qt5Contacts REQUIRED)
+find_package(Qt5Network REQUIRED)
+find_package(Qt5Xml REQUIRED)
+find_package(Qt5Test REQUIRED)
 find_package(LibPhoneNumber REQUIRED)
 
 find_program(DBUS_RUNNER dbus-test-runner)
+find_program(INTLTOOL_MERGE_EXECUTABLE intltool-merge)
+find_program(INTLTOOL_EXTRACT_EXECUTABLE intltool-extract)
 
 add_definitions(-DQT_NO_KEYWORDS)
 
@@ -22,20 +27,32 @@ pkg_check_modules(GIO REQUIRED gio-2.0>=2.32)
 pkg_check_modules(EDATASERVER REQUIRED libedataserver-1.2>=3.8)
 pkg_check_modules(FOLKS REQUIRED folks>=0.9.0)
 pkg_check_modules(FOLKS_EDS REQUIRED folks-eds)
+pkg_check_modules(GLIB_ACCOUNTS REQUIRED libaccounts-glib)
+pkg_check_modules(MESSAGING_MENU REQUIRED messaging-menu)
+pkg_check_modules(URL_DISPATCHER REQUIRED url-dispatcher-1)
+pkg_check_modules(AccountsQt5 REQUIRED accounts-qt5)
+pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
 
 if(EDATASERVER_VERSION VERSION_LESS "3.16")
+    set(EVOLUTION_API_3_17 "0")
     set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook6")
+    set(EVOLUTION_SOURCE_SERVICE_NAME "org.gnome.evolution.dataserver.Sources3")
 else()
+    set(EVOLUTION_API_3_17 "1")
     set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook9")
+    set(EVOLUTION_SOURCE_SERVICE_NAME "org.gnome.evolution.dataserver.Sources4")
 endif()
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+add_definitions(-std=c++11)
+
+# I18n
 set(PACKAGE ${CMAKE_PROJECT_NAME})
 set(GETTEXT_PACKAGE "address-book-service")
 add_definitions(-DGETTEXT_PACKAGE="${GETTEXT_PACKAGE}"
                 -DGETTEXT_LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}")
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-add_definitions(-std=c++11)
+
 
 # Coverage tools
 OPTION(ENABLE_COVERAGE "Build with coverage analysis support" OFF)
@@ -70,25 +87,27 @@ enable_testing()
 
 add_custom_target(check)
 add_custom_command(TARGET check
-    COMMAND ctest -V
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-
+		   COMMAND ctest -V
+		   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_subdirectory(3rd_party)
 add_subdirectory(common)
+add_subdirectory(eds-extension)
 add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(contacts)
+add_subdirectory(updater)
 add_subdirectory(upstart)
+add_subdirectory(dbus)
 add_subdirectory(po)
+#add_subdirectory(eds-test)
+
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
     # Some tests fail when running on PPPC check bug #1294229
     message(STATUS "Tests disable for ppc")
 else()
     add_subdirectory(tests)
 endif()
-
-
+set(TEST_DATA_DIR "${CMAKE_SOURCE_DIR}/tests/data")
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

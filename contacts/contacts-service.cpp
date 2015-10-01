@@ -67,7 +67,8 @@ static QContact parseSource(const galera::Source &source, const QString &manager
     contact.setType(QContactType::TypeGroup);
 
     // id
-    galera::GaleraEngineId *engineId = new galera::GaleraEngineId(source.id(), managerUri);
+    galera::GaleraEngineId *engineId = new galera::GaleraEngineId(QString("source@%1").arg(source.id()),
+                                                                  managerUri);
     QContactId newId = QContactId(engineId);
     contact.setId(newId);
 
@@ -92,6 +93,24 @@ static QContact parseSource(const galera::Source &source, const QString &manager
     primary.setName("IS-PRIMARY");
     primary.setData(source.isPrimary());
     contact.saveDetail(&primary);
+
+    // Account Id
+    QContactExtendedDetail accountId;
+    accountId.setName("ACCOUNT-ID");
+    accountId.setData(source.accountId());
+    contact.saveDetail(&accountId);
+
+    // Application Id
+    QContactExtendedDetail applicationId;
+    applicationId.setName("APPLICATION-ID");
+    applicationId.setData(source.applicationId());
+    contact.saveDetail(&applicationId);
+
+    // Provider
+    QContactExtendedDetail provider;
+    provider.setName("PROVIDER");
+    provider.setData(source.providerName());
+    contact.saveDetail(&provider);
 
     return contact;
 }
@@ -137,8 +156,13 @@ GaleraContactsService::GaleraContactsService(const GaleraContactsService &other)
 
 GaleraContactsService::~GaleraContactsService()
 {
-    m_runningRequests.clear();
     delete m_serviceWatcher;
+    Q_FOREACH(QContactRequestData *r, m_runningRequests) {
+        r->cancel();
+        r->wait();
+    }
+
+    m_runningRequests.clear();
 }
 
 void GaleraContactsService::serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner)
@@ -172,6 +196,7 @@ void GaleraContactsService::initialize()
         if (!m_iface->lastError().isValid()) {
             m_serviceIsReady = m_iface.data()->property("isReady").toBool();
             connect(m_iface.data(), SIGNAL(readyChanged()), this, SLOT(onServiceReady()));
+            connect(m_iface.data(), SIGNAL(safeModeChanged()), this, SIGNAL(serviceChanged()));
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
@@ -220,7 +245,11 @@ void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdReque
     QContactIdFilter filter;
     filter.setIds(request->contactIds());
     QString filterStr = Filter(filter).toString();
-    QDBusMessage result = m_iface->call("query", filterStr, "", QStringList());
+    QDBusMessage result = m_iface->call("query",
+                                        filterStr, "",
+                                        request->fetchHint().maxCountHint(),
+                                        m_showInvisibleContacts,
+                                        QStringList());
     if (result.type() == QDBusMessage::ErrorMessage) {
         qWarning() << result.errorName() << result.errorMessage();
         QContactFetchByIdRequestData::notifyError(request);
@@ -276,7 +305,12 @@ void GaleraContactsService::fetchContacts(QtContacts::QContactFetchRequest *requ
     QString sortStr = SortClause(request->sorting()).toString();
     QString filterStr = Filter(request->filter()).toString();
     FetchHint fetchHint = FetchHint(request->fetchHint()).toString();
-    QDBusPendingCall pcall = m_iface->asyncCall("query", filterStr, sortStr, QStringList());
+    QDBusPendingCall pcall = m_iface->asyncCall("query",
+                                                filterStr,
+                                                sortStr,
+                                                request->fetchHint().maxCountHint(),
+                                                m_showInvisibleContacts,
+                                                QStringList());
     if (pcall.isError()) {
         qWarning() << pcall.error().name() << pcall.error().message();
         QContactFetchRequestData::notifyError(request);
@@ -473,15 +507,20 @@ void GaleraContactsService::createContactsStart(QContactSaveRequestData *data)
 
     if (isGroup) {
         bool isPrimary = false;
+        uint accountId = 0;
+
         QList<QContactExtendedDetail> xDetails = data->currentContact().details<QContactExtendedDetail>();
         Q_FOREACH(const QContactExtendedDetail &xDetail, xDetails) {
             if (xDetail.name() == "IS-PRIMARY") {
                 isPrimary = xDetail.data().toBool();
-                break;
+            }
+
+            if (xDetail.name() == "ACCOUNT-ID") {
+                accountId = xDetail.data().toUInt();
             }
         }
 
-        QDBusPendingCall pcall = m_iface->asyncCall("createSource", contact, isPrimary);
+        QDBusPendingCall pcall = m_iface->asyncCall("createSourceForAccount", contact, accountId, isPrimary);
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
         data->updateWatcher(watcher);
         QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
@@ -632,7 +671,7 @@ void GaleraContactsService::removeContactDone(QContactRemoveRequestData *data,
     }
 
     if (call) {
-        QDBusPendingReply<int> reply = *call;
+        QDBusPendingReply<bool> reply = *call;
         if (reply.isError()) {
             qWarning() << reply.error().name() << reply.error().message();
             data->finish(QContactManager::UnspecifiedError);
@@ -721,7 +760,7 @@ void GaleraContactsService::waitRequest(QtContacts::QContactAbstractRequest *req
 
         // this is the only case where we still need to delete data even if the data is not in the running list anymore,
         // because we can not delete it while waiting (the pointer still be used by wait function)
-        m_runningRequests.remove(data);
+        m_runningRequests.removeOne(data);
         // the data could be removed from m_runningRequests while waiting, but we still need to destroy it
         data->deleteLater();
     }
@@ -731,13 +770,18 @@ void GaleraContactsService::releaseRequest(QContactAbstractRequest *request)
 {
     Q_FOREACH(QContactRequestData *rData, m_runningRequests) {
         if (rData->request() == request) {
-            m_runningRequests.remove(rData);
+            m_runningRequests.removeOne(rData);
             rData->releaseRequest();
             rData->cancel();
             rData->deleteLater();
             return;
         }
     }
+}
+
+void GaleraContactsService::setShowInvisibleContacts(bool show)
+{
+    m_showInvisibleContacts = show;
 }
 
 void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *request)
@@ -785,7 +829,7 @@ void GaleraContactsService::destroyRequest(QContactRequestData *request)
 {
     // only destroy the resquest data if it still on the list
     // otherwise it was already destroyed
-    if (m_runningRequests.remove(request)) {
+    if (m_runningRequests.removeOne(request)) {
         request->deleteLater();
     }
 }

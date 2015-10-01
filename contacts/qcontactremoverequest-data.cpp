@@ -30,20 +30,19 @@ namespace galera
 QContactRemoveRequestData::QContactRemoveRequestData(QContactRemoveRequest *request)
     : QContactRequestData(request)
 {
+    static QString sourcePrefix("source@");
+
     Q_FOREACH(QContactId contactId, request->contactIds()) {
         QString id = contactId.toString().split(":").last();
         // WORKAROUND: Today there is no QtContacts API for contacts sources/address-book
         // the only way to remove a source is using the same functionas contact, because
         // of that we need to parse the contact id to check if it is a contact ID or a
         // source id, this works for EDS backend but could fail for others backends.
-        if (id.contains("@")) {
-            m_sourcesIds << id;
+        if (id.startsWith(sourcePrefix)) {
+            m_sourcesIds << id.mid(sourcePrefix.size());
         } else {
             m_contactsIds << id;
         }
-
-
-
     }
 }
 

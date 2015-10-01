@@ -1,7 +1,27 @@
 #ifndef __GALERA_CONFIG_H__
 #define __GALERA_CONFIG_H__
 
-#define QT_PLUGINS_BINARY_DIR               "@CMAKE_BINARY_DIR@"
-#define EVOLUTION_ADDRESSBOOK_SERVICE_NAME  "@EVOLUTION_ADDRESSBOOK_SERVICE_NAME@"
+#define SETTINGS_APPLICATION               "AddressBookService"
+#define SETTINGS_ORG                       "Canonical"
+#define SETTINGS_SAFE_MODE_KEY             "safe-mode"
+#define SETTINGS_INVISIBLE_SOURCES         "invisible-sources"
+#define ADDRESS_BOOK_SAFE_MODE             "ADDRESS_BOOK_SAFE_MODE"
+#define ADDRESS_BOOK_SHOW_INVISIBLE_PROP   "show-invisible"
 
+//updater
+#define SETTINGS_BUTEO_KEY                  "Buteo/migration_complete"
+
+#define QT_PLUGINS_BINARY_DIR               "@CMAKE_BINARY_DIR@"
+#define TEST_DATA_DIR                       "@TEST_DATA_DIR@"
+#define EVOLUTION_ADDRESSBOOK_SERVICE_NAME  "@EVOLUTION_ADDRESSBOOK_SERVICE_NAME@"
+#define EVOLUTION_API_3_17                  @EVOLUTION_API_3_17@
+
+#if EVOLUTION_API_3_17
+    #define E_BOOK_CLIENT_CONNECT_SYNC(SOURCE, CANCELLABLE, ERROR) \
+        e_book_client_connect_sync(SOURCE, -1, CANCELLABLE, ERROR)
+#else
+    #define E_BOOK_CLIENT_CONNECT_SYNC(SOURCE, CANCELLABLE, ERROR) \
+        e_book_client_connect_sync(SOURCE, CANCELLABLE, ERROR)
 #endif
+
+#endif //__GALERA_CONFIG_H__
