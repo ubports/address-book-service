@@ -21,32 +21,34 @@
 #include <QDebug>
 #include <QtContacts>
 
+#include "base-eds-test.h"
 #include "config.h"
+
 
 using namespace QtContacts;
 
-class ContactCollectionTest : public QObject
+class ContactCollectionTest : public QObject, public BaseEDSTest
 {
     Q_OBJECT
-private:
-    QContactManager *m_manager;
-
 private Q_SLOTS:
     void initTestCase()
     {
-        QCoreApplication::setLibraryPaths(QStringList() << QT_PLUGINS_BINARY_DIR);
-        // wait for address-book-service
-        QTest::qWait(1000);
+        BaseEDSTest::initTestCaseImpl();
+    }
+
+    void cleanupTestCase()
+    {
+        BaseEDSTest::cleanupTestCaseImpl();
     }
 
     void init()
     {
-        m_manager = new QContactManager("galera");
+        BaseEDSTest::initImpl();
     }
 
     void cleanup()
     {
-        delete m_manager;
+        BaseEDSTest::cleanupImpl();
     }
 
     /*
@@ -57,7 +59,7 @@ private Q_SLOTS:
         QContact c;
         c.setType(QContactType::TypeGroup);
         QContactDisplayLabel label;
-        QString uniqueName = QString("source@%1").arg(QUuid::createUuid().toString().remove("{").remove("}"));
+        QString uniqueName = QString("%1").arg(QUuid::createUuid().toString().remove("{").remove("}"));
         label.setLabel(uniqueName);
         c.saveDetail(&label);
 
@@ -70,6 +72,7 @@ private Q_SLOTS:
 
         QList<QContact> contacts = m_manager->contacts(filter);
         Q_FOREACH(const QContact &contact, contacts) {
+            QVERIFY(c.id().toString().startsWith("qtcontacts:galera::source@"));
             if ((contact.detail<QContactDisplayLabel>().label() == uniqueName) &&
                 (contact.id() == c.id())) {
                 return;
@@ -87,7 +90,7 @@ private Q_SLOTS:
         QContact c;
         c.setType(QContactType::TypeGroup);
         QContactDisplayLabel label;
-        QString uniqueName = QString("source@%1").arg(QUuid::createUuid().toString().remove("{").remove("}"));
+        QString uniqueName = QString("%1").arg(QUuid::createUuid().toString().remove("{").remove("}"));
         label.setLabel(uniqueName);
         c.saveDetail(&label);
 
@@ -95,10 +98,7 @@ private Q_SLOTS:
         QVERIFY(saveResult);
 
         // try to remove new source
-        // WORKAROUND: Since qcontacts does not cotains a API to remove address book we use the contact label as id
-        // for addressbook. This Id must contain a "@" to be handled as address book name.
-        QContactId addressBookId = QContactId::fromString(QString("qtcontacts:galera::%1").arg(uniqueName));
-        bool removeResult = m_manager->removeContact(addressBookId);
+        bool removeResult = m_manager->removeContact(c.id());
         QVERIFY(removeResult);
 
         // check if the source was removed
@@ -127,7 +127,7 @@ private Q_SLOTS:
         QList<QContact> contacts = m_manager->contacts(filter);
         Q_FOREACH(const QContact &c, contacts) {
             QCOMPARE(c.type(), QContactType::TypeGroup);
-            if (c.id().toString() == QStringLiteral("qtcontacts:galera::system-address-book")) {
+            if (c.id().toString() == QStringLiteral("qtcontacts:galera::source@system-address-book")) {
                 QContactDisplayLabel label = c.detail(QContactDisplayLabel::Type);
                 QCOMPARE(label.label(), QStringLiteral("Personal"));
                 return;

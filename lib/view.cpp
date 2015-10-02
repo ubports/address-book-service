@@ -43,12 +43,13 @@ namespace galera
 class FilterThread: public QRunnable
 {
 public:
-    FilterThread(QString filter, QString sort, int maxCount, ContactsMap *allContacts, QObject *parent)
+    FilterThread(QString filter, QString sort, int maxCount, bool showInvisible, ContactsMap *allContacts, QObject *parent)
         : m_parent(parent),
           m_filter(filter),
           m_sortClause(sort),
           m_maxCount(maxCount),
           m_allContacts(allContacts),
+          m_showInvisible(showInvisible),
           m_canceled(false),
           m_running(false),
           m_done(false)
@@ -56,27 +57,27 @@ public:
         setAutoDelete(false);
     }
 
-    QList<ContactEntry*> result() const
+    QList<QContact> result() const
     {
         if (isRunning()) {
-            return QList<ContactEntry*>();
+            return QList<QContact>();
         } else {
             return m_contacts;
         }
     }
 
-    bool appendContact(ContactEntry *entry)
+    bool appendContact(const QContact &contact, const QDateTime &deteletedAt)
     {
-        if (checkContact(entry)) {
-            addSorted(&m_contacts, entry, m_sortClause);
+        if (checkContact(contact, deteletedAt)) {
+            addSorted(&m_contacts, contact, m_sortClause);
             return true;
         }
         return false;
     }
 
-    bool removeContact(ContactEntry *entry)
+    bool removeContact(const QContact &contact)
     {
-        return m_contacts.removeAll(entry);
+        return m_contacts.removeAll(contact);
     }
 
     void chageSort(SortClause clause)
@@ -88,14 +89,14 @@ public:
         }
     }
 
-    void addSorted(QList<ContactEntry*>* sorted, ContactEntry* toAdd, const SortClause& sortOrder)
+    void addSorted(QList<QContact> *sorted, const QContact &toAdd, const SortClause& sortOrder)
     {
         if (!sortOrder.isEmpty()) {
             ContactLessThan lessThan(sortOrder);
-            QList<ContactEntry*>::iterator it(std::upper_bound(sorted->begin(), sorted->end(), toAdd, lessThan));
+            QList<QContact>::iterator it(std::upper_bound(sorted->begin(), sorted->end(), toAdd, lessThan));
             sorted->insert(it, toAdd);
         } else {
-            // no sort order? just add it to the end
+            // no sort order just add it to the end
             sorted->append(toAdd);
         }
     }
@@ -137,38 +138,65 @@ protected:
         bool needSort = (!m_sortClause.isEmpty() &&
                          (m_sortClause.toContactSortOrder() != m_allContacts->sort().toContactSortOrder()));
         // filter contacts if necessary
-        if (m_filter.isValid()) {
-            if (m_filter.isEmpty()) {
-                m_contacts = m_allContacts->values();
-                if ((m_maxCount > 0) && (m_maxCount < m_contacts.size())) {
-                    m_contacts = m_contacts.mid(0, m_maxCount);
-                }
-                if (needSort) {
-                    chageSort(m_sortClause);
-                }
-            } else {
-                // optmization
-                // if it is a query by phone number do a initial filter
-                const QList<ContactEntry *> &preFilter = m_allContacts->valueByPhone(m_filter.phoneNumberToFilter());
-                Q_FOREACH(ContactEntry *entry, preFilter) {
-                    m_canceledLock.lockForRead();
-                    if (m_canceled) {
-                        m_canceledLock.unlock();
-                        m_allContacts->unlock();
-                        notifyFinished();
-                        return;
-                    }
-                    m_canceledLock.unlock();
-                    if (checkContact(entry)) {
-                        if (needSort) {
-                            addSorted(&m_contacts, entry, m_sortClause);
-                        } else {
-                            m_contacts.append(entry);
-                        }
+        if (m_filter.isValid() && m_filter.isEmpty()) {
+            Q_FOREACH(ContactEntry *entry, m_allContacts->values()) {
+                if ((m_showInvisible || entry->individual()->isVisible()) &&
+                    !entry->individual()->deletedAt().isValid()) {
 
-                        if ((m_maxCount > 0) && (m_contacts.size() >= m_maxCount)) {
-                            break;
-                        }
+                    QContact contact = entry->individual()->contact();
+
+                    if (needSort) {
+                        addSorted(&m_contacts, contact, m_sortClause);
+                    } else {
+                        m_contacts.append(contact);
+                    }
+
+                    if ((m_maxCount > 0) && (m_maxCount >= m_contacts.size())) {
+                        break;
+                    }
+                }
+            }
+        } else if (m_filter.isValid()) {
+            // optmization
+            QList<ContactEntry *> preFilter;
+
+            // check if is a query by id
+            QStringList idsToFilter = m_filter.idsToFilter();
+            if (!idsToFilter.isEmpty()) {
+                preFilter = m_allContacts->values(idsToFilter);
+            } else {
+                // check if is a phone number query
+                QString phoneToFilter = m_filter.phoneNumberToFilter();
+                if (!phoneToFilter.isEmpty()) {
+                    preFilter = m_allContacts->valueByPhone(phoneToFilter);
+                } else {
+                    qDebug() << "Filter not optimized" << m_filter.toContactFilter();
+                    preFilter = m_allContacts->values();
+                }
+            }
+
+            Q_FOREACH(ContactEntry *entry, preFilter) {
+                m_canceledLock.lockForRead();
+                if (m_canceled) {
+                    m_canceledLock.unlock();
+                    m_allContacts->unlock();
+                    notifyFinished();
+                    return;
+                }
+
+                QContact contact = entry->individual()->contact();
+                QDateTime deletedAt = entry->individual()->deletedAt();
+                m_canceledLock.unlock();
+
+                if ((m_showInvisible || entry->individual()->isVisible()) &&
+                    checkContact(contact, deletedAt)) {
+                    if (needSort) {
+                        addSorted(&m_contacts, contact, m_sortClause);
+                    } else {
+                        m_contacts.append(contact);
+                    }
+                    if ((m_maxCount > 0) && (m_contacts.size() >= m_maxCount)) {
+                        break;
                     }
                 }
             }
@@ -186,24 +214,27 @@ private:
     Filter m_filter;
     SortClause m_sortClause;
     ContactsMap *m_allContacts;
-    QList<ContactEntry*> m_contacts;
+    QList<QContact> m_contacts;
+
     int m_maxCount;
+    bool m_showInvisible;
     bool m_canceled;
     QReadWriteLock m_canceledLock;
     bool m_running;
     bool m_done;
-    bool checkContact(ContactEntry *entry)
+
+    bool checkContact(const QContact &contact, const QDateTime &deletedAt)
     {
-        return m_filter.test(entry->individual()->contact());
+        return m_filter.test(contact, deletedAt);
     }
 };
 
-View::View(const QString &clause, const QString &sort, int maxCount,
+View::View(const QString &clause, const QString &sort, int maxCount, bool showInvisible,
            const QStringList &sources, ContactsMap *allContacts,
            QObject *parent)
     : QObject(parent),
       m_sources(sources),
-      m_filterThread(new FilterThread(clause, sort, maxCount, allContacts, this)),
+      m_filterThread(new FilterThread(clause, sort, maxCount, showInvisible, allContacts, this)),
       m_adaptor(0),
       m_waiting(0)
 {
@@ -256,27 +287,27 @@ QStringList View::contactsDetails(const QStringList &fields, int startIndex, int
         return QStringList();
     }
 
-     waitFilter();
+    waitFilter();
 
-    QList<ContactEntry*> entries = m_filterThread->result();
+    const QList<QContact> &contacts = m_filterThread->result();
     if (startIndex < 0) {
         startIndex = 0;
     }
 
-    if ((pageSize < 0) || ((startIndex + pageSize) >= entries.count())) {
-        pageSize = entries.count() - startIndex;
+    if ((pageSize < 0) || ((startIndex + pageSize) >= contacts.count())) {
+        pageSize = contacts.count() - startIndex;
     }
 
-    QList<QContact> contacts;
+    QList<QContact> pageOfContacts;
     for(int i = startIndex, iMax = (startIndex + pageSize); i < iMax; i++) {
-        contacts << entries[i]->individual()->copy(FetchHint::parseFieldNames(fields));
+        pageOfContacts << QIndividual::copy(contacts.at(i), FetchHint::parseFieldNames(fields));
     }
 
     VCardParser *parser = new VCardParser(this);
     parser->setProperty("DATA", QVariant::fromValue<QDBusMessage>(message));
     connect(parser, &VCardParser::vcardParsed,
             this, &View::onVCardParsed);
-    parser->contactToVcard(contacts);
+    parser->contactToVcard(pageOfContacts);
     return QStringList();
 }
 
@@ -365,7 +396,8 @@ bool View::appendContact(ContactEntry *entry)
         return false;
     }
 
-    if (m_filterThread->appendContact(entry)) {
+    if (m_filterThread->appendContact(entry->individual()->contact(),
+                                      entry->individual()->deletedAt())) {
         Q_EMIT countChanged(m_filterThread->result().count());
         return true;
     }
@@ -378,7 +410,7 @@ bool View::removeContact(ContactEntry *entry)
         return false;
     }
 
-    if (m_filterThread->removeContact(entry)) {
+    if (m_filterThread->removeContact(entry->individual()->contact())) {
         Q_EMIT countChanged(m_filterThread->result().count());
         return true;
     }

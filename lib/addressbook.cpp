@@ -23,16 +23,30 @@
 #include "contacts-map.h"
 #include "qindividual.h"
 #include "dirtycontact-notify.h"
+#include "e-source-ubuntu.h"
 
 #include "common/vcard-parser.h"
 
 #include <QtCore/QPair>
 #include <QtCore/QUuid>
 
+#include <QtContacts/QContactExtendedDetail>
+
 #include <signal.h>
 #include <sys/socket.h>
 
 #include <folks/folks-eds.h>
+
+// Ubuntu
+#include <messaging-menu-app.h>
+#include <messaging-menu-message.h>
+#include <url-dispatcher.h>
+
+namespace C {
+#include <libintl.h>
+}
+
+#define MESSAGING_MENU_SOURCE_ID "address-book-service"
 
 using namespace QtContacts;
 
@@ -43,6 +57,7 @@ class CreateContactData
 {
 public:
     QDBusMessage m_message;
+    QContact m_contact;
     galera::AddressBook *m_addressbook;
 };
 
@@ -64,6 +79,7 @@ public:
     galera::AddressBook *m_addressbook;
     QDBusMessage m_message;
     int m_sucessCount;
+    bool m_softRemoval;
 };
 
 class CreateSourceData
@@ -71,6 +87,9 @@ class CreateSourceData
 public:
     QString m_sourceId;
     QString m_sourceName;
+    QString m_applicationId;
+    QString m_providerName;
+    uint m_accountId;
     bool m_setAsPrimary;
     galera::AddressBook *m_addressbook;
     QDBusMessage m_message;
@@ -84,7 +103,7 @@ public:
     QDBusMessage m_message;
 };
 
-ESource* create_esource_from_data(const CreateSourceData &data, ESourceRegistry **registry)
+ESource* create_esource_from_data(CreateSourceData &data, ESourceRegistry **registry)
 {
     GError *error = NULL;
     ESource *source = e_source_new_with_uid(data.m_sourceId.toUtf8().data(), NULL, &error);
@@ -94,8 +113,17 @@ ESource* create_esource_from_data(const CreateSourceData &data, ESourceRegistry 
         return 0;
     }
 
-    e_source_set_parent(source, "local-stub");
+    e_source_set_parent(source, "contacts-stub");
     e_source_set_display_name(source, data.m_sourceName.toUtf8().data());
+
+    if (data.m_accountId > 0) {
+        ESourceUbuntu *ubuntu_ex = E_SOURCE_UBUNTU(e_source_get_extension(source, E_SOURCE_EXTENSION_UBUNTU));
+        e_source_ubuntu_set_account_id(ubuntu_ex, data.m_accountId);
+        e_source_ubuntu_set_application_id(ubuntu_ex, data.m_applicationId.toUtf8());
+        e_source_ubuntu_set_autoremove(ubuntu_ex, TRUE);
+        data.m_providerName = QString::fromUtf8(e_source_ubuntu_get_account_provider(ubuntu_ex));
+    }
+
     ESourceAddressBook *ext = E_SOURCE_ADDRESS_BOOK(e_source_get_extension(source, E_SOURCE_EXTENSION_ADDRESS_BOOK));
     e_source_backend_set_backend_name(E_SOURCE_BACKEND(ext), "local");
 
@@ -115,6 +143,7 @@ ESource* create_esource_from_data(const CreateSourceData &data, ESourceRegistry 
 namespace galera
 {
 int AddressBook::m_sigQuitFd[2] = {0, 0};
+QSettings AddressBook::m_settings(SETTINGS_ORG, SETTINGS_APPLICATION);
 
 AddressBook::AddressBook(QObject *parent)
     : QObject(parent),
@@ -128,7 +157,9 @@ AddressBook::AddressBook(QObject *parent)
       m_isAboutToReload(false),
       m_individualsChangedDetailedId(0),
       m_notifyIsQuiescentHandlerId(0),
-      m_connection(QDBusConnection::sessionBus())
+      m_connection(QDBusConnection::sessionBus()),
+      m_messagingMenu(0),
+      m_messagingMenuMessage(0)
 {
     if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
         m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
@@ -138,10 +169,22 @@ AddressBook::AddressBook(QObject *parent)
     }
     prepareUnixSignals();
     connectWithEDS();
+    connect(this, SIGNAL(readyChanged()), SLOT(checkCompatibility()));
+    connect(this, SIGNAL(safeModeChanged()), SLOT(onSafeModeChanged()));
 }
 
 AddressBook::~AddressBook()
 {
+    if (m_messagingMenuMessage) {
+        g_object_unref(m_messagingMenuMessage);
+        m_messagingMenuMessage = 0;
+    }
+
+    if (m_messagingMenu) {
+        g_object_unref(m_messagingMenu);
+        m_messagingMenu = 0;
+    }
+
     if (m_individualAggregator) {
         qWarning() << "Addressbook destructor called while running, you should call shutdown first";
         shutdown();
@@ -203,6 +246,8 @@ bool AddressBook::start(QDBusConnection connection)
 
 bool AddressBook::start()
 {
+    g_type_ensure (E_TYPE_SOURCE_UBUNTU);
+
     return start(QDBusConnection::sessionBus());
 }
 
@@ -237,6 +282,44 @@ void AddressBook::unprepareFolks()
         folks_individual_aggregator_unprepare(m_individualAggregator,
                                               AddressBook::folksUnprepared,
                                               this);
+    }
+}
+
+void AddressBook::checkCompatibility()
+{
+    QByteArray envSafeMode = qgetenv(ADDRESS_BOOK_SAFE_MODE);
+    if (!envSafeMode.isEmpty()) {
+        return;
+    }
+    GError *gError = NULL;
+    ESourceRegistry *r = e_source_registry_new_sync(NULL, &gError);
+    if (gError) {
+        qWarning() << "Fail to check compatibility" << gError->message;
+        g_error_free(gError);
+        return;
+    }
+
+    bool enableSafeMode = false;
+    GList *sources = e_source_registry_list_sources(r, E_SOURCE_EXTENSION_ADDRESS_BOOK);
+    for(GList *l = sources; l != NULL; l = l->next) {
+        ESource *s = E_SOURCE(l->data);
+        if ((strcmp(e_source_get_uid(s), "system-address-book") != 0)  &&
+            !e_source_has_extension(s, E_SOURCE_EXTENSION_UBUNTU)) {
+            qDebug() << "Source does not contains UBUNTU extension" << QString::fromUtf8(e_source_get_display_name(s));
+            enableSafeMode = true;
+            break;
+        }
+    }
+
+    g_list_free_full(sources, g_object_unref);
+    g_object_unref(r);
+
+    if (enableSafeMode) {
+        qWarning() << "Enabling safe mode";
+        setSafeMode(true);
+        Q_EMIT safeModeChanged();
+    } else {
+        qDebug() << "Safe mode not necessary";
     }
 }
 
@@ -363,13 +446,17 @@ Source AddressBook::source(const QDBusMessage &message)
     return Source();
 }
 
-Source AddressBook::createSource(const QString &sourceName, bool setAsPrimary, const QDBusMessage &message)
+Source AddressBook::createSource(const QString &sourceName,
+                                 uint accountId,
+                                 bool setAsPrimary,
+                                 const QDBusMessage &message)
 {
     CreateSourceData *data = new CreateSourceData;
     data->m_addressbook = this;
     data->m_message = message;
     data->m_sourceName = sourceName;
     data->m_setAsPrimary = setAsPrimary;
+    data->m_accountId = accountId;
 
     FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
     QString personaStoreTypeId("dummy");
@@ -394,7 +481,7 @@ Source AddressBook::createSource(const QString &sourceName, bool setAsPrimary, c
         g_object_unref(backendStore);
         g_object_unref(dummy);
 
-        Source src(sourceName, sourceName, false, false);
+        Source src(sourceName, sourceName, QString(), QString(), data->m_accountId, false, false);
         QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(src));
         QDBusConnection::sessionBus().send(reply);
     } else if (personaStoreTypeId == "eds") {
@@ -434,8 +521,7 @@ void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &mess
         RemoveSourceData *rData = 0;
         while (gee_iterator_next(i)) {
             FolksPersonaStore *ps = FOLKS_PERSONA_STORE(gee_iterator_get(i));
-            // We need to compare using source name due the missing API to handle sources diff from contacts
-            if (g_strcmp0(folks_persona_store_get_display_name(ps), sourceId.toUtf8().constData()) == 0) {
+            if (g_strcmp0(folks_persona_store_get_id(ps), sourceId.toUtf8().constData()) == 0) {
                 rData = new RemoveSourceData;
                 rData->m_addressbook = this;
                 rData->m_message = message;
@@ -533,6 +619,64 @@ void AddressBook::edsPrepared(GObject *source, GAsyncResult *res, void *data)
     self->prepareFolks();
 }
 
+void AddressBook::onSafeModeMessageActivated(MessagingMenuMessage *message,
+                                             const char *actionId,
+                                             GVariant *param,
+                                             AddressBook *self)
+{
+    if (self->m_messagingMenu) {
+        if (self->m_messagingMenuMessage) {
+             messaging_menu_app_remove_message(self->m_messagingMenu, self->m_messagingMenuMessage);
+             g_object_unref(self->m_messagingMenuMessage);
+             self->m_messagingMenuMessage = 0;
+        }
+
+        messaging_menu_app_unregister(self->m_messagingMenu);
+        g_object_unref(self->m_messagingMenu);
+        self->m_messagingMenu = 0;
+    }
+
+    url_dispatch_send("application:///address-book-app.desktop", NULL, NULL);
+}
+
+bool AddressBook::isSafeMode()
+{
+    QByteArray envSafeMode = qgetenv(ADDRESS_BOOK_SAFE_MODE);
+    if (!envSafeMode.isEmpty()) {
+        return (envSafeMode.toLower() == "on" ? true : false);
+    } else {
+        return m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool();
+    }
+}
+
+void AddressBook::setSafeMode(bool flag)
+{
+    QByteArray envSafeMode = qgetenv(ADDRESS_BOOK_SAFE_MODE);
+    if (!envSafeMode.isEmpty()) {
+        return;
+    }
+
+    if (m_settings.value(SETTINGS_SAFE_MODE_KEY, false).toBool() != flag) {
+        m_settings.setValue(SETTINGS_SAFE_MODE_KEY, flag);
+        if (!flag) {
+            // make all contacts visible
+            Q_FOREACH(ContactEntry *entry, m_contacts->values()) {
+                QIndividual *i = entry->individual();
+                if (!i->isVisible()) {
+                    i->setVisible(true);
+                }
+            }
+            // clear invisible sources list
+            m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, QStringList());
+        }
+        m_settings.sync();
+        // avoid send a ton of signals since the service will be reseted after the
+        // 'safeModeChanged' signal
+        m_notifyContactUpdate->clear();
+        Q_EMIT safeModeChanged();
+    }
+}
+
 void AddressBook::createSourceDone(GObject *source,
                                    GAsyncResult *res,
                                    void *data)
@@ -549,7 +693,21 @@ void AddressBook::createSourceDone(GObject *source,
         if (cData->m_setAsPrimary) {
             e_source_registry_set_default_address_book(E_SOURCE_REGISTRY(source), cData->m_source);
         }
-        src = Source(cData->m_sourceId, cData->m_sourceName, false, cData->m_setAsPrimary);
+        src = Source(cData->m_sourceId,
+                     cData->m_sourceName,
+                     cData->m_applicationId,
+                     cData->m_providerName,
+                     cData->m_accountId,
+                     false,
+                     cData->m_setAsPrimary);
+        // if in safe mode source will be invisible, we use that to avoid invalid states
+        if (isSafeMode()) {
+            qDebug() << "Source will be invisible until safe mode is gone" << cData->m_sourceId << e_source_get_uid(cData->m_source);
+            QStringList iSources = cData->m_addressbook->m_settings.value(SETTINGS_INVISIBLE_SOURCES).toStringList();
+            iSources << e_source_get_uid(cData->m_source);
+            cData->m_addressbook->m_settings.setValue(SETTINGS_INVISIBLE_SOURCES, iSources);
+            cData->m_addressbook->m_settings.sync();
+        }
     }
     g_object_unref(source);
     QDBusMessage reply = cData->m_message.createReply(QVariant::fromValue<Source>(src));
@@ -648,6 +806,10 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                             folks_persona_store_get_can_remove_personas(store);
             bool isPrimary = folks_persona_store_get_is_primary_store(store);
 
+            uint accountId = 0;
+            QString applicationId;
+            QString providerName;
+
             // FIXME: Due a bug on Folks we can not rely on folks_persona_store_get_is_primary_store
             // see main.cpp:68
             if (strcmp(folks_backend_get_name(backend), "eds") == 0) {
@@ -662,10 +824,28 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                     isPrimary = e_source_equal(defaultSource, source);
                     g_object_unref(defaultSource);
                     g_object_unref(r);
+
+                    if (e_source_has_extension(source, E_SOURCE_EXTENSION_UBUNTU)) {
+                        ESourceUbuntu *ubuntu_ex = E_SOURCE_UBUNTU(e_source_get_extension(source, E_SOURCE_EXTENSION_UBUNTU));
+                        if (ubuntu_ex) {
+                            applicationId = QString::fromUtf8(e_source_ubuntu_get_application_id(ubuntu_ex));
+                            providerName = QString::fromUtf8(e_source_ubuntu_get_account_provider(ubuntu_ex));
+                            accountId = e_source_ubuntu_get_account_id(ubuntu_ex);
+                        }
+                    } else {
+                        qDebug() << "SOURCE DOES NOT HAVE UBUNTU EXTENSION:"
+                                 << QString::fromUtf8(e_source_get_display_name(source));
+                    }
                 }
             }
 
-            result << Source(id, displayName, !canWrite, isPrimary);
+            // If running on safe mode only the system-address-book is writable
+            if (isSafeMode() && (id != "system-address-book")) {
+                qDebug() << "Running safe mode for source" << id << displayName;
+                canWrite = false;
+            }
+
+            result << Source(id, displayName, applicationId, providerName, accountId, !canWrite, isPrimary);
             g_object_unref(store);
         }
 
@@ -690,6 +870,7 @@ QString AddressBook::createContact(const QString &contact, const QString &source
             CreateContactData *data = new CreateContactData;
             data->m_message = message;
             data->m_addressbook = this;
+            data->m_contact = qcontact;
             FolksPersonaStore *store = getFolksStore(source);
             folks_individual_aggregator_add_persona_from_details(m_individualAggregator,
                                                                  NULL, //parent
@@ -758,9 +939,9 @@ QString AddressBook::linkContacts(const QStringList &contacts)
     return "";
 }
 
-View *AddressBook::query(const QString &clause, const QString &sort, int maxCount, const QStringList &sources)
+View *AddressBook::query(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources)
 {
-    View *view = new View(clause, sort, maxCount, sources, m_ready ? m_contacts : 0, this);
+    View *view = new View(clause, sort, maxCount, showInvisible, sources, m_ready ? m_contacts : 0, this);
     m_views << view;
     connect(view, SIGNAL(closed()), this, SLOT(viewClosed()));
     return view;
@@ -773,7 +954,9 @@ void AddressBook::viewClosed()
 
 void AddressBook::individualChanged(QIndividual *individual)
 {
-    m_notifyContactUpdate->insertChangedContacts(QSet<QString>() << individual->id());
+    if (individual->isVisible()) {
+        m_notifyContactUpdate->insertChangedContacts(QSet<QString>() << individual->id());
+    }
 }
 
 void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner)
@@ -788,6 +971,44 @@ void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &o
     }
 }
 
+void AddressBook::onSafeModeChanged()
+{
+    GIcon *icon = g_themed_icon_new("address-book-app");
+    bool showUpdateComplete = false;
+
+    if (m_messagingMenu == 0) {
+        m_messagingMenu = messaging_menu_app_new("address-book-app.desktop");
+        messaging_menu_app_register(m_messagingMenu);
+        messaging_menu_app_append_source(m_messagingMenu, MESSAGING_MENU_SOURCE_ID, icon, C::gettext("Address book service"));
+    }
+
+    if (m_messagingMenuMessage) {
+        messaging_menu_app_remove_message(m_messagingMenu, m_messagingMenuMessage);
+        g_object_unref (m_messagingMenuMessage);
+        m_messagingMenuMessage = 0;
+    }
+
+    if (isSafeMode()) {
+        m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
+                                                            icon,
+                                                            C::gettext("Update required"),
+                                                            NULL,
+                                                            C::gettext("Your Contacts app needs to be upgraded. Only local contacts will be editable until upgrade is complete"),
+                                                            QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
+    } else {
+        m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
+                                                            icon,
+                                                            C::gettext("Update complete"),
+                                                            NULL,
+                                                            C::gettext("Your Contacts app update is complete."),
+                                                            QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
+    }
+
+    g_signal_connect(m_messagingMenuMessage, "activate", G_CALLBACK(&AddressBook::onSafeModeMessageActivated), this);
+    messaging_menu_app_append_message(m_messagingMenu, m_messagingMenuMessage, MESSAGING_MENU_SOURCE_ID, true);
+    g_object_unref(icon);
+}
+
 int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessage &message)
 {
     RemoveContactsData *data = new RemoveContactsData;
@@ -795,6 +1016,7 @@ int AddressBook::removeContacts(const QStringList &contactIds, const QDBusMessag
     data->m_message = message;
     data->m_request = contactIds;
     data->m_sucessCount = 0;
+    data->m_softRemoval = true;
     removeContactDone(0, 0, data);
     return 0;
 }
@@ -821,10 +1043,16 @@ void AddressBook::removeContactDone(FolksIndividualAggregator *individualAggrega
         QString contactId = removeData->m_request.takeFirst();
         ContactEntry *entry = removeData->m_addressbook->m_contacts->value(contactId);
         if (entry) {
-            folks_individual_aggregator_remove_individual(individualAggregator,
-                                                          entry->individual()->individual(),
-                                                          (GAsyncReadyCallback) removeContactDone,
-                                                          data);
+            if (removeData->m_softRemoval && entry->individual()->markAsDeleted()) {
+                removeContactDone(individualAggregator, 0, data);
+                // since this will not be removed we need to send a removal singal
+                removeData->m_addressbook->m_notifyContactUpdate->insertRemovedContacts(QSet<QString>() << entry->individual()->id());
+            } else {
+                folks_individual_aggregator_remove_individual(individualAggregator,
+                                                              entry->individual()->individual(),
+                                                              (GAsyncReadyCallback) removeContactDone,
+                                                              data);
+            }
         } else {
             removeContactDone(individualAggregator, 0, data);
         }
@@ -855,6 +1083,12 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
 {
     //TODO: support multiple update contacts calls
     Q_ASSERT(m_updateCommandPendingContacts.isEmpty());
+    if (!processUpdates()) {
+        qWarning() << "Fail to process pending updates";
+        QDBusMessage reply = m_updateCommandReplyMessage.createReply(QStringList());
+        QDBusConnection::sessionBus().send(reply);
+        return QStringList();
+    }
 
     m_updatedIds.clear();
     m_updateCommandReplyMessage = message;
@@ -865,6 +1099,26 @@ QStringList AddressBook::updateContacts(const QStringList &contacts, const QDBus
     return QStringList();
 }
 
+void AddressBook::purgeContacts(const QDateTime &since, const QString &sourceId, const QDBusMessage &message)
+{
+    RemoveContactsData *data = new RemoveContactsData;
+    data->m_addressbook = this;
+    data->m_message = message;
+    data->m_sucessCount = 0;
+    data->m_softRemoval = false;
+
+    Q_FOREACH(const ContactEntry *entry, m_contacts->values()) {
+        if (entry->individual()->deletedAt() > since) {
+            QContactSyncTarget syncTarget = entry->individual()->contact().detail<QContactSyncTarget>();
+            if (syncTarget.value(QContactSyncTarget::FieldSyncTarget + 1).toString() == sourceId) {
+                data->m_request << entry->individual()->id();
+            }
+        }
+    }
+
+    removeContactDone(0, 0, data);
+}
+
 void AddressBook::updateContactsDone(const QString &contactId,
                                      const QString &error)
 {
@@ -872,7 +1126,13 @@ void AddressBook::updateContactsDone(const QString &contactId,
 
     if (!error.isEmpty()) {
         // update the result with the error
-        m_updateCommandResult[currentContactIndex] = error;
+        if (currentContactIndex >= 0 &&
+            currentContactIndex < m_updateCommandResult.size()) {
+            m_updateCommandResult[currentContactIndex] = error;
+        } else {
+            qWarning() << "Invalid contact changed index" << currentContactIndex <<
+                          "Contact list size" << m_updateCommandResult.size();
+        }
     } else if (!contactId.isEmpty()){
         // update the result with the new contact info
         ContactEntry *entry = m_contacts->value(contactId);
@@ -890,12 +1150,14 @@ void AddressBook::updateContactsDone(const QString &contactId,
     }
 
     if (!m_updateCommandPendingContacts.isEmpty()) {
-        QContact newContact = VCardParser::vcardToContact(m_updateCommandPendingContacts.takeFirst());
+        QString vCard = m_updateCommandPendingContacts.takeFirst();
+        QContact newContact = VCardParser::vcardToContact(vCard);
         ContactEntry *entry = m_contacts->value(newContact.detail<QContactGuid>().guid());
         if (entry) {
             entry->individual()->update(newContact, this,
                                         SLOT(updateContactsDone(QString,QString)));
         } else {
+            qWarning() << "Contact not found for update:" << vCard;
             updateContactsDone("", "Contact not found!");
         }
     } else {
@@ -909,32 +1171,36 @@ void AddressBook::updateContactsDone(const QString &contactId,
         m_updatedIds.clear();
         m_updateCommandResult.clear();
         m_updateCommandReplyMessage = QDBusMessage();
+        m_updateLock.unlock();
     }
 }
 
-QString AddressBook::removeContact(FolksIndividual *individual)
+QString AddressBook::removeContact(FolksIndividual *individual, bool *visible)
 {
     QString contactId = QString::fromUtf8(folks_individual_get_id(individual));
     ContactEntry *ci = m_contacts->take(contactId);
     if (ci) {
+        *visible = ci->individual()->isVisible();
         delete ci;
         return contactId;
     }
     return QString();
 }
 
-QString AddressBook::addContact(FolksIndividual *individual)
+QString AddressBook::addContact(FolksIndividual *individual, bool visible)
 {
     QString id = QString::fromUtf8(folks_individual_get_id(individual));
     ContactEntry *entry = m_contacts->value(id);
     if (entry) {
         entry->individual()->setIndividual(individual);
+        entry->individual()->setVisible(visible);
 
         // update contact position on map
         m_contacts->updatePosition(entry);
     } else {
         QIndividual *i = new QIndividual(individual, m_individualAggregator);
         i->addListener(this, SLOT(individualChanged(QIndividual*)));
+        i->setVisible(visible);
         m_contacts->insert(new ContactEntry(i));
         //TODO: Notify view
     }
@@ -951,6 +1217,11 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
     QSet<QString> removedIds;
     QSet<QString> addedIds;
     QSet<QString> updatedIds;
+    QStringList invisibleSources;
+
+    if (isSafeMode()) {
+        invisibleSources = self->m_settings.value(SETTINGS_INVISIBLE_SOURCES).toStringList();
+    }
 
     GeeSet *removed = gee_multi_map_get_keys(changes);
     GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(removed));
@@ -960,7 +1231,11 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             continue;
         }
 
-        removedIds << self->removeContact(individual);
+        bool visible = true;
+        QString cId = self->removeContact(individual, &visible);
+        if (visible && !cId.isEmpty()) {
+            removedIds << cId;
+        }
         g_object_unref(individual);
     }
     g_object_unref(iter);
@@ -980,10 +1255,25 @@ void AddressBook::individualsChangedCb(FolksIndividualAggregator *individualAggr
             continue;
         }
 
-        if (self->m_contacts->contains(id)) {
-            updatedIds << self->addContact(individual);
-        } else {
-            addedIds << self->addContact(individual);
+        bool visible = true;
+        if (!invisibleSources.isEmpty()) {
+            GeeSet *personas = folks_individual_get_personas(individual);
+            GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+            if (gee_iterator_next(iter)) {
+                FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+                FolksPersonaStore *ps = folks_persona_get_store(persona);
+                g_object_unref(persona);
+                visible = !invisibleSources.contains(folks_persona_store_get_id(ps));
+            }
+            g_object_unref(iter);
+        }
+
+        bool exists = self->m_contacts->contains(id);
+        QString cId = self->addContact(individual, visible);
+        if (visible && exists) {
+            updatedIds <<  cId;
+        } else if (visible) {
+            addedIds << cId;
         }
 
         g_object_unref(individual);
@@ -1033,15 +1323,20 @@ void AddressBook::createContactDone(FolksIndividualAggregator *individualAggrega
         qWarning() << "Failed to create individual from contact: Persona already exists";
         reply = createData->m_message.createErrorReply("Failed to create individual from contact", "Contact already exists");
     } else {
+        QIndividual::setExtendedDetails(persona,
+                                        createData->m_contact.details(QContactExtendedDetail::Type),
+                                        QDateTime::currentDateTime());
         FolksIndividual *individual = folks_persona_get_individual(persona);
         ContactEntry *entry = createData->m_addressbook->m_contacts->value(QString::fromUtf8(folks_individual_get_id(individual)));
         if (entry) {
+            // We will need to reload contact due the extended details
+            entry->individual()->flush();
             QString vcard = VCardParser::contactToVcard(entry->individual()->contact());
             if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
                 reply = createData->m_message.createReply(vcard);
             }
         } else if (createData->m_message.type() != QDBusMessage::InvalidMessage) {
-            reply = createData->m_message.createErrorReply("Failed to retrieve the new contact", error->message);
+            reply = createData->m_message.createErrorReply("", "Failed to retrieve the new contact");
         }
     }
     //TODO: use dbus connection
@@ -1065,7 +1360,20 @@ void AddressBook::quitSignalHandler(int)
  {
      char a = 1;
      ::write(m_sigQuitFd[0], &a, sizeof(a));
- }
+}
+
+bool AddressBook::processUpdates()
+{
+    int timeout = 10;
+    while(!m_updateLock.tryLock(1000)) {
+        if (timeout <= 0) {
+            return false;
+        }
+        QCoreApplication::processEvents();
+        timeout--;
+    }
+    return true;
+}
 
 int AddressBook::init()
 {

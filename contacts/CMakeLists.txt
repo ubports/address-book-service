@@ -30,6 +30,7 @@ add_library(${QCONTACTS_BACKEND} SHARED
 )
 
 include_directories(
+    ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}
 )
 

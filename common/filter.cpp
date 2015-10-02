@@ -25,12 +25,15 @@
 #include <QtCore/QDebug>
 
 #include <QtContacts/QContactGuid>
+#include <QtContacts/QContactExtendedDetail>
 #include <QtContacts/QContactIdFilter>
 #include <QtContacts/QContactDetailFilter>
 #include <QtContacts/QContactUnionFilter>
 #include <QtContacts/QContactIntersectionFilter>
 #include <QtContacts/QContactManagerEngine>
-#include <QtContacts/QContactDetailRangeFilter>
+#include <QtContacts/QContactChangeLogFilter>
+#include <QtContacts/QContactDetailFilter>
+#include <QtContacts/QContactIdFilter>
 #include <QtContacts/QContactRelationshipFilter>
 
 #include <phonenumbers/phonenumberutil.h>
@@ -60,9 +63,127 @@ QtContacts::QContactFilter Filter::toContactFilter() const
     return m_filter;
 }
 
-bool Filter::test(const QContact &contact) const
+bool Filter::test(const QContact &contact, const QDateTime &deletedDate) const
 {
-    return testFilter(m_filter, contact);
+    return testFilter(m_filter, contact, deletedDate);
+}
+
+bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, const QDateTime &deletedDate)
+{
+    switch(filter.type()) {
+        // query by id return the contact even if deleted
+        case QContactFilter::IdFilter:
+            return QContactManagerEngine::testFilter(filter, contact);
+
+        case QContactFilter::ChangeLogFilter:
+        {
+            const QContactChangeLogFilter bf(filter);
+            if (bf.eventType() == QContactChangeLogFilter::EventRemoved) {
+                return (deletedDate >= bf.since());
+            } else if (QContactManagerEngine::testFilter(filter, contact)) {
+                return true;
+            }
+            break;
+        }
+
+        case QContactFilter::ContactDetailFilter:
+        {
+            const QContactDetailFilter cdf(filter);
+            if (cdf.detailType() == QContactDetail::TypeUndefined)
+                return false;
+
+            /* See if this contact has one of these details in it */
+            const QList<QContactDetail>& details = contact.details(cdf.detailType());
+
+            if (details.count() == 0)
+                return false; /* can't match */
+
+            /* See if we need to check the values */
+            if (cdf.detailField() == -1)
+                return true;  /* just testing for the presence of a detail of the specified type */
+
+            if (cdf.matchFlags() & QContactFilter::MatchPhoneNumber) {
+                /* Doing phone number filtering.  We hand roll an implementation here, backends will obviously want to override this. */
+                QString input = cdf.value().toString();
+
+                /* Look at every detail in the set of details and compare */
+                for (int j = 0; j < details.count(); j++) {
+                    const QContactDetail& detail = details.at(j);
+                    const QString& valueString = detail.value(cdf.detailField()).toString();
+
+                    if (comparePhoneNumbers(input, valueString, cdf.matchFlags())) {
+                        return true;
+                    }
+                }
+            } else if (QContactManagerEngine::testFilter(filter, contact)) {
+                return true;
+            }
+            break;
+        }
+
+        case QContactFilter::IntersectionFilter:
+        {
+            /* XXX In theory we could reorder the terms to put the native tests first */
+            const QContactIntersectionFilter bf(filter);
+            const QList<QContactFilter>& terms = bf.filters();
+            bool includeDeleted = false;
+
+            if (terms.isEmpty()) {
+                break;
+            }
+
+            // if there is a changeLogFilter in the filter we will accept deleted contacts
+            if (deletedDate.isValid()) {
+                Q_FOREACH(const QContactFilter &f, terms) {
+                    if (f.type() == QContactFilter::ChangeLogFilter) {
+                        includeDeleted = true;
+                        break;
+                    }
+                }
+            }
+
+            Q_FOREACH(const QContactFilter &f, terms) {
+                bool r = false;
+                if (!includeDeleted || (f.type() == QContactFilter::ChangeLogFilter)) {
+                    r = testFilter(f, contact, deletedDate);
+                } else {
+                    r = testFilter(f, contact, QDateTime());
+                }
+
+                if (!r) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        break;
+
+        case QContactFilter::UnionFilter:
+        {
+            /* XXX In theory we could reorder the terms to put the native tests first */
+            const QContactUnionFilter bf(filter);
+            const QList<QContactFilter>& terms = bf.filters();
+            if (terms.count() > 0) {
+                for(int j = 0; j < terms.count(); j++) {
+                    if (testFilter(terms.at(j), contact, deletedDate)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            // Fall through to end
+        }
+        break;
+
+        default:
+            if (deletedDate.isNull() && QContactManagerEngine::testFilter(filter, contact)) {
+                return true;
+            }
+            break;
+
+    }
+
+    return false;
 }
 
 bool Filter::comparePhoneNumbers(const QString &input, const QString &value, QContactFilter::MatchFlags flags)
@@ -107,85 +228,6 @@ bool Filter::comparePhoneNumbers(const QString &input, const QString &value, QCo
         } else {
             return match > i18n::phonenumbers::PhoneNumberUtil::NO_MATCH;
         }
-    }
-    return false;
-}
-
-bool Filter::testFilter(const QContactFilter& filter, const QContact &contact)
-{
-    switch(filter.type()) {
-        case QContactFilter::ContactDetailFilter:
-            {
-                const QContactDetailFilter cdf(filter);
-                if (cdf.detailType() == QContactDetail::TypeUndefined)
-                    return false;
-
-                /* See if this contact has one of these details in it */
-                const QList<QContactDetail>& details = contact.details(cdf.detailType());
-
-                if (details.count() == 0)
-                    return false; /* can't match */
-
-                /* See if we need to check the values */
-                if (cdf.detailField() == -1)
-                    return true;  /* just testing for the presence of a detail of the specified type */
-
-                if (cdf.matchFlags() & QContactFilter::MatchPhoneNumber) {
-                    /* Doing phone number filtering.  We hand roll an implementation here, backends will obviously want to override this. */
-                    QString input = cdf.value().toString();
-
-                    /* Look at every detail in the set of details and compare */
-                    for (int j = 0; j < details.count(); j++) {
-                        const QContactDetail& detail = details.at(j);
-                        const QString& valueString = detail.value(cdf.detailField()).toString();
-
-                        if (comparePhoneNumbers(input, valueString, cdf.matchFlags())) {
-                            return true;
-                        }
-                    }
-                } else if (QContactManagerEngine::testFilter(filter, contact)) {
-                    return true;
-                }
-            }
-            break;
-        case QContactFilter::IntersectionFilter:
-            {
-                /* XXX In theory we could reorder the terms to put the native tests first */
-                const QContactIntersectionFilter bf(filter);
-                const QList<QContactFilter>& terms = bf.filters();
-                if (terms.count() > 0) {
-                    for(int j = 0; j < terms.count(); j++) {
-                        if (!testFilter(terms.at(j), contact)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                // Fall through to end
-            }
-            break;
-
-        case QContactFilter::UnionFilter:
-            {
-                /* XXX In theory we could reorder the terms to put the native tests first */
-                const QContactUnionFilter bf(filter);
-                const QList<QContactFilter>& terms = bf.filters();
-                if (terms.count() > 0) {
-                    for(int j = 0; j < terms.count(); j++) {
-                        if (testFilter(terms.at(j), contact)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-                // Fall through to end
-            }
-            break;
-        default:
-            if (QContactManagerEngine::testFilter(filter, contact)) {
-                return true;
-            }
-            break;
     }
     return false;
 }
@@ -236,9 +278,20 @@ bool Filter::isEmpty() const
     return checkIsEmpty(QList<QContactFilter>() << m_filter);
 }
 
+bool Filter::includeRemoved() const
+{
+    // Only return removed contacts if the filter type is ChangeLogFilter
+    return (m_filter.type() == QContactFilter::ChangeLogFilter);
+}
+
 QString Filter::phoneNumberToFilter() const
 {
     return phoneNumberToFilter(m_filter);
+}
+
+QStringList Filter::idsToFilter() const
+{
+    return idsToFilter(m_filter);
 }
 
 QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
@@ -254,7 +307,7 @@ QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
     }
     case QContactFilter::UnionFilter:
     {
-        // if the union contains only the phone filter we still able to optimize
+        // if the union contains only the phone filter we'are still able to optimize
         const QContactUnionFilter uf(filter);
         if (uf.filters().size() == 1) {
             return phoneNumberToFilter(uf.filters().first());
@@ -276,6 +329,52 @@ QString Filter::phoneNumberToFilter(const QtContacts::QContactFilter &filter)
         break;
     }
     return QString();
+}
+
+QStringList Filter::idsToFilter(const QtContacts::QContactFilter &filter)
+{
+    QStringList result;
+
+    switch (filter.type()) {
+    case QContactFilter::ContactDetailFilter:
+    {
+        const QContactDetailFilter cdf(filter);
+        if ((cdf.detailType() == QContactDetail::TypeGuid) &&
+            (cdf.detailField() == QContactGuid::FieldGuid) &&
+            cdf.matchFlags().testFlag(QContactFilter::MatchExactly)) {
+            result << cdf.value().toString();
+        }
+        break;
+    }
+    case QContactFilter::IdFilter:
+    {
+
+        const QContactIdFilter idf(filter);
+        Q_FOREACH(const QContactId &id, idf.ids()) {
+            result << id.toString();
+        }
+        break;
+    }
+    case QContactFilter::UnionFilter:
+    {
+        const QContactUnionFilter uf(filter);
+        Q_FOREACH(const QContactFilter &f, uf.filters()) {
+            result.append(idsToFilter(f));
+        }
+        break;
+    }
+    case QContactFilter::IntersectionFilter:
+    {
+        const QContactIntersectionFilter cif(filter);
+        Q_FOREACH(const QContactFilter &f, cif.filters()) {
+            result.append(idsToFilter(f));
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return result;
 }
 
 QString Filter::toString(const QtContacts::QContactFilter &filter)
@@ -329,8 +428,8 @@ QtContacts::QContactFilter Filter::parseUnionFilter(const QtContacts::QContactFi
 QtContacts::QContactFilter Filter::parseIntersectionFilter(const QtContacts::QContactFilter &filter)
 {
     QContactIntersectionFilter newFilter;
-    const QContactIntersectionFilter *intersectFilter = static_cast<const QContactIntersectionFilter*>(&filter);
-    Q_FOREACH(const QContactFilter &f, intersectFilter->filters()) {
+    const QContactIntersectionFilter intersectFilter(filter);
+    Q_FOREACH(const QContactFilter &f, intersectFilter.filters()) {
         newFilter << parseFilter(f);
     }
     return newFilter;

@@ -29,6 +29,21 @@ using namespace QtContacts;
 
 namespace galera {
 
+template<>
+bool sortDetails<QContactDetail::TypePhoneNumber>(const QContactDetail &d1, const QContactDetail &d2)
+{
+    return d1.value(QtContacts::QContactPhoneNumber::FieldNumber).toString() <
+           d2.value(QtContacts::QContactPhoneNumber::FieldNumber).toString();
+}
+
+template<>
+bool sortDetails<QContactDetail::TypeEmailAddress>(const QContactDetail &d1, const QContactDetail &d2)
+{
+    return d1.value(QtContacts::QContactEmailAddress::FieldEmailAddress).toString() <
+           d2.value(QtContacts::QContactEmailAddress::FieldEmailAddress).toString();
+}
+
+
 UpdateContactRequest::UpdateContactRequest(QtContacts::QContact newContact, QIndividual *parent, QObject *listener, const char *slot)
     : QObject(),
       m_parent(parent),
@@ -100,17 +115,24 @@ void UpdateContactRequest::notifyError(const QString &errorMessage)
 }
 
 bool UpdateContactRequest::isEqual(const QtContacts::QContactDetail &detailA,
-                                         const QtContacts::QContactDetail &detailB)
+                                   const QtContacts::QContactDetail &detailB)
 {
     if (detailA.type() != detailB.type()) {
         return false;
     }
-
     switch(detailA.type()) {
     case QContactDetail::TypeFavorite:
-        return detailA.value(QContactFavorite::FieldFavorite) == detailB.value(QContactFavorite::FieldFavorite);
+        return detailA.value(QContactFavorite::FieldFavorite).toBool() == detailB.value(QContactFavorite::FieldFavorite).toBool();
     default:
-        return (detailA == detailB);
+    {
+        // clear detail uri to compare only the field value
+        QContactDetail copyA(detailA);
+        QContactDetail copyB(detailB);
+
+        copyA.setDetailUri("");
+        copyB.setDetailUri("");
+        return (copyA == copyB);
+    }
     }
 }
 
@@ -119,6 +141,26 @@ bool UpdateContactRequest::isEqual(QList<QtContacts::QContactDetail> listA,
 {
     if (listA.size() != listB.size()) {
         return false;
+    }
+
+    if (listA.size() == 0) {
+        return true;
+    }
+
+    const int detailType = listA.first().type();
+    switch(detailType) {
+    case QContactDetail::TypePhoneNumber:
+        qSort(listA.begin(), listA.end(), sortDetails<QContactDetail::TypePhoneNumber>);
+        qSort(listB.begin(), listB.end(), sortDetails<QContactDetail::TypePhoneNumber>);
+        break;
+    case QContactDetail::TypeEmailAddress:
+        qSort(listA.begin(), listA.end(), sortDetails<QContactDetail::TypeEmailAddress>);
+        qSort(listB.begin(), listB.end(), sortDetails<QContactDetail::TypeEmailAddress>);
+        break;
+    default:
+        qSort(listA.begin(), listA.end(), sortDetails<0>);
+        qSort(listB.begin(), listB.end(), sortDetails<0>);
+        break;
     }
 
     for(int i=0; i < listA.size(); i++) {
@@ -261,6 +303,30 @@ void UpdateContactRequest::updateAvatar()
         qDebug() << "avatar diff:"
                  << "\n\t" << originalDetails.size() << (originalDetails.size() > 0 ? originalDetails[0] : QContactDetail()) << "\n"
                  << "\n\t" << newDetails.size() << (newDetails.size() > 0 ? newDetails[0] : QContactDetail());
+
+        // update avatar version if necessary
+        QContactExtendedDetail originalAvatarRev;
+        QContactExtendedDetail newAvatarRev;
+        Q_FOREACH(const QContactExtendedDetail &det,
+                  originalDetailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0)) {
+            if (det.name() == "X-AVATAR-REV") {
+                originalAvatarRev = det;
+                break;
+            }
+        }
+        Q_FOREACH(const QContactExtendedDetail &det,
+                  detailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0)) {
+            if (det.name() == "X-AVATAR-REV") {
+                newAvatarRev = det;
+                break;
+            }
+        }
+        // if the avatar changed and the rev still the same we need to reset it to force a sync
+        if (originalAvatarRev.data() == newAvatarRev.data()) {
+            newAvatarRev.setData("");
+            m_newContact.saveDetail(&newAvatarRev);
+        }
+
         //Only supports one avatar
         QUrl avatarUri;
         QUrl oldAvatarUri;
@@ -275,7 +341,8 @@ void UpdateContactRequest::updateAvatar()
             avatarUri = avatar.imageUrl();
         }
 
-        if (avatarUri != oldAvatarUri) {
+        if ((avatarUri != oldAvatarUri) &&
+            (avatarUri.isLocalFile() || avatarUri.isEmpty())){
             GFileIcon *avatarFileIcon = NULL;
             if(!avatarUri.isEmpty()) {
                 QString formattedUri = avatarUri.toString(QUrl::RemoveUserInfo);
@@ -295,10 +362,10 @@ void UpdateContactRequest::updateAvatar()
             if (avatarFileIcon) {
                 g_object_unref(avatarFileIcon);
             }
+            return;
         }
-    } else {
-        updateDetailsDone(0, 0, this);
     }
+    updateDetailsDone(0, 0, this);
 }
 
 void UpdateContactRequest::updateBirthday()
@@ -403,7 +470,6 @@ void UpdateContactRequest::updateName()
     if (m_currentPersona &&
         FOLKS_IS_NAME_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, newDetails)) {
-        qDebug() << "Name diff";
         //Only supports one fullName
         FolksStructuredName *sn = 0;
         if (newDetails.count()) {
@@ -670,6 +736,13 @@ void UpdateContactRequest::updateFavorite()
     QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeFavorite, m_currentPersonaIndex, 0);
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeFavorite, m_currentPersonaIndex, 0);
 
+    // as default all contacts has favorte set to false
+    if (newDetails.isEmpty()) {
+        QContactFavorite fav;
+        fav.setFavorite(false);
+        newDetails << fav;
+    }
+
     if (m_currentPersona &&
         FOLKS_IS_FAVOURITE_DETAILS(m_currentPersona) &&
         !isEqual(originalDetails, newDetails)) {
@@ -690,6 +763,18 @@ void UpdateContactRequest::updateFavorite()
     } else {
         updateDetailsDone(0, 0, this);
     }
+}
+
+void UpdateContactRequest::updateExtendedDetails()
+{
+    QList<QContactDetail> originalDetails = originalDetailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0);
+    QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeExtendedDetail, m_currentPersonaIndex, 0);
+    if (m_currentPersona &&
+        !isEqual(originalDetails, newDetails)) {
+        qDebug() << "Extended details diff";
+        QIndividual::setExtendedDetails(m_currentPersona, newDetails);
+    }
+    updateDetailsDone(0, 0, this);
 }
 
 void UpdateContactRequest::updatePersona()
@@ -782,6 +867,7 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         }
 
         if (!errorMessage.isEmpty()) {
+            qWarning() << "Fail to update contact" << errorMessage;
             self->invokeSlot(errorMessage);
             return;
         }
@@ -799,7 +885,6 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         self->updateBirthday();
         break;
     case QContactDetail::TypeDisplayLabel:
-        qDebug() << "will update full name" << QIndividual::displayName(self->m_newContact);
         self->updateFullName(QIndividual::displayName(self->m_newContact));
         break;
     case QContactDetail::TypeEmailAddress:
@@ -809,6 +894,9 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         // the online account and this will avoid problems with the automatic update ]
         // from folks
         self->updateOnlineAccount();
+        break;
+    case QContactDetail::TypeExtendedDetail:
+        self->updateExtendedDetails();
         break;
     case QContactDetail::TypeFavorite:
         self->updateFavorite();
@@ -847,7 +935,6 @@ void UpdateContactRequest::updateDetailsDone(GObject *detail, GAsyncResult *resu
         //TODO
     case QContactDetail::TypeGuid:
     case QContactDetail::TypeType:
-    case QContactDetail::TypeExtendedDetail:
         updateDetailsDone(0, 0, self);
         break;
     case QContactDetail::TypeVersion:

@@ -19,12 +19,13 @@
 #ifndef __GALERA_FILTER_H__
 #define __GALERA_FILTER_H__
 
+#include <QtCore/QDateTime>
 #include <QtContacts/QContactFilter>
 #include <QtContacts/QContact>
 
+
 namespace galera
 {
-
 class Filter
 {
 public:
@@ -34,10 +35,14 @@ public:
 
     QString toString() const;
     QtContacts::QContactFilter toContactFilter() const;
-    bool test(const QtContacts::QContact &contact) const;
+    bool test(const QtContacts::QContact &contact, const QDateTime &deletedDate = QDateTime()) const;
     bool isValid() const;
     bool isEmpty() const;
+    bool includeRemoved() const;
+
+    // optimization by index
     QString phoneNumberToFilter() const;
+    QStringList idsToFilter() const;
 
 private:
     QtContacts::QContactFilter m_filter;
@@ -48,6 +53,7 @@ private:
     bool checkIsValid(const QList<QtContacts::QContactFilter> filters) const;
 
     static QString phoneNumberToFilter(const QtContacts::QContactFilter &filter);
+    static QStringList idsToFilter(const QtContacts::QContactFilter &filter);
     static QString toString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter buildFilter(const QString &filter);
 
@@ -57,7 +63,7 @@ private:
     static QtContacts::QContactFilter parseIdFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseUnionFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseIntersectionFilter(const QtContacts::QContactFilter &filter);
-    static bool testFilter(const QtContacts::QContactFilter& filter, const QtContacts::QContact &contact);
+    static bool testFilter(const QtContacts::QContactFilter& filter, const QtContacts::QContact &contact, const QDateTime &deletedDate);
     static bool comparePhoneNumbers(const QString &phoneNumberA, const QString &phoneNumberB, QtContacts::QContactFilter::MatchFlags flags);
 };
 

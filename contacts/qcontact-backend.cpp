@@ -35,6 +35,7 @@
 
 #include "contacts-service.h"
 #include "qcontact-engineid.h"
+#include "config.h"
 
 using namespace QtContacts;
 
@@ -63,6 +64,7 @@ QString GaleraEngineFactory::managerName() const
 GaleraManagerEngine* GaleraManagerEngine::createEngine(const QMap<QString, QString> &parameters)
 {
     GaleraManagerEngine *engine = new GaleraManagerEngine();
+    engine->m_service->setShowInvisibleContacts(parameters.value(ADDRESS_BOOK_SHOW_INVISIBLE_PROP, "false").toLower() == "true");
     return engine;
 }
 
@@ -195,12 +197,6 @@ bool GaleraManagerEngine::saveContact(QtContacts::QContact *contact, QtContacts:
 
 bool GaleraManagerEngine::removeContact(const QtContacts::QContactId &contactId, QtContacts::QContactManager::Error *error)
 {
-    *error = QContactManager::NoError;
-    contact(contactId, QContactFetchHint(), error);
-    if (*error == QContactManager::DoesNotExistError) {
-        return false;
-    }
-
     QContactRemoveRequest request;
 
     request.setContactId(contactId);
@@ -213,7 +209,7 @@ bool GaleraManagerEngine::removeContact(const QtContacts::QContactId &contactId,
 
 bool GaleraManagerEngine::saveRelationship(QtContacts::QContactRelationship *relationship, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
+    qWarning() << "Function not implemented" << Q_FUNC_INFO;
 
     *error = QContactManager::NoError;
     return true;
@@ -221,7 +217,7 @@ bool GaleraManagerEngine::saveRelationship(QtContacts::QContactRelationship *rel
 
 bool GaleraManagerEngine::removeRelationship(const QtContacts::QContactRelationship &relationship, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
+    qWarning() << "Function not implemented" << Q_FUNC_INFO;
 
     *error = QContactManager::NoError;
     return true;
@@ -262,16 +258,19 @@ bool GaleraManagerEngine::saveContacts(QList<QContact> *contacts,
 
 bool GaleraManagerEngine::removeContacts(const QList<QtContacts::QContactId> &contactIds, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
-
+    QContactRemoveRequest request;
+    request.setContactIds(contactIds);
+    startRequest(&request);
+    waitForRequestFinished(&request, -1);
     *error = QContactManager::NoError;
+
     return true;
 }
 
 /* "Self" contact id (MyCard) */
 bool GaleraManagerEngine::setSelfContactId(const QtContacts::QContactId &contactId, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
+    qWarning() << "Function not implemented" << Q_FUNC_INFO;
 
     *error = QContactManager::NoError;
     return true;
@@ -279,7 +278,7 @@ bool GaleraManagerEngine::setSelfContactId(const QtContacts::QContactId &contact
 
 QtContacts::QContactId GaleraManagerEngine::selfContactId(QtContacts::QContactManager::Error *error) const
 {
-    qDebug() << Q_FUNC_INFO;
+    qWarning() << "Function not implemented" << Q_FUNC_INFO;
 
     *error = QContactManager::NoError;
     return QContactId();
@@ -288,7 +287,7 @@ QtContacts::QContactId GaleraManagerEngine::selfContactId(QtContacts::QContactMa
 /* Relationships between contacts */
 QList<QtContacts::QContactRelationship> GaleraManagerEngine::relationships(const QString &relationshipType, const QContact& participant, QContactRelationship::Role role, QtContacts::QContactManager::Error *error) const
 {
-    qDebug() << Q_FUNC_INFO;
+    qWarning() << "Function not implemented" << Q_FUNC_INFO;
 
     *error = QContactManager::NoError;
     return QList<QContactRelationship>();
@@ -296,7 +295,7 @@ QList<QtContacts::QContactRelationship> GaleraManagerEngine::relationships(const
 
 bool GaleraManagerEngine::saveRelationships(QList<QtContacts::QContactRelationship> *relationships, QMap<int, QtContacts::QContactManager::Error>* errorMap, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
+    qWarning() << "Function not implemented" << Q_FUNC_INFO;
 
     *error = QContactManager::NoError;
     return true;
@@ -304,7 +303,7 @@ bool GaleraManagerEngine::saveRelationships(QList<QtContacts::QContactRelationsh
 
 bool GaleraManagerEngine::removeRelationships(const QList<QtContacts::QContactRelationship> &relationships, QMap<int, QtContacts::QContactManager::Error> *errorMap, QtContacts::QContactManager::Error *error)
 {
-    qDebug() << Q_FUNC_INFO;
+    qWarning() << "Function not implemented" << Q_FUNC_INFO;
 
     *error = QContactManager::NoError;
     return true;
@@ -313,7 +312,7 @@ bool GaleraManagerEngine::removeRelationships(const QList<QtContacts::QContactRe
 /* Validation for saving */
 bool GaleraManagerEngine::validateContact(const QtContacts::QContact &contact, QtContacts::QContactManager::Error *error) const
 {
-    qDebug() << Q_FUNC_INFO;
+    qWarning() << "Function not implemented" << Q_FUNC_INFO;
 
     *error = QContactManager::NoError;
     return true;

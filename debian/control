@@ -5,11 +5,20 @@ Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake (>= 2.8.9),
                dbus-test-runner,
                debhelper (>= 9),
+               evolution-data-server-online-accounts,
                gobject-introspection (>= 1.31.0-2~),
+               libaccounts-glib-dev,
+               libaccounts-qt5-dev,
                libfolks-dev,
                libfolks-eds-dev,
                libgee-0.8-dev (>= 0.8.4),
+               libnotify-dev,
+               libmessaging-menu-dev,
                libphonenumber-dev,
+               liburl-dispatcher1-dev,
+               python3,
+               python3-dbus,
+               python3-gi,
                qt5-default,
                qt5-qmake,
                qtbase5-dev,
@@ -23,7 +32,8 @@ Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/address-book-service/trun
 Package: address-book-service
 Architecture: any
 Multi-Arch: same
-Depends: evolution-data-server(>= 3.12.11),
+Depends: address-book-updater (= ${binary:Version}),
+         evolution-data-server(>= 3.12.11),
          libfolks-eds25,
          ${misc:Depends},
          ${shlibs:Depends},
@@ -47,7 +57,6 @@ Depends: ${misc:Depends},
 Description: Low-level tests for dummy-backend
  Tests to ensure the dummy backend keeps functioning.
 
-
 Package: qtcontact5-galera
 Architecture: any
 Multi-Arch: same
@@ -56,3 +65,15 @@ Depends: address-book-service (= ${binary:Version}),
          ${shlibs:Depends},
 Description: QtContacts backend for galera contact service.
  A QContactEngine implementation using address-book-service.
+
+Package: address-book-updater
+Architecture: any
+Multi-Arch: same
+Depends: buteo-sync-plugins-contacts-google,
+         indicator-transfer-buteo,
+         qtcontact5-galera (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Description: Ubuntu contact service updater
+ A helper program to update address book service and address book app configuration and sync files.
+

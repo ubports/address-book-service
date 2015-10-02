@@ -26,4 +26,9 @@
 #define CPIM_ADDRESSBOOK_VIEW_OBJECT_PATH   "/com/canonical/pim/AddressBookView"
 #define CPIM_ADDRESSBOOK_VIEW_IFACE_NAME    "com.canonical.pim.AddressBookView"
 
+//Updater
+#define CPIM_UPDATE_SERVICE_NAME              "com.canonical.pim.updater"
+#define CPIM_UPDATE_OBJECT_PATH               "/com/canonical/pim/Updater"
+#define CPIM_UPDATE_OBJECT_IFACE_NAME         "com.canonical.pim.Updater"
+
 #endif

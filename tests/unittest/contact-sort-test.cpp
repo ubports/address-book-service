@@ -100,7 +100,7 @@ private Q_SLOTS:
         m_serverIface->call("createContact", copyVcard, "dummy-store");
 
         // check if the cotact is listed in the correct order
-        QDBusMessage result = m_serverIface->call("query", "", "", 0, QStringList());
+        QDBusMessage result = m_serverIface->call("query", "", "", 0, false, QStringList());
         QDBusObjectPath viewObjectPath = result.arguments()[0].value<QDBusObjectPath>();
         QDBusInterface *view = new QDBusInterface(m_serverIface->service(),
                                                   viewObjectPath.path(),
@@ -147,7 +147,7 @@ private Q_SLOTS:
         m_serverIface->call("createContact", copyVcard, "dummy-store");
 
         // check if the cotact is listed in the correct order
-        QDBusMessage result = m_serverIface->call("query", "", "", 0, QStringList());
+        QDBusMessage result = m_serverIface->call("query", "", "", 0, false, QStringList());
         QDBusObjectPath viewObjectPath = result.arguments()[0].value<QDBusObjectPath>();
         QDBusInterface *view = new QDBusInterface(m_serverIface->service(),
                                                   viewObjectPath.path(),
@@ -179,7 +179,7 @@ private Q_SLOTS:
         m_serverIface->call("updateContact", vcard, "dummy-store");
 
         // check if the cotact still in the correct order
-        result = m_serverIface->call("query", "", "", 0, QStringList());
+        result = m_serverIface->call("query", "", "", 0, false, QStringList());
         viewObjectPath = result.arguments()[0].value<QDBusObjectPath>();
         view = new QDBusInterface(m_serverIface->service(),
                                   viewObjectPath.path(),

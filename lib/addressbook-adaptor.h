@@ -38,6 +38,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
     Q_CLASSINFO("D-Bus Introspection", ""
 "  <interface name=\"com.canonical.pim.AddressBook\">\n"
 "    <property name=\"isReady\" type=\"b\" access=\"read\"/>\n"
+"    <property name=\"safeMode\" type=\"b\" access=\"readwrite\"/>\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"as\" name=\"ids\"/>\n"
 "    </signal>\n"
@@ -51,19 +52,27 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"out\" type=\"a(ss)\" name=\"errorMap\"/>\n"
 "    </signal>\n"
 "    <signal name=\"readyChanged\"/>\n"
+"    <signal name=\"safeModeChanged\"/>\n"
 "    <method name=\"ping\">\n"
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
 "    <method name=\"availableSources\">\n"
-"      <arg direction=\"out\" type=\"a(ssb)\"/>\n"
+"      <arg direction=\"out\" type=\"a(ssssubb)\"/>\n"
 "      <annotation value=\"SourceList\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
 "    </method>\n"
 "    <method name=\"source\">\n"
-"      <arg direction=\"out\" type=\"(ssb)\"/>\n"
+"      <arg direction=\"out\" type=\"(ssssubb)\"/>\n"
 "      <annotation value=\"Source\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
 "    </method>\n"
 "    <method name=\"createSource\">\n"
 "      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"in\" type=\"b\"/>\n"
+"      <arg direction=\"out\" type=\"(sb)\"/>\n"
+"      <annotation value=\"Source\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
+"    </method>\n"
+"    <method name=\"createSourceForAccount\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"in\" type=\"u\"/>\n"
 "      <arg direction=\"in\" type=\"b\"/>\n"
 "      <arg direction=\"out\" type=\"(sb)\"/>\n"
 "      <annotation value=\"Source\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
@@ -79,6 +88,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"s\" name=\"clause\"/>\n"
 "      <arg direction=\"in\" type=\"s\" name=\"sort\"/>\n"
 "      <arg direction=\"in\" type=\"i\" name=\"maxCount\"/>\n"
+"      <arg direction=\"in\" type=\"b\" name=\"showDiabledContacts\"/>\n"
 "      <arg direction=\"in\" type=\"as\" name=\"sources\"/>\n"
 "      <arg direction=\"out\" type=\"o\"/>\n"
 "    </method>\n"
@@ -104,27 +114,44 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"s\" name=\"parent\"/>\n"
 "      <arg direction=\"in\" type=\"as\" name=\"contacts\"/>\n"
 "    </method>\n"
+"    <method name=\"purgeContacts\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"    </method>\n"
+"    <method name=\"shutDown\"/>\n"
 "  </interface>\n"
         "")
     Q_PROPERTY(bool isReady READ isReady NOTIFY readyChanged)
+    Q_PROPERTY(bool safeMode READ safeMode WRITE setSafeMode NOTIFY safeModeChanged)
+
 public:
     AddressBookAdaptor(const QDBusConnection &connection, AddressBook *parent);
     virtual ~AddressBookAdaptor();
+
+    void setSafeMode(bool flag);
 
 public Q_SLOTS:
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
     Source createSource(const QString &sourceName, bool setAsPrimary, const QDBusMessage &message);
+    Source createSourceForAccount(const QString &sourceName,
+                                  uint accountId,
+                                  bool setAsPrimary,
+                                  const QDBusMessage &message);
     bool removeSource(const QString &sourceId, const QDBusMessage &message);
     QStringList sortFields();
-    QDBusObjectPath query(const QString &clause, const QString &sort, int maxCount, const QStringList &sources);
+    QDBusObjectPath query(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources);
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
     QString linkContacts(const QStringList &contacts);
     bool unlinkContacts(const QString &parentId, const QStringList &contactsIds);
     bool isReady();
+    bool safeMode() const;
     bool ping();
+    void purgeContacts(const QString &since, const QString &sourceId, const QDBusMessage &message);
+    void shutDown() const;
+
 
 Q_SIGNALS:
     void contactsAdded(const QStringList &ids);
@@ -133,6 +160,7 @@ Q_SIGNALS:
     void asyncOperationResult(QMap<QString, QString> errors);
     void readyChanged();
     void reloaded();
+    void safeModeChanged();
 
 private:
     AddressBook *m_addressBook;

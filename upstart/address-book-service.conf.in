@@ -8,7 +8,6 @@ respawn
 
 pre-start script
     echo "START `date`"
-    initctl set-env ADDRESS_BOOK_SERVICE_DEBUG="On"
 end script
 
 post-stop script

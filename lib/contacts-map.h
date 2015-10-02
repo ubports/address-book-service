@@ -66,6 +66,7 @@ public:
     ContactEntry *value(FolksIndividual *individual) const;
     ContactEntry *value(const QString &id) const;
     QList<ContactEntry*> valueByPhone(const QString &phone) const;
+    QList<ContactEntry*> values(const QStringList &ids) const;
 
     ContactEntry *take(FolksIndividual *individual);
     ContactEntry *take(const QString &id);
@@ -78,6 +79,7 @@ public:
     void lockForRead();
     void unlock();
     QList<ContactEntry*> values() const;
+    QList<QtContacts::QContact> contacts() const;
     QStringList keys() const;
 
     void sertSort(const SortClause &clause);
@@ -95,7 +97,7 @@ private:
 
     void removeData(ContactEntry *entry, bool del);
     void insertData(ContactEntry *entry);
-    void insertdata(const QList<QtContacts::QContactPhoneNumber> &numbers, ContactEntry *entry);
+    void insertData(const QList<QtContacts::QContactPhoneNumber> &numbers, ContactEntry *entry);
     QString minimalNumber(const QString &phone) const;
 };
 

@@ -42,7 +42,7 @@ class View : public QObject
     Q_PROPERTY(int count READ count NOTIFY countChanged)
 
 public:
-    View(const QString &clause, const QString &sort, int maxCount, const QStringList &sources, ContactsMap *allContacts, QObject *parent);
+    View(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources, ContactsMap *allContacts, QObject *parent);
     ~View();
 
     static QString objectPath();

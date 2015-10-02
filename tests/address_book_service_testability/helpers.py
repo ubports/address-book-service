@@ -24,9 +24,9 @@ DBUS_IFACE_ADD_BOOKVIEW = 'com.canonical.pim.AddressBookView'
 bus = dbus.SessionBus()
 
 
-def query_contacts(fields='', query='', max_count=0, sources=[]):
+def query_contacts(fields='', query='', max_count=0, show_invisible=False, sources=[]):
     iface = _get_contacts_dbus_service_iface()
-    view_path = iface.query(fields, query, max_count, [])
+    view_path = iface.query(fields, query, max_count, show_invisible, [])
     view = bus.get_object(
         'com.canonical.pim', view_path)
     view_iface = dbus.Interface(

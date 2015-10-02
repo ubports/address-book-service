@@ -65,7 +65,7 @@ ContactsMap::~ContactsMap()
 
 ContactEntry *ContactsMap::value(const QString &id) const
 {
-    return m_idToEntry[id];
+    return m_idToEntry.value(id, 0);
 }
 
 QList<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
@@ -75,6 +75,18 @@ QList<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
     }
 
     return m_phoneToEntry.values(minimalNumber(phone));
+}
+
+QList<ContactEntry *> ContactsMap::values(const QStringList &ids) const
+{
+    QList<ContactEntry *> result;
+    Q_FOREACH(const QString &id, ids) {
+        ContactEntry *entry = m_idToEntry.value(id, 0);
+        if (entry) {
+            result << entry;
+        }
+    }
+    return result;
 }
 
 ContactEntry *ContactsMap::take(FolksIndividual *individual)
@@ -110,7 +122,7 @@ void ContactsMap::updatePosition(ContactEntry *entry)
     if (!m_sortClause.isEmpty()) {
         int oldPos = m_contacts.indexOf(entry);
 
-        ContactLessThan lessThan(m_sortClause);
+        ContactEntryLessThan lessThan(m_sortClause);
         QList<ContactEntry*>::iterator it(std::upper_bound(m_contacts.begin(), m_contacts.end(), entry, lessThan));
 
         if (it != m_contacts.end()) {
@@ -127,7 +139,7 @@ void ContactsMap::updatePosition(ContactEntry *entry)
     Q_FOREACH(const QString &key, m_phoneToEntry.keys(entry)) {
         m_phoneToEntry.remove(key, entry);
     }
-    insertdata(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
+    insertData(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
 }
 
 int ContactsMap::size() const
@@ -160,6 +172,15 @@ QList<ContactEntry*> ContactsMap::values() const
     return m_contacts;
 }
 
+QList<QContact> ContactsMap::contacts() const
+{
+    QList<QContact> result;
+    Q_FOREACH(ContactEntry *e, m_contacts) {
+        result << e->individual()->contact();
+    }
+    return result;
+}
+
 QStringList ContactsMap::keys() const
 {
     return m_idToEntry.keys();
@@ -170,7 +191,7 @@ void ContactsMap::sertSort(const SortClause &clause)
     if (clause.toContactSortOrder() != m_sortClause.toContactSortOrder()) {
         m_sortClause = clause;
         if (!m_sortClause.isEmpty()) {
-            ContactLessThan lessThan(m_sortClause);
+            ContactEntryLessThan lessThan(m_sortClause);
             qSort(m_contacts.begin(), m_contacts.end(), lessThan);
         }
     }
@@ -263,7 +284,7 @@ void ContactsMap::insertData(ContactEntry *entry)
 
         // fill contact list
         if (!m_sortClause.isEmpty()) {
-            ContactLessThan lessThan(m_sortClause);
+            ContactEntryLessThan lessThan(m_sortClause);
             QList<ContactEntry*>::iterator it(std::upper_bound(m_contacts.begin(), m_contacts.end(), entry, lessThan));
             m_contacts.insert(it, entry);
         } else {
@@ -271,11 +292,11 @@ void ContactsMap::insertData(ContactEntry *entry)
         }
 
         // fill phone map
-        insertdata(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
+        insertData(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
     }
 }
 
-void ContactsMap::insertdata(const QList<QContactPhoneNumber> &numbers, ContactEntry *entry)
+void ContactsMap::insertData(const QList<QContactPhoneNumber> &numbers, ContactEntry *entry)
 {
     Q_FOREACH(const QContactPhoneNumber &phone, numbers) {
         QString mNumber = minimalNumber(phone.number());
