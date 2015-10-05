@@ -60,6 +60,11 @@ class ButeoSyncFw(dbus.service.Object):
         return profileName
 
     @dbus.service.method(dbus_interface=MAIN_IFACE,
+                         out_signature='as')
+    def runningSyncs(self):
+        return []
+
+    @dbus.service.method(dbus_interface=MAIN_IFACE,
                          in_signature='ss', out_signature='as')
     def syncProfilesByKey(self, key, value):
         if key == "accountid" and (value in self._profiles):
@@ -84,10 +89,6 @@ class ButeoSyncFw(dbus.service.Object):
                          signature='sis')
     def signalProfileChanged(self, profileId, status, changedProfile):
         print("profileChanged called")
-
-    @dbus.service.signal(dbus_interface=MAIN_IFACE)
-    def safeModeChanged(self):
-        print("safeModeChanged called")
 
     def _run(self):
         self._mainloop.run()
