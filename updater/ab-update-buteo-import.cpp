@@ -69,6 +69,18 @@ bool ButeoImport::loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> 
     Accounts::Manager mgr;
     accountsToUpdate = mgr.accountList("contacts");
 
+    // filter only "google" accounts
+    Q_FOREACH(quint32 accountId, accountsToUpdate) {
+        QScopedPointer<Accounts::Account> account(mgr.account(accountId));
+        if (account->provider().name() != "google") {
+            accountsToUpdate.removeOne(accountId);
+        }
+    }
+
+    if (accountsToUpdate.isEmpty()) {
+        return true;
+    }
+
     qDebug() << "Accounts" << accountsToUpdate;
     // check which account does not have a source
     QMap<QString, quint32> srcs = sources();
