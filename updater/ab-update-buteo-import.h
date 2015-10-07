@@ -24,6 +24,16 @@
 
 #include "ab-update-module.h"
 
+class ContactSource
+{
+public:
+    ContactSource(const QString &_id, const QString &_name, quint32 _accountId);
+    ContactSource(const ContactSource &other);
+    QString id;
+    QString name;
+    quint32 accountId;
+};
+
 class ButeoImport : public ABUpdateModule
 {
     Q_OBJECT
@@ -39,6 +49,7 @@ public:
     bool canUpdate() override;
     bool commit() override;
     bool rollback() override;
+    bool markAsUpdate() override;
     ImportError lastError() const override;
 
 private Q_SLOTS:
@@ -54,13 +65,14 @@ private:
     QMutex m_importLock;
     ImportError m_lastError;
 
-    QMap<QString, quint32> sources() const;
+    QList<ContactSource> sources(quint32 _accountId = 0) const;
     QMap<quint32, QString> createProfileForAccounts(QList<quint32> ids);
     bool prepareButeo();
     bool createAccounts(QList<quint32> ids);
     bool removeProfile(const QString &profileId);
     bool buteoRemoveProfile(const QString &profileId) const;
     bool removeSources(const QStringList &sources);
+    bool restoreService();
 
     bool loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> &newAccounts);
     bool enableContactsService(quint32 accountId);

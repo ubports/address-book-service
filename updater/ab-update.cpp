@@ -61,6 +61,8 @@ QList<ABUpdateModule*> ABUpdate::needsUpdate() const
         qDebug() << "Check if module needs update" << module->name() << ":" << mNeedsUpdate;
         if (mNeedsUpdate) {
             result << module;
+        } else {
+            module->markAsUpdate();
         }
     }
     return result;

@@ -43,6 +43,7 @@
 
 #include "config.h"
 
+#define BUTEO_UOA_SERVICE_NAME    "buteo-contacts"
 #define BUTEO_DBUS_SERVICE_NAME   "com.meego.msyncd"
 #define BUTEO_DBUS_OBJECT_PATH    "/synchronizer"
 #define BUTEO_DBUS_INTERFACE      "com.meego.msyncd"
@@ -63,11 +64,13 @@ QString ButeoImport::name() const
     return QStringLiteral("Buteo");
 }
 
+// accountsToUpdate = Accounts that need a sync profile
+// newAccounts = Accounts that already have a sync profile just need a full sync
 bool ButeoImport::loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> &newAccounts)
 {
     // check which account already has a source
     Accounts::Manager mgr;
-    accountsToUpdate = mgr.accountList("contacts");
+    accountsToUpdate = mgr.accountList(BUTEO_UOA_SERVICE_NAME);
 
     // filter only "google" accounts
     Q_FOREACH(quint32 accountId, accountsToUpdate) {
@@ -83,15 +86,13 @@ bool ButeoImport::loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> 
 
     qDebug() << "Accounts" << accountsToUpdate;
     // check which account does not have a source
-    QMap<QString, quint32> srcs = sources();
-    for(QMap<QString, uint>::const_iterator i = srcs.begin();
-        i != srcs.end();
-        i++) {
-        qDebug() << "Source" << i.key() << "Account" << i.value();
+    QList<ContactSource> srcs = sources();
+    Q_FOREACH(const ContactSource &source, srcs) {
+        qDebug() << "Source" << source.id << "/" << source.name << "Account" << source.accountId;
         // remove ids that already has a source from the idList
-        if (i.value() > 0) {
-            newAccounts << i.value();
-            accountsToUpdate.removeOne(i.value());
+        if (source.accountId > 0) {
+            newAccounts << source.accountId;
+            accountsToUpdate.removeOne(source.accountId);
         }
     }
 
@@ -126,17 +127,17 @@ bool ButeoImport::enableContactsService(quint32 accountId)
     QScopedPointer<Accounts::Account> account(mgr.account(accountId));
 
     if (account) {
-        Q_FOREACH(Accounts::Service service, account->services()) {
-            if (service.serviceType() == "contacts") {
+        Q_FOREACH(const Accounts::Service &service, account->services()) {
+            if (service.name() == BUTEO_UOA_SERVICE_NAME) {
                 account->selectService(service);
                 account->setEnabled(true);
                 account->syncAndBlock();
+                break;
             }
         }
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 QString ButeoImport::accountName(quint32 accountId)
@@ -408,15 +409,17 @@ bool ButeoImport::update()
     return true;
 }
 
-QMap<QString, quint32> ButeoImport::sources() const
+QList<ContactSource> ButeoImport::sources(quint32 _accountId) const
 {
-    QMap<QString, quint32> result;
+    QList<ContactSource> result;
     QScopedPointer<QContactManager> manager(new QContactManager("galera"));
     QContactDetailFilter sourceFilter;
     sourceFilter.setDetailType(QContactDetail::TypeType, QContactType::FieldType);
     sourceFilter.setValue( QContactType::TypeGroup);
+
     Q_FOREACH(const QContact &c, manager->contacts(sourceFilter)) {
-        uint accountId = 0;
+        quint32 accountId = 0;
+
         // skip local source
         if (c.id().toString().endsWith("source@system-address-book")) {
             continue;
@@ -431,7 +434,13 @@ QMap<QString, quint32> ButeoImport::sources() const
             }
         }
 
-        result.insert(c.id().toString(), accountId);
+        if ((_accountId != 0) && (accountId !=  _accountId)) {
+            continue;
+        }
+
+        result << ContactSource(c.id().toString(),
+                                c.detail<QContactDisplayLabel>().label(),
+                                accountId);
     }
 
     return result;
@@ -505,8 +514,8 @@ bool ButeoImport::removeProfile(const QString &profileId)
     }
 
     // check for source
-    QMap<QString, quint32> listOfSources = sources();
-    QString sourceId = listOfSources.key(accountId, "");
+    QList<ContactSource> listOfSources = sources(accountId);
+    QString sourceId = listOfSources.isEmpty() ? "" : listOfSources.first().id;
 
     // remove source
     if (!sourceId.isEmpty()) {
@@ -553,6 +562,27 @@ bool ButeoImport::removeSources(const QStringList &sources)
     return result;
 }
 
+bool ButeoImport::restoreService()
+{
+    QDBusMessage setSafeMode = QDBusMessage::createMethodCall("com.canonical.pim",
+                                                              "/com/canonical/pim/AddressBook",
+                                                              "org.freedesktop.DBus.Properties",
+                                                              "Set");
+    QList<QVariant> args;
+    args << "com.canonical.pim.AddressBook"
+         << "safeMode"
+         << QVariant::fromValue(QDBusVariant(false));
+    setSafeMode.setArguments(args);
+    QDBusReply<void> reply = QDBusConnection::sessionBus().call(setSafeMode);
+    if (reply.error().isValid()) {
+        qWarning() << "Fail to disable safe-mode" << reply.error().message();
+        return false;
+    } else {
+        qDebug() << "Server safe mode disabled";
+        return true;
+    }
+}
+
 bool ButeoImport::commit()
 {
     Q_ASSERT(m_accountToProfiles.isEmpty());
@@ -562,14 +592,24 @@ bool ButeoImport::commit()
 
     // remove old sources
     QStringList oldSources;
-    QMap<QString, quint32> srcs = sources();
+    QList<ContactSource> srcs = sources();
 
-    for(QMap<QString, uint>::const_iterator i = srcs.begin();
-        i != srcs.end();
-        i++) {
-        if (i.value() == 0) {
-            qDebug() << "Remove source" << i.key();
-            oldSources << i.key();
+    // check which account already has a source
+    QStringList accountNames;
+    Accounts::Manager mgr;
+    Accounts::AccountIdList accounts = mgr.accountList(BUTEO_UOA_SERVICE_NAME);
+
+    Q_FOREACH(quint32 accountId, accounts) {
+        QScopedPointer<Accounts::Account> account(mgr.account(accountId));
+        accountNames << account->displayName();
+    }
+
+    Q_FOREACH(const ContactSource &cSource, srcs) {
+        // only remove sources that the accountId is 0 and the
+        // name maches the online-account
+        if ((cSource.accountId == 0) && accountNames.contains(cSource.name)) {
+            qDebug() << "Remove source" << cSource.id << cSource.name;
+            oldSources << cSource.id;
         }
     }
     removeSources(oldSources);
@@ -583,21 +623,7 @@ bool ButeoImport::commit()
     settings.sync();
 
     // disable address-book-service safe-mode
-    QDBusMessage setSafeMode = QDBusMessage::createMethodCall("com.canonical.pim",
-                                                              "/com/canonical/pim/AddressBook",
-                                                              "org.freedesktop.DBus.Properties",
-                                                              "Set");
-    QList<QVariant> args;
-    args << "com.canonical.pim.AddressBook"
-         << "safeMode"
-         << QVariant::fromValue(QDBusVariant(false));
-    setSafeMode.setArguments(args);
-    QDBusReply<void> reply = QDBusConnection::sessionBus().call(setSafeMode);
-    if (reply.error().isValid()) {
-        qWarning() << "Fail to disable safe-mode" << reply.error().message();
-    } else {
-        qDebug() << "Server safe mode disabled";
-    }
+    restoreService();
 
     // WORKAROUND: wait 4 secs to fire update done, this is necessary because the contacts will be set as favorite
     // just after the signal be fired and the changes can not have the same timestamp that the creation
@@ -613,6 +639,11 @@ bool ButeoImport::rollback()
     }
     m_failToSyncProfiles.clear();
     return true;
+}
+
+bool ButeoImport::markAsUpdate()
+{
+    return restoreService();
 }
 
 void ButeoImport::onError(const QString &accountName, int errorCode)
