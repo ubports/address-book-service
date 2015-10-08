@@ -22,16 +22,25 @@
 #include <QtCore/QEventLoop>
 #include <QtDBus/QDBusInterface>
 
+#include <Accounts/Account>
+
 #include "ab-update-module.h"
 
-class ContactSource
+class AccountInfo
 {
 public:
-    ContactSource(const QString &_id, const QString &_name, quint32 _accountId);
-    ContactSource(const ContactSource &other);
-    QString id;
-    QString name;
+    AccountInfo(quint32 _accountId, const QString &_accountName, bool _syncEnabled, const QString &_oldSourceId, const QString &_newSourceId, bool _emptySource);
+    AccountInfo(const AccountInfo &other);
+    void enableSync(const QString &syncService);
+
     quint32 accountId;
+    QString accountName;
+    bool syncEnabled;
+    QString oldSourceId;
+    QString newSourceId;
+    QString syncProfile;
+    bool emptySource;
+    bool removeAfterUpdate;
 };
 
 class ButeoImport : public ABUpdateModule
@@ -55,18 +64,24 @@ public:
 private Q_SLOTS:
     void onProfileChanged(const QString &profileName, int changeType, const QString &profileAsXml);
     void onSyncStatusChanged(const QString &aProfileName, int aStatus, const QString &aMessage, int aMoreDetails);
-    void onError(const QString &accountName, int errorCode);
+    void onError(const QString &accountName, int errorCode, bool unlock);
+    void onEnableAccountsReplied(const QString &reply);
+    void onOldContactsSyncFinished(const QString &accountName, const QString &serviceName);
+    void onOldContactsSyncError(const QString &accountName, const QString &serviceName, const QString &error);
 
 private:
-    QScopedPointer<QDBusInterface> m_buteoInterface;
-    QMap<quint32, QString> m_initialAccountToProfiles;
-    QMap<quint32, QString> m_pendingAccountToProfiles;
+    QList<AccountInfo> m_accounts;
+    QList<int> m_syncEvolutionQueue;
+    QMap<int, QString> m_buteoQueue;
     QStringList m_failToSyncProfiles;
+
+    QScopedPointer<QDBusInterface> m_buteoInterface;
+    QScopedPointer<QDBusInterface> m_syncMonitorInterface;
+
     QMutex m_importLock;
     ImportError m_lastError;
 
-    QList<ContactSource> sources(quint32 _accountId = 0) const;
-    QMap<quint32, QString> createProfileForAccounts(QList<quint32> ids);
+    QString createProfileForAccount(quint32 id);
     bool prepareButeo();
     bool createAccounts(QList<quint32> ids);
     bool removeProfile(const QString &profileId);
@@ -74,13 +89,16 @@ private:
     bool removeSources(const QStringList &sources);
     bool restoreService();
 
-    bool loadAccounts(QList<quint32> &accountsToUpdate, QList<quint32> &newAccounts);
-    bool enableContactsService(quint32 accountId);
-    QString accountName(quint32 accountId);
     QStringList runningSyncs() const;
     QString profileName(const QString &xml) const;
     QString profileName(quint32 accountId) const;
     bool startSync(const QString &profile) const;
     bool matchFavorites();
+    bool checkOldAccounts();
+    bool syncOldContacts();
+    void syncOldContactsContinue();
+    bool continueUpdate();
     ImportError parseError(int errorCode) const;
+
+    static void sourceInfo(Accounts::Account *account, QString &oldSourceId, QString &newSourceId, bool &isEmpty);
 };

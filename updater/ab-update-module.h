@@ -32,6 +32,7 @@ public:
         FailToCreateButeoProfiles,
         FailToAuthenticate,
         InernalError,
+        InitialSyncError,
         OnlineAccountNotFound,
         SyncAlreadyRunning,
         SyncError

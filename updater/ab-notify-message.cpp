@@ -101,6 +101,38 @@ void ABNotifyMessage::askYesOrNo(const QString &title,
                            this);
 }
 
+void ABNotifyMessage::askQuestion(const QString &title,
+                                  const QString &iconName,
+                                  const QString &question,
+                                  const QMap<QString, QString> &actions)
+{
+    m_notification = notify_notification_new(title.toUtf8().data(),
+                                             question.toUtf8().data(),
+                                             iconName.isEmpty() ? (const char*) 0 : iconName.toUtf8().constData());
+    notify_notification_set_hint_string(m_notification,
+                                        "x-canonical-snap-decisions",
+                                        "true");
+    notify_notification_set_hint_string(m_notification,
+                                        "x-canonical-private-button-tint",
+                                        "true");
+    notify_notification_set_hint_int32(m_notification,
+                                       "x-canonical-snap-decisions-timeout",
+                                       -1);
+
+    Q_FOREACH(const QString &act, actions.keys()) {
+        notify_notification_add_action(m_notification,
+                                       act.toUtf8().data(), actions.value(act).toUtf8().data(),
+                                       (NotifyActionCallback) ABNotifyMessage::onQuestionReplied,
+                                       this,
+                                       NULL);
+    }
+
+    g_signal_connect_after(m_notification,
+                           "closed",
+                           (GCallback) ABNotifyMessage::onNotificationClosed,
+                           this);
+}
+
 int ABNotifyMessage::closedReason() const
 {
     if (m_notification) {
@@ -130,6 +162,15 @@ void ABNotifyMessage::onNotificationClosed(NotifyNotification *notification, ABN
 {
     Q_UNUSED(notification)
     Q_EMIT self->messageClosed();
+    if (self->m_singleMessage) {
+        self->deleteLater();
+    }
+}
+
+void ABNotifyMessage::onQuestionReplied(NotifyNotification *notification, char *action, ABNotifyMessage *self)
+{
+    Q_UNUSED(notification)
+    Q_EMIT self->questionReplied(QString::fromUtf8(action));
     if (self->m_singleMessage) {
         self->deleteLater();
     }
