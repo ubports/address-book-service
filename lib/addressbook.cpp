@@ -522,10 +522,14 @@ void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &mess
         while (gee_iterator_next(i)) {
             FolksPersonaStore *ps = FOLKS_PERSONA_STORE(gee_iterator_get(i));
             if (g_strcmp0(folks_persona_store_get_id(ps), sourceId.toUtf8().constData()) == 0) {
-                rData = new RemoveSourceData;
-                rData->m_addressbook = this;
-                rData->m_message = message;
-                edsf_persona_store_remove_address_book(EDSF_PERSONA_STORE(ps), AddressBook::removeSourceDone, rData);
+                ESource *src = edsf_persona_store_get_source(EDSF_PERSONA_STORE(ps));
+                if (src) {
+                    e_source_set_enabled(src, FALSE);
+                    rData = new RemoveSourceData;
+                    rData->m_addressbook = this;
+                    rData->m_message = message;
+                    e_source_write(src, NULL, AddressBook::removeSourceDone, rData);
+                }
                 g_object_unref(ps);
                 break;
             }
@@ -558,7 +562,7 @@ void AddressBook::removeSourceDone(GObject *source,
 {
     GError *error = 0;
     bool result = true;
-    edsf_persona_store_remove_address_book_finish(res, &error);
+    e_source_write_finish(E_SOURCE(source), res, &error);
     if (error) {
         qWarning() << "Fail to remove source" << error->message;
         g_error_free(error);
