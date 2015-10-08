@@ -19,6 +19,7 @@ add_test(tst-buteo-import
     --task ${CMAKE_CURRENT_BINARY_DIR}/tst-buteo-import --wait-for=com.meego.msyncd
     --task ${CMAKE_CURRENT_SOURCE_DIR}/mock/mock-buteo.py --wait-for=com.canonical.pim -r --task-name=\"Buteo\"
     --task ${CMAKE_CURRENT_SOURCE_DIR}/mock/mock-galera.py -r --task-name=\"AddressBook Service\"
+    --task ${CMAKE_CURRENT_SOURCE_DIR}/mock/mock-sync-monitor.py -r --task-name=\"Sync Monitor\"
 )
 
 set_tests_properties(tst-buteo-import PROPERTIES

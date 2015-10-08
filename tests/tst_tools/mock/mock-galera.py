@@ -111,6 +111,9 @@ class AddressBook(dbus.service.Object):
     def contactsUpdated(self, contacts):
         print("contactsUpdated called")
 
+    @dbus.service.signal(dbus_interface=MAIN_IFACE)
+    def safeModeChanged(self):
+        pass
 
     #helper functions
     @dbus.service.method(dbus_interface=MAIN_IFACE,

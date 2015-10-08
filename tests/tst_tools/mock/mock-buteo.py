@@ -75,6 +75,11 @@ class ButeoSyncFw(dbus.service.Object):
         else:
             return False
 
+    @dbus.service.method(dbus_interface=MAIN_IFACE,
+                         out_signature='as')
+    def runningSyncs(self):
+        return []
+
     @dbus.service.signal(dbus_interface=MAIN_IFACE,
                          signature='sisi')
     def syncStatus(self, profileId, status, message, statusDetails):
