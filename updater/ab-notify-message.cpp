@@ -127,6 +127,7 @@ void ABNotifyMessage::askQuestion(const QString &title,
                                        NULL);
     }
 
+    notify_notification_show(m_notification, 0);
     g_signal_connect_after(m_notification,
                            "closed",
                            (GCallback) ABNotifyMessage::onNotificationClosed,

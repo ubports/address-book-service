@@ -47,6 +47,7 @@
 
 #include "config.h"
 
+#define UOA_CONTACTS_SERVICE_TYPE   "contacts"
 #define BUTEO_UOA_SERVICE_NAME      "google-contacts"
 #define SYNCEVO_UOA_SERVICE_NAME    "google-carddav"
 
@@ -57,6 +58,8 @@
 #define SYNCMONITOR_DBUS_SERVICE_NAME    "com.canonical.SyncMonitor"
 #define SYNCMONITOR_DBUS_OBJECT_PATH     "/com/canonical/SyncMonitor"
 #define SYNCMONITOR_DBUS_INTERFACE       "com.canonical.SyncMonitor"
+
+#define TRANSFER_ICON           "/usr/share/icons/suru/status/scalable/transfer-progress.svg"
 
 using namespace QtContacts;
 
@@ -88,16 +91,20 @@ AccountInfo::AccountInfo(const AccountInfo &other)
 {
 }
 
-void AccountInfo::enableSync(const QString &syncService)
+void AccountInfo::enableSync(const QString &syncService, bool enable)
 {
-    if (!syncEnabled) {
-        Accounts::Manager mgr;
-        QScopedPointer<Accounts::Account> account(mgr.account(accountId));
-        Accounts::Service service = mgr.service(syncService);
+    Accounts::Manager mgr;
+    QScopedPointer<Accounts::Account> account(mgr.account(accountId));
+    Accounts::Service service = mgr.service(syncService);
+    if (!service.isValid()) {
+        qWarning() << "Fail to enable" << syncService << "for account" << accountId << accountName;
+    } else {
         account->selectService(service);
-        account->setEnabled(true);
-        account->syncAndBlock();
-        syncEnabled = true;
+        if (account->enabled() != enable) {
+            account->setEnabled(enable);
+            account->syncAndBlock();
+            syncEnabled = enable;
+        }
     }
 }
 
@@ -268,29 +275,51 @@ bool ButeoImport::matchFavorites()
 bool ButeoImport::checkOldAccounts()
 {
     // check if the user has account with contacts and disabled sync
-    bool needEnableAccounts = false;
-    Q_FOREACH(const AccountInfo &i, m_accounts) {
-        if (!i.syncEnabled && !i.emptySource) {
-            needEnableAccounts = true;
+    m_disabledAccounts.clear();
+
+    for(int i=0; i < m_accounts.size(); i++) {
+        const AccountInfo &acc = m_accounts.at(i);
+        if (!acc.syncEnabled && !acc.emptySource) {
+            qDebug() << "Account need to be enabled:" << acc.accountId << acc.accountName;
+            m_disabledAccounts << i;
             break;
         }
     }
 
-    if (!needEnableAccounts) {
+    askAboutDisabledAccounts();
+}
+
+void ButeoImport::askAboutDisabledAccounts()
+{
+    if (m_disabledAccounts.isEmpty()) {
         syncOldContacts();
-        return true;
+        return;
     }
+    const AccountInfo &acc = m_accounts.at(m_disabledAccounts.first());
 
     QMap<QString, QString> updateOptions;
-    updateOptions.insert("enable", _("Enable syn for all accounts."));
-    updateOptions.insert("copy", _("Do not enable. Copy contacts to a local address-book."));
+    updateOptions.insert("enable", _("Enable Sync"));
+    updateOptions.insert("disable", _("Keep Disabled"));
 
     ABNotifyMessage *msg = new ABNotifyMessage(true, this);
     connect(msg, SIGNAL(questionReplied(QString)), this, SLOT(onEnableAccountsReplied(QString)));
-    msg->askQuestion(_("Account update"),
-                     "",
-                     _("You need to enable contact sync for all accounts to proceed with Contacts App upgrade."),
+    msg->askQuestion(_("Contact Sync Upgrade"),
+                     TRANSFER_ICON,
+                     QString(_("Google account %1 currently has contact sync disabled. We need to enable it to proceed with the contact sync upgrade.")).arg(acc.accountName),
                      updateOptions);
+}
+
+void ButeoImport::onEnableAccountsReplied(const QString &reply)
+{
+    AccountInfo &acc = m_accounts[m_disabledAccounts.takeFirst()];
+    qDebug() << "Account" << acc.accountId << acc.accountName << reply;
+    if (reply == "enable") {
+        acc.enableSync(SYNCEVO_UOA_SERVICE_NAME);
+    } else if (reply == "disable") {
+        acc.removeAfterUpdate = false;
+    }
+
+    askAboutDisabledAccounts();
 }
 
 bool ButeoImport::syncOldContacts()
@@ -316,8 +345,14 @@ bool ButeoImport::syncOldContacts()
     m_syncEvolutionQueue.clear();
     for(int i=0; i < m_accounts.size(); i++) {
         const AccountInfo &accInfo = m_accounts[i];
-        if (accInfo.syncEnabled && !accInfo.oldSourceId.isEmpty()) {
+        // if the account is disabled or the new source was already created we do not need to sync
+        if (accInfo.syncEnabled &&
+            accInfo.newSourceId.isEmpty() &&
+            !accInfo.oldSourceId.isEmpty()) {
+            qDebug() << "SyncEvolution: Prepare to sync" << accInfo.accountId << accInfo.accountName;
             m_syncEvolutionQueue << i;
+        } else {
+            qDebug() << "SyncEvolution: Skip sync for disabled account" << accInfo.accountId << accInfo.accountName;
         }
     }
 
@@ -400,10 +435,12 @@ void ButeoImport::sourceInfo(Accounts::Account *account,
         QContactDetailFilter sourceFilter;
         sourceFilter.setDetailType(QContactSyncTarget::Type,
                                    QContactSyncTarget::FieldSyncTarget + 1);
-        sourceFilter.setValue(oldSourceId);
+        sourceFilter.setValue(oldSourceId.replace("qtcontacts:galera::source@", ""));
+        QContactFetchHint fetchHint;
+        fetchHint.setMaxCountHint(1);
 
-        QList<QContactId> ids = manager->contactIds(sourceFilter);
-        isEmpty = ids.isEmpty();
+        QList<QContact> contacts = manager->contacts(sourceFilter, QList<QContactSortOrder>(), fetchHint);
+        isEmpty = contacts.isEmpty();
     }
 }
 
@@ -417,7 +454,7 @@ bool ButeoImport::needsUpdate()
     }
 
     Accounts::Manager mgr;
-    Accounts::AccountIdList accounts = mgr.accountList(SYNCEVO_UOA_SERVICE_NAME);
+    Accounts::AccountIdList accounts = mgr.accountList(UOA_CONTACTS_SERVICE_TYPE);
     return !accounts.isEmpty();
 }
 
@@ -425,7 +462,7 @@ bool ButeoImport::prepareToUpdate()
 {
     // populate accounts map;
     Accounts::Manager mgr;
-    Accounts::AccountIdList accounts = mgr.accountList(SYNCEVO_UOA_SERVICE_NAME);
+    Accounts::AccountIdList accounts = mgr.accountList(UOA_CONTACTS_SERVICE_TYPE);
 
     m_accounts.clear();
     qDebug() << "Loading account information";
@@ -443,10 +480,11 @@ bool ButeoImport::prepareToUpdate()
 
          AccountInfo accInfo(accountId, acc->displayName(), acc->isEnabled(), oldSourceId, newSourceId, isEmpty);
          accInfo.syncProfile = profileName(accountId);
-         qDebug() << "\t" << accountId << acc->displayName()
-                  << "\n\tEnabled" << acc->isEnabled()
-                  << "\n\tOld source:" << oldSourceId << "isEmpty" << isEmpty
-                  << "\n\tNew source:" << newSourceId;
+         qDebug() << "\tAccount:" << accountId << acc->displayName()
+                  << "\n\t\tEnabled" << acc->isEnabled()
+                  << "\n\t\tOld source:" << oldSourceId << "isEmpty" << isEmpty
+                  << "\n\t\tNew source:" << newSourceId
+                  << "\n\t\tSync profile:" << accInfo.syncProfile;
          m_accounts << accInfo;
     }
 
@@ -461,13 +499,6 @@ bool ButeoImport::update()
         return false;
     }
 
-    return checkOldAccounts();
-}
-
-bool ButeoImport::continueUpdate()
-{
-    m_failToSyncProfiles.clear();
-
     if (m_accounts.isEmpty()) {
         qDebug() << "No accounts to update";
         // if there is not account to update just commit the update
@@ -475,6 +506,13 @@ bool ButeoImport::continueUpdate()
         Q_EMIT updated();
         return true;
     }
+
+    return checkOldAccounts();
+}
+
+bool ButeoImport::continueUpdate()
+{
+    m_failToSyncProfiles.clear();
 
     // enable buteo sync service if necessary
     Q_FOREACH(AccountInfo info, m_accounts) {
@@ -652,9 +690,14 @@ bool ButeoImport::commit()
 
     QStringList sourceToRemove;
 
-    Q_FOREACH(const AccountInfo &accInfo, m_accounts) {
+    for(int i=0; i < m_accounts.size(); i++) {
+        AccountInfo &accInfo = m_accounts[i];
         if (accInfo.removeAfterUpdate) {
             sourceToRemove << accInfo.oldSourceId;
+        }
+        // disable old syncevolution service
+        if (accInfo.syncEnabled) {
+            accInfo.enableSync(SYNCEVO_UOA_SERVICE_NAME, false);
         }
     }
 
@@ -702,26 +745,7 @@ void ButeoImport::onError(const QString &accountName, int errorCode, bool unlock
     Q_EMIT updateError(accountName, m_lastError);
 }
 
-void ButeoImport::onEnableAccountsReplied(const QString &reply)
-{
-    if (reply == "enable") {
-        for(int i=0; i < m_accounts.size(); i++) {
-            AccountInfo &account = m_accounts[i];
-            if (!account.emptySource && !account.syncEnabled) {
-                account.enableSync(SYNCEVO_UOA_SERVICE_NAME);
-            }
-        }
-    } else if (reply == "copy") {
-        for(int i=0; i < m_accounts.size(); i++) {
-            AccountInfo &account = m_accounts[i];
-            if (!account.emptySource && !account.syncEnabled) {
-                account.removeAfterUpdate = false;
-            }
-        }
-    }
 
-    syncOldContacts();
-}
 
 void ButeoImport::onOldContactsSyncFinished(const QString &accountName, const QString &serviceName)
 {
@@ -836,9 +860,13 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
     case 2:
         return;
     case 3:
-        qWarning() << "Sync error for account:" << accInfo.accountId  << "and profile" << profileName;
-        m_failToSyncProfiles << profileName;
-        m_lastError = parseError(moreDetails);
+        if (!accInfo.syncEnabled) {
+            // error because the accout is not enabled
+        } else {
+            qWarning() << "Sync error for account:" << accInfo.accountId  << "and profile" << profileName;
+            m_failToSyncProfiles << profileName;
+            m_lastError = parseError(moreDetails);
+        }
         break;
     case 4:
         qDebug() << "Sync finished for account:" << accInfo.accountId  << "and profile" << profileName;
@@ -851,7 +879,7 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
 
     m_buteoQueue.remove(index);
     if (m_buteoQueue.isEmpty()) {
-        qDebug() << "All accounts has fineshed the sync, number of accounts that fail to sync:" << m_failToSyncProfiles.size();
+        qDebug() << "All accounts has fineshed the sync, number of accounts that fail to sync:" << m_failToSyncProfiles;
         if (m_failToSyncProfiles.isEmpty()) {
             Q_EMIT updated();
         } else {

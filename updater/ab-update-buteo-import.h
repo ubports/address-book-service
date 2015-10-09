@@ -31,7 +31,7 @@ class AccountInfo
 public:
     AccountInfo(quint32 _accountId, const QString &_accountName, bool _syncEnabled, const QString &_oldSourceId, const QString &_newSourceId, bool _emptySource);
     AccountInfo(const AccountInfo &other);
-    void enableSync(const QString &syncService);
+    void enableSync(const QString &syncService, bool enable=true);
 
     quint32 accountId;
     QString accountName;
@@ -71,6 +71,7 @@ private Q_SLOTS:
 
 private:
     QList<AccountInfo> m_accounts;
+    QList<int> m_disabledAccounts;
     QList<int> m_syncEvolutionQueue;
     QMap<int, QString> m_buteoQueue;
     QStringList m_failToSyncProfiles;
@@ -99,6 +100,7 @@ private:
     void syncOldContactsContinue();
     bool continueUpdate();
     ImportError parseError(int errorCode) const;
+    void askAboutDisabledAccounts();
 
     static void sourceInfo(Accounts::Account *account, QString &oldSourceId, QString &newSourceId, bool &isEmpty);
 };
