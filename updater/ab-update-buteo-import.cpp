@@ -308,9 +308,9 @@ bool ButeoImport::syncOldContacts()
         }
 
         connect(m_syncMonitorInterface.data(), SIGNAL(syncFinished(QString, QString)),
-                SLOT(onOldContactsSyncFinished(QString,QString)));
+                SLOT(onOldContactsSyncFinished(QString,QString)), Qt::UniqueConnection);
         connect(m_syncMonitorInterface.data(), SIGNAL(syncError(QString, QString, QString)),
-                SLOT(onOldContactsSyncFinished(QString,QString)));
+                SLOT(onOldContactsSyncError(QString,QString,QString)), Qt::UniqueConnection);
     }
 
     m_syncEvolutionQueue.clear();
@@ -334,10 +334,10 @@ void ButeoImport::syncOldContactsContinue()
     const AccountInfo &accInfo = m_accounts[m_syncEvolutionQueue.takeFirst()];
     QDBusReply<void> result = m_syncMonitorInterface->call("syncAccount", accInfo.accountId, "contacts");
     if (result.error().isValid()) {
-        qWarning() << "Fail to start account sync" << accInfo.accountId;
+        qWarning() << "SyncEvolution: Fail to start account sync" << accInfo.accountId  << accInfo.accountName << result.error();
         onError("", ButeoImport::InitialSyncError, true);
     } else {
-        qDebug() << "Syncing.." << accInfo.accountId;
+        qDebug() << "SyncEvolution: Syncing" << accInfo.accountId << accInfo.accountName;
     }
 }
 
@@ -469,6 +469,13 @@ bool ButeoImport::continueUpdate()
         m_importLock.unlock();
         Q_EMIT updated();
         return true;
+    }
+
+    // enable buteo sync service if necessary
+    Q_FOREACH(AccountInfo info, m_accounts) {
+        if (info.syncEnabled) {
+            info.enableSync(BUTEO_UOA_SERVICE_NAME);
+        }
     }
 
     for(int i=0; i < m_accounts.size(); i++) {
@@ -705,13 +712,6 @@ void ButeoImport::onEnableAccountsReplied(const QString &reply)
             if (!account.emptySource && !account.syncEnabled) {
                 account.removeAfterUpdate = false;
             }
-        }
-    }
-
-    // enable buteo sync service if necessary
-    Q_FOREACH(AccountInfo info, m_accounts) {
-        if (info.syncEnabled) {
-            info.enableSync(BUTEO_UOA_SERVICE_NAME);
         }
     }
 
