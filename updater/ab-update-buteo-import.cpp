@@ -87,6 +87,7 @@ AccountInfo::AccountInfo(const AccountInfo &other)
       oldSourceId(other.oldSourceId),
       newSourceId(other.newSourceId),
       emptySource(other.emptySource),
+      syncProfile(other.syncProfile),
       removeAfterUpdate(other.removeAfterUpdate)
 {
 }
@@ -215,7 +216,6 @@ bool ButeoImport::matchFavorites()
     Q_FOREACH(const QContact &f, favorites) {
         QContactIntersectionFilter iFilter;
 
-        qDebug() << "Try to match contact" << f;
         // No favorite
         QContactDetailFilter noFavorite;
         noFavorite.setDetailType(QContactDetail::TypeFavorite, QContactFavorite::FieldFavorite);
@@ -250,10 +250,13 @@ bool ButeoImport::matchFavorites()
         }
 
         QList<QContact> contacts = manager->contacts(iFilter);
-        qDebug() << "Number of contacts that match with old favorite" << contacts.size();
+        if (contacts.isEmpty()) {
+            qWarning() << "Favorite contact not found" << f;
+        } else {
+            qDebug() << "Number of contacts that match with old favorite" << contacts.size();
+        }
 
         Q_FOREACH(QContact c, contacts) {
-            qDebug() << "Mark new contact as favorite" << c;
             QContactFavorite fav = c.detail<QContactFavorite>();
             fav.setFavorite(true);
             c.saveDetail(&fav);
@@ -522,6 +525,7 @@ bool ButeoImport::update()
 bool ButeoImport::continueUpdate()
 {
     m_failToSyncProfiles.clear();
+    m_buteoQueue.clear();
 
     // enable buteo sync service if necessary
     Q_FOREACH(AccountInfo info, m_accounts) {
@@ -885,8 +889,8 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
         m_failToSyncProfiles << profileName;
         break;
     }
-
     m_buteoQueue.remove(index);
+    qDebug() << "Accounts to sync" << m_buteoQueue;
     if (m_buteoQueue.isEmpty()) {
         qDebug() << "All accounts has fineshed the sync, number of accounts that fail to sync:" << m_failToSyncProfiles;
         if (m_failToSyncProfiles.isEmpty()) {
