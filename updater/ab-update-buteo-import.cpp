@@ -441,6 +441,8 @@ void ButeoImport::sourceInfo(Accounts::Account *account,
 
         QList<QContact> contacts = manager->contacts(sourceFilter, QList<QContactSortOrder>(), fetchHint);
         isEmpty = contacts.isEmpty();
+    } else {
+        isEmpty = true;
     }
 }
 
@@ -455,7 +457,14 @@ bool ButeoImport::needsUpdate()
 
     Accounts::Manager mgr;
     Accounts::AccountIdList accounts = mgr.accountList(UOA_CONTACTS_SERVICE_TYPE);
-    return !accounts.isEmpty();
+    if (accounts.isEmpty()) {
+        // update settings key
+        QSettings settings;
+        settings.setValue(SETTINGS_BUTEO_KEY, true);
+        settings.sync();
+        return false;
+    }
+    return true;
 }
 
 bool ButeoImport::prepareToUpdate()
