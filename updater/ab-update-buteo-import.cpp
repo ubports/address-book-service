@@ -47,8 +47,8 @@
 
 #include "config.h"
 
-#define BUTEO_UOA_SERVICE_NAME      "buteo-contacts"
-#define SYNCEVO_UOA_SERVICE_NAME    "contacts"
+#define BUTEO_UOA_SERVICE_NAME      "google-contacts"
+#define SYNCEVO_UOA_SERVICE_NAME    "google-carddav"
 
 #define BUTEO_DBUS_SERVICE_NAME     "com.meego.msyncd"
 #define BUTEO_DBUS_OBJECT_PATH      "/synchronizer"
@@ -428,6 +428,7 @@ bool ButeoImport::prepareToUpdate()
     Accounts::AccountIdList accounts = mgr.accountList(SYNCEVO_UOA_SERVICE_NAME);
 
     m_accounts.clear();
+    qDebug() << "Loading account information";
     Q_FOREACH(Accounts::AccountId accountId, accounts) {
          QScopedPointer<Accounts::Account> acc(mgr.account(accountId));
 
@@ -442,6 +443,10 @@ bool ButeoImport::prepareToUpdate()
 
          AccountInfo accInfo(accountId, acc->displayName(), acc->isEnabled(), oldSourceId, newSourceId, isEmpty);
          accInfo.syncProfile = profileName(accountId);
+         qDebug() << "\t" << accountId << acc->displayName()
+                  << "\n\tEnabled" << acc->isEnabled()
+                  << "\n\tOld source:" << oldSourceId << "isEmpty" << isEmpty
+                  << "\n\tNew source:" << newSourceId;
          m_accounts << accInfo;
     }
 
@@ -770,7 +775,7 @@ void ButeoImport::onProfileChanged(const QString &profileName, int changeType, c
     switch(changeType) {
     case 0:
         // profile created sync should start soon
-        qDebug() << "Profile created" << profileName;
+        qDebug() << "Signal profile created received" << profileName;
         break;
     case 1:
         break;
