@@ -285,7 +285,6 @@ bool ButeoImport::checkOldAccounts()
         if (!acc.syncEnabled && !acc.emptySource) {
             qDebug() << "Account need to be enabled:" << acc.accountId << acc.accountName;
             m_disabledAccounts << i;
-            break;
         }
     }
 
