@@ -543,6 +543,7 @@ bool ButeoImport::continueUpdate()
                 qWarning() << "Fail to create profiles";
                 onError("", ButeoImport::FailToCreateButeoProfiles, true);
                 return false;
+            }
         }
 
         if (accInfo.syncEnabled) {
@@ -663,9 +664,16 @@ bool ButeoImport::removeSources(const QStringList &sources)
     bool result = true;
     QScopedPointer<QContactManager> manager(new QContactManager("galera"));
     Q_FOREACH(const QString &source, sources) {
-        if (!manager->removeContact(QContactId::fromString(source))) {
-            qWarning() << "Fail to remove source" << source;
+        QString sourceId(source);
+        // append source id prefix if necessary
+        if (!sourceId.startsWith("qtcontacts:galera::source@")) {
+            sourceId = QString("qtcontacts:galera::source@%2").arg(sourceId);
+        }
+        if (!manager->removeContact(QContactId::fromString(sourceId))) {
+            qWarning() << "Fail to remove source" << sourceId;
             result = false;
+        } else {
+            qDebug() << "source removed" << sourceId;
         }
     }
 
@@ -705,10 +713,12 @@ bool ButeoImport::commit()
     for(int i=0; i < m_accounts.size(); i++) {
         AccountInfo &accInfo = m_accounts[i];
         if (accInfo.removeAfterUpdate) {
+            qDebug() << "Will remove account" << accInfo.accountId << accInfo.accountName;
             sourceToRemove << accInfo.oldSourceId;
         }
         // disable old syncevolution service
         if (accInfo.syncEnabled) {
+            qDebug() << "SyncEvo: Disable old sync service" << accInfo.accountId << accInfo.accountName;
             accInfo.enableSync(SYNCEVO_UOA_SERVICE_NAME, false);
         }
     }
