@@ -536,17 +536,17 @@ bool ButeoImport::continueUpdate()
     for(int i=0; i < m_accounts.size(); i++) {
         AccountInfo &accInfo = m_accounts[i];
         if (accInfo.syncProfile.isEmpty()) {
-            qDebug() << "Will create buteo profile for" << accInfo.accountId << "account";
+            qDebug() << "BUTEO: Will create buteo profile for" << accInfo.accountId << "account";
             accInfo.syncProfile = createProfileForAccount(accInfo.accountId);
             if (accInfo.syncProfile.isEmpty()) {
                 // fail to create profiles
                 qWarning() << "Fail to create profiles";
                 onError("", ButeoImport::FailToCreateButeoProfiles, true);
                 return false;
-            } else {
-                m_buteoQueue.insert(i, accInfo.syncProfile);
-            }
-        } else {
+        }
+
+        if (accInfo.syncEnabled) {
+            qDebug() << "BUTEO: Will start sync" << accInfo.accountId << accInfo.accountName;
             m_buteoQueue.insert(i, accInfo.syncProfile);
             if (!startSync(accInfo.syncProfile)) {
                 qWarning() << "Fail to start sync" << accInfo.syncProfile;
