@@ -5,6 +5,7 @@ Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake (>= 2.8.9),
                dbus-test-runner,
                debhelper (>= 9),
+               dh-translations,
                evolution-data-server-online-accounts,
                gobject-introspection (>= 1.31.0-2~),
                libaccounts-glib-dev,
