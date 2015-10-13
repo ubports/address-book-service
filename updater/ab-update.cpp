@@ -229,7 +229,7 @@ QString ABUpdate::errorMessage(ABUpdateModule::ImportError error) const
     case ABUpdateModule::OnlineAccountNotFound:
         return _("Online account not found!");
     case ABUpdateModule::SyncAlreadyRunning:
-        return _("Update already in progress!");
+        return _("Contact sync update already in progress!!");
     case ABUpdateModule::SyncError:
     default:
         return _("Fail to sync contacts!");
@@ -267,7 +267,7 @@ void ABUpdate::onModuleUpdated()
     } else {
         ABNotifyMessage *msg = new ABNotifyMessage(true, this);
         msg->show(_("Account update"),
-                  _("Contact sync upgrade complete."),
+                  _("Contact sync update complete."),
                   TRANSFER_ICON);
         connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
     }

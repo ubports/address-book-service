@@ -995,16 +995,16 @@ void AddressBook::onSafeModeChanged()
     if (isSafeMode()) {
         m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
                                                             icon,
-                                                            C::gettext("Update required"),
+                                                            C::gettext("Contact sync update required"),
                                                             NULL,
-                                                            C::gettext("Your Contacts app needs to be upgraded. Only local contacts will be editable until upgrade is complete"),
+                                                            C::gettext("Your Contact sync accounts need to be upgraded. Only local contacts will be editable until the contact sync upgrade is complete."),
                                                             QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
     } else {
         m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
                                                             icon,
                                                             C::gettext("Update complete"),
                                                             NULL,
-                                                            C::gettext("Your Contacts app update is complete."),
+                                                            C::gettext("Your Contact sync upgrade is complete."),
                                                             QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
     }
 

@@ -307,7 +307,10 @@ void ButeoImport::askAboutDisabledAccounts()
     connect(msg, SIGNAL(questionReplied(QString)), this, SLOT(onEnableAccountsReplied(QString)));
     msg->askQuestion(_("Contact Sync Upgrade"),
                      TRANSFER_ICON,
-                     QString(_("Google account %1 currently has contact sync disabled. We need to enable it to proceed with the contact sync upgrade.")).arg(acc.accountName),
+                     QString(_("Google account %1 currently has contact sync disabled.\n"
+                               "We need to enable it to proceed with the contact sync upgrade.\n"
+                               "If you keep it disabled, your contacts will be saved but you won't be able to sync them anymore with this account.")
+                             ).arg(acc.accountName),
                      updateOptions);
 }
 
@@ -713,12 +716,12 @@ bool ButeoImport::commit()
     for(int i=0; i < m_accounts.size(); i++) {
         AccountInfo &accInfo = m_accounts[i];
         if (accInfo.removeAfterUpdate) {
-            qDebug() << "Will remove account" << accInfo.accountId << accInfo.accountName;
+            qDebug() << "Will remove source for old account" << accInfo.accountId << accInfo.accountName;
             sourceToRemove << accInfo.oldSourceId;
         }
         // disable old syncevolution service
         if (accInfo.syncEnabled) {
-            qDebug() << "SyncEvo: Disable old sync service" << accInfo.accountId << accInfo.accountName;
+            qDebug() << "SyncEvo: Disable old sync" << accInfo.accountId << accInfo.accountName;
             accInfo.enableSync(SYNCEVO_UOA_SERVICE_NAME, false);
         }
     }
