@@ -291,6 +291,13 @@ void AddressBook::checkCompatibility()
     if (!envSafeMode.isEmpty()) {
         return;
     }
+
+    bool enableSafeMode = m_settings.value(SETTINGS_SAFE_MODE_KEY, true).toBool();
+    if (!enableSafeMode) {
+        qDebug() << "Server marked as updated";
+        return;
+    }
+
     GError *gError = NULL;
     ESourceRegistry *r = e_source_registry_new_sync(NULL, &gError);
     if (gError) {
@@ -299,7 +306,7 @@ void AddressBook::checkCompatibility()
         return;
     }
 
-    bool enableSafeMode = false;
+    enableSafeMode = false;
     GList *sources = e_source_registry_list_sources(r, E_SOURCE_EXTENSION_ADDRESS_BOOK);
     for(GList *l = sources; l != NULL; l = l->next) {
         ESource *s = E_SOURCE(l->data);
@@ -978,7 +985,6 @@ void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &o
 void AddressBook::onSafeModeChanged()
 {
     GIcon *icon = g_themed_icon_new("address-book-app");
-    bool showUpdateComplete = false;
 
     if (m_messagingMenu == 0) {
         m_messagingMenu = messaging_menu_app_new("address-book-app.desktop");

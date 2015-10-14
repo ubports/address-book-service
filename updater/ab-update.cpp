@@ -95,11 +95,6 @@ void ABUpdate::startUpdate()
         m_lockFile.removeStaleLockFile();
     }
 
-    if (m_waitingForIntenert) {
-        m_waitingForIntenert = false;
-        m_netManager->disconnect(this);
-    }
-
     if (isRunning()) {
         qWarning() << "Update already running.";
         if (!m_silenceMode) {
@@ -113,11 +108,17 @@ void ABUpdate::startUpdate()
     }
 
     // check if any module needs a upgrade
+    qDebug() << "check modules to update";
     QList<ABUpdateModule*> modulesToUpdate = needsUpdate();
     if (modulesToUpdate.isEmpty()) {
         qDebug() << "No module to update.";
         notifyDone();
         return;
+    }
+
+    if (m_waitingForIntenert) {
+        m_waitingForIntenert = false;
+        m_netManager->disconnect(this);
     }
 
     m_lock.lock();
@@ -138,6 +139,12 @@ void ABUpdate::startUpdateWhenConnected()
 
     if (isRunning()) {
         qWarning() << "Update already running.";
+        return;
+    }
+
+    if (needsUpdate().isEmpty()) {
+        qDebug() << "No modules to update";
+        notifyDone();
         return;
     }
 
