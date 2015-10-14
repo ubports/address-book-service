@@ -41,12 +41,6 @@ ABNotifyMessage::~ABNotifyMessage()
         g_object_unref(m_notification);
         m_notification = 0;
     }
-
-    m_instanceCount--;
-    if (m_instanceCount == 0) {
-        notify_uninit();
-    }
-
 }
 
 void ABNotifyMessage::show(const QString &title, const QString &msg, const QString &iconName)

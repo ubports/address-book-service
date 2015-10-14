@@ -305,6 +305,7 @@ void ButeoImport::askAboutDisabledAccounts()
     updateOptions.insert("enable", _("Enable Sync"));
     updateOptions.insert("disable", _("Keep Disabled"));
 
+    qDebug() << "Ask question if keep account" << acc.accountName;
     ABNotifyMessage *msg = new ABNotifyMessage(true, this);
     connect(msg, SIGNAL(questionReplied(QString)), this, SLOT(onEnableAccountsReplied(QString)));
     msg->askQuestion(_("Contact Sync Upgrade"),
@@ -373,7 +374,7 @@ void ButeoImport::syncOldContactsContinue()
         return;
     }
 
-    const AccountInfo &accInfo = m_accounts[m_syncEvolutionQueue.takeFirst()];
+    const AccountInfo &accInfo = m_accounts[m_syncEvolutionQueue.first()];
     QDBusReply<void> result = m_syncMonitorInterface->call("syncAccount", accInfo.accountId, "contacts");
     if (result.error().isValid()) {
         qWarning() << "SyncEvolution: Fail to start account sync" << accInfo.accountId  << accInfo.accountName << result.error();
@@ -783,18 +784,33 @@ void ButeoImport::onError(const QString &accountName, int errorCode, bool unlock
 
 void ButeoImport::onOldContactsSyncFinished(const QString &accountName, const QString &serviceName)
 {
-    qDebug() << "SyncEvolution: Sync done" << accountName << serviceName;
-    if (m_lastError != ABUpdateModule::NoError) {
-        qDebug() << "Upgrade canceled due a error";
-    } else if (serviceName == "contacts") {
+    if (m_syncEvolutionQueue.isEmpty()) {
+        return;
+    }
+
+    AccountInfo info = m_accounts.at(m_syncEvolutionQueue.first());
+    if (info.accountName == accountName && serviceName == "contacts") {
+        m_syncEvolutionQueue.takeFirst();
         syncOldContactsContinue();
+    } else {
+        qDebug() << "Sync finished ignored:" << accountName << serviceName;
     }
 }
 
 void ButeoImport::onOldContactsSyncError(const QString &accountName, const QString &serviceName, const QString &error)
 {
-    qWarning() << "SyncEvolution: Fail to sync account " << accountName << serviceName << error;
-    onError("", ButeoImport::InitialSyncError, true);
+    if (m_syncEvolutionQueue.isEmpty()) {
+        return;
+    }
+
+    AccountInfo info = m_accounts.at(m_syncEvolutionQueue.first());
+    if (info.accountName == accountName && serviceName == "contacts") {
+        m_syncEvolutionQueue.takeFirst();
+        qWarning() << "SyncEvolution: Fail to sync account " << accountName << serviceName << error;
+        onError("", ButeoImport::InitialSyncError, true);
+    } else {
+        qDebug() << "Sync Error ignored:" << accountName << serviceName << error;
+    }
 }
 
 bool ButeoImport::requireInternetConnection()
