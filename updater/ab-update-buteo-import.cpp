@@ -110,7 +110,8 @@ void AccountInfo::enableSync(const QString &syncService, bool enable)
 }
 
 ButeoImport::ButeoImport(QObject *parent)
-    : ABUpdateModule(parent)
+    : ABUpdateModule(parent),
+      m_lastError(ABUpdateModule::NoError)
 {
 }
 
@@ -279,6 +280,7 @@ bool ButeoImport::checkOldAccounts()
 {
     // check if the user has account with contacts and disabled sync
     m_disabledAccounts.clear();
+    m_lastError = ABUpdateModule::NoError;
 
     for(int i=0; i < m_accounts.size(); i++) {
         const AccountInfo &acc = m_accounts.at(i);
@@ -782,7 +784,9 @@ void ButeoImport::onError(const QString &accountName, int errorCode, bool unlock
 void ButeoImport::onOldContactsSyncFinished(const QString &accountName, const QString &serviceName)
 {
     qDebug() << "SyncEvolution: Sync done" << accountName << serviceName;
-    if (serviceName == "contacts") {
+    if (m_lastError != ABUpdateModule::NoError) {
+        qDebug() << "Upgrade canceled due a error";
+    } else if (serviceName == "contacts") {
         syncOldContactsContinue();
     }
 }

@@ -35,7 +35,8 @@ public:
         InitialSyncError,
         OnlineAccountNotFound,
         SyncAlreadyRunning,
-        SyncError
+        SyncError,
+        NoError
     };
 
     ABUpdateModule(QObject *parent = 0);
