@@ -48,7 +48,7 @@
 #include "config.h"
 
 #define UOA_CONTACTS_SERVICE_TYPE   "contacts"
-#define BUTEO_UOA_SERVICE_NAME      "google-contacts"
+#define BUTEO_UOA_SERVICE_NAME      "google-buteo-contacts"
 #define SYNCEVO_UOA_SERVICE_NAME    "google-carddav"
 
 #define BUTEO_DBUS_SERVICE_NAME     "com.meego.msyncd"
