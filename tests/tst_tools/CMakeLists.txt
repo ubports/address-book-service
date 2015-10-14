@@ -23,7 +23,7 @@ add_test(tst-buteo-import
 )
 
 set_tests_properties(tst-buteo-import PROPERTIES
-    ENVIRONMENT ACCOUNTS=${CMAKE_CURRENT_SOURCE_DIR}/accounts/full-database
+    ENVIRONMENT ACCOUNTS=${CMAKE_CURRENT_BINARY_DIR}/accounts/full-database
 )
 
 
@@ -49,10 +49,12 @@ add_test(tst-buteo-import-no-accounts
 )
 
 set_tests_properties(tst-buteo-import-no-accounts PROPERTIES
-    ENVIRONMENT ACCOUNTS=${CMAKE_CURRENT_SOURCE_DIR}/accounts/empty-database
+    ENVIRONMENT ACCOUNTS=${CMAKE_CURRENT_BINARY_DIR}/accounts/empty-database
 )
 
 include_directories(
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/updater
 )
+
+add_subdirectory(accounts)
