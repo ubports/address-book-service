@@ -136,40 +136,6 @@ private Q_SLOTS:
         sourceFilter.setValue(QContactType::TypeGroup);
         QCOMPARE(manager.contacts(sourceFilter).size(), 2);
     }
-
-    void tst_importSomeAccounts()
-    {
-        // populate sources
-        createSource("source@2", "source-2", "google", "", 0, false, false);
-        createSource("source@3", "renato.teste2@gmail.com", "google", "", 0, false, false);
-        createSource("source@4", "renato.teste3@gmail.com", "google", "", 0, false, false);
-        // mark this source as already imported
-        createSource("source@1", "renato.teste3@gmail.com", "google", "", 141, false, false);
-
-        // Wai for all sources to be created
-        QContactManager manager("galera");
-        QContactDetailFilter sourceFilter;
-        sourceFilter.setDetailType(QContactDetail::TypeType, QContactType::FieldType);
-        sourceFilter.setValue(QContactType::TypeGroup);
-        QTRY_COMPARE(manager.contacts(sourceFilter).size(), 4);
-
-        ABUpdate updater;
-        updater.skipNetworkTest();
-        updater.setSilenceMode(true);
-
-        QSignalSpy updatedSignal(&updater, SIGNAL(updateDone()));
-        QSignalSpy updateErrorSignal(&updater, SIGNAL(updateError(QString)));
-
-        updater.startUpdate();
-        QVERIFY(updater.isRunning());
-        QTRY_COMPARE(updatedSignal.count(), 1);
-        QTRY_COMPARE(updateErrorSignal.count(), 0);
-        QCOMPARE(updater.isRunning(), false);
-
-        // Check if old sources was deleted
-        QCOMPARE(manager.contacts(sourceFilter).size(), 2);
-    }
-
 };
 
 QTEST_MAIN(TstButeoImport)

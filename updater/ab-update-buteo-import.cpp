@@ -547,15 +547,22 @@ bool ButeoImport::continueUpdate()
                 onError("", ButeoImport::FailToCreateButeoProfiles, true);
                 return false;
             }
-        }
 
-        if (accInfo.syncEnabled) {
+            if (accInfo.syncEnabled) {
+                qDebug() << "BUTEO: Will start sync" << accInfo.accountId << accInfo.accountName;
+                m_buteoQueue.insert(i, accInfo.syncProfile);
+            } else {
+                qDebug() << "BUTEO: account sync disabled" << accInfo.accountId << accInfo.accountName;
+            }
+        } else if (accInfo.syncEnabled) {
             qDebug() << "BUTEO: Will start sync" << accInfo.accountId << accInfo.accountName;
             m_buteoQueue.insert(i, accInfo.syncProfile);
             if (!startSync(accInfo.syncProfile)) {
                 qWarning() << "Fail to start sync" << accInfo.syncProfile;
                 m_buteoQueue.remove(i);
             }
+        } else {
+            qDebug() << "BUTEO: Sync disabled for account" << accInfo.accountId << accInfo.accountName;
         }
     }
 
@@ -858,7 +865,7 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
 
     int index = m_buteoQueue.key(profileName, -1);
     if (index == -1) {
-        qDebug() << "Profile not found" << profileName;
+        qDebug() << "Profile not found" << profileName << m_buteoQueue.values();
         return;
     }
 

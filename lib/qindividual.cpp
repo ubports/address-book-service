@@ -20,6 +20,7 @@
 #include "detail-context-parser.h"
 #include "gee-utils.h"
 #include "update-contact-request.h"
+#include "e-source-ubuntu.h"
 
 #include "common/vcard-parser.h"
 
@@ -212,12 +213,24 @@ QList<QtContacts::QContactDetail> QIndividual::getSyncTargets() const
 
         FolksPersona *p = m_personas[id];
         FolksPersonaStore *ps = folks_persona_get_store(p);
+
         QString displayName = folks_persona_store_get_display_name(ps);
         QString storeId = QString::fromUtf8(folks_persona_store_get_id(ps));
+        QString accountId("0");
+        if (EDSF_IS_PERSONA_STORE(ps)) {
+            ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(ps));
+            if (e_source_has_extension(source, E_SOURCE_EXTENSION_UBUNTU)) {
+                ESourceUbuntu *ubuntu_ex = E_SOURCE_UBUNTU(e_source_get_extension(source, E_SOURCE_EXTENSION_UBUNTU));
+                if (ubuntu_ex) {
+                    accountId = QString::number(e_source_ubuntu_get_account_id(ubuntu_ex));
+                }
+            }
+        }
 
         target.setDetailUri(QString(id).replace(":","."));
         target.setSyncTarget(displayName);
         target.setValue(QContactSyncTarget::FieldSyncTarget + 1, storeId);
+        target.setValue(QContactSyncTarget::FieldSyncTarget + 2, accountId);
         details << target;
     }
     return details;
