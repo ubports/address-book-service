@@ -310,7 +310,7 @@ void ButeoImport::askAboutDisabledAccounts()
     connect(msg, SIGNAL(questionReplied(QString)), this, SLOT(onEnableAccountsReplied(QString)));
     msg->askQuestion(_("Contact Sync Upgrade"),
                      TRANSFER_ICON,
-                     QString(_("Google account %1 currently has contact sync disabled.\n"
+                     QString(_("Google account <b>%1</b> currently has contact sync disabled.\n"
                                "We need to enable it to proceed with the contact sync upgrade.\n"
                                "If you keep it disabled, your contacts will be saved but you won't be able to sync them anymore with this account.")
                              ).arg(acc.accountName),
