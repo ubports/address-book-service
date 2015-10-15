@@ -116,8 +116,8 @@ void ABUpdate::startUpdate()
         return;
     }
 
-    if (m_waitingForIntenert) {
-        m_waitingForIntenert = false;
+    if (m_waitingForInternet) {
+        m_waitingForInternet = false;
         m_netManager->disconnect(this);
     }
 
@@ -199,7 +199,7 @@ bool ABUpdate::isOnline(bool checkConnectionType) const
 void ABUpdate::waitForInternet()
 {
     qDebug() << "Not internet connection wait before start upgrade";
-    m_waitingForIntenert = true;
+    m_waitingForInternet = true;
     connect(m_netManager.data(),
             SIGNAL(onlineStateChanged(bool)),
             SLOT(onOnlineStateChanged()));
@@ -328,7 +328,7 @@ void ABUpdate::onOnlineStateChanged()
 {
     if (isOnline(true)) {
         qDebug() << "Network is online resume upddate process.";
-        m_waitingForIntenert = false;
+        m_waitingForInternet = false;
         m_netManager->disconnect(this);
         QTimer::singleShot(5000, this, SLOT(continueUpdateWithInternet()));
     }

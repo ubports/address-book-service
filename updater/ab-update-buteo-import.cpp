@@ -285,7 +285,7 @@ bool ButeoImport::checkOldAccounts()
     for(int i=0; i < m_accounts.size(); i++) {
         const AccountInfo &acc = m_accounts.at(i);
         if (!acc.syncEnabled && !acc.emptySource) {
-            qDebug() << "Account need to be enabled:" << acc.accountId << acc.accountName;
+            qDebug() << "Account needs to be enabled:" << acc.accountId << acc.accountName;
             m_disabledAccounts << i;
         }
     }
@@ -332,7 +332,7 @@ void ButeoImport::onEnableAccountsReplied(const QString &reply)
 
 bool ButeoImport::syncOldContacts()
 {
-    //call syncevoltuion
+    //call syncevolution
     if (m_syncMonitorInterface.isNull()) {
         m_syncMonitorInterface.reset(new QDBusInterface(SYNCMONITOR_DBUS_SERVICE_NAME,
                                                         SYNCMONITOR_DBUS_OBJECT_PATH,
@@ -913,7 +913,7 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
         return;
     case 3:
         if (!accInfo.syncEnabled) {
-            // error because the accout is not enabled
+            // error because the account is not enabled
         } else {
             qWarning() << "Sync error for account:" << accInfo.accountId  << "and profile" << profileName;
             m_failToSyncProfiles << profileName;
@@ -931,7 +931,7 @@ void ButeoImport::onSyncStatusChanged(const QString &profileName,
     m_buteoQueue.remove(index);
     qDebug() << "Accounts to sync" << m_buteoQueue;
     if (m_buteoQueue.isEmpty()) {
-        qDebug() << "All accounts has fineshed the sync, number of accounts that fail to sync:" << m_failToSyncProfiles;
+        qDebug() << "All accounts  have finished the sync, number of accounts that fail to sync:" << m_failToSyncProfiles;
         if (m_failToSyncProfiles.isEmpty()) {
             Q_EMIT updated();
         } else {
