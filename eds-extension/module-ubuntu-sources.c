@@ -22,9 +22,6 @@
 #include <libebackend/libebackend.h>
 #include <libaccounts-glib/accounts-glib.h>
 
-#define E_AG_SERVICE_TYPE_CALENDAR "calendar"
-#define E_AG_SERVICE_TYPE_CONTACTS "contacts"
-
 /* Standard GObject macros */
 #define E_TYPE_UBUNTU_SOURCES \
     (e_ubuntu_sources_get_type ())
@@ -146,6 +143,7 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
         }
     }
 
+    g_slist_free_full (eds_id_list, g_free);
     g_hash_table_remove (extension->uoa_to_eds,
                          GUINT_TO_POINTER (ag_account_id));
 }
@@ -185,7 +183,6 @@ ubuntu_sources_register_source (EUbuntuSources *extension,
             g_debug ("Source Already registered");
             return FALSE;
         }
-
 
         eds_id_list = g_slist_append (eds_id_list, g_strdup (source_uid));
         g_hash_table_insert (extension->uoa_to_eds,
@@ -257,15 +254,30 @@ ubuntu_source_source_removed_cb (ESourceRegistryServer *server,
     gpointer key, value;
 
     const gchar *source_uid = e_source_get_uid(source);
+    g_debug("Source removed: %s", source_uid);
+
+    GSList *source_link = 0;
+    guint account_id = 0;
 
     g_hash_table_iter_init (&iter, extension->uoa_to_eds);
     while (g_hash_table_iter_next (&iter, &key, &value)) {
         GSList *sources = (GSList*) value;
-        gint index = g_slist_index (sources, source_uid);
-        if (index > -1) {
-            g_debug ("Remove source :%s for account %lu", source_uid, (gulong) value);
-            sources = g_slist_remove (sources, source_uid);
+        source_link = g_slist_find_custom (sources, source_uid, (GCompareFunc) g_strcmp0);
+        if (source_link) {
+            account_id = (gulong) key;
+            break;
         }
+    }
+
+    if (account_id != 0) {
+        GSList *eds_id_list = g_hash_table_lookup (extension->uoa_to_eds,
+                                                   GUINT_TO_POINTER (account_id));
+        eds_id_list = g_slist_remove_link (eds_id_list, source_link);
+        g_free(source_link->data);
+        g_hash_table_insert (extension->uoa_to_eds,
+                             GUINT_TO_POINTER (account_id),
+                             eds_id_list);
+        g_debug ("Remove source :%s for account %lu", source_uid, (gulong) value);
     }
 }
 
@@ -328,6 +340,12 @@ ubuntu_sources_finalize (GObject *object)
 
     extension = E_UBUNTU_SOURCES (object);
 
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init (&iter, extension->uoa_to_eds);
+    while (g_hash_table_iter_next (&iter, &key, &value)) {
+        g_slist_free_full ((GSList*) value, g_free);
+    }
     g_hash_table_destroy (extension->uoa_to_eds);
 
     /* Chain up to parent's finalize() method. */
@@ -384,7 +402,7 @@ e_ubuntu_sources_init (EUbuntuSources *extension)
         (GHashFunc) g_direct_hash,
         (GEqualFunc) g_direct_equal,
         (GDestroyNotify) NULL,
-        (GDestroyNotify) e_ubuntu_sources_destroy_eds_id_slist);
+        (GDestroyNotify) NULL);
 }
 
 G_MODULE_EXPORT void
