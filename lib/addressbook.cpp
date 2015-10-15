@@ -291,6 +291,13 @@ void AddressBook::checkCompatibility()
     if (!envSafeMode.isEmpty()) {
         return;
     }
+
+    bool enableSafeMode = m_settings.value(SETTINGS_SAFE_MODE_KEY, true).toBool();
+    if (!enableSafeMode) {
+        qDebug() << "Server marked as updated";
+        return;
+    }
+
     GError *gError = NULL;
     ESourceRegistry *r = e_source_registry_new_sync(NULL, &gError);
     if (gError) {
@@ -299,7 +306,7 @@ void AddressBook::checkCompatibility()
         return;
     }
 
-    bool enableSafeMode = false;
+    enableSafeMode = false;
     GList *sources = e_source_registry_list_sources(r, E_SOURCE_EXTENSION_ADDRESS_BOOK);
     for(GList *l = sources; l != NULL; l = l->next) {
         ESource *s = E_SOURCE(l->data);
@@ -522,10 +529,14 @@ void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &mess
         while (gee_iterator_next(i)) {
             FolksPersonaStore *ps = FOLKS_PERSONA_STORE(gee_iterator_get(i));
             if (g_strcmp0(folks_persona_store_get_id(ps), sourceId.toUtf8().constData()) == 0) {
-                rData = new RemoveSourceData;
-                rData->m_addressbook = this;
-                rData->m_message = message;
-                edsf_persona_store_remove_address_book(EDSF_PERSONA_STORE(ps), AddressBook::removeSourceDone, rData);
+                ESource *src = edsf_persona_store_get_source(EDSF_PERSONA_STORE(ps));
+                if (src) {
+                    e_source_set_enabled(src, FALSE);
+                    rData = new RemoveSourceData;
+                    rData->m_addressbook = this;
+                    rData->m_message = message;
+                    e_source_write(src, NULL, AddressBook::removeSourceDone, rData);
+                }
                 g_object_unref(ps);
                 break;
             }
@@ -558,7 +569,7 @@ void AddressBook::removeSourceDone(GObject *source,
 {
     GError *error = 0;
     bool result = true;
-    edsf_persona_store_remove_address_book_finish(res, &error);
+    e_source_write_finish(E_SOURCE(source), res, &error);
     if (error) {
         qWarning() << "Fail to remove source" << error->message;
         g_error_free(error);
@@ -974,7 +985,6 @@ void AddressBook::onEdsServiceOwnerChanged(const QString &name, const QString &o
 void AddressBook::onSafeModeChanged()
 {
     GIcon *icon = g_themed_icon_new("address-book-app");
-    bool showUpdateComplete = false;
 
     if (m_messagingMenu == 0) {
         m_messagingMenu = messaging_menu_app_new("address-book-app.desktop");
@@ -991,16 +1001,16 @@ void AddressBook::onSafeModeChanged()
     if (isSafeMode()) {
         m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
                                                             icon,
-                                                            C::gettext("Update required"),
+                                                            C::gettext("Contact sync update required"),
                                                             NULL,
-                                                            C::gettext("Your Contacts app needs to be upgraded. Only local contacts will be editable until upgrade is complete"),
+                                                            C::gettext("Your Contact sync accounts need to be upgraded. Only local contacts will be editable until the contact sync upgrade is complete."),
                                                             QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
     } else {
         m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
                                                             icon,
                                                             C::gettext("Update complete"),
                                                             NULL,
-                                                            C::gettext("Your Contacts app update is complete."),
+                                                            C::gettext("Your Contact sync upgrade is complete."),
                                                             QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
     }
 

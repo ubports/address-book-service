@@ -31,11 +31,13 @@ public:
 
     void show(const QString &title, const QString &msg, const QString &iconName);
     void askYesOrNo(const QString &title, const QString &msg, const QString &iconName);
+    void askQuestion(const QString &title, const QString &iconName, const QString &question, const QMap<QString, QString> &actions);
     int closedReason() const;
 
 Q_SIGNALS:
     void questionAccepted();
     void questionRejected();
+    void questionReplied(const QString &action);
     void messageClosed();
 
 private:
@@ -51,4 +53,7 @@ private:
                                    ABNotifyMessage *self);
     static void onNotificationClosed(NotifyNotification *notification,
                                      ABNotifyMessage *self);
+    static void onQuestionReplied(NotifyNotification *notification,
+                                  char *action,
+                                  ABNotifyMessage *self);
 };

@@ -1,7 +1,7 @@
 description "address-book-update"
 author "Renato Araujo Oliveira Filho <renato.filho@canonical.com>"
 
-start on started address-book-service and started msyncd
+start on started address-book-service and started msyncd and started sync-monitor
 stop on runlevel [06]
 
 exec @CMAKE_INSTALL_FULL_LIBEXECDIR@/address-book-updater --sync

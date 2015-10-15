@@ -32,9 +32,11 @@ public:
         FailToCreateButeoProfiles,
         FailToAuthenticate,
         InernalError,
+        InitialSyncError,
         OnlineAccountNotFound,
         SyncAlreadyRunning,
-        SyncError
+        SyncError,
+        NoError
     };
 
     ABUpdateModule(QObject *parent = 0);
@@ -48,6 +50,7 @@ public:
     virtual bool requireInternetConnection() = 0;
     virtual bool commit() = 0;
     virtual bool rollback() = 0;
+    virtual bool markAsUpdate() = 0;
     virtual ImportError lastError() const = 0;
 
 Q_SIGNALS:

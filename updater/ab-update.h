@@ -69,7 +69,7 @@ private:
     QLockFile m_lockFile;
     bool m_needsUpdate;
     bool m_isRunning;
-    bool m_waitingForIntenert;
+    bool m_waitingForInternet;
     int m_activeModule;
     bool m_skipNetworkTest;
     bool m_silenceMode;

@@ -60,7 +60,8 @@ namespace
                 prop.setName(galera::VCardParser::PidMapFieldName);
                 QStringList values;
                 values << syncTarget.syncTarget()
-                       << syncTarget.value(QContactSyncTarget::FieldSyncTarget + 1).toString();
+                       << syncTarget.value(QContactSyncTarget::FieldSyncTarget + 1).toString()
+                       << syncTarget.value(QContactSyncTarget::FieldSyncTarget + 2).toString();
                 prop.setValue(values);
                 *toBeAdded << prop;
             }
@@ -158,7 +159,12 @@ namespace
                 QContactSyncTarget target;
                 QStringList values = property.value().split(QStringLiteral(";"));
                 target.setSyncTarget(values.value(0));
-                target.setValue(QContactSyncTarget::FieldSyncTarget + 1, values.value(1));
+                if (values.size() > 1) {
+                    target.setValue(QContactSyncTarget::FieldSyncTarget + 1, values.value(1));
+                }
+                if (values.size() > 2) {
+                    target.setValue(QContactSyncTarget::FieldSyncTarget + 2, values.value(2));
+                }
                 *updatedDetails  << target;
                 *alreadyProcessed = true;
             }

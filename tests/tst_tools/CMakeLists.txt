@@ -19,10 +19,11 @@ add_test(tst-buteo-import
     --task ${CMAKE_CURRENT_BINARY_DIR}/tst-buteo-import --wait-for=com.meego.msyncd
     --task ${CMAKE_CURRENT_SOURCE_DIR}/mock/mock-buteo.py --wait-for=com.canonical.pim -r --task-name=\"Buteo\"
     --task ${CMAKE_CURRENT_SOURCE_DIR}/mock/mock-galera.py -r --task-name=\"AddressBook Service\"
+    --task ${CMAKE_CURRENT_SOURCE_DIR}/mock/mock-sync-monitor.py -r --task-name=\"Sync Monitor\"
 )
 
 set_tests_properties(tst-buteo-import PROPERTIES
-    ENVIRONMENT ACCOUNTS=${CMAKE_CURRENT_SOURCE_DIR}/accounts/full-database
+    ENVIRONMENT ACCOUNTS=${CMAKE_CURRENT_BINARY_DIR}/accounts/full-database
 )
 
 
@@ -48,10 +49,12 @@ add_test(tst-buteo-import-no-accounts
 )
 
 set_tests_properties(tst-buteo-import-no-accounts PROPERTIES
-    ENVIRONMENT ACCOUNTS=${CMAKE_CURRENT_SOURCE_DIR}/accounts/empty-database
+    ENVIRONMENT ACCOUNTS=${CMAKE_CURRENT_BINARY_DIR}/accounts/empty-database
 )
 
 include_directories(
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/updater
 )
+
+add_subdirectory(accounts)

@@ -61,6 +61,8 @@ QList<ABUpdateModule*> ABUpdate::needsUpdate() const
         qDebug() << "Check if module needs update" << module->name() << ":" << mNeedsUpdate;
         if (mNeedsUpdate) {
             result << module;
+        } else {
+            module->markAsUpdate();
         }
     }
     return result;
@@ -93,11 +95,6 @@ void ABUpdate::startUpdate()
         m_lockFile.removeStaleLockFile();
     }
 
-    if (m_waitingForIntenert) {
-        m_waitingForIntenert = false;
-        m_netManager->disconnect(this);
-    }
-
     if (isRunning()) {
         qWarning() << "Update already running.";
         if (!m_silenceMode) {
@@ -111,11 +108,17 @@ void ABUpdate::startUpdate()
     }
 
     // check if any module needs a upgrade
+    qDebug() << "check modules to update";
     QList<ABUpdateModule*> modulesToUpdate = needsUpdate();
     if (modulesToUpdate.isEmpty()) {
         qDebug() << "No module to update.";
         notifyDone();
         return;
+    }
+
+    if (m_waitingForInternet) {
+        m_waitingForInternet = false;
+        m_netManager->disconnect(this);
     }
 
     m_lock.lock();
@@ -136,6 +139,12 @@ void ABUpdate::startUpdateWhenConnected()
 
     if (isRunning()) {
         qWarning() << "Update already running.";
+        return;
+    }
+
+    if (needsUpdate().isEmpty()) {
+        qDebug() << "No modules to update";
+        notifyDone();
         return;
     }
 
@@ -190,7 +199,7 @@ bool ABUpdate::isOnline(bool checkConnectionType) const
 void ABUpdate::waitForInternet()
 {
     qDebug() << "Not internet connection wait before start upgrade";
-    m_waitingForIntenert = true;
+    m_waitingForInternet = true;
     connect(m_netManager.data(),
             SIGNAL(onlineStateChanged(bool)),
             SLOT(onOnlineStateChanged()));
@@ -227,7 +236,7 @@ QString ABUpdate::errorMessage(ABUpdateModule::ImportError error) const
     case ABUpdateModule::OnlineAccountNotFound:
         return _("Online account not found!");
     case ABUpdateModule::SyncAlreadyRunning:
-        return _("Update already in progress!");
+        return _("Contact sync update already in progress!!");
     case ABUpdateModule::SyncError:
     default:
         return _("Fail to sync contacts!");
@@ -265,7 +274,7 @@ void ABUpdate::onModuleUpdated()
     } else {
         ABNotifyMessage *msg = new ABNotifyMessage(true, this);
         msg->show(_("Account update"),
-                  _("Contact sync upgrade complete."),
+                  _("Contact sync update complete."),
                   TRANSFER_ICON);
         connect(msg, SIGNAL(messageClosed()), SLOT(updateNextModule()));
     }
@@ -319,7 +328,7 @@ void ABUpdate::onOnlineStateChanged()
 {
     if (isOnline(true)) {
         qDebug() << "Network is online resume upddate process.";
-        m_waitingForIntenert = false;
+        m_waitingForInternet = false;
         m_netManager->disconnect(this);
         QTimer::singleShot(5000, this, SLOT(continueUpdateWithInternet()));
     }
