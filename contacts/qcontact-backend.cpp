@@ -78,7 +78,7 @@ GaleraManagerEngine::GaleraManagerEngine()
     connect(m_service, SIGNAL(contactsAdded(QList<QContactId>)), this, SIGNAL(contactsAdded(QList<QContactId>)));
     connect(m_service, SIGNAL(contactsRemoved(QList<QContactId>)), this, SIGNAL(contactsRemoved(QList<QContactId>)));
     connect(m_service, SIGNAL(contactsUpdated(QList<QContactId>)), this, SIGNAL(contactsChanged(QList<QContactId>)));
-    connect(m_service, SIGNAL(serviceChanged()), this, SIGNAL(dataChanged()));
+    connect(m_service, SIGNAL(serviceChanged()), this, SIGNAL(dataChanged()), Qt::QueuedConnection);
 }
 
 /*! Frees any memory used by this engine */
@@ -121,14 +121,13 @@ QList<QContactId> GaleraManagerEngine::contactIds(const QtContacts::QContactFilt
 
 QList<QtContacts::QContact> GaleraManagerEngine::contacts(const QtContacts::QContactFilter &filter,
                                                           const QList<QtContacts::QContactSortOrder>& sortOrders,
-                                                          const QContactFetchHint &fetchHint, QtContacts::QContactManager::Error *error) const
+                                                          const QContactFetchHint &fetchHint,
+                                                          QtContacts::QContactManager::Error *error) const
 {
-    Q_UNUSED(fetchHint);
-    Q_UNUSED(error);
-
     QContactFetchRequest request;
     request.setFilter(filter);
     request.setSorting(sortOrders);
+    request.setFetchHint(fetchHint);
 
     const_cast<GaleraManagerEngine*>(this)->startRequest(&request);
     const_cast<GaleraManagerEngine*>(this)->waitForRequestFinished(&request, -1);
@@ -140,7 +139,10 @@ QList<QtContacts::QContact> GaleraManagerEngine::contacts(const QtContacts::QCon
     return request.contacts();
 }
 
-QList<QContact> GaleraManagerEngine::contacts(const QList<QContactId> &contactIds, const QContactFetchHint &fetchHint, QMap<int, QContactManager::Error> *errorMap, QContactManager::Error *error) const
+QList<QContact> GaleraManagerEngine::contacts(const QList<QContactId> &contactIds,
+                                              const QContactFetchHint &fetchHint,
+                                              QMap<int, QContactManager::Error> *errorMap,
+                                              QContactManager::Error *error) const
 {
     QContactFetchByIdRequest request;
     request.setIds(contactIds);
