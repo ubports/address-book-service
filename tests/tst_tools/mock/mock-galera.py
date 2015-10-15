@@ -52,6 +52,7 @@ class AddressBook(dbus.service.Object):
         dbus.service.Object.__init__(self, dbus.SessionBus(), object_path)
         self._mainloop = GObject.MainLoop()
         self._view = AddressBookView(VIEW_OBJ)
+        self._isReady = True
         self._sources = {}
 
     @dbus.service.method(dbus_interface=MAIN_IFACE,
@@ -113,6 +114,123 @@ class AddressBook(dbus.service.Object):
 
     @dbus.service.signal(dbus_interface=MAIN_IFACE)
     def safeModeChanged(self):
+        print("safeModeChanged called")
+
+    @dbus.service.signal(dbus_interface=MAIN_IFACE)
+    def readyChanged(self):
+        print("readyChanged called")
+
+
+    #properties
+    @dbus.service.method(dbus_interface='org.freedesktop.DBus.Introspectable',
+                         out_signature='s')
+    def Introspect(self):
+        return """<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+    "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+    <node name="/com/canonical/pim/AddressBook">
+      <interface name="com.canonical.pim.AddressBook">
+        <property name="isReady" type="b" access="read"/>
+        <signal name="readyChanged">
+        </signal>
+        <method name="reset">
+          <arg direction="out" type="b" />
+        </method>
+        <method name="availableSources">
+          <arg direction="out" type="a(ssssubb)" />
+        </method>
+        <signal name="safeModeChanged">
+        </signal>
+        <method name="query">
+          <arg direction="in"  type="s" name="clause" />
+          <arg direction="in"  type="s" name="sort" />
+          <arg direction="in"  type="i" name="max_count" />
+          <arg direction="in"  type="b" name="show_invisible" />
+          <arg direction="in"  type="as" name="sources" />
+          <arg direction="out" type="o" />
+        </method>
+        <method name="createSource">
+          <arg direction="in"  type="s" name="sourceId" />
+          <arg direction="in"  type="s" name="sourceName" />
+          <arg direction="in"  type="s" name="provider" />
+          <arg direction="in"  type="s" name="applicationId" />
+          <arg direction="in"  type="i" name="accountId" />
+          <arg direction="in"  type="b" name="readOnly" />
+          <arg direction="in"  type="b" name="primary" />
+          <arg direction="out" type="b" />
+        </method>
+        <signal name="contactsRemoved">
+          <arg type="as" name="contacts" />
+        </signal>
+        <method name="removeSource">
+          <arg direction="in"  type="s" name="sourceId" />
+          <arg direction="out" type="b" />
+        </method>
+        <signal name="contactsAdded">
+          <arg type="as" name="contacts" />
+        </signal>
+        <method name="removeContacts">
+          <arg direction="in"  type="as" name="contactIds" />
+          <arg direction="out" type="i" />
+        </method>
+        <signal name="contactsUpdated">
+          <arg type="as" name="contacts" />
+        </signal>
+      </interface>
+      <interface name="org.freedesktop.DBus.Introspectable">
+        <method name="Introspect">
+          <arg direction="out" type="s" />
+        </method>
+      </interface>
+      <interface name="org.freedesktop.DBus.Properties">
+        <method name="Set">
+          <arg direction="in"  type="s" name="interface_name" />
+          <arg direction="in"  type="s" name="property_name" />
+          <arg direction="in"  type="v" name="new_value" />
+        </method>
+        <signal name="PropertiesChanged">
+          <arg type="s" name="interface_name" />
+          <arg type="a{sv}" name="changed_properties" />
+          <arg type="as" name="invalidated_properties" />
+        </signal>
+        <method name="Get">
+          <arg direction="in"  type="s" name="interface_name" />
+          <arg direction="in"  type="s" name="property_name" />
+          <arg direction="out" type="v" />
+        </method>
+        <method name="GetAll">
+          <arg direction="in"  type="s" name="interface_name" />
+          <arg direction="out" type="a{sv}" />
+        </method>
+      </interface>
+    </node>
+    """
+
+    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                         in_signature='ss', out_signature='v')
+    def Get(self, interface_name, property_name):
+        return self.GetAll(interface_name)[property_name]
+
+    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                         in_signature='s', out_signature='a{sv}')
+    def GetAll(self, interface_name):
+        print("Get Property")
+        return {'isReady': True}
+
+    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                         in_signature='ssv')
+    def Set(self, interface_name, property_name, new_value):
+        # validate the property name and value, update internal state…
+        if property_name == 'isReady':
+            self._isReady = new_value
+            self.readyChanged()
+
+        self.PropertiesChanged(interface_name,
+            { property_name: new_value }, [])
+
+    @dbus.service.signal(dbus_interface=dbus.PROPERTIES_IFACE,
+                         signature='sa{sv}as')
+    def PropertiesChanged(self, interface_name, changed_properties,
+                          invalidated_properties):
         pass
 
     #helper functions

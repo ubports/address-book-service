@@ -183,8 +183,11 @@ void GaleraContactsService::serviceOwnerChanged(const QString &name, const QStri
 
 void GaleraContactsService::onServiceReady()
 {
-    m_serviceIsReady = m_iface.data()->property("isReady").toBool();
-    Q_EMIT serviceChanged();
+    bool isReady = m_iface.data()->property("isReady").toBool();
+    if (isReady != m_serviceIsReady) {
+        m_serviceIsReady = isReady;
+        Q_EMIT serviceChanged();
+    }
 }
 
 void GaleraContactsService::initialize()
@@ -195,12 +198,14 @@ void GaleraContactsService::initialize()
                                                                     CPIM_ADDRESSBOOK_IFACE_NAME));
         if (!m_iface->lastError().isValid()) {
             m_serviceIsReady = m_iface.data()->property("isReady").toBool();
-            connect(m_iface.data(), SIGNAL(readyChanged()), this, SLOT(onServiceReady()));
+            connect(m_iface.data(), SIGNAL(readyChanged()), this, SLOT(onServiceReady()), Qt::UniqueConnection);
             connect(m_iface.data(), SIGNAL(safeModeChanged()), this, SIGNAL(serviceChanged()));
             connect(m_iface.data(), SIGNAL(contactsAdded(QStringList)), this, SLOT(onContactsAdded(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsRemoved(QStringList)), this, SLOT(onContactsRemoved(QStringList)));
             connect(m_iface.data(), SIGNAL(contactsUpdated(QStringList)), this, SLOT(onContactsUpdated(QStringList)));
-            Q_EMIT serviceChanged();
+            if (m_serviceIsReady) {
+                Q_EMIT serviceChanged();
+            }
         } else {
             qWarning() << "Fail to connect with service:"  << m_iface->lastError();
             m_iface.clear();
@@ -231,7 +236,7 @@ void GaleraContactsService::deinitialize()
 
 bool GaleraContactsService::isOnline() const
 {
-    return !m_iface.isNull();
+    return !m_iface.isNull() && m_serviceIsReady;
 }
 
 void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdRequest *request)
