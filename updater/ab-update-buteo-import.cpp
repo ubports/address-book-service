@@ -486,7 +486,7 @@ bool ButeoImport::prepareToUpdate()
     Q_FOREACH(Accounts::AccountId accountId, accounts) {
          QScopedPointer<Accounts::Account> acc(mgr.account(accountId));
 
-         if (acc->provider() != "google") {
+         if (acc->provider().name() != "google") {
              qDebug() << "Skip non google account" << acc->displayName();
              continue;
          }
