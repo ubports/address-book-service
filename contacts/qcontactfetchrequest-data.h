@@ -59,6 +59,7 @@ public:
                 QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError,
                 QMap<int, QtContacts::QContactManager::Error> errorMap = QMap<int, QtContacts::QContactManager::Error>());
 
+    void cancel();
     static void notifyError(QtContacts::QContactFetchRequest *request,
                             QtContacts::QContactManager::Error error = QtContacts::QContactManager::NotSupportedError);
 

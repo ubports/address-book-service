@@ -105,6 +105,15 @@ void QContactFetchRequestData::update(QList<QContact> result,
     QContactRequestData::update(state, error, errorMap);
 }
 
+void QContactFetchRequestData::cancel()
+{
+    if (m_runningParser) {
+        delete m_runningParser;
+        m_runningParser = 0;
+    }
+    QContactRequestData::cancel();
+}
+
 void QContactFetchRequestData::notifyError(QContactFetchRequest *request, QContactManager::Error error)
 {
     QContactManagerEngine::updateContactFetchRequest(request,
