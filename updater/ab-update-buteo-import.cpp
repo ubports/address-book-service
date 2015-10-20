@@ -574,6 +574,11 @@ bool ButeoImport::continueUpdate()
         }
     }
 
+    if (m_buteoQueue.isEmpty()) {
+        qDebug() << "No account to update";
+        QTimer::singleShot(0, this, SIGNAL(updated()));
+    }
+
     return true;
 }
 
