@@ -697,7 +697,7 @@ void AddressBook::createSourceDone(GObject *source,
     Source src;
     e_source_registry_commit_source_finish(E_SOURCE_REGISTRY(source), res, &error);
     if (error) {
-        qWarning() << "Fail to create source" << error->message;
+        qWarning() << "Failed to create source" << error->message;
         g_error_free(error);
     } else {
         // set as primary if necessary
@@ -1001,9 +1001,9 @@ void AddressBook::onSafeModeChanged()
     if (isSafeMode()) {
         m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",
                                                             icon,
-                                                            C::gettext("Contact sync update required"),
+                                                            C::gettext("Update required"),
                                                             NULL,
-                                                            C::gettext("Your Contact sync accounts need to be upgraded. Only local contacts will be editable until the contact sync upgrade is complete."),
+                                                            C::gettext("Only local contacts will be editable until the contact sync upgrade is complete."),
                                                             QDateTime::currentMSecsSinceEpoch() * 1000); // the value is expected to be in microseconds
     } else {
         m_messagingMenuMessage = messaging_menu_message_new("address-book-service-safe-mode",

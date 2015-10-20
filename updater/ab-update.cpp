@@ -239,7 +239,7 @@ QString ABUpdate::errorMessage(ABUpdateModule::ImportError error) const
         return _("Contact sync update already in progress!!");
     case ABUpdateModule::SyncError:
     default:
-        return _("Failed to sync contacts!");
+        return _("Fail to sync contacts!");
     }
 }
 
