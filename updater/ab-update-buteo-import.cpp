@@ -486,6 +486,11 @@ bool ButeoImport::prepareToUpdate()
     Q_FOREACH(Accounts::AccountId accountId, accounts) {
          QScopedPointer<Accounts::Account> acc(mgr.account(accountId));
 
+         if (acc->providerName() != "google") {
+             qDebug() << "Skip non google account" << acc->displayName();
+             continue;
+         }
+
          QString oldSourceId;
          QString newSourceId;
          bool isEmpty;
@@ -567,6 +572,11 @@ bool ButeoImport::continueUpdate()
         } else {
             qDebug() << "BUTEO: Sync disabled for account" << accInfo.accountId << accInfo.accountName;
         }
+    }
+
+    if (m_buteoQueue.isEmpty()) {
+        qDebug() << "No account to update";
+        QTimer::singleShot(0, this, SIGNAL(updated()));
     }
 
     return true;
