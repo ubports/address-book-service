@@ -1,4 +1,4 @@
-# Portuguese translation for address-book-service
+# Italian translation for address-book-service
 # Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
 # This file is distributed under the same license as the address-book-service package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
@@ -8,9 +8,9 @@ msgstr ""
 "Project-Id-Version: address-book-service\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2015-09-21 12:10-0300\n"
-"PO-Revision-Date: 2015-10-22 09:53+0000\n"
-"Last-Translator: Ivo Xavier <ivofernandes12@gmail.com>\n"
-"Language-Team: Portuguese <pt@li.org>\n"
+"PO-Revision-Date: 2015-10-23 14:31+0000\n"
+"Last-Translator: Claudio Arseni <claudio.arseni@gmail.com>\n"
+"Language-Team: Italian <it@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -22,18 +22,19 @@ msgstr ""
 msgid ""
 "%1 contact sync account needs upgrade. Please connect with the internet."
 msgstr ""
-"%1 conta de sincronização de contactos precisa de ser atualizada. Ligue-se à "
-"internet."
+"L'account di sincronizzazione contatti %1 deve essere aggiornato. "
+"Connettersi a internet."
 
 #: ../updater/ab-update.cpp:107
 #, qt-format
 msgid "%1 contact sync account upgrade already in progress"
-msgstr "%1 conta de sincronização de contactos está a ser atualizada."
+msgstr ""
+"Aggiornamento dell'account di sincronizzazione contatti %1 già in corso"
 
 #: ../updater/ab-update.cpp:344
 #, qt-format
 msgid "%1 contact sync account upgrade in progress"
-msgstr "%1 conta de sincronização de contactos em atualização."
+msgstr "Aggiornamento dell'account di sincronizzazione contatti %1 in corso"
 
 #: ../updater/ab-update.cpp:288
 #, qt-format
@@ -42,90 +43,91 @@ msgid ""
 "Do you want to retry now?"
 msgstr ""
 "%1.\n"
-"Quer tentar novamente?"
+"Riprovare ora?"
 
 #: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
 #: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
 msgid "Account update"
-msgstr "Atualização de conta"
+msgstr "Aggiornamento account"
 
 #: ../lib/addressbook.cpp:983
 msgid "Address book service"
-msgstr "Serviço de livro de endereços"
+msgstr "Servizio di rubrica"
 
 #: ../updater/ab-update.cpp:268
 msgid "Contact sync upgrade complete."
-msgstr "Atualização de sincronização de conractos completa."
+msgstr "Aggiornamento della sincronizzazione contatti completato."
 
 #: ../updater/ab-update.cpp:216
 msgid "Contacts app is updated already!"
-msgstr "A app de contactos está atualizada!"
+msgstr "App Contatti già aggiornata."
 
 #: ../updater/ab-update.cpp:224
 msgid "Fail to authenticate!"
-msgstr "Falha ao autenticar!"
+msgstr "Autenticazione non riuscita."
 
 #: ../updater/ab-update.cpp:220
 msgid "Fail to connect to contact sync service!"
-msgstr "Falha ao ligar ao serviço de sincronização de contactos!"
+msgstr "Connessione al servizio di sincronizzazione contatti non riuscita."
 
 #: ../updater/ab-update.cpp:218
 msgid "Fail to connect to internet!"
-msgstr "Falha ao ligar à internet!"
+msgstr "Connessione a internet non riuscita."
 
 #: ../updater/ab-update.cpp:222
 msgid "Fail to create sync profile!"
-msgstr "Falha ao criar perfil de sincronização!"
+msgstr "Creazione del profilo di sincronizzazione non riuscita."
 
 #: ../updater/ab-update.cpp:233
 msgid "Fail to sync contacts!"
-msgstr "Falha ao sincronizar contactos!"
+msgstr "Sincronizzazione dei contatti non riuscita."
 
 #: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
 msgid "Fail to update"
-msgstr "Falha ao atualizar"
+msgstr "Aggiornamento non riuscito"
 
 #: ../updater/ab-update.cpp:226
 msgid "Internal error during the sync!"
-msgstr "Erro interno durante a sincronização!"
+msgstr "Errore interno durante la sincronizzazione."
 
 #: ../updater/ab-notify-message.cpp:93
 msgid "No"
-msgstr "Não"
+msgstr "No"
 
 #: ../updater/ab-update.cpp:228
 msgid "Online account not found!"
-msgstr "Sem conta online!"
+msgstr "Account online non trovato."
 
 #: ../updater/ab-update.cpp:313
 msgid "To retry later open Contacts app and press the sync button."
 msgstr ""
-"Para tentar novamente, abra os Contactos e clique no botão de sincronizar."
+"Per riprovare in un secondo momento aprire l'app Contatti e premere il "
+"pulsante di sincronizzazione."
 
 #: ../updater/ab-update.cpp:230
 msgid "Update already in progress!"
-msgstr "Atualização já está em progresso!"
+msgstr "Aggiornamento già in corso."
 
 #: ../lib/addressbook.cpp:1002
 msgid "Update complete"
-msgstr "Atualização completa"
+msgstr "Aggiornamento completato"
 
 #: ../lib/addressbook.cpp:995
 msgid "Update required"
-msgstr "Atualização necessária"
+msgstr "Aggiornamento richiesto"
 
 #: ../updater/ab-notify-message.cpp:88
 msgid "Yes"
-msgstr "Sim"
+msgstr "Sì"
 
 #: ../lib/addressbook.cpp:997
 msgid ""
 "Your Contacts app needs to be upgraded. Only local contacts will be editable "
 "until upgrade is complete"
 msgstr ""
-"A sua app de contactos precisa de ser atualizada. Apenas contactos locais "
-"serão editáveis até a atualização estar completa."
+"L'app Contatti deve essere aggiornata. Solo i contatti locali saranno "
+"modificabili fino al completamento dell'aggiornamento"
 
 #: ../lib/addressbook.cpp:1004
 msgid "Your Contacts app upldate is complete."
-msgstr "A sua app de contactos está atualizada."
+msgstr "Aggiornamento dell'app Contatti completato."

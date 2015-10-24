@@ -1,4 +1,4 @@
-# Portuguese translation for address-book-service
+# Finnish translation for address-book-service
 # Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
 # This file is distributed under the same license as the address-book-service package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
@@ -8,9 +8,9 @@ msgstr ""
 "Project-Id-Version: address-book-service\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2015-09-21 12:10-0300\n"
-"PO-Revision-Date: 2015-10-22 09:53+0000\n"
-"Last-Translator: Ivo Xavier <ivofernandes12@gmail.com>\n"
-"Language-Team: Portuguese <pt@li.org>\n"
+"PO-Revision-Date: 2015-10-23 16:11+0000\n"
+"Last-Translator: Jiri Grönroos <Unknown>\n"
+"Language-Team: Finnish <fi@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -22,18 +22,18 @@ msgstr ""
 msgid ""
 "%1 contact sync account needs upgrade. Please connect with the internet."
 msgstr ""
-"%1 conta de sincronização de contactos precisa de ser atualizada. Ligue-se à "
-"internet."
+"\"%1\"-yhteystietojen synkronointitili tulee päivittää. Yhdistä laite "
+"internetiin."
 
 #: ../updater/ab-update.cpp:107
 #, qt-format
 msgid "%1 contact sync account upgrade already in progress"
-msgstr "%1 conta de sincronização de contactos está a ser atualizada."
+msgstr "\"%1\"-yhteystietojen synkronointitilin päivitys on jo käynnissä"
 
 #: ../updater/ab-update.cpp:344
 #, qt-format
 msgid "%1 contact sync account upgrade in progress"
-msgstr "%1 conta de sincronização de contactos em atualização."
+msgstr "\"%1\"-yhteystietojen synkronointitilin päivitys on käynnissä"
 
 #: ../updater/ab-update.cpp:288
 #, qt-format
@@ -42,90 +42,91 @@ msgid ""
 "Do you want to retry now?"
 msgstr ""
 "%1.\n"
-"Quer tentar novamente?"
+"Haluatko yrittää uudelleen nyt?"
 
 #: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
 #: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
 msgid "Account update"
-msgstr "Atualização de conta"
+msgstr "Tilin päivitys"
 
 #: ../lib/addressbook.cpp:983
 msgid "Address book service"
-msgstr "Serviço de livro de endereços"
+msgstr "Osoitekirjapalvelu"
 
 #: ../updater/ab-update.cpp:268
 msgid "Contact sync upgrade complete."
-msgstr "Atualização de sincronização de conractos completa."
+msgstr "Yhteystietojen synkronoinnin päivitys on valmis."
 
 #: ../updater/ab-update.cpp:216
 msgid "Contacts app is updated already!"
-msgstr "A app de contactos está atualizada!"
+msgstr "Yhteystietosovellus on jo päivitetty!"
 
 #: ../updater/ab-update.cpp:224
 msgid "Fail to authenticate!"
-msgstr "Falha ao autenticar!"
+msgstr ""
 
 #: ../updater/ab-update.cpp:220
 msgid "Fail to connect to contact sync service!"
-msgstr "Falha ao ligar ao serviço de sincronização de contactos!"
+msgstr ""
 
 #: ../updater/ab-update.cpp:218
 msgid "Fail to connect to internet!"
-msgstr "Falha ao ligar à internet!"
+msgstr ""
 
 #: ../updater/ab-update.cpp:222
 msgid "Fail to create sync profile!"
-msgstr "Falha ao criar perfil de sincronização!"
+msgstr ""
 
 #: ../updater/ab-update.cpp:233
 msgid "Fail to sync contacts!"
-msgstr "Falha ao sincronizar contactos!"
+msgstr ""
 
 #: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
 msgid "Fail to update"
-msgstr "Falha ao atualizar"
+msgstr ""
 
 #: ../updater/ab-update.cpp:226
 msgid "Internal error during the sync!"
-msgstr "Erro interno durante a sincronização!"
+msgstr "Sisäinen virhe synkronoinnin aikana!"
 
 #: ../updater/ab-notify-message.cpp:93
 msgid "No"
-msgstr "Não"
+msgstr "Ei"
 
 #: ../updater/ab-update.cpp:228
 msgid "Online account not found!"
-msgstr "Sem conta online!"
+msgstr "Verkkotiliä ei löytynyt!"
 
 #: ../updater/ab-update.cpp:313
 msgid "To retry later open Contacts app and press the sync button."
 msgstr ""
-"Para tentar novamente, abra os Contactos e clique no botão de sincronizar."
+"Yritä myöhemmin uudelleen avaamalla yhteystietosovellus ja painamalla "
+"synkronointipainiketta."
 
 #: ../updater/ab-update.cpp:230
 msgid "Update already in progress!"
-msgstr "Atualização já está em progresso!"
+msgstr "Päivitys on jo meneillään!"
 
 #: ../lib/addressbook.cpp:1002
 msgid "Update complete"
-msgstr "Atualização completa"
+msgstr "Päivitys valmistui"
 
 #: ../lib/addressbook.cpp:995
 msgid "Update required"
-msgstr "Atualização necessária"
+msgstr "Päivitys vaaditaan"
 
 #: ../updater/ab-notify-message.cpp:88
 msgid "Yes"
-msgstr "Sim"
+msgstr "Kyllä"
 
 #: ../lib/addressbook.cpp:997
 msgid ""
 "Your Contacts app needs to be upgraded. Only local contacts will be editable "
 "until upgrade is complete"
 msgstr ""
-"A sua app de contactos precisa de ser atualizada. Apenas contactos locais "
-"serão editáveis até a atualização estar completa."
+"Yhteystietosovellus tulee päivittää. Vain paikalliset yhteystiedot ovat "
+"muokattavissa, kunnes päivitys on tehty"
 
 #: ../lib/addressbook.cpp:1004
 msgid "Your Contacts app upldate is complete."
-msgstr "A sua app de contactos está atualizada."
+msgstr ""
