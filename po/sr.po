@@ -1,0 +1,132 @@
+# Serbian translation for address-book-service
+# Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
+# This file is distributed under the same license as the address-book-service package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: address-book-service\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2015-09-21 12:10-0300\n"
+"PO-Revision-Date: 2015-10-21 21:35+0000\n"
+"Last-Translator: Bojan Bogdanović <Unknown>\n"
+"Language-Team: Serbian <sr@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Launchpad-Export-Date: 2015-10-24 05:58+0000\n"
+"X-Generator: Launchpad (build 17812)\n"
+
+#: ../updater/ab-update.cpp:355
+#, qt-format
+msgid ""
+"%1 contact sync account needs upgrade. Please connect with the internet."
+msgstr ""
+"%1 налогу за синхронизовање контаката је потребна надоградња. Молимо да се "
+"повежете на интернет."
+
+#: ../updater/ab-update.cpp:107
+#, qt-format
+msgid "%1 contact sync account upgrade already in progress"
+msgstr "Надоградња %1 налога за синхронизовање контаката је већ у току"
+
+#: ../updater/ab-update.cpp:344
+#, qt-format
+msgid "%1 contact sync account upgrade in progress"
+msgstr "Надоградња %1 налога за синхронизовање контаката је у току"
+
+#: ../updater/ab-update.cpp:288
+#, qt-format
+msgid ""
+"%1.\n"
+"Do you want to retry now?"
+msgstr ""
+"%1.\n"
+"Да ли желите да поново покушате сада?"
+
+#: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
+#: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
+msgid "Account update"
+msgstr "Ажурирање налога"
+
+#: ../lib/addressbook.cpp:983
+msgid "Address book service"
+msgstr "Сервис именика"
+
+#: ../updater/ab-update.cpp:268
+msgid "Contact sync upgrade complete."
+msgstr "Надоградња сонхронизације контаката је завршена."
+
+#: ../updater/ab-update.cpp:216
+msgid "Contacts app is updated already!"
+msgstr "Програм за контактвећ е је ажуриран!"
+
+#: ../updater/ab-update.cpp:224
+msgid "Fail to authenticate!"
+msgstr "Неуспешно аутентификовање!"
+
+#: ../updater/ab-update.cpp:220
+msgid "Fail to connect to contact sync service!"
+msgstr "Неуспешно повезивање на сервис синхронизације контаката!"
+
+#: ../updater/ab-update.cpp:218
+msgid "Fail to connect to internet!"
+msgstr "Неупсешно повезивање на интернет!"
+
+#: ../updater/ab-update.cpp:222
+msgid "Fail to create sync profile!"
+msgstr "Неуспешно креирање профила за синхронизацију!"
+
+#: ../updater/ab-update.cpp:233
+msgid "Fail to sync contacts!"
+msgstr "Неуспешно синхронизовање контаката!"
+
+#: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
+msgid "Fail to update"
+msgstr "Неуспешно ажурирање"
+
+#: ../updater/ab-update.cpp:226
+msgid "Internal error during the sync!"
+msgstr "Грешка на интернету током синхронизације!"
+
+#: ../updater/ab-notify-message.cpp:93
+msgid "No"
+msgstr "Не"
+
+#: ../updater/ab-update.cpp:228
+msgid "Online account not found!"
+msgstr "Налог на мрежи није пронађен!"
+
+#: ../updater/ab-update.cpp:313
+msgid "To retry later open Contacts app and press the sync button."
+msgstr ""
+"Да покушате касније отворите програм за контакте и притисните дугме за "
+"синхронизацију."
+
+#: ../updater/ab-update.cpp:230
+msgid "Update already in progress!"
+msgstr "Ажурирање је већ у току!"
+
+#: ../lib/addressbook.cpp:1002
+msgid "Update complete"
+msgstr "Ажурирање је завршено"
+
+#: ../lib/addressbook.cpp:995
+msgid "Update required"
+msgstr "Потребно ажурирање"
+
+#: ../updater/ab-notify-message.cpp:88
+msgid "Yes"
+msgstr "Да"
+
+#: ../lib/addressbook.cpp:997
+msgid ""
+"Your Contacts app needs to be upgraded. Only local contacts will be editable "
+"until upgrade is complete"
+msgstr ""
+"Ваш програм за контакте мора да се надогради. Само локални контакти могу "
+"бити мењани дос се надоградња не заврши"
+
+#: ../lib/addressbook.cpp:1004
+msgid "Your Contacts app upldate is complete."
+msgstr "Ажурирање Ваше апликације за контакте је завршено."

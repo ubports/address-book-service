@@ -42,6 +42,7 @@ public:
     void insertRemovedContacts(QSet<QString> ids);
     void insertAddedContacts(QSet<QString> ids);
     void flush();
+    void clear();
 
 private Q_SLOTS:
     void emitSignals();

@@ -30,6 +30,7 @@ AddressBookAdaptor::AddressBookAdaptor(const QDBusConnection &connection, Addres
 {
     setAutoRelaySignals(true);
     connect(m_addressBook, SIGNAL(readyChanged()), SIGNAL(readyChanged()));
+    connect(m_addressBook, SIGNAL(safeModeChanged()), SIGNAL(safeModeChanged()));
 }
 
 AddressBookAdaptor::~AddressBookAdaptor()
@@ -61,10 +62,27 @@ Source AddressBookAdaptor::createSource(const QString &sourceName, bool setAsPri
     QMetaObject::invokeMethod(m_addressBook, "createSource",
                               Qt::QueuedConnection,
                               Q_ARG(const QString&, sourceName),
+                              Q_ARG(uint, 0),
                               Q_ARG(bool, setAsPrimary),
                               Q_ARG(const QDBusMessage&, message));
     return Source();
 }
+
+Source AddressBookAdaptor::createSourceForAccount(const QString &sourceName,
+                                                  uint accountId,
+                                                  bool setAsPrimary,
+                                                  const QDBusMessage &message)
+{
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "createSource",
+                              Qt::QueuedConnection,
+                              Q_ARG(const QString&, sourceName),
+                              Q_ARG(uint, accountId),
+                              Q_ARG(bool, setAsPrimary),
+                              Q_ARG(const QDBusMessage&, message));
+    return Source();
+}
+
 
 bool AddressBookAdaptor::removeSource(const QString &sourceId, const QDBusMessage &message)
 {
@@ -75,6 +93,7 @@ bool AddressBookAdaptor::removeSource(const QString &sourceId, const QDBusMessag
                               Q_ARG(const QDBusMessage&, message));
     return false;
 }
+
 
 QString AddressBookAdaptor::createContact(const QString &contact, const QString &source, const QDBusMessage &message)
 {
@@ -87,9 +106,9 @@ QString AddressBookAdaptor::createContact(const QString &contact, const QString 
     return QString();
 }
 
-QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &sort, const QStringList &sources)
+QDBusObjectPath AddressBookAdaptor::query(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources)
 {
-    View *v = m_addressBook->query(clause, sort, sources);
+    View *v = m_addressBook->query(clause, sort, maxCount, showInvisible, sources);
     v->registerObject(m_connection);
     return QDBusObjectPath(v->dynamicObjectPath());
 }
@@ -137,6 +156,32 @@ bool AddressBookAdaptor::isReady()
 bool AddressBookAdaptor::ping()
 {
     return true;
+}
+
+void AddressBookAdaptor::purgeContacts(const QString &since, const QString &sourceId, const QDBusMessage &message)
+{
+    QDateTime sinceDate;
+    if (since.isEmpty()) {
+        sinceDate = QDateTime::fromTime_t(0);
+    } else {
+        sinceDate = QDateTime::fromString(since, Qt::ISODate);
+    }
+    m_addressBook->purgeContacts(sinceDate, sourceId, message);
+}
+
+void AddressBookAdaptor::shutDown() const
+{
+    m_addressBook->shutdown();
+}
+
+bool AddressBookAdaptor::safeMode() const
+{
+    return m_addressBook->isSafeMode();
+}
+
+void AddressBookAdaptor::setSafeMode(bool flag)
+{
+    m_addressBook->setSafeMode(flag);
 }
 
 } //namespace

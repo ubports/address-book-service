@@ -60,6 +60,15 @@ void DirtyContactsNotify::flush()
     emitSignals();
 }
 
+void DirtyContactsNotify::clear()
+{
+    qWarning() << "Clear notify" << (m_contactsChanged.size() + m_contactsAdded.size() + m_contactsRemoved.size());
+    m_contactsChanged.clear();
+    m_contactsAdded.clear();
+    m_contactsRemoved.clear();
+    m_timer.stop();
+}
+
 void DirtyContactsNotify::insertRemovedContacts(QSet<QString> ids)
 {
     if (!m_adaptor->isReady()) {
@@ -91,6 +100,10 @@ void DirtyContactsNotify::insertChangedContacts(QSet<QString> ids)
 
 void DirtyContactsNotify::emitSignals()
 {
+    qWarning() << "Emit singals:"
+               << "\n\tChanged:" << m_contactsChanged.size()
+               << "\n\tRemoved:" << m_contactsRemoved.size()
+               << "\n\tAdded:" << m_contactsRemoved.size();
     if (!m_contactsChanged.isEmpty()) {
         // ignore the signal if the added signal was not fired yet
         m_contactsChanged.subtract(m_contactsAdded);

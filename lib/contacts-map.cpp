@@ -25,6 +25,10 @@
 #include <QtContacts/QContactSortOrder>
 #include <QtContacts/QContactDisplayLabel>
 #include <QtContacts/QContactTag>
+#include <QtContacts/QContactPhoneNumber>
+
+#include <phonenumbers/phonenumberutil.h>
+#include <phonenumbers/region_code.h>
 
 using namespace QtContacts;
 
@@ -52,9 +56,7 @@ QIndividual *ContactEntry::individual() const
 ContactsMap::ContactsMap()
     : m_sortClause(defaultSort())
 {
-
 }
-
 
 ContactsMap::~ContactsMap()
 {
@@ -63,7 +65,28 @@ ContactsMap::~ContactsMap()
 
 ContactEntry *ContactsMap::value(const QString &id) const
 {
-    return m_idToEntry[id];
+    return m_idToEntry.value(id, 0);
+}
+
+QList<ContactEntry *> ContactsMap::valueByPhone(const QString &phone) const
+{
+    if (phone.isEmpty()) {
+        return values();
+    }
+
+    return m_phoneToEntry.values(minimalNumber(phone));
+}
+
+QList<ContactEntry *> ContactsMap::values(const QStringList &ids) const
+{
+    QList<ContactEntry *> result;
+    Q_FOREACH(const QString &id, ids) {
+        ContactEntry *entry = m_idToEntry.value(id, 0);
+        if (entry) {
+            result << entry;
+        }
+    }
+    return result;
 }
 
 ContactEntry *ContactsMap::take(FolksIndividual *individual)
@@ -74,48 +97,32 @@ ContactEntry *ContactsMap::take(FolksIndividual *individual)
 
 ContactEntry *ContactsMap::take(const QString &id)
 {
-    QMutexLocker locker(&m_mutex);
+    QWriteLocker locker(&m_mutex);
     ContactEntry *entry = m_idToEntry.take(id);
-    if (entry) {
-        m_contacts.removeOne(entry);
-    }
+    removeData(entry, false);
     return entry;
 }
 
 void ContactsMap::remove(const QString &id)
 {
-    QMutexLocker locker(&m_mutex);
-    ContactEntry *entry = m_idToEntry.value(id,0);
-    if (entry) {
-        m_contacts.removeOne(entry);
-        m_idToEntry.remove(id);
-        delete entry;
-    }
+    QWriteLocker locker(&m_mutex);
+    ContactEntry *entry = m_idToEntry.take(id);
+    removeData(entry, true);
 }
 
 void ContactsMap::insert(ContactEntry *entry)
 {
-    QMutexLocker locker(&m_mutex);
-    FolksIndividual *fIndividual = entry->individual()->individual();
-    if (fIndividual) {
-        m_idToEntry.insert(folks_individual_get_id(fIndividual), entry);
-
-        if (!m_sortClause.isEmpty()) {
-            ContactLessThan lessThan(m_sortClause);
-            QList<ContactEntry*>::iterator it(std::upper_bound(m_contacts.begin(), m_contacts.end(), entry, lessThan));
-            m_contacts.insert(it, entry);
-        } else {
-            m_contacts.append(entry);
-        }
-    }
+    QWriteLocker locker(&m_mutex);
+    insertData(entry);
 }
 
 void ContactsMap::updatePosition(ContactEntry *entry)
 {
+    QWriteLocker locker(&m_mutex);
     if (!m_sortClause.isEmpty()) {
         int oldPos = m_contacts.indexOf(entry);
 
-        ContactLessThan lessThan(m_sortClause);
+        ContactEntryLessThan lessThan(m_sortClause);
         QList<ContactEntry*>::iterator it(std::upper_bound(m_contacts.begin(), m_contacts.end(), entry, lessThan));
 
         if (it != m_contacts.end()) {
@@ -127,6 +134,12 @@ void ContactsMap::updatePosition(ContactEntry *entry)
             m_contacts.move(oldPos, m_contacts.size() -1);
         }
     }
+
+    // update phone number map
+    Q_FOREACH(const QString &key, m_phoneToEntry.keys(entry)) {
+        m_phoneToEntry.remove(key, entry);
+    }
+    insertData(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
 }
 
 int ContactsMap::size() const
@@ -136,16 +149,17 @@ int ContactsMap::size() const
 
 void ContactsMap::clear()
 {
-    QMutexLocker locker(&m_mutex);
+    QWriteLocker locker(&m_mutex);
     QList<ContactEntry*> entries = m_idToEntry.values();
     m_idToEntry.clear();
+    m_phoneToEntry.clear();
     m_contacts.clear();
     qDeleteAll(entries);
 }
 
-void ContactsMap::lock()
+void ContactsMap::lockForRead()
 {
-    m_mutex.lock();
+    m_mutex.lockForRead();
 }
 
 void ContactsMap::unlock()
@@ -158,6 +172,15 @@ QList<ContactEntry*> ContactsMap::values() const
     return m_contacts;
 }
 
+QList<QContact> ContactsMap::contacts() const
+{
+    QList<QContact> result;
+    Q_FOREACH(ContactEntry *e, m_contacts) {
+        result << e->individual()->contact();
+    }
+    return result;
+}
+
 QStringList ContactsMap::keys() const
 {
     return m_idToEntry.keys();
@@ -168,7 +191,7 @@ void ContactsMap::sertSort(const SortClause &clause)
     if (clause.toContactSortOrder() != m_sortClause.toContactSortOrder()) {
         m_sortClause = clause;
         if (!m_sortClause.isEmpty()) {
-            ContactLessThan lessThan(m_sortClause);
+            ContactEntryLessThan lessThan(m_sortClause);
             qSort(m_contacts.begin(), m_contacts.end(), lessThan);
         }
     }
@@ -236,5 +259,65 @@ ContactEntry *ContactsMap::value(FolksIndividual *individual) const
     return m_idToEntry.value(contactId, 0);
 }
 
-} //namespace
+void ContactsMap::removeData(ContactEntry *entry, bool del)
+{
+    if (entry) {
+        Q_FOREACH(const QString &key,  m_phoneToEntry.keys(entry)) {
+            m_phoneToEntry.remove(key, entry);
+        }
+        m_contacts.removeOne(entry);
+        if (del) {
+            delete entry;
+        }
+    }
 
+}
+
+void ContactsMap::insertData(ContactEntry *entry)
+{
+    FolksIndividual *fIndividual = entry->individual()->individual();
+
+
+    if (fIndividual) {
+        // fill id map
+        m_idToEntry.insert(folks_individual_get_id(fIndividual), entry);
+
+        // fill contact list
+        if (!m_sortClause.isEmpty()) {
+            ContactEntryLessThan lessThan(m_sortClause);
+            QList<ContactEntry*>::iterator it(std::upper_bound(m_contacts.begin(), m_contacts.end(), entry, lessThan));
+            m_contacts.insert(it, entry);
+        } else {
+            m_contacts.append(entry);
+        }
+
+        // fill phone map
+        insertData(entry->individual()->contact().details<QContactPhoneNumber>(), entry);
+    }
+}
+
+void ContactsMap::insertData(const QList<QContactPhoneNumber> &numbers, ContactEntry *entry)
+{
+    Q_FOREACH(const QContactPhoneNumber &phone, numbers) {
+        QString mNumber = minimalNumber(phone.number());
+        if (!mNumber.isEmpty()) {
+            m_phoneToEntry.insert(mNumber, entry);
+        }
+    }
+}
+
+QString ContactsMap::minimalNumber(const QString &phone) const
+{
+    static i18n::phonenumbers::PhoneNumberUtil *phonenumberUtil = i18n::phonenumbers::PhoneNumberUtil::GetInstance();
+
+    std::string stdPreprocessedPhone(phone.toStdString());
+    phonenumberUtil->NormalizeDiallableCharsOnly(&stdPreprocessedPhone);
+
+    if (stdPreprocessedPhone.length() <= 7) {
+        return QString::fromStdString(stdPreprocessedPhone);
+    }
+
+    return QString::fromStdString(stdPreprocessedPhone).right(7);
+}
+
+} //namespace

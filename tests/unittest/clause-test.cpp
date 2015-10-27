@@ -264,6 +264,25 @@ private Q_SLOTS:
         // Failing due the MatchFlag problem check: https://bugreports.qt.io/browse/QTBUG-47546
         //QCOMPARE(myFilter.test(c), matchExactly);
     }
+
+    void testExtractIds()
+    {
+        QContactIdFilter originalFilter;
+        originalFilter.setIds(QList<QContactId>()
+                              << QContactId::fromString("qtcontacts:memory::1")
+                              << QContactId::fromString("qtcontacts:memory::2")
+                              << QContactId::fromString("qtcontacts:memory::3"));
+
+        Filter f(originalFilter);
+
+        QStringList ids = f.idsToFilter();
+        QCOMPARE(ids.size(), 3);
+
+        Q_FOREACH(const QContactId &id, originalFilter.ids()) {
+            ids.removeOne(id.toString().split(":").last());
+        }
+        QCOMPARE(ids.size(), 0);
+    }
 };
 
 QTEST_MAIN(ClauseParseTest)

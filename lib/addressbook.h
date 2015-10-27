@@ -25,6 +25,7 @@
 #include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+#include <QtCore/QSettings>
 
 #include <QtDBus/QtDBus>
 
@@ -33,6 +34,9 @@
 #include <folks/folks.h>
 #include <glib.h>
 #include <glib-object.h>
+
+typedef struct _MessagingMenuMessage MessagingMenuMessage;
+typedef struct _MessagingMenuApp MessagingMenuApp;
 
 namespace galera
 {
@@ -54,33 +58,38 @@ public:
 
     // Adaptor
     QString linkContacts(const QStringList &contacts);
-    View *query(const QString &clause, const QString &sort, const QStringList &sources);
+    View *query(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources);
     QStringList sortFields();
     bool unlinkContacts(const QString &parent, const QStringList &contacts);
     bool isReady() const;
+    void setSafeMode(bool flag);
 
+    static bool isSafeMode();
     static int init();
 
 Q_SIGNALS:
     void stopped();
     void readyChanged();
+    void safeModeChanged();
 
 public Q_SLOTS:
     bool start();
     void shutdown();
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
-    Source createSource(const QString &sourceName, bool setAsPrimary, const QDBusMessage &message);
+    Source createSource(const QString &sourceName, uint accountId, bool setAsPrimary, const QDBusMessage &message);
     void removeSource(const QString &sourceId, const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message = QDBusMessage());
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
     QStringList updateContacts(const QStringList &contacts, const QDBusMessage &message);
+    void purgeContacts(const QDateTime &since, const QString &sourceId, const QDBusMessage &message);
     void updateContactsDone(const QString &contactId, const QString &error);
 
 private Q_SLOTS:
     void viewClosed();
     void individualChanged(QIndividual *individual);
     void onEdsServiceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
+    void onSafeModeChanged();
 
     // Unix signal handlers.
     void handleSigQuit();
@@ -88,6 +97,9 @@ private Q_SLOTS:
     // WORKAROUND: Check if EDS was running when the service started
     void checkForEds();
     void unprepareFolks();
+
+    // check compatibility and if the safe mode should be enabled
+    void checkCompatibility();
 
 private:
     FolksIndividualAggregator *m_individualAggregator;
@@ -97,6 +109,9 @@ private:
     // timer to avoid send several updates at the same time
     DirtyContactsNotify *m_notifyContactUpdate;
     QDBusServiceWatcher *m_edsWatcher;
+    MessagingMenuApp *m_messagingMenu;
+    MessagingMenuMessage *m_messagingMenuMessage;
+    static QSettings m_settings;
 
     bool m_edsIsLive;
     bool m_ready;
@@ -107,6 +122,7 @@ private:
     QDBusConnection m_connection;
 
     // Update command
+    QMutex m_updateLock;
     QDBusMessage m_updateCommandReplyMessage;
     QStringList m_updateCommandResult;
     QStringList m_updatedIds;
@@ -130,14 +146,15 @@ private:
     void prepareUnixSignals();
     static void quitSignalHandler(int unused);
 
+    bool processUpdates();
     void prepareFolks();
     void unprepareEds();
     void connectWithEDS();
     void continueShutdown();
     void setIsReady(bool isReady);
     bool registerObject(QDBusConnection &connection);
-    QString removeContact(FolksIndividual *individual);
-    QString addContact(FolksIndividual *individual);
+    QString removeContact(FolksIndividual *individual, bool *visible);
+    QString addContact(FolksIndividual *individual, bool visible);
     FolksPersonaStore *getFolksStore(const QString &source);
 
     static void availableSourcesDoneListAllSources(FolksBackendStore *backendStore,
@@ -178,6 +195,12 @@ private:
     static void edsPrepared(GObject *source,
                             GAsyncResult *res,
                             void *data);
+    static void edsRemoveContact(FolksIndividual *individual);
+
+    static void onSafeModeMessageActivated(MessagingMenuMessage *message,
+                                           const char *actionId,
+                                           GVariant *param,
+                                           AddressBook *self);
     friend class DirtyContactsNotify;
 };
 

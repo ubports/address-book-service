@@ -1,3 +1,32 @@
+address-book-service (0.1.1+15.10.20151021-0ubuntu1) wily; urgency=medium
+
+  [ Renato Araujo Oliveira Filho ]
+  * Skip non google accounts. (LP: #1503373)
+
+ -- Bill Filler <ci-train-bot@canonical.com>  Wed, 21 Oct 2015 04:20:27 +0000
+
+address-book-service (0.1.1+15.10.20151015.1-0ubuntu1) wily; urgency=medium
+
+  [ Renato Araujo Oliveira Filho ]
+  * Disable the EDS source instead of remove it. Do a syncevolution sync
+    before continue with upgrader. Does not remove old sources with
+    disabled sync.
+  * Fixed crash while removing online accounts. Only update google
+    accounts. (LP: #1502899)
+  * Fixed package build with translations.
+  * Implemented 'maxCountHint' support for queries. (LP: #1489512)
+
+ -- Bill Filler <ci-train-bot@canonical.com>  Thu, 15 Oct 2015 20:45:13 +0000
+
+address-book-service (0.1.1+15.10.20151001-0ubuntu1) wily; urgency=medium
+
+  [ Renato Araujo Oliveira Filho ]
+  * Add support for some type of extended types; Mark contact as deleted
+    instead of delete it; Implement support for QContactTimestamp;
+    Implement "purge" dbus function to hard remove deleted contacts;
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Thu, 01 Oct 2015 14:49:26 +0000
+
 address-book-service (0.1.1+15.10.20150922.2-0ubuntu1) wily; urgency=medium
 
   [ CI Train Bot ]

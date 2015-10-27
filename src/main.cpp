@@ -19,9 +19,11 @@
 #define ADDRESS_BOOK_SERVICE_DEMO_DATA  "ADDRESS_BOOK_SERVICE_DEMO_DATA"
 #define ADDRESS_BOOK_SERVICE_DEBUG      "ADDRESS_BOOK_SERVICE_DEBUG"
 
+#include "config.h"
 #include "addressbook.h"
 #include "common/vcard-parser.h"
 
+#include <QtCore/QSettings>
 
 void contactServiceMessageOutput(QtMsgType type,
                                  const QMessageLogContext &context,
@@ -48,9 +50,11 @@ void onServiceReady(galera::AddressBook *book)
     }
 }
 
-
 int main(int argc, char** argv)
 {
+    QCoreApplication::setOrganizationName(SETTINGS_ORG);
+    QCoreApplication::setApplicationName(SETTINGS_APPLICATION);
+
     galera::AddressBook::init();
     QCoreApplication app(argc, argv);
 

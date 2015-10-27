@@ -23,6 +23,7 @@
 #include <QtCore/QList>
 #include <QtCore/QMultiHash>
 #include <QtCore/QMutex>
+#include <QtCore/QDateTime>
 
 #include <QVersitProperty>
 
@@ -54,9 +55,17 @@ public:
     void addListener(QObject *object, const char *slot);
     bool isValid() const;
     void flush();
+    bool markAsDeleted();
+    QDateTime deletedAt();
+    bool setVisible(bool visible);
+    bool isVisible() const;
 
+    static QtContacts::QContact copy(const QtContacts::QContact &c, QList<QtContacts::QContactDetail::DetailType> fields);
     static GHashTable *parseDetails(const QtContacts::QContact &contact);
     static QString displayName(const QtContacts::QContact &contact);
+    static void setExtendedDetails(FolksPersona *persona,
+                                   const QList<QtContacts::QContactDetail> &xDetails,
+                                   const QDateTime &createdAt = QDateTime());
 
     // enable or disable auto-link
     static void enableAutoLink(bool flag);
@@ -73,7 +82,10 @@ private:
     QString m_id;
     QMetaObject::Connection m_updateConnection;
     QMutex m_contactLock;
+    QDateTime m_deletedAt;
+    bool m_visible;
     static bool m_autoLink;
+    static QStringList m_supportedExtendedDetails;
 
     QIndividual();
     QIndividual(const QIndividual &);
@@ -102,12 +114,15 @@ private:
     // QContact
     QtContacts::QContactDetail getUid() const;
     QList<QtContacts::QContactDetail> getSyncTargets() const;
+    QtContacts::QContactDetail getTimeStamp             (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaName           (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaFullName       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaNickName       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaBirthday       (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaPhoto          (FolksPersona *persona, int index) const;
     QtContacts::QContactDetail getPersonaFavorite       (FolksPersona *persona, int index) const;
+
+    QList<QtContacts::QContactDetail> getPersonaExtendedDetails (FolksPersona *persona, int index) const;
     QList<QtContacts::QContactDetail> getPersonaRoles   (FolksPersona *persona,
                                                          QtContacts::QContactDetail *preferredRole,
                                                          int index) const;

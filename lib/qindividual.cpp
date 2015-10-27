@@ -20,8 +20,12 @@
 #include "detail-context-parser.h"
 #include "gee-utils.h"
 #include "update-contact-request.h"
+#include "e-source-ubuntu.h"
 
 #include "common/vcard-parser.h"
+
+#include <folks/folks-eds.h>
+#include <libebook/libebook.h>
 
 #include <QtCore/QMutexLocker>
 
@@ -49,8 +53,17 @@
 #include <QtContacts/QContactNote>
 #include <QtContacts/QContactExtendedDetail>
 
+#include "config.h"
+
 using namespace QtVersit;
 using namespace QtContacts;
+
+#define X_CREATED_AT              "X-CREATED-AT"
+#define X_REMOTE_ID               "X-REMOTE-ID"
+#define X_GOOGLE_ETAG             "X-GOOGLE-ETAG"
+#define X_GROUP_ID                "X-GROUP-ID"
+#define X_DELETED_AT              "X-DELETED-AT"
+#define X_AVATAR_REV              "X-AVATAR-REV"
 
 namespace
 {
@@ -137,13 +150,22 @@ static QString unaccent(const QString &value)
 namespace galera
 {
 bool QIndividual::m_autoLink = false;
+QStringList QIndividual::m_supportedExtendedDetails;
 
 QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator)
     : m_individual(0),
       m_aggregator(aggregator),
       m_contact(0),
-      m_currentUpdate(0)
+      m_currentUpdate(0),
+      m_visible(true)
 {
+    if (m_supportedExtendedDetails.isEmpty()) {
+        m_supportedExtendedDetails << X_CREATED_AT
+                                   << X_REMOTE_ID
+                                   << X_GOOGLE_ETAG
+                                   << X_GROUP_ID
+                                   << X_AVATAR_REV;
+    }
     setIndividual(individual);
 }
 
@@ -191,10 +213,24 @@ QList<QtContacts::QContactDetail> QIndividual::getSyncTargets() const
 
         FolksPersona *p = m_personas[id];
         FolksPersonaStore *ps = folks_persona_get_store(p);
+
         QString displayName = folks_persona_store_get_display_name(ps);
+        QString storeId = QString::fromUtf8(folks_persona_store_get_id(ps));
+        QString accountId("0");
+        if (EDSF_IS_PERSONA_STORE(ps)) {
+            ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(ps));
+            if (e_source_has_extension(source, E_SOURCE_EXTENSION_UBUNTU)) {
+                ESourceUbuntu *ubuntu_ex = E_SOURCE_UBUNTU(e_source_get_extension(source, E_SOURCE_EXTENSION_UBUNTU));
+                if (ubuntu_ex) {
+                    accountId = QString::number(e_source_ubuntu_get_account_id(ubuntu_ex));
+                }
+            }
+        }
 
         target.setDetailUri(QString(id).replace(":","."));
         target.setSyncTarget(displayName);
+        target.setValue(QContactSyncTarget::FieldSyncTarget + 1, storeId);
+        target.setValue(QContactSyncTarget::FieldSyncTarget + 2, accountId);
         details << target;
     }
     return details;
@@ -234,6 +270,40 @@ void QIndividual::appendDetailsForPersona(QtContacts::QContact *contact,
         }
     }
 }
+
+QContactDetail QIndividual::getTimeStamp(FolksPersona *persona, int index) const
+{
+    if (!EDSF_IS_PERSONA(persona)) {
+        return QContactDetail();
+    }
+
+    QContactTimestamp timestamp;
+    EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+    const gchar *rev = static_cast<const gchar*>(e_contact_get_const(c, E_CONTACT_REV));
+    if (rev) {
+        QString time = QString::fromUtf8(rev);
+        QDateTime rev = QDateTime::fromString(time, Qt::ISODate);
+        // time is saved on UTC FORMAT
+        rev.setTimeSpec(Qt::UTC);
+        timestamp.setLastModified(rev);
+    }
+
+    EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_CREATED_AT);
+    QDateTime createdAtDate;
+    if (attr) {
+        GString *createdAt = e_vcard_attribute_get_value_decoded(attr);
+        createdAtDate = QDateTime::fromString(createdAt->str, Qt::ISODate);
+        createdAtDate.setTimeSpec(Qt::UTC);
+        g_string_free(createdAt, TRUE);
+    } else {
+        // use last modified data as created date if it does not exists on contact
+        createdAtDate = timestamp.lastModified();
+    }
+    timestamp.setCreated(createdAtDate);
+
+    return timestamp;
+}
+
 
 QContactDetail QIndividual::getPersonaName(FolksPersona *persona, int index) const
 {
@@ -683,84 +753,112 @@ QtContacts::QContactDetail QIndividual::getPersonaFavorite(FolksPersona *persona
     return detail;
 }
 
+QList<QContactDetail> QIndividual::getPersonaExtendedDetails(FolksPersona *persona, int index) const
+{
+    QList<QContactDetail> result;
+    if (!EDSF_IS_PERSONA(persona)) {
+        return result;
+    }
+
+    EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+    Q_FOREACH(const QString &xDetName, m_supportedExtendedDetails) {
+        EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), xDetName.toUtf8().constData());
+        if (attr) {
+            GString *attrValue = e_vcard_attribute_get_value_decoded(attr);
+            QContactExtendedDetail xDet;
+            xDet.setName(xDetName);
+            xDet.setData(QString::fromUtf8(attrValue->str));
+            xDet.setDetailUri(QString("%1.1").arg(index));
+            g_string_free(attrValue, true);
+            result << xDet;
+        }
+    }
+
+    return result;
+}
+
+
+
 QtContacts::QContact QIndividual::copy(QList<QContactDetail::DetailType> fields)
+{
+    return copy(contact(), fields);
+}
+
+QtContacts::QContact QIndividual::copy(const QContact &c, QList<QContactDetail::DetailType> fields)
 {
     QList<QContactDetail> details;
     QContact result;
 
-
-    if (fields.isEmpty()) {
-        result = contact();
-    } else {
-        QContact fullContact = contact();
+    result = c;
+    if (!fields.isEmpty()) {
         // this will remove the contact details but will keep the other metadata like preferred fields
-        result = fullContact;
+        result = c;
         result.clearDetails();
 
         // mandatory
-        details << fullContact.detail<QContactGuid>();
-        Q_FOREACH(QContactDetail det, fullContact.details<QContactExtendedDetail>()) {
+        details << c.detail<QContactGuid>();
+        Q_FOREACH(QContactDetail det, c.details<QContactExtendedDetail>()) {
             details << det;
         }
 
         // sync targets
-        Q_FOREACH(QContactDetail det, fullContact.details<QContactSyncTarget>()) {
+        Q_FOREACH(QContactDetail det, c.details<QContactSyncTarget>()) {
             details << det;
         }
 
         if (fields.contains(QContactDetail::TypeName)) {
-            details << fullContact.detail<QContactName>();
+            details << c.detail<QContactName>();
         }
 
 
         if (fields.contains(QContactDetail::TypeDisplayLabel)) {
-            details << fullContact.detail<QContactDisplayLabel>();
+            details << c.detail<QContactDisplayLabel>();
         }
 
         if (fields.contains(QContactDetail::TypeNickname)) {
-            details << fullContact.detail<QContactNickname>();
+            details << c.detail<QContactNickname>();
         }
 
         if (fields.contains(QContactDetail::TypeBirthday)) {
-            details << fullContact.detail<QContactBirthday>();
+            details << c.detail<QContactBirthday>();
         }
 
         if (fields.contains(QContactDetail::TypeAvatar)) {
-            details << fullContact.detail<QContactAvatar>();
+            details << c.detail<QContactAvatar>();
         }
 
         if (fields.contains(QContactDetail::TypeOrganization)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactOrganization>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactOrganization>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypeEmailAddress)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactEmailAddress>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactEmailAddress>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypePhoneNumber)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactPhoneNumber>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactPhoneNumber>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypeAddress)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactAddress>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactAddress>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypeUrl)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactUrl>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactUrl>()) {
                 details << det;
             }
         }
 
         if (fields.contains(QContactDetail::TypeTag)) {
-            Q_FOREACH(QContactDetail det, fullContact.details<QContactTag>()) {
+            Q_FOREACH(QContactDetail det, c.details<QContactTag>()) {
                 details << det;
             }
         }
@@ -835,6 +933,9 @@ void QIndividual::updateContact(QContact *contact) const
         // vcard only support one of these details by contact
         if (personaIndex == 1) {
             appendDetailsForPersona(contact,
+                                    getTimeStamp(persona, personaIndex),
+                                    true);
+            appendDetailsForPersona(contact,
                                     getPersonaName(persona, personaIndex),
                                     !wPropList.contains("structured-name"));
             appendDetailsForPersona(contact,
@@ -897,6 +998,13 @@ void QIndividual::updateContact(QContact *contact) const
                                 VCardParser::PreferredActionNames[QContactUrl::Type],
                                 prefDetail,
                                 !wPropList.contains("urls"));
+
+        details = getPersonaExtendedDetails (persona, personaIndex);
+        appendDetailsForPersona(contact,
+                                details,
+                                QString(),
+                                QContactDetail(),
+                                false);
 
         personaIndex++;
     }
@@ -1026,6 +1134,107 @@ void QIndividual::flush()
 
     // cause the contact info to be reload
     markAsDirty();
+}
+
+bool QIndividual::markAsDeleted()
+{
+    QString currentDate = QDateTime::currentDateTime().toString(Qt::ISODate);
+    GeeSet *personas = folks_individual_get_personas(m_individual);
+    if (!personas) {
+        return false;
+    }
+
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+    while(gee_iterator_next(iter)) {
+        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+        if (EDSF_IS_PERSONA(persona)) {
+            FolksPersonaStore *store = folks_persona_get_store(persona);
+            if (!EDSF_IS_PERSONA_STORE(store)) {
+                continue;
+            }
+
+            GError *error = NULL;
+            ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
+            EClient *client = E_BOOK_CLIENT_CONNECT_SYNC(source, NULL, &error);
+            if (error) {
+                qWarning() << "Fail to connect with EDS" << error->message;
+                g_error_free(error);
+                continue;
+            }
+
+            EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+            EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_DELETED_AT);
+            if (!attr) {
+                attr = e_vcard_attribute_new("", X_DELETED_AT);
+                e_vcard_add_attribute_with_value(E_VCARD(c), attr,
+                                                 currentDate.toUtf8().constData());
+            } else {
+                e_vcard_attribute_add_value(attr, currentDate.toUtf8().constData());
+            }
+
+            e_book_client_modify_contact_sync(E_BOOK_CLIENT(client), c, NULL, &error);
+            if (error) {
+                qWarning() << "Fail to update EDS contact:" << error->message;
+                g_error_free(error);
+            } else {
+                m_deletedAt = QDateTime::currentDateTime();
+                notifyUpdate();
+            }
+
+            g_object_unref(client);
+        }
+        m_personas.insert(qStringFromGChar(folks_persona_get_iid(persona)), persona);
+    }
+    g_object_unref(iter);
+
+    return m_deletedAt.isValid();
+}
+
+QDateTime QIndividual::deletedAt()
+{
+    if (!m_deletedAt.isNull()) {
+        return m_deletedAt;
+    }
+
+    // make the date invalid to avoid re-check
+    // it will be null again if the QIndividual is marked as dirty
+    m_deletedAt = QDateTime(QDate(), QTime(0, 0, 0));
+
+    GeeSet *personas = folks_individual_get_personas(m_individual);
+    if (!personas) {
+        return m_deletedAt;
+    }
+
+    GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE(personas));
+    while(gee_iterator_next(iter)) {
+        FolksPersona *persona = FOLKS_PERSONA(gee_iterator_get(iter));
+        if (EDSF_IS_PERSONA(persona)) {
+            EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+            EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_DELETED_AT);
+            if (attr) {
+                GString *value = e_vcard_attribute_get_value_decoded(attr);
+                if (value) {
+                    m_deletedAt = QDateTime::fromString(value->str, Qt::ISODate);
+                    g_string_free(value, true);
+                    // Addressbook server does not support aggregation we can return
+                    // the first person value
+                    break;
+                }
+            }
+        }
+    }
+
+    return m_deletedAt;
+}
+
+bool QIndividual::setVisible(bool visible)
+{
+    m_visible = visible;
+}
+
+bool QIndividual::isVisible() const
+{
+    return m_visible;
 }
 
 void QIndividual::setIndividual(FolksIndividual *individual)
@@ -1518,10 +1727,69 @@ QString QIndividual::displayName(const QContact &contact)
     return fallbackLabel;
 }
 
+void QIndividual::setExtendedDetails(FolksPersona *persona,
+                                     const QList<QContactDetail> &xDetails,
+                                     const QDateTime &createdAtDate)
+{
+    FolksPersonaStore *store = folks_persona_get_store(persona);
+    if (EDSF_IS_PERSONA_STORE(store)) {
+        GError *error = NULL;
+        ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
+        EClient *client = E_BOOK_CLIENT_CONNECT_SYNC(source, NULL, &error);
+        if (error) {
+            qWarning() << "Fail to connect with EDS" << error->message;
+            g_error_free(error);
+        } else {
+            EContact *c = edsf_persona_get_contact(EDSF_PERSONA(persona));
+
+            // create X-CREATED-AT if it does not exists
+            EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), X_CREATED_AT);
+            if (!attr) {
+                QDateTime createdAt = createdAtDate.isValid() ? createdAtDate : QDateTime::currentDateTime();
+                attr = e_vcard_attribute_new("", X_CREATED_AT);
+                e_vcard_add_attribute_with_value(E_VCARD(c),
+                                                 attr,
+                                                 createdAt.toUTC().toString(Qt::ISODate).toUtf8().constData());
+            }
+
+            Q_FOREACH(const QContactDetail &d, xDetails) {
+                QContactExtendedDetail xd = static_cast<QContactExtendedDetail>(d);
+                // X_CREATED_AT should not be updated
+                if (xd.name() == X_CREATED_AT) {
+                    continue;
+                }
+
+                if (m_supportedExtendedDetails.contains(xd.name())) {
+                    // Remove old attribute
+                    attr = e_vcard_get_attribute(E_VCARD(c), xd.name().toUtf8().constData());
+                    if (attr) {
+                        e_vcard_remove_attribute(E_VCARD(c), attr);
+                    }
+
+                    attr = e_vcard_attribute_new("", xd.name().toUtf8().constData());
+                    e_vcard_add_attribute_with_value(E_VCARD(c),
+                                                     attr,
+                                                     xd.data().toString().toUtf8().constData());
+                } else {
+                    qWarning() << "Extended detail not supported" << xd.name();
+                }
+            }
+
+            e_book_client_modify_contact_sync(E_BOOK_CLIENT(client), c, NULL, &error);
+            if (error) {
+                qWarning() << "Fail to update EDS contact:" << error->message;
+                g_error_free(error);
+            }
+        }
+        g_object_unref(client);
+    }
+}
+
 void QIndividual::markAsDirty()
 {
     delete m_contact;
     m_contact = 0;
+    m_deletedAt = QDateTime();
 }
 
 void QIndividual::enableAutoLink(bool flag)

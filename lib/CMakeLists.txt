@@ -37,11 +37,14 @@ add_library(${CONTACTS_SERVICE_LIB} STATIC
 
 target_link_libraries(${CONTACTS_SERVICE_LIB}
     galera-common
+    ubuntu-source-eds
     ${GLIB_LIBRARIES}
     ${GIO_LIBRARIES}
     ${FOLKS_LIBRARIES}
     ${FOLKS_EDS_LIBRARIES}
     ${LibPhoneNumber_LIBRARIES}
+    ${MESSAGING_MENU_LIBRARIES}
+    ${URL_DISPATCHER_LIBRARIES}
     Qt5::Core
     Qt5::Contacts
     Qt5::DBus
@@ -49,6 +52,7 @@ target_link_libraries(${CONTACTS_SERVICE_LIB}
 )
 
 include_directories(
+    ${ubuntu-sources_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
     ${GLIB_INCLUDE_DIRS}
@@ -56,4 +60,6 @@ include_directories(
     ${FOLKS_INCLUDE_DIRS}
     ${FOLKS_EDS_INCLUDE_DIRS}
     ${LibPhoneNumber_INCLUDE_DIRS}
+    ${MESSAGING_MENU_INCLUDE_DIRS}
+    ${URL_DISPATCHER_INCLUDE_DIRS}
 )
