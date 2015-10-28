@@ -33,6 +33,7 @@
 
 namespace galera
 {
+class VCardParser;
 class QContactFetchRequestData : public QContactRequestData
 {
 public:
@@ -49,7 +50,7 @@ public:
     void updateView(QDBusInterface *view);
     QDBusInterface* view() const;
 
-    void setVCardParser(QObject *parser);
+    void setVCardParser(VCardParser *parser);
     void clearVCardParser();
 
     QList<QtContacts::QContact> result() const;
@@ -76,7 +77,7 @@ protected:
                 QMap<int, QtContacts::QContactManager::Error> errorMap = QMap<int, QtContacts::QContactManager::Error>());
 
 private:
-    QObject *m_runningParser;
+    VCardParser *m_runningParser;
     QSharedPointer<QDBusInterface> m_view;
     int m_offset;
     FetchHint m_hint;

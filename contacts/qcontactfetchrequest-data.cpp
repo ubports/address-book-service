@@ -17,6 +17,7 @@
  */
 
 #include "qcontactfetchrequest-data.h"
+#include "common/vcard-parser.h"
 
 #include <QtCore/QDebug>
 #include <QtContacts/QContactManagerEngine>
@@ -55,7 +56,7 @@ QDBusInterface* QContactFetchRequestData::view() const
     return m_view.data();
 }
 
-void QContactFetchRequestData::setVCardParser(QObject *parser)
+void QContactFetchRequestData::setVCardParser(VCardParser *parser)
 {
     m_runningParser = parser;
 }
@@ -108,8 +109,7 @@ void QContactFetchRequestData::update(QList<QContact> result,
 void QContactFetchRequestData::cancel()
 {
     if (m_runningParser) {
-        delete m_runningParser;
-        m_runningParser = 0;
+        m_runningParser->cancel();
     }
     QContactRequestData::cancel();
 }

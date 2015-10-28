@@ -81,7 +81,7 @@ private Q_SLOTS:
     void serviceOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
     void onServiceReady();
     void onVCardsParsed(QList<QtContacts::QContact> contacts);
-
+    void onVCardParseCanceled();
 private:
     QString m_managerUri;                                       // for faster lookup.
     QDBusServiceWatcher *m_serviceWatcher;

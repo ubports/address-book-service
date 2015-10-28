@@ -344,6 +344,21 @@ void VCardParser::vcardToContact(const QStringList &vcardList)
     m_versitReader->startReading();
 }
 
+void VCardParser::cancel()
+{
+    if (m_versitReader) {
+        delete m_versitReader;
+        m_versitReader = 0;
+    }
+
+    if (m_versitWriter) {
+        delete m_versitWriter;
+        m_versitWriter = 0;
+    }
+
+    Q_EMIT canceled();
+}
+
 void VCardParser::waitForFinished()
 {
     if (m_versitReader) {
