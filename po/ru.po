@@ -1,4 +1,4 @@
-# Spanish translation for address-book-service
+# Russian translation for address-book-service
 # Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
 # This file is distributed under the same license as the address-book-service package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
@@ -8,9 +8,9 @@ msgstr ""
 "Project-Id-Version: address-book-service\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2015-09-21 12:10-0300\n"
-"PO-Revision-Date: 2015-10-27 13:55+0000\n"
-"Last-Translator: Víctor R. Ruiz <Unknown>\n"
-"Language-Team: Spanish <es@li.org>\n"
+"PO-Revision-Date: 2015-10-26 06:09+0000\n"
+"Last-Translator: ☠Jay ZDLin☠ <Unknown>\n"
+"Language-Team: Russian <ru@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -22,18 +22,16 @@ msgstr ""
 msgid ""
 "%1 contact sync account needs upgrade. Please connect with the internet."
 msgstr ""
-"La sincronización de contactos de %1 necesita una actualización. Por favor, "
-"conéctese a Internet."
 
 #: ../updater/ab-update.cpp:107
 #, qt-format
 msgid "%1 contact sync account upgrade already in progress"
-msgstr "La sincronización de contactos de %1 ya está en marcha"
+msgstr ""
 
 #: ../updater/ab-update.cpp:344
 #, qt-format
 msgid "%1 contact sync account upgrade in progress"
-msgstr "La sincronización de contactos de %1 está en marcha"
+msgstr ""
 
 #: ../updater/ab-update.cpp:288
 #, qt-format
@@ -42,91 +40,90 @@ msgid ""
 "Do you want to retry now?"
 msgstr ""
 "%1.\n"
-"¿Quiere intentarlo de nuevo ahora?"
+"Попробовать ещё раз?"
 
 #: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
 #: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
 msgid "Account update"
-msgstr "Actualización de cuenta"
+msgstr "Обновление аккаунта"
 
 #: ../lib/addressbook.cpp:983
 msgid "Address book service"
-msgstr "Servicio de libreta de direcciones"
+msgstr "Адресная книга"
 
 #: ../updater/ab-update.cpp:268
 msgid "Contact sync upgrade complete."
-msgstr "Actualización de sincronización de contactos completada."
+msgstr ""
 
 #: ../updater/ab-update.cpp:216
 msgid "Contacts app is updated already!"
-msgstr "Ya se ha actualizado la aplicación de cuentas."
+msgstr "Приложение Контакты уже обновлено!"
 
 #: ../updater/ab-update.cpp:224
 msgid "Fail to authenticate!"
-msgstr "¡Fallo al autentificar!"
+msgstr "Сбой аутентификации!"
 
 #: ../updater/ab-update.cpp:220
 msgid "Fail to connect to contact sync service!"
-msgstr "¡Falló al conectar al servicio de sincronización de contactos!"
+msgstr "Не удалось подключиться к службе синхронизации контактов!"
 
 #: ../updater/ab-update.cpp:218
 msgid "Fail to connect to internet!"
-msgstr "¡Falló al conectar a Internet!"
+msgstr "Не удалось подключиться к интернету!"
 
 #: ../updater/ab-update.cpp:222
 msgid "Fail to create sync profile!"
-msgstr "¡Falló al crear un perfil de sincronización!"
+msgstr "Не удалось создать профиль синхронизации!"
 
 #: ../updater/ab-update.cpp:233
 msgid "Fail to sync contacts!"
-msgstr "¡Falló al sincronizar contactos!"
+msgstr "Не удалось синхронизировать контакты!"
 
 #: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
 msgid "Fail to update"
-msgstr "Fallo al actualizar"
+msgstr "Не удалось обновить"
 
 #: ../updater/ab-update.cpp:226
 msgid "Internal error during the sync!"
-msgstr "¡Error interno durante la sincronización!"
+msgstr "Внутренняя ошибка при синхронизации!"
 
 #: ../updater/ab-notify-message.cpp:93
 msgid "No"
-msgstr "No"
+msgstr "Нет"
 
 #: ../updater/ab-update.cpp:228
 msgid "Online account not found!"
-msgstr "No se encontró la cuenta en línea."
+msgstr "Онлайн аккаунт не найден!"
 
 #: ../updater/ab-update.cpp:313
 msgid "To retry later open Contacts app and press the sync button."
 msgstr ""
-"Para reintentarlo más tarde, abra la apli de Contactos y presione el botón "
-"de sincronización."
+"Для повторной попытки откройте Контакты и нажмите кнопку синхронизации."
 
 #: ../updater/ab-update.cpp:230
 msgid "Update already in progress!"
-msgstr "¡Actualización ya en marcha!"
+msgstr "Обновление уже запущено!"
 
 #: ../lib/addressbook.cpp:1002
 msgid "Update complete"
-msgstr "Actualización completada"
+msgstr "Обновление завершено"
 
 #: ../lib/addressbook.cpp:995
 msgid "Update required"
-msgstr "Es necesario actualizar"
+msgstr "Требуется обновление"
 
 #: ../updater/ab-notify-message.cpp:88
 msgid "Yes"
-msgstr "Sí"
+msgstr "Да"
 
 #: ../lib/addressbook.cpp:997
 msgid ""
 "Your Contacts app needs to be upgraded. Only local contacts will be editable "
 "until upgrade is complete"
 msgstr ""
-"Debe actualizar la apli de Contactos. Solo podrá editar los contactos "
-"locales hasta que actualice."
+"Приложению Контакты требуется обновление. До завершения обновления можно "
+"будет редактировать только локальные контакты"
 
 #: ../lib/addressbook.cpp:1004
 msgid "Your Contacts app upldate is complete."
-msgstr "La actualización de la apli de Contactos ya está completa."
+msgstr "Приложение Контакты обновлено"
