@@ -863,6 +863,12 @@ QtContacts::QContact QIndividual::copy(const QContact &c, QList<QContactDetail::
             }
         }
 
+        if (fields.contains(QContactDetail::TypeFavorite)) {
+            Q_FOREACH(QContactDetail det, c.details<QContactFavorite>()) {
+                details << det;
+            }
+        }
+
         Q_FOREACH(QContactDetail det, details) {
             result.appendDetail(det);
         }

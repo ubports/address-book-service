@@ -104,6 +104,7 @@ QMap<QString, QtContacts::QContactDetail::DetailType> FetchHint::contactFieldNam
         map.insert("TEL", QContactPhoneNumber::Type);
         map.insert("URL", QContactUrl::Type);
         map.insert("TAG", QContactTag::Type);
+        map.insert("X-QTPROJECT-FAVORITE", QContactFavorite::Type);
     }
     return map;
 }
