@@ -412,7 +412,7 @@ QStringList VCardParser::splitVcards(const QByteArray &vcardList)
 
 void VCardParser::onReaderStateChanged(QVersitReader::State state)
 {
-    if (state == QVersitReader::FinishedState) {
+    if (m_versitReader && (state == QVersitReader::FinishedState)) {
         QList<QVersitDocument> documents = m_versitReader->results();
 
         QVersitContactImporter contactImporter;
