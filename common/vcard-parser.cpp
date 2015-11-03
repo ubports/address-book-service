@@ -347,16 +347,16 @@ void VCardParser::vcardToContact(const QStringList &vcardList)
 void VCardParser::cancel()
 {
     if (m_versitReader) {
+        m_versitReader->disconnect(this);
         m_versitReader->cancel();
-        disconnect(m_versitReader);
-        delete m_versitReader;
+        m_versitReader->deleteLater();
         m_versitReader = 0;
     }
 
     if (m_versitWriter) {
+        m_versitWriter->disconnect(this);
         m_versitWriter->cancel();
-        disconnect(m_versitWriter);
-        delete m_versitWriter;
+        m_versitWriter->deleteLater();
         m_versitWriter = 0;
     }
 
