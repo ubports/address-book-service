@@ -75,6 +75,10 @@ QStringList DetailContextParser::listContext(const QtContacts::QContactDetail &d
             break;
         case QContactDetail::TypeAddress:
             context << parseAddressContext(detail);
+            // Setting more than one context causes folks to freeze
+            if (!context.isEmpty()) {
+                return context.mid(0,1);
+            }
             break;
         case QContactDetail::TypeOnlineAccount:
             context << parseOnlineAccountContext(detail);
