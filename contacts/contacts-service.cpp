@@ -408,6 +408,9 @@ void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
             connect(parser,
                     SIGNAL(contactsParsed(QList<QtContacts::QContact>)),
                     SLOT(onVCardsParsed(QList<QtContacts::QContact>)));
+            connect(parser,
+                    SIGNAL(canceled()),
+                    SLOT(onVCardParseCanceled()));
             parser->vcardToContact(vcards);
         } else {
             data->update(QList<QContact>(), QContactAbstractRequest::FinishedState);
@@ -416,9 +419,28 @@ void GaleraContactsService::fetchContactsDone(QContactFetchRequestData *data,
     }
 }
 
+void GaleraContactsService::onVCardParseCanceled()
+{
+    QObject *sender = QObject::sender();
+    disconnect(sender);
+
+    QContactFetchRequestData *data = static_cast<QContactFetchRequestData*>(sender->property("DATA").value<void*>());
+    data->clearVCardParser();
+
+    if (!data->isLive()) {
+        sender->deleteLater();
+        destroyRequest(data);
+        return;
+    }
+
+    sender->deleteLater();
+}
+
 void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
 {
     QObject *sender = QObject::sender();
+    disconnect(sender);
+
     QContactFetchRequestData *data = static_cast<QContactFetchRequestData*>(sender->property("DATA").value<void*>());
     data->clearVCardParser();
 

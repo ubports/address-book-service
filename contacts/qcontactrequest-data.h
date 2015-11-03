@@ -44,7 +44,7 @@ public:
     void updateWatcher(QDBusPendingCallWatcher *watcher);
 
     bool isLive() const;
-    void cancel();
+    virtual void cancel();
     void wait();
     void releaseRequest();
     void finish(QtContacts::QContactManager::Error error = QtContacts::QContactManager::NoError);

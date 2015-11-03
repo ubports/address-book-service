@@ -344,6 +344,25 @@ void VCardParser::vcardToContact(const QStringList &vcardList)
     m_versitReader->startReading();
 }
 
+void VCardParser::cancel()
+{
+    if (m_versitReader) {
+        m_versitReader->disconnect(this);
+        m_versitReader->cancel();
+        m_versitReader->deleteLater();
+        m_versitReader = 0;
+    }
+
+    if (m_versitWriter) {
+        m_versitWriter->disconnect(this);
+        m_versitWriter->cancel();
+        m_versitWriter->deleteLater();
+        m_versitWriter = 0;
+    }
+
+    Q_EMIT canceled();
+}
+
 void VCardParser::waitForFinished()
 {
     if (m_versitReader) {
@@ -393,7 +412,7 @@ QStringList VCardParser::splitVcards(const QByteArray &vcardList)
 
 void VCardParser::onReaderStateChanged(QVersitReader::State state)
 {
-    if (state == QVersitReader::FinishedState) {
+    if (m_versitReader && (state == QVersitReader::FinishedState)) {
         QList<QVersitDocument> documents = m_versitReader->results();
 
         QVersitContactImporter contactImporter;
