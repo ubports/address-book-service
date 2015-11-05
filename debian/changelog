@@ -1,3 +1,16 @@
+address-book-service (0.1.1+16.04.20151103.2-0ubuntu1) xenial; urgency=medium
+
+  [ CI Train Bot ]
+  * Resync trunk. added: po/pt.po po/sr.po
+
+  [ Renato Araujo Oliveira Filho ]
+  * Cancel vcard parser if the fetch operation was canceled. (LP:
+    #1493552)
+  * Fix importing vcards that contains address with multiple types. (LP:
+    #1507592)
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Tue, 03 Nov 2015 23:55:55 +0000
+
 address-book-service (0.1.1+15.10.20151021-0ubuntu1) wily; urgency=medium
 
   [ Renato Araujo Oliveira Filho ]

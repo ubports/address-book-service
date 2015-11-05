@@ -1,0 +1,133 @@
+# Breton translation for address-book-service
+# Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
+# This file is distributed under the same license as the address-book-service package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: address-book-service\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2015-09-21 12:10-0300\n"
+"PO-Revision-Date: 2015-11-03 07:21+0000\n"
+"Last-Translator: Fohanno Thierry <thierry.fohanno@ofis-bzh.org>\n"
+"Language-Team: Breton <br@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Launchpad-Export-Date: 2015-11-04 06:08+0000\n"
+"X-Generator: Launchpad (build 17838)\n"
+
+#: ../updater/ab-update.cpp:355
+#, qt-format
+msgid ""
+"%1 contact sync account needs upgrade. Please connect with the internet."
+msgstr ""
+"Ar gont da sinkronelaat darempredoù %1 he deus ezhomm da vezañ lakaet a-"
+"live. Kevreit ouzh internet, mar plij."
+
+#: ../updater/ab-update.cpp:107
+#, qt-format
+msgid "%1 contact sync account upgrade already in progress"
+msgstr "Emeur o lakaat a-live ar gont da sinkronelaat darempredoù %1 dija"
+
+#: ../updater/ab-update.cpp:344
+#, qt-format
+msgid "%1 contact sync account upgrade in progress"
+msgstr "Emeur o lakaat a-live ar gont da sinkronelaat darempredoù %1"
+
+#: ../updater/ab-update.cpp:288
+#, qt-format
+msgid ""
+"%1.\n"
+"Do you want to retry now?"
+msgstr ""
+"%1.\n"
+"Ha fellout a ra deoc'h esaeañ adarre bremañ ?"
+
+#: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
+#: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
+msgid "Account update"
+msgstr "Lakaat ar gont a-live"
+
+#: ../lib/addressbook.cpp:983
+msgid "Address book service"
+msgstr "Servij levr chomlec'hioù"
+
+#: ../updater/ab-update.cpp:268
+msgid "Contact sync upgrade complete."
+msgstr "Echu ei lakaat a-live sinkroneladur an darempredoù"
+
+#: ../updater/ab-update.cpp:216
+msgid "Contacts app is updated already!"
+msgstr "A-live emañ an arload Darempredoù dija ?"
+
+#: ../updater/ab-update.cpp:224
+msgid "Fail to authenticate!"
+msgstr "C'hwitet eo an dilesadur !"
+
+#: ../updater/ab-update.cpp:220
+msgid "Fail to connect to contact sync service!"
+msgstr ""
+"N'eus ket bet gallet kevreañ ouzh ar servij da sinkronelaat an darempredoù !"
+
+#: ../updater/ab-update.cpp:218
+msgid "Fail to connect to internet!"
+msgstr "N'eus ket bet gallet kevreañ ouzh internet !"
+
+#: ../updater/ab-update.cpp:222
+msgid "Fail to create sync profile!"
+msgstr "N'eus ket bet gallet krouiñ ur profil sinkronelaat !"
+
+#: ../updater/ab-update.cpp:233
+msgid "Fail to sync contacts!"
+msgstr "N'eus ket bet gallet sinkronelaat an darempredoù !"
+
+#: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
+msgid "Fail to update"
+msgstr "N'eus ket bet gallet lakaat a-live"
+
+#: ../updater/ab-update.cpp:226
+msgid "Internal error during the sync!"
+msgstr "Fazi diabarzh e-pad ar sinkronelaat !"
+
+#: ../updater/ab-notify-message.cpp:93
+msgid "No"
+msgstr "Ket"
+
+#: ../updater/ab-update.cpp:228
+msgid "Online account not found!"
+msgstr "N'eo ket bet kavet ar gont enlinenn !"
+
+#: ../updater/ab-update.cpp:313
+msgid "To retry later open Contacts app and press the sync button."
+msgstr ""
+"Evit esaeañ diwezhatoc'h, digeriñ an arload Darempredoù ha pouezañ war ar "
+"bouton sinkronelaat"
+
+#: ../updater/ab-update.cpp:230
+msgid "Update already in progress!"
+msgstr "Emeur o lakaat a-live dija !"
+
+#: ../lib/addressbook.cpp:1002
+msgid "Update complete"
+msgstr "Echu eo al lakaat a-live"
+
+#: ../lib/addressbook.cpp:995
+msgid "Update required"
+msgstr "Ret eo lakaat a-live"
+
+#: ../updater/ab-notify-message.cpp:88
+msgid "Yes"
+msgstr "Ya"
+
+#: ../lib/addressbook.cpp:997
+msgid ""
+"Your Contacts app needs to be upgraded. Only local contacts will be editable "
+"until upgrade is complete"
+msgstr ""
+"Ret eo lakaat hoc'h arload Darempredoù a-live. N'eus nemet an darempredoù "
+"lec'hel a c'hallo bezañ aozet betek ma vo echu al lakaat a-live"
+
+#: ../lib/addressbook.cpp:1004
+msgid "Your Contacts app upldate is complete."
+msgstr "Echu eo lakaat hoc'h arload Darempredoù a-live"

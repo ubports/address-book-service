@@ -45,6 +45,7 @@ public:
 
     void contactToVcard(QList<QtContacts::QContact> contacts);
     void vcardToContact(const QStringList &vcardList);
+    void cancel();
     void waitForFinished();
 
     QStringList vcardResult() const;
@@ -69,6 +70,7 @@ Q_SIGNALS:
     void vcardParsed(const QStringList &vcards);
     void contactsParsed(QList<QtContacts::QContact> contacts);
     void finished();
+    void canceled();
 
 private Q_SLOTS:
     void onWriterStateChanged(QVersitWriter::State state);
