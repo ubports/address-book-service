@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2013 Canonical Ltd.
  *
  * This file is part of contact-service-app.
@@ -115,7 +115,7 @@ bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, c
                         return true;
                     }
                 }
-            } else if (QContactManagerEngine::testFilter(filter, contact)) {
+            } else if (!deletedDate.isValid() && QContactManagerEngine::testFilter(cdf, contact)) {
                 return true;
             }
             break;
@@ -280,8 +280,7 @@ bool Filter::isEmpty() const
 
 bool Filter::includeRemoved() const
 {
-    // Only return removed contacts if the filter type is ChangeLogFilter
-    return (m_filter.type() == QContactFilter::ChangeLogFilter);
+    return includeRemoved(m_filter);
 }
 
 QString Filter::phoneNumberToFilter() const
@@ -394,6 +393,29 @@ QtContacts::QContactFilter Filter::buildFilter(const QString &filter)
     QDataStream filterData(&filterArray, QIODevice::ReadOnly);
     filterData >> filterObject;
     return filterObject;
+}
+
+bool Filter::includeRemoved(const QList<QContactFilter> filters)
+{
+    Q_FOREACH(const QContactFilter &f, filters) {
+        if (includeRemoved(f)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Filter::includeRemoved(const QContactFilter &filter)
+{
+    if (filter.type() == QContactFilter::ChangeLogFilter) {
+        return true;
+    } else if (filter.type() == QContactFilter::UnionFilter) {
+        return includeRemoved(QContactUnionFilter(filter).filters());
+    } else if (filter.type() == QContactFilter::IntersectionFilter) {
+        return includeRemoved(QContactIntersectionFilter(filter).filters());
+    } else {
+        return false;
+    }
 }
 
 QtContacts::QContactFilter Filter::parseFilter(const QtContacts::QContactFilter &filter)
