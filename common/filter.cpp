@@ -65,13 +65,18 @@ QtContacts::QContactFilter Filter::toContactFilter() const
 
 bool Filter::test(const QContact &contact, const QDateTime &deletedDate) const
 {
+    if (deletedDate.isValid() && !includeRemoved()) {
+        return false;
+    }
+
     return testFilter(m_filter, contact, deletedDate);
 }
 
-bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, const QDateTime &deletedDate)
+bool Filter::testFilter(const QContactFilter& filter,
+                        const QContact &contact,
+                        const QDateTime &deletedDate)
 {
     switch(filter.type()) {
-        // query by id return the contact even if deleted
         case QContactFilter::IdFilter:
             return QContactManagerEngine::testFilter(filter, contact);
 
@@ -115,7 +120,7 @@ bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, c
                         return true;
                     }
                 }
-            } else if (!deletedDate.isValid() && QContactManagerEngine::testFilter(cdf, contact)) {
+            } else if (QContactManagerEngine::testFilter(cdf, contact)) {
                 return true;
             }
             break;
@@ -126,31 +131,13 @@ bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, c
             /* XXX In theory we could reorder the terms to put the native tests first */
             const QContactIntersectionFilter bf(filter);
             const QList<QContactFilter>& terms = bf.filters();
-            bool includeDeleted = false;
 
             if (terms.isEmpty()) {
                 break;
             }
 
-            // if there is a changeLogFilter in the filter we will accept deleted contacts
-            if (deletedDate.isValid()) {
-                Q_FOREACH(const QContactFilter &f, terms) {
-                    if (f.type() == QContactFilter::ChangeLogFilter) {
-                        includeDeleted = true;
-                        break;
-                    }
-                }
-            }
-
-            Q_FOREACH(const QContactFilter &f, terms) {
-                bool r = false;
-                if (!includeDeleted || (f.type() == QContactFilter::ChangeLogFilter)) {
-                    r = testFilter(f, contact, deletedDate);
-                } else {
-                    r = testFilter(f, contact, QDateTime());
-                }
-
-                if (!r) {
+           Q_FOREACH(const QContactFilter &f, terms) {
+                if (!testFilter(f, contact, deletedDate)) {
                     return false;
                 }
             }
@@ -176,7 +163,7 @@ bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, c
         break;
 
         default:
-            if (deletedDate.isNull() && QContactManagerEngine::testFilter(filter, contact)) {
+            if (QContactManagerEngine::testFilter(filter, contact)) {
                 return true;
             }
             break;

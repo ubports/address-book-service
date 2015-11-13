@@ -146,6 +146,107 @@ private Q_SLOTS:
         QCOMPARE(ids.size(), 1);
         QCOMPARE(ids[0], contact.id());
     }
+
+    void testPhoneNumberFilterWithDeleted()
+    {
+        QDateTime currentDate = QDateTime::currentDateTime();
+        // wait one sec to cause a create date later
+        QTest::qWait(1000);
+        QContact contact = galera::VCardParser::vcardToContact(QStringLiteral("BEGIN:VCARD\r\n"
+                                                                              "VERSION:3.0\r\n"
+                                                                              "X-REMOTE-ID:1dd7d51a1518626a\r\n"
+                                                                              "N:;Fulano;;;\r\n"
+                                                                              "EMAIL:fulano@gmail.com\r\n"
+                                                                              "TEL:78910\r\n"
+                                                                              "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
+                                                                              "END:VCARD\r\n"));
+
+        // create a contact
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // no contact removed
+        QContactChangeLogFilter changeLogFilter;
+        changeLogFilter.setEventType(QContactChangeLogFilter::EventRemoved);
+        changeLogFilter.setSince(currentDate);
+
+        QList<QContactId> ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 0);
+
+        // Phone number filter
+        QContactDetailFilter detFilter = QContactPhoneNumber::match("78910");
+        ids = m_manager->contactIds(detFilter);
+        QCOMPARE(ids.size(), 1);
+
+        // Intersection filter (phone + deleted)
+        ids = m_manager->contactIds(detFilter & changeLogFilter);
+        QCOMPARE(ids.size(), 0);
+
+        // wait one more sec to remove the contact
+        QTest::qWait(1000);
+
+        result = m_manager->removeContact(contact.id());
+        QVERIFY(result);
+
+        ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 1);
+        QCOMPARE(ids[0], contact.id());
+
+        // Phone number filter (contact was removed)
+        ids = m_manager->contactIds(detFilter);
+        QCOMPARE(ids.size(), 0);
+
+        // test intersection filter (phone number + removed)
+        ids = m_manager->contactIds(changeLogFilter & detFilter);
+        QCOMPARE(ids.size(), 1);
+        QCOMPARE(ids[0], contact.id());
+    }
+
+    void testIdFilterWithDeleted()
+    {
+        QDateTime currentDate = QDateTime::currentDateTime();
+        // wait one sec to cause a create date later
+        QTest::qWait(1000);
+        QContact contact = galera::VCardParser::vcardToContact(QStringLiteral("BEGIN:VCARD\r\n"
+                                                                              "VERSION:3.0\r\n"
+                                                                              "X-REMOTE-ID:1dd7d51a1518626a\r\n"
+                                                                              "N:;Fulano;;;\r\n"
+                                                                              "EMAIL:fulano@gmail.com\r\n"
+                                                                              "TEL:78910\r\n"
+                                                                              "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
+                                                                              "END:VCARD\r\n"));
+
+        // create a contact
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+
+        // no contact removed
+        QContactChangeLogFilter changeLogFilter;
+        changeLogFilter.setEventType(QContactChangeLogFilter::EventRemoved);
+        changeLogFilter.setSince(currentDate);
+
+        QList<QContactId> ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 0);
+
+        // query by id
+        ids.clear();
+        ids.append(contact.id());
+        QList<QContact> contacts = m_manager->contacts(ids);
+        QCOMPARE(contacts.size(), 1);
+
+        // wait one more sec to remove the contact
+        QTest::qWait(1000);
+
+        result = m_manager->removeContact(contact.id());
+        QVERIFY(result);
+
+        // query by id
+        ids.clear();
+        ids.append(contact.id());
+        contacts = m_manager->contacts(ids);
+        QCOMPARE(contacts.size(), 0);
+    }
+
 };
 
 QTEST_MAIN(ContactTimeStampTest)
