@@ -240,11 +240,54 @@ private Q_SLOTS:
         result = m_manager->removeContact(contact.id());
         QVERIFY(result);
 
-        // query by id
+        // query by id (query by id return the contact deleted or not)
+        qDebug() << "WILL QUERY CONTACT";
         ids.clear();
         ids.append(contact.id());
         contacts = m_manager->contacts(ids);
-        QCOMPARE(contacts.size(), 0);
+        QCOMPARE(contacts.size(), 1);
+    }
+
+    void testSyncTargetDeletedFilter()
+    {
+        QDateTime currentDate = QDateTime::currentDateTime();
+        // wait one sec to cause a create date later
+        QTest::qWait(1000);
+        QContact contact = galera::VCardParser::vcardToContact(QStringLiteral("BEGIN:VCARD\r\n"
+                                                                              "VERSION:3.0\r\n"
+                                                                              "X-REMOTE-ID:1dd7d51a1518626a\r\n"
+                                                                              "N:;Fulano;;;\r\n"
+                                                                              "EMAIL:fulano@gmail.com\r\n"
+                                                                              "TEL:78910\r\n"
+                                                                              "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
+                                                                              "END:VCARD\r\n"));
+
+        // create a contact
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(result, true);
+        QString syncTargetId = contact.detail<QContactSyncTarget>().value(QContactSyncTarget::FieldSyncTarget + 1).toString();
+        QVERIFY(!syncTargetId.isEmpty());
+
+        // wait one more sec to remove the contact
+        QTest::qWait(1000);
+
+        // remove contact
+        result = m_manager->removeContact(contact.id());
+        QVERIFY(result);
+
+
+        // sync target filter
+        QContactDetailFilter fSyncTarget;
+        fSyncTarget.setDetailType(QContactSyncTarget::Type,
+                                  QContactSyncTarget::FieldSyncTarget + 1);
+        fSyncTarget.setValue(syncTargetId);
+
+        QContactChangeLogFilter fDeleted(QContactChangeLogFilter::EventRemoved);
+        fDeleted.setSince(currentDate);
+
+        QList<QContactId> ids = m_manager->contactIds(fDeleted & fSyncTarget);
+        QCOMPARE(ids.size(), 1);
+        QCOMPARE(ids.at(0), contact.id());
     }
 
 };

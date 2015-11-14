@@ -237,6 +237,26 @@ bool Filter::checkIsValid(const QList<QContactFilter> filters) const
     return true;
 }
 
+bool Filter::isIdFilter(const QContactFilter &filter) const
+{
+    if (filter.type() == QContactFilter::IdFilter) {
+        return true;
+    }
+
+    // FIXME: We convert IdFilter to GUID filter check Filter implementation
+    if (filter.type() == QContactFilter::UnionFilter) {
+        QContactUnionFilter uFilter(filter);
+        if ((uFilter.filters().size() == 1) &&
+            (uFilter.filters().at(0).type() == QContactFilter::ContactDetailFilter)) {
+            QContactDetailFilter dFilter(uFilter.filters().at(0));
+            return ((dFilter.detailType() == QContactDetail::TypeGuid) &&
+                    (dFilter.detailField() == QContactGuid::FieldGuid));
+        }
+    }
+
+    return false;
+}
+
 bool Filter::isValid() const
 {
     return checkIsValid(QList<QContactFilter>() << m_filter);
@@ -267,6 +287,12 @@ bool Filter::isEmpty() const
 
 bool Filter::includeRemoved() const
 {
+    // FIXME: Return deleted contacts for id filter
+    // we need this to avoid problems with buteo, we should fix buteo to query for any contact
+    // include deleted ones.
+    if (isIdFilter(m_filter)) {
+        return true;
+    }
     return includeRemoved(m_filter);
 }
 
