@@ -93,6 +93,16 @@ private Q_SLOTS:
         QList<QContactId> ids = m_manager->contactIds(changeLogFilter);
         QCOMPARE(ids.size(), 1);
         QCOMPARE(ids[0], contacts[0].id());
+
+        // wait one sec to remove the contact
+        QTest::qWait(1000);
+        result = m_manager->removeContact(contact.id());
+        QVERIFY(result);
+
+        // if the contact was deleted it should not appear on change log filter
+        // with event type = EventAdded
+        ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 0);
     }
 
     void testDeletedDateFilter()
@@ -137,6 +147,7 @@ private Q_SLOTS:
         result = m_manager->removeContact(contact.id());
         QVERIFY(result);
 
+        // test deleted filter
         ids = m_manager->contactIds(changeLogFilter);
         QCOMPARE(ids.size(), 1);
         QCOMPARE(ids[0], contact.id());
@@ -145,6 +156,13 @@ private Q_SLOTS:
         ids = m_manager->contactIds(changeLogFilter & detFilter);
         QCOMPARE(ids.size(), 1);
         QCOMPARE(ids[0], contact.id());
+
+        // test deleted filter with a future date
+        changeLogFilter.setSince(currentDate.addDays(1));
+        ids = m_manager->contactIds(changeLogFilter);
+        QCOMPARE(ids.size(), 0);
+
+        // test
     }
 
     void testPhoneNumberFilterWithDeleted()
@@ -241,7 +259,6 @@ private Q_SLOTS:
         QVERIFY(result);
 
         // query by id (query by id return the contact deleted or not)
-        qDebug() << "WILL QUERY CONTACT";
         ids.clear();
         ids.append(contact.id());
         contacts = m_manager->contacts(ids);
@@ -274,7 +291,6 @@ private Q_SLOTS:
         // remove contact
         result = m_manager->removeContact(contact.id());
         QVERIFY(result);
-
 
         // sync target filter
         QContactDetailFilter fSyncTarget;
