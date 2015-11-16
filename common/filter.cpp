@@ -418,10 +418,12 @@ bool Filter::includeRemoved(const QList<QContactFilter> filters)
     return false;
 }
 
+//  we will include removed contacts if the filter contains ChangeLogFilter with type EventRemoved;
 bool Filter::includeRemoved(const QContactFilter &filter)
 {
     if (filter.type() == QContactFilter::ChangeLogFilter) {
-        return true;
+        QContactChangeLogFilter fChangeLog(filter);
+        return (fChangeLog.eventType() == QContactChangeLogFilter::EventRemoved);
     } else if (filter.type() == QContactFilter::UnionFilter) {
         return includeRemoved(QContactUnionFilter(filter).filters());
     } else if (filter.type() == QContactFilter::IntersectionFilter) {
