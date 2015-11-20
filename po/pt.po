@@ -8,32 +8,32 @@ msgstr ""
 "Project-Id-Version: address-book-service\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2015-09-21 12:10-0300\n"
-"PO-Revision-Date: 2015-10-22 09:53+0000\n"
+"PO-Revision-Date: 2015-11-19 14:51+0000\n"
 "Last-Translator: Ivo Xavier <ivofernandes12@gmail.com>\n"
 "Language-Team: Portuguese <pt@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2015-11-06 05:37+0000\n"
-"X-Generator: Launchpad (build 17838)\n"
+"X-Launchpad-Export-Date: 2015-11-20 05:30+0000\n"
+"X-Generator: Launchpad (build 17850)\n"
 
 #: ../updater/ab-update.cpp:355
 #, qt-format
 msgid ""
 "%1 contact sync account needs upgrade. Please connect with the internet."
 msgstr ""
-"%1 conta de sincronização de contactos precisa de ser atualizada. Ligue-se à "
+"Conta %1 de sincronização de contactos precisa de ser atualizada. Ligue-se à "
 "internet."
 
 #: ../updater/ab-update.cpp:107
 #, qt-format
 msgid "%1 contact sync account upgrade already in progress"
-msgstr "%1 conta de sincronização de contactos está a ser atualizada."
+msgstr "Conta %1 de sincronização de contactos está a ser atualizada."
 
 #: ../updater/ab-update.cpp:344
 #, qt-format
 msgid "%1 contact sync account upgrade in progress"
-msgstr "%1 conta de sincronização de contactos em atualização."
+msgstr "Conta %1 de sincronização de contactos em atualização."
 
 #: ../updater/ab-update.cpp:288
 #, qt-format
@@ -55,7 +55,7 @@ msgstr "Serviço de livro de endereços"
 
 #: ../updater/ab-update.cpp:268
 msgid "Contact sync upgrade complete."
-msgstr "Atualização de sincronização de conractos completa."
+msgstr "Atualização de sincronização de contactos completa."
 
 #: ../updater/ab-update.cpp:216
 msgid "Contacts app is updated already!"
