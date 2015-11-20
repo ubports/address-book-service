@@ -51,12 +51,15 @@ private:
 
     bool checkIsEmpty(const QList<QtContacts::QContactFilter> filters) const;
     bool checkIsValid(const QList<QtContacts::QContactFilter> filters) const;
+    bool isIdFilter(const QtContacts::QContactFilter &filter) const;
 
     static QString phoneNumberToFilter(const QtContacts::QContactFilter &filter);
     static QStringList idsToFilter(const QtContacts::QContactFilter &filter);
     static QString toString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter buildFilter(const QString &filter);
 
+    static bool includeRemoved(const QList<QtContacts::QContactFilter> filters);
+    static bool includeRemoved(const QtContacts::QContactFilter &filter);
     static QString detailFilterToString(const QtContacts::QContactFilter &filter);
     static QString unionFilterToString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseFilter(const QtContacts::QContactFilter &filter);

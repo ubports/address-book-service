@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2013 Canonical Ltd.
  *
  * This file is part of contact-service-app.
@@ -65,13 +65,18 @@ QtContacts::QContactFilter Filter::toContactFilter() const
 
 bool Filter::test(const QContact &contact, const QDateTime &deletedDate) const
 {
+    if (deletedDate.isValid() && !includeRemoved()) {
+        return false;
+    }
+
     return testFilter(m_filter, contact, deletedDate);
 }
 
-bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, const QDateTime &deletedDate)
+bool Filter::testFilter(const QContactFilter& filter,
+                        const QContact &contact,
+                        const QDateTime &deletedDate)
 {
     switch(filter.type()) {
-        // query by id return the contact even if deleted
         case QContactFilter::IdFilter:
             return QContactManagerEngine::testFilter(filter, contact);
 
@@ -115,7 +120,7 @@ bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, c
                         return true;
                     }
                 }
-            } else if (QContactManagerEngine::testFilter(filter, contact)) {
+            } else if (QContactManagerEngine::testFilter(cdf, contact)) {
                 return true;
             }
             break;
@@ -126,31 +131,13 @@ bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, c
             /* XXX In theory we could reorder the terms to put the native tests first */
             const QContactIntersectionFilter bf(filter);
             const QList<QContactFilter>& terms = bf.filters();
-            bool includeDeleted = false;
 
             if (terms.isEmpty()) {
                 break;
             }
 
-            // if there is a changeLogFilter in the filter we will accept deleted contacts
-            if (deletedDate.isValid()) {
-                Q_FOREACH(const QContactFilter &f, terms) {
-                    if (f.type() == QContactFilter::ChangeLogFilter) {
-                        includeDeleted = true;
-                        break;
-                    }
-                }
-            }
-
-            Q_FOREACH(const QContactFilter &f, terms) {
-                bool r = false;
-                if (!includeDeleted || (f.type() == QContactFilter::ChangeLogFilter)) {
-                    r = testFilter(f, contact, deletedDate);
-                } else {
-                    r = testFilter(f, contact, QDateTime());
-                }
-
-                if (!r) {
+           Q_FOREACH(const QContactFilter &f, terms) {
+                if (!testFilter(f, contact, deletedDate)) {
                     return false;
                 }
             }
@@ -176,7 +163,7 @@ bool Filter::testFilter(const QContactFilter& filter, const QContact &contact, c
         break;
 
         default:
-            if (deletedDate.isNull() && QContactManagerEngine::testFilter(filter, contact)) {
+            if (QContactManagerEngine::testFilter(filter, contact)) {
                 return true;
             }
             break;
@@ -250,6 +237,26 @@ bool Filter::checkIsValid(const QList<QContactFilter> filters) const
     return true;
 }
 
+bool Filter::isIdFilter(const QContactFilter &filter) const
+{
+    if (filter.type() == QContactFilter::IdFilter) {
+        return true;
+    }
+
+    // FIXME: We convert IdFilter to GUID filter check Filter implementation
+    if (filter.type() == QContactFilter::UnionFilter) {
+        QContactUnionFilter uFilter(filter);
+        if ((uFilter.filters().size() == 1) &&
+            (uFilter.filters().at(0).type() == QContactFilter::ContactDetailFilter)) {
+            QContactDetailFilter dFilter(uFilter.filters().at(0));
+            return ((dFilter.detailType() == QContactDetail::TypeGuid) &&
+                    (dFilter.detailField() == QContactGuid::FieldGuid));
+        }
+    }
+
+    return false;
+}
+
 bool Filter::isValid() const
 {
     return checkIsValid(QList<QContactFilter>() << m_filter);
@@ -280,8 +287,13 @@ bool Filter::isEmpty() const
 
 bool Filter::includeRemoved() const
 {
-    // Only return removed contacts if the filter type is ChangeLogFilter
-    return (m_filter.type() == QContactFilter::ChangeLogFilter);
+    // FIXME: Return deleted contacts for id filter
+    // we need this to avoid problems with buteo, we should fix buteo to query for any contact
+    // include deleted ones.
+    if (isIdFilter(m_filter)) {
+        return true;
+    }
+    return includeRemoved(m_filter);
 }
 
 QString Filter::phoneNumberToFilter() const
@@ -394,6 +406,31 @@ QtContacts::QContactFilter Filter::buildFilter(const QString &filter)
     QDataStream filterData(&filterArray, QIODevice::ReadOnly);
     filterData >> filterObject;
     return filterObject;
+}
+
+bool Filter::includeRemoved(const QList<QContactFilter> filters)
+{
+    Q_FOREACH(const QContactFilter &f, filters) {
+        if (includeRemoved(f)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+//  we will include removed contacts if the filter contains ChangeLogFilter with type EventRemoved;
+bool Filter::includeRemoved(const QContactFilter &filter)
+{
+    if (filter.type() == QContactFilter::ChangeLogFilter) {
+        QContactChangeLogFilter fChangeLog(filter);
+        return (fChangeLog.eventType() == QContactChangeLogFilter::EventRemoved);
+    } else if (filter.type() == QContactFilter::UnionFilter) {
+        return includeRemoved(QContactUnionFilter(filter).filters());
+    } else if (filter.type() == QContactFilter::IntersectionFilter) {
+        return includeRemoved(QContactIntersectionFilter(filter).filters());
+    } else {
+        return false;
+    }
 }
 
 QtContacts::QContactFilter Filter::parseFilter(const QtContacts::QContactFilter &filter)

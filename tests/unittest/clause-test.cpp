@@ -283,6 +283,70 @@ private Q_SLOTS:
         }
         QCOMPARE(ids.size(), 0);
     }
+
+    void testIncludeDeleted()
+    {
+        QContactChangeLogFilter removedFilter;
+        removedFilter.setEventType(QContactChangeLogFilter::EventRemoved);
+        removedFilter.setSince(QDateTime::currentDateTime());
+
+        Filter changeLogFilter(removedFilter);
+        QVERIFY(changeLogFilter.includeRemoved());
+
+        QContactDetailFilter detFilter;
+        detFilter.setDetailType(QContactFavorite::Type, QContactFavorite::FieldFavorite);
+        detFilter.setValue(true);
+
+        Filter favoriteFilter(detFilter);
+        QVERIFY(!favoriteFilter.includeRemoved());
+
+        Filter combination(detFilter & removedFilter);
+        QVERIFY(combination.includeRemoved());
+    }
+
+    void testDeletedContact()
+    {
+        // create a contact with name
+        QContact c;
+        QContactName name;
+        name.setFirstName("Foo");
+        name.setLastName("Bar");
+        c.saveDetail(&name);
+
+        QContactDetailFilter favFilter;
+        favFilter.setDetailType(QContactFavorite::Type, QContactFavorite::FieldFavorite);
+        favFilter.setValue(true);
+
+        // filter favorite contacts
+        Filter myFilter(favFilter);
+        QVERIFY(!myFilter.test(c));
+
+        // mark contact as favorite
+        QContactFavorite fav;
+        fav.setFavorite(true);
+        c.saveDetail(&fav);
+
+        // filter favorite contacts
+        QVERIFY(myFilter.test(c));
+        // filter contacts removed and favorite
+        QVERIFY(!myFilter.test(c, QDateTime::currentDateTime()));
+
+        QContactChangeLogFilter removedFilter;
+        removedFilter.setEventType(QContactChangeLogFilter::EventRemoved);
+        removedFilter.setSince(QDateTime::currentDateTime().addDays(-1));
+
+        Filter removedAndFavoriteFilter(favFilter & removedFilter);
+        // filter favorites and removed contacts
+        QVERIFY(!removedAndFavoriteFilter.test(c));
+
+        QContactExtendedDetail removedDate;
+        removedDate.setName("X-DELETED-AT");
+        removedDate.setData(QDateTime::currentDateTime());
+        c.saveDetail(&removedDate);
+
+        // filter again with favorites and removed contacts
+        QVERIFY(removedAndFavoriteFilter.test(c, QDateTime::currentDateTime()));
+    }
 };
 
 QTEST_MAIN(ClauseParseTest)
