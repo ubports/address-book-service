@@ -1,3 +1,15 @@
+address-book-service (0.1.1+16.04.20151120-0ubuntu1) xenial; urgency=medium
+
+  [ CI Train Bot ]
+  * Resync trunk. added: po/pt.po po/sr.po
+
+  [ Renato Araujo Oliveira Filho ]
+  * Implemented support for favorite in fetch hint.
+  * Make sure that deleted contact does not appear on search result.
+    (LP: #1516136)
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Fri, 20 Nov 2015 13:06:50 +0000
+
 address-book-service (0.1.1+16.04.20151103.2-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
