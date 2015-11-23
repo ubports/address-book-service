@@ -904,9 +904,25 @@ QString AddressBook::createContact(const QString &contact, const QString &source
 
 FolksPersonaStore * AddressBook::getFolksStore(const QString &source)
 {
+    QString sourceId(source);
     FolksPersonaStore *result = 0;
 
-    if (!source.isEmpty()) {
+    // if source is empty we try use EDS default source
+    if (source.isEmpty()) {
+        GError *gError = NULL;
+        ESourceRegistry *registry = e_source_registry_new_sync (NULL, &gError);
+        if (gError) {
+            qWarning() << "Fail to find EDS default souce";
+        } else {
+            ESource *defaultAB = e_source_registry_ref_default_address_book(registry);
+            if (defaultAB) {
+                sourceId = QString::fromUtf8(e_source_get_uid(defaultAB));
+            }
+            g_object_unref(registry);
+        }
+    }
+
+    if (!sourceId.isEmpty()) {
         FolksBackendStore *backendStore = folks_backend_store_dup();
         GeeCollection *backends = folks_backend_store_list_backends(backendStore);
 
@@ -915,20 +931,20 @@ FolksPersonaStore * AddressBook::getFolksStore(const QString &source)
             FolksBackend *backend = FOLKS_BACKEND(gee_iterator_get(iter));
             GeeMap *stores = folks_backend_get_persona_stores(backend);
             GeeCollection *values =  gee_map_get_values(stores);
-            GeeIterator *backendIter = gee_iterable_iterator(GEE_ITERABLE(values));
+            GeeIterator *storeIter = gee_iterable_iterator(GEE_ITERABLE(values));
 
-            while(gee_iterator_next(backendIter)) {
-                FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
+            while(gee_iterator_next(storeIter)) {
+                FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(storeIter));
 
                 QString id = QString::fromUtf8(folks_persona_store_get_id(store));
-                if (id == source) {
+                if (id == sourceId) {
                     result = store;
                     break;
                 }
                 g_object_unref(store);
             }
 
-            g_object_unref(backendIter);
+            g_object_unref(storeIter);
             g_object_unref(backend);
             g_object_unref(values);
         }
@@ -936,11 +952,12 @@ FolksPersonaStore * AddressBook::getFolksStore(const QString &source)
         g_object_unref(backendStore);
     }
 
-    if (!result)  {
+    if (!result) {
         result = folks_individual_aggregator_get_primary_store(m_individualAggregator);
         Q_ASSERT(result);
         g_object_ref(result);
     }
+
     return result;
 }
 
