@@ -1,3 +1,9 @@
+address-book-service (0.1.1+16.04.20151123-0ubuntu1) xenial; urgency=medium
+
+  * Create contact on default EDS source if the sync target is empty.
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Mon, 23 Nov 2015 22:12:34 +0000
+
 address-book-service (0.1.1+16.04.20151120-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
