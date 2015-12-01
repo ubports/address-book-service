@@ -90,6 +90,7 @@ SourceList AddressBookAdaptor::updateSources(const SourceList &sources, const QD
                               Qt::QueuedConnection,
                               Q_ARG(const SourceList&, sources),
                               Q_ARG(const QDBusMessage&, message));
+    return SourceList();
 }
 
 bool AddressBookAdaptor::removeSource(const QString &sourceId, const QDBusMessage &message)

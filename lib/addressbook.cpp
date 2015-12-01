@@ -542,10 +542,11 @@ SourceList AddressBook::updateSources(const SourceList &sources, const QDBusMess
         data->m_registry = 0;
         data->m_message = message;
         data->m_addressbook = this;
+        data->m_result = SourceList();
         updateSourcesEDS(data);
     } else {
         qWarning() << "Not supported, update sources on persona store with type id:" << personaStoreTypeId;
-        QDBusMessage reply = message.createReply(QVariant::fromValue<Source>(Source()));
+        QDBusMessage reply = message.createReply(QVariant::fromValue<SourceList>(SourceList()));
         QDBusConnection::sessionBus().send(reply);
     }
     return SourceList();
@@ -599,7 +600,8 @@ void AddressBook::updateSourcesEDS(void *data)
     return;
 
 operation_done:
-    QDBusMessage reply = uData->m_message.createReply(QVariant::fromValue<SourceList>(uData->m_result));
+    SourceList result(uData->m_result);
+    QDBusMessage reply = uData->m_message.createReply(QVariant::fromValue<SourceList>(result));
     QDBusConnection::sessionBus().send(reply);
 
     if (uData->m_registry) {
@@ -620,7 +622,7 @@ void AddressBook::updateSourceEDSDone(GObject *registry,
         qWarning() << "Failed to update source" << error->message;
         g_error_free(error);
     } else {
-        uData->m_result << parseEDSSource(uData->m_registry, uData->m_currentSource);
+        uData->m_result.append(parseEDSSource(uData->m_registry, uData->m_currentSource));
     }
 
     g_object_unref(uData->m_currentSource);
@@ -913,7 +915,7 @@ void AddressBook::availableSourcesDoneListDefaultSource(FolksBackendStore *backe
     Source defaultSource;
     SourceList list = availableSourcesDoneImpl(backendStore, res);
     if (list.count() > 0) {
-        defaultSource = list[0];
+        defaultSource = list.first();
     }
     QDBusMessage reply = msg->createReply(QVariant::fromValue<Source>(defaultSource));
     QDBusConnection::sessionBus().send(reply);
@@ -1001,7 +1003,7 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                 canWrite = false;
             }
 
-            result << Source(id, displayName, applicationId, providerName, accountId, !canWrite, isPrimary);
+            result.append(Source(id, displayName, applicationId, providerName, accountId, !canWrite, isPrimary));
             g_object_unref(store);
         }
 

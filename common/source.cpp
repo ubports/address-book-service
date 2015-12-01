@@ -27,7 +27,9 @@ using namespace QtContacts;
 namespace galera {
 
 Source::Source()
-    : m_isReadOnly(false)
+    : m_accountId(0),
+      m_isReadOnly(false),
+      m_isPrimary(false)
 {
 }
 
