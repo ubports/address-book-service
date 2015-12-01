@@ -22,6 +22,7 @@
 
 #include "qcontactrequest-data.h"
 #include <common/fetch-hint.h>
+#include <common/source.h>
 
 #include <QtCore/QList>
 
@@ -37,21 +38,26 @@ public:
     QContactSaveRequestData(QtContacts::QContactSaveRequest *request);
 
     void prepareToUpdate();
-    void updatePendingContacts(QStringList vcards);
-
     void prepareToCreate();
+
+
+    bool hasNext() const;
+    QString nextContact(QString *syncTargetName);
+    QtContacts::QContact currentContact() const;
+    QStringList allPendingContacts() const;
     void updateCurrentContactId(GaleraEngineId *engineId);
     void updateCurrentContact(const QtContacts::QContact &contact);
+    void updatePendingContacts(QStringList vcards);
+
+    bool hasNextGroup() const;
+    Source nextGroup();
+    Source currentGroup() const;
+    SourceList allPendingGroups() const;
+    void updateCurrentGroup(const Source &group, const QString &managerUri);
+    void updatePendingGroups(const SourceList &groups, const QString &managerUri);
 
     void notifyUpdateError(QtContacts::QContactManager::Error error);
-
-    QtContacts::QContact currentContact() const;
-    bool hasNext() const;
-    QString nextContact(QString *syncTargetName, bool *isGroup);
-
     void notifyError(QtContacts::QContactManager::Error error);
-    QStringList allPendingContacts() const;
-
     static void notifyError(QtContacts::QContactSaveRequest *request,
                             QtContacts::QContactManager::Error error = QtContacts::QContactManager::NotSupportedError);
 
@@ -67,6 +73,9 @@ private:
     QMap<int, QString> m_pendingContacts;
     QMap<int, QString> m_pendingContactsSyncTarget;
     QMap<int, QString>::Iterator m_currentContact;
+
+    QMap<int, Source> m_pendingGroups;
+    QMap<int, Source>::Iterator m_currentGroup;
 
     void prepareContacts(QMap<int, QtContacts::QContact> contacts);
 };

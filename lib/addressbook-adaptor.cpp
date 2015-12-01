@@ -83,6 +83,14 @@ Source AddressBookAdaptor::createSourceForAccount(const QString &sourceName,
     return Source();
 }
 
+SourceList AddressBookAdaptor::updateSources(const SourceList &sources, const QDBusMessage &message)
+{
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "updateSources",
+                              Qt::QueuedConnection,
+                              Q_ARG(const SourceList&, sources),
+                              Q_ARG(const QDBusMessage&, message));
+}
 
 bool AddressBookAdaptor::removeSource(const QString &sourceId, const QDBusMessage &message)
 {

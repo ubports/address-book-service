@@ -37,6 +37,8 @@
 
 typedef struct _MessagingMenuMessage MessagingMenuMessage;
 typedef struct _MessagingMenuApp MessagingMenuApp;
+typedef struct _ESource ESource;
+typedef struct _ESourceRegistry ESourceRegistry;
 
 namespace galera
 {
@@ -78,6 +80,7 @@ public Q_SLOTS:
     SourceList availableSources(const QDBusMessage &message);
     Source source(const QDBusMessage &message);
     Source createSource(const QString &sourceName, uint accountId, bool setAsPrimary, const QDBusMessage &message);
+    SourceList updateSources(const SourceList &sources, const QDBusMessage &message);
     void removeSource(const QString &sourceId, const QDBusMessage &message);
     QString createContact(const QString &contact, const QString &source, const QDBusMessage &message = QDBusMessage());
     int removeContacts(const QStringList &contactIds, const QDBusMessage &message);
@@ -195,12 +198,19 @@ private:
     static void edsPrepared(GObject *source,
                             GAsyncResult *res,
                             void *data);
-    static void edsRemoveContact(FolksIndividual *individual);
-
     static void onSafeModeMessageActivated(MessagingMenuMessage *message,
                                            const char *actionId,
                                            GVariant *param,
                                            AddressBook *self);
+
+    //EDS helper
+    void updateSourcesEDS(void *data);
+    static Source parseEDSSource(ESourceRegistry *registry, ESource *eSource);
+    static void edsRemoveContact(FolksIndividual *individual);
+    static void updateSourceEDSDone(GObject *source,
+                                    GAsyncResult *res,
+                                    void *data);
+
     friend class DirtyContactsNotify;
 };
 

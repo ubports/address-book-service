@@ -135,6 +135,68 @@ private Q_SLOTS:
         }
         QFAIL("Fail to query for collections");
     }
+
+    /*
+     * Test edit collection
+     */
+    void testEditAddressBook()
+    {
+        // create a source
+        QContact c;
+        c.setType(QContactType::TypeGroup);
+        QContactDisplayLabel label;
+        QString uniqueName = QString("%1").arg(QUuid::createUuid().toString().remove("{").remove("}"));
+        label.setLabel(uniqueName);
+        c.saveDetail(&label);
+
+        bool saveResult = m_manager->saveContact(&c);
+        QVERIFY(saveResult);
+
+        QContactDetailFilter collectionFilter;
+        collectionFilter.setDetailType(QContactDetail::TypeType, QContactType::FieldType);
+        collectionFilter.setValue(QContactType::TypeGroup);
+
+        // current collection size
+        int collectionSize = m_manager->contacts(collectionFilter).size();
+
+        label = c.detail<QContactDisplayLabel>();
+        QString newUniqueName = QString("NEW_%1").arg(uniqueName);
+        label.setLabel(newUniqueName);
+        c.saveDetail(&label);
+
+        bool isPrimaryUpdated = false;
+        Q_FOREACH(QContactExtendedDetail xDetail, c.details<QContactExtendedDetail>()) {
+            if (xDetail.name() == "IS-PRIMARY") {
+                xDetail.setData(true);
+                c.saveDetail(&xDetail);
+                isPrimaryUpdated = true;
+                break;
+            }
+        }
+        QVERIFY(isPrimaryUpdated);
+
+        saveResult = m_manager->saveContact(&c);
+        QVERIFY(saveResult);
+
+        // check if the collections contains the new collection
+        QList<QContact> contacts = m_manager->contacts(collectionFilter);
+        QCOMPARE(contacts.size() , collectionSize);
+
+        Q_FOREACH(const QContact &contact, contacts) {
+            QVERIFY(c.id().toString().startsWith("qtcontacts:galera::source@"));
+            if (contact.detail<QContactDisplayLabel>().label() == newUniqueName) {
+                bool isPrimary = false;
+                Q_FOREACH(QContactExtendedDetail xDetail, c.details<QContactExtendedDetail>()) {
+                    if (xDetail.name() == "IS-PRIMARY") {
+                        isPrimary = xDetail.data().toBool();
+                    }
+                }
+                QVERIFY(isPrimary);
+                return;
+            }
+        }
+        QFAIL("New collection not found");
+    }
 };
 
 QTEST_MAIN(ContactCollectionTest)
