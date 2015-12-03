@@ -460,7 +460,7 @@ void GaleraContactsService::fetchContactsGroupsContinue(QContactFetchRequestData
  *  - Update all groups that already have IDs
  *  - Update all contacts that already have IDs
  *
- * If the request was canceled between any of these steps, the data object id destroyed a finish signal is fired.
+ * If the request was canceled between any of these steps, the data object is destroyed and a finish signal is fired.
  */
 
 /* This function can receive a mix of contacts and groups, the contacts without id will be created
