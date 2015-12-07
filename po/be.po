@@ -1,0 +1,131 @@
+# Belarusian translation for address-book-service
+# Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
+# This file is distributed under the same license as the address-book-service package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: address-book-service\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2015-09-21 12:10-0300\n"
+"PO-Revision-Date: 2015-12-06 09:47+0000\n"
+"Last-Translator: XiveZ <kyrsant2008@list.ru>\n"
+"Language-Team: Belarusian <be@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Launchpad-Export-Date: 2015-12-07 05:36+0000\n"
+"X-Generator: Launchpad (build 17862)\n"
+
+#: ../updater/ab-update.cpp:355
+#, qt-format
+msgid ""
+"%1 contact sync account needs upgrade. Please connect with the internet."
+msgstr ""
+"%1 сінхранізацыя кантактаў уліковага запісу. Калі ласка, злучыцеся з "
+"інтэрнэтам."
+
+#: ../updater/ab-update.cpp:107
+#, qt-format
+msgid "%1 contact sync account upgrade already in progress"
+msgstr "%1 сінхранізацыя кантактаў уліковага запісу, ідзе абнаўленьне"
+
+#: ../updater/ab-update.cpp:344
+#, qt-format
+msgid "%1 contact sync account upgrade in progress"
+msgstr "%1 сінхранізацыя кантактаў уліковага запісу, прагрэс абнаўленьня"
+
+#: ../updater/ab-update.cpp:288
+#, qt-format
+msgid ""
+"%1.\n"
+"Do you want to retry now?"
+msgstr ""
+"%1.\n"
+"Паўтарыць зноўку?"
+
+#: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
+#: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
+msgid "Account update"
+msgstr "Абнаўленьне ўліковага запісу"
+
+#: ../lib/addressbook.cpp:983
+msgid "Address book service"
+msgstr "Адрасная кніга"
+
+#: ../updater/ab-update.cpp:268
+msgid "Contact sync upgrade complete."
+msgstr "Сінхранізацыя кантактаў, абнаўленьне скончана."
+
+#: ../updater/ab-update.cpp:216
+msgid "Contacts app is updated already!"
+msgstr "Кантакты ўжо абноўлены!"
+
+#: ../updater/ab-update.cpp:224
+msgid "Fail to authenticate!"
+msgstr "Збой аўтэнтыфікацыі!"
+
+#: ../updater/ab-update.cpp:220
+msgid "Fail to connect to contact sync service!"
+msgstr "Не атрымалася далучыцца да службы сінхранізацыі кантактаў!"
+
+#: ../updater/ab-update.cpp:218
+msgid "Fail to connect to internet!"
+msgstr "Не атрымалася далучыцца да інтэрнэту!"
+
+#: ../updater/ab-update.cpp:222
+msgid "Fail to create sync profile!"
+msgstr "Не атрымалася стварыць профіль сінхранізацыі!"
+
+#: ../updater/ab-update.cpp:233
+msgid "Fail to sync contacts!"
+msgstr "Не атрымалася сінхранізаваць кантакты!"
+
+#: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
+msgid "Fail to update"
+msgstr "Памылка пры абнаўленьні"
+
+#: ../updater/ab-update.cpp:226
+msgid "Internal error during the sync!"
+msgstr "Памылка пры сінхранізацыі!"
+
+#: ../updater/ab-notify-message.cpp:93
+msgid "No"
+msgstr "Не"
+
+#: ../updater/ab-update.cpp:228
+msgid "Online account not found!"
+msgstr "Анлайн акаўнт не знойдзены!"
+
+#: ../updater/ab-update.cpp:313
+msgid "To retry later open Contacts app and press the sync button."
+msgstr ""
+"Для паўторнай спробы адчыніце Кантакты і націсьніце кнопку сінхранізацыі."
+
+#: ../updater/ab-update.cpp:230
+msgid "Update already in progress!"
+msgstr "Абнаўленьне ўжо запушчана!"
+
+#: ../lib/addressbook.cpp:1002
+msgid "Update complete"
+msgstr "Абнаўленьне выканана"
+
+#: ../lib/addressbook.cpp:995
+msgid "Update required"
+msgstr "Неабходнае абнаўленьне"
+
+#: ../updater/ab-notify-message.cpp:88
+msgid "Yes"
+msgstr "Так"
+
+#: ../lib/addressbook.cpp:997
+msgid ""
+"Your Contacts app needs to be upgraded. Only local contacts will be editable "
+"until upgrade is complete"
+msgstr ""
+"Дадатку Кантакты патрабуецца абнаўленьне. Да завяршэння абнаўленьня можна "
+"будзе рэдагаваць толькі лакальныя кантакты"
+
+#: ../lib/addressbook.cpp:1004
+msgid "Your Contacts app upldate is complete."
+msgstr "Дадатак Кантакты абноўлены"
