@@ -39,7 +39,6 @@ struct _EUbuntuSources {
     AgManager *ag_manager;
     /* AgAccountId -> ESource UID */
     GHashTable *uoa_to_eds;
-
 };
 
 struct _EUbuntuSourcesClass {
@@ -76,6 +75,7 @@ ubuntu_sources_remove_collection (EUbuntuSources *extension,
     GError *local_error = NULL;
     ESourceUbuntu *ubuntu_ext;
 
+    g_debug("ubuntu_sources_remove_collection: %s", e_source_get_display_name(source));
     ubuntu_ext = e_source_get_extension (source, E_SOURCE_EXTENSION_UBUNTU);
     if (e_source_ubuntu_get_autoremove (ubuntu_ext)) {
         /* This removes the entire subtree rooted at source.
@@ -121,10 +121,10 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
                                    AgAccountId ag_account_id,
                                    EUbuntuSources *extension)
 {
-    ESource *source = NULL;
     ESourceRegistryServer *server;
     GSList *eds_id_list;
     GSList *link;
+    GSList *sources_to_remove;
 
     server = ubuntu_sources_get_server (extension);
 
@@ -133,19 +133,32 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
 
     g_debug("Sources registered for account: %d", g_slist_length (eds_id_list));
 
+    sources_to_remove = NULL;
+
     for (link = eds_id_list; link != NULL; link = g_slist_next (link)) {
         const gchar *source_uid = link->data;
 
-        source = e_source_registry_server_ref_source (server, source_uid);
+        ESource *source = e_source_registry_server_ref_source (server, source_uid);
         if (source != NULL) {
-            ubuntu_sources_remove_collection (extension, source);
-            g_object_unref (source);
+            sources_to_remove = g_slist_append (sources_to_remove, source);
         }
     }
 
-    g_slist_free_full (eds_id_list, g_free);
-    g_hash_table_remove (extension->uoa_to_eds,
-                         GUINT_TO_POINTER (ag_account_id));
+    // destroy source id list
+    if (eds_id_list) {
+        g_slist_free_full (eds_id_list, g_free);
+        g_hash_table_remove (extension->uoa_to_eds,
+                             GUINT_TO_POINTER (ag_account_id));
+    }
+
+    // remove source in a different loop to avoid problems with hashtable change
+    // while removing
+    for (link = sources_to_remove; link != NULL; link = g_slist_next (link)) {
+        ESource *source = link->data;
+
+        ubuntu_sources_remove_collection (extension, source);
+        g_object_unref (source);
+    }
 }
 
 static gboolean
