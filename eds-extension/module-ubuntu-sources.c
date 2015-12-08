@@ -124,7 +124,7 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
     ESourceRegistryServer *server;
     GSList *eds_id_list;
     GSList *link;
-    GSList *sources_to_remove;
+    GQueue trash = G_QUEUE_INIT;
 
     server = ubuntu_sources_get_server (extension);
 
@@ -133,14 +133,13 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
 
     g_debug("Sources registered for account: %d", g_slist_length (eds_id_list));
 
-    sources_to_remove = NULL;
-
     for (link = eds_id_list; link != NULL; link = g_slist_next (link)) {
         const gchar *source_uid = link->data;
 
         ESource *source = e_source_registry_server_ref_source (server, source_uid);
         if (source != NULL) {
-            sources_to_remove = g_slist_append (sources_to_remove, source);
+            g_debug ("Source selected to remove: %s", e_source_get_display_name (source));
+            g_queue_push_tail (&trash, source);
         }
     }
 
@@ -151,11 +150,9 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
                              GUINT_TO_POINTER (ag_account_id));
     }
 
-    // remove source in a different loop to avoid problems with hashtable change
-    // while removing
-    for (link = sources_to_remove; link != NULL; link = g_slist_next (link)) {
-        ESource *source = link->data;
-
+    /* Empty the trash. */
+    while (!g_queue_is_empty (&trash)) {
+        ESource *source = g_queue_pop_head (&trash);
         ubuntu_sources_remove_collection (extension, source);
         g_object_unref (source);
     }
@@ -255,7 +252,7 @@ ubuntu_source_source_added_cb (ESourceRegistryServer *server,
                                ESource *source,
                                EUbuntuSources *extension)
 {
-    ubuntu_sources_register_source (extension, source);
+     (extension, source);
 }
 
 static void
