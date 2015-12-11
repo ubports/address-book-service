@@ -86,6 +86,8 @@ ubuntu_sources_remove_collection (EUbuntuSources *extension,
             g_warning ("%s: %s", G_STRFUNC, local_error->message);
             g_error_free (local_error);
         }
+    } else {
+        g_debug("Source not marked to auto-remove");
     }
 }
 
@@ -252,7 +254,7 @@ ubuntu_source_source_added_cb (ESourceRegistryServer *server,
                                ESource *source,
                                EUbuntuSources *extension)
 {
-     (extension, source);
+    ubuntu_sources_register_source(extension, source);
 }
 
 static void
