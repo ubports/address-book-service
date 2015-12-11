@@ -73,6 +73,7 @@ Q_SIGNALS:
     void stopped();
     void readyChanged();
     void safeModeChanged();
+    void sourcesChanged();
 
 public Q_SLOTS:
     bool start();
@@ -114,6 +115,7 @@ private:
     QDBusServiceWatcher *m_edsWatcher;
     MessagingMenuApp *m_messagingMenu;
     MessagingMenuMessage *m_messagingMenuMessage;
+    ESourceRegistry *m_sourceRegistryListener;
     static QSettings m_settings;
 
     bool m_edsIsLive;
@@ -210,6 +212,9 @@ private:
     static void updateSourceEDSDone(GObject *source,
                                     GAsyncResult *res,
                                     void *data);
+    static void sourceEDSChanged(ESourceRegistry *registry,
+                                 ESource *source,
+                                 AddressBook *self);
 
     friend class DirtyContactsNotify;
 };

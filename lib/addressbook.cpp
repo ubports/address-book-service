@@ -170,7 +170,8 @@ AddressBook::AddressBook(QObject *parent)
       m_notifyIsQuiescentHandlerId(0),
       m_connection(QDBusConnection::sessionBus()),
       m_messagingMenu(0),
-      m_messagingMenuMessage(0)
+      m_messagingMenuMessage(0),
+      m_sourceRegistryListener(0)
 {
     if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
         m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
@@ -186,6 +187,11 @@ AddressBook::AddressBook(QObject *parent)
 
 AddressBook::~AddressBook()
 {
+    if (m_sourceRegistryListener) {
+        g_object_unref(m_sourceRegistryListener);
+        m_sourceRegistryListener = 0;
+    }
+
     if (m_messagingMenuMessage) {
         g_object_unref(m_messagingMenuMessage);
         m_messagingMenuMessage = 0;
@@ -432,6 +438,40 @@ void AddressBook::connectWithEDS()
         }
     }
 
+    // connect with source registry to get notifications about source change
+    GError *gError = NULL;
+    if (m_sourceRegistryListener) {
+        g_object_unref(m_sourceRegistryListener);
+        m_sourceRegistryListener = 0;
+    }
+    m_sourceRegistryListener = e_source_registry_new_sync(NULL, &gError);
+    if (gError) {
+        qWarning() << "Fail to connect with source registry" << gError->message;
+        g_error_free(gError);
+        m_sourceRegistryListener = 0;
+    } else {
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-added",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-changed",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-removed",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-enabled",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-disabled",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+    }
+
     // check if service is already registered
     // We will try register a EDS service if its fails this mean that the service is already registered
     m_edsIsLive = !QDBusConnection::sessionBus().registerService(evolutionServiceName);
@@ -627,6 +667,11 @@ void AddressBook::updateSourceEDSDone(GObject *registry,
 
     g_object_unref(uData->m_currentSource);
     uData->m_addressbook->updateSourcesEDS(data);
+}
+
+void AddressBook::sourceEDSChanged(ESourceRegistry *registry, ESource *source, AddressBook *self)
+{
+    Q_EMIT self->sourcesChanged();
 }
 
 void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &message)

@@ -53,6 +53,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    </signal>\n"
 "    <signal name=\"readyChanged\"/>\n"
 "    <signal name=\"safeModeChanged\"/>\n"
+"    <signal name=\"sourcesChanged\"/>\n"
 "    <method name=\"ping\">\n"
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
@@ -168,6 +169,7 @@ Q_SIGNALS:
     void readyChanged();
     void reloaded();
     void safeModeChanged();
+    void sourcesChanged();
 
 private:
     AddressBook *m_addressBook;
