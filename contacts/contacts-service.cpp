@@ -56,67 +56,6 @@
 using namespace QtVersit;
 using namespace QtContacts;
 
-namespace //private
-{
-
-static QContact parseSource(const galera::Source &source, const QString &managerUri)
-{
-    QContact contact;
-
-    // contact group type
-    contact.setType(QContactType::TypeGroup);
-
-    // id
-    galera::GaleraEngineId *engineId = new galera::GaleraEngineId(QString("source@%1").arg(source.id()),
-                                                                  managerUri);
-    QContactId newId = QContactId(engineId);
-    contact.setId(newId);
-
-    // guid
-    QContactGuid guid;
-    guid.setGuid(source.id());
-    contact.saveDetail(&guid);
-
-    // display name
-    QContactDisplayLabel displayLabel;
-    displayLabel.setLabel(source.displayLabel());
-    contact.saveDetail(&displayLabel);
-
-    // read-only
-    QContactExtendedDetail readOnly;
-    readOnly.setName("READ-ONLY");
-    readOnly.setData(source.isReadOnly());
-    contact.saveDetail(&readOnly);
-
-    // Primary
-    QContactExtendedDetail primary;
-    primary.setName("IS-PRIMARY");
-    primary.setData(source.isPrimary());
-    contact.saveDetail(&primary);
-
-    // Account Id
-    QContactExtendedDetail accountId;
-    accountId.setName("ACCOUNT-ID");
-    accountId.setData(source.accountId());
-    contact.saveDetail(&accountId);
-
-    // Application Id
-    QContactExtendedDetail applicationId;
-    applicationId.setName("APPLICATION-ID");
-    applicationId.setData(source.applicationId());
-    contact.saveDetail(&applicationId);
-
-    // Provider
-    QContactExtendedDetail provider;
-    provider.setName("PROVIDER");
-    provider.setData(source.providerName());
-    contact.saveDetail(&provider);
-
-    return contact;
-}
-
-}
-
 namespace galera
 {
 GaleraContactsService::GaleraContactsService(const QString &managerUri)
@@ -490,7 +429,10 @@ void GaleraContactsService::fetchContactsGroupsContinue(QContactFetchRequestData
         opError = QContactManager::UnspecifiedError;
     } else {
         Q_FOREACH(const Source &source, reply.value()) {
-            QContact c = parseSource(source, m_managerUri);
+            galera::GaleraEngineId *engineId = new galera::GaleraEngineId(QString("source@%1").arg(source.id()),
+                                                                          m_managerUri);
+            QContactId id = QContactId(engineId);
+            QContact c = source.toContact(id);
             if (source.isPrimary()) {
                 contacts.prepend(c);
             } else {
@@ -503,16 +445,101 @@ void GaleraContactsService::fetchContactsGroupsContinue(QContactFetchRequestData
     destroyRequest(data);
 }
 
+/* Saving contacts
+ *
+ * Due the limitation on QtPim API we do not have a native way to create
+ * 'address-books'/'sources'/'collections', to WORKAROUND it we use contacts
+ * with type == 'QContactType::TypeGroup' as 'collections'
+ *
+ * FIXME: the new QtPim API already support collections for contacts. We should
+ * rewrite this before update to the new QtPim.
+ *
+ * The steps are:
+ *  - Create each group individually due the limitation of the server API
+ *  - Create each contact individually due the limitation of the sever API
+ *  - Update all groups that already have IDs
+ *  - Update all contacts that already have IDs
+ *
+ * If the request was canceled between any of these steps, the data object is destroyed and a finish signal is fired.
+ */
+
+/* This function can receive a mix of contacts and groups, the contacts without id will be created
+ * on server and contacts that already have id will be updated:
+ */
 void GaleraContactsService::saveContact(QtContacts::QContactSaveRequest *request)
 {
     QContactSaveRequestData *data = new QContactSaveRequestData(request);
     m_runningRequests << data;
 
-    // first create the new contacts
+    // first create the new groups
     data->prepareToCreate();
-    createContactsStart(data);
+    createGroupsStart(data);
 }
 
+/* Will create async the first group on the list, if the list is not empty,
+ * otherwise it will call 'createContactsStart' to create the contacts in the list
+ *
+ * Due the Server limitation we will call this function for each contact
+ * sequentially.
+ */
+void GaleraContactsService::createGroupsStart(QContactSaveRequestData *data)
+{
+    if (!data->isLive()) {
+        data->finish(QContactManager::UnspecifiedError);
+        destroyRequest(data);
+        return;
+    }
+
+    if(!data->hasNextGroup()) {
+        // If there is no more groups to create go to create contacts
+        createContactsStart(data);
+        return;
+    }
+
+    Source sourceToCreate = data->nextGroup();
+    QDBusPendingCall pcall = m_iface->asyncCall("createSourceForAccount",
+                                                sourceToCreate.displayLabel(),
+                                                sourceToCreate.accountId(),
+                                                sourceToCreate.isPrimary());
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+    data->updateWatcher(watcher);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                     [=](QDBusPendingCallWatcher *call) {
+                        this->createGroupDone(data, call);
+                     });
+}
+
+/* 'createSourceForAccount' will call this function when done,
+ * we need to check for errors and update the contact Id with the new Id, and
+ * call 'createGroupsStart' to continue with the next group.
+ */
+void GaleraContactsService::createGroupDone(QContactSaveRequestData *data,
+                                            QDBusPendingCallWatcher *call)
+{
+    if (!data->isLive()) {
+        data->finish(QContactManager::UnspecifiedError);
+        destroyRequest(data);
+        return;
+    }
+
+    QDBusPendingReply<Source> reply = *call;
+    if (reply.isError()) {
+        qWarning() << reply.error().name() << reply.error().message();
+        data->notifyUpdateError(QContactManager::UnspecifiedError);
+    } else {
+        data->updateCurrentGroup(reply.value(), m_managerUri);
+    }
+
+    // go to next group
+    createGroupsStart(data);
+}
+
+/* After handle all contacts with type = 'QContactType::TypeGroup', we need to
+ * create the real contacts.
+ *
+ * Due the Server limitation we will call this function for each contact
+ * sequentially.
+ */
 void GaleraContactsService::createContactsStart(QContactSaveRequestData *data)
 {
     if (!data->isLive()) {
@@ -522,50 +549,28 @@ void GaleraContactsService::createContactsStart(QContactSaveRequestData *data)
     }
 
     if(!data->hasNext()) {
-        // go to update contacts
+        // If there is no more contacts to create go to update groups
         data->prepareToUpdate();
-        updateContacts(data);
+        updateGroups(data);
         return;
     }
 
     QString syncSource;
-    bool isGroup = false;
-    QString contact = data->nextContact(&syncSource, &isGroup);
+    QString contact = data->nextContact(&syncSource);
 
-    if (isGroup) {
-        bool isPrimary = false;
-        uint accountId = 0;
-
-        QList<QContactExtendedDetail> xDetails = data->currentContact().details<QContactExtendedDetail>();
-        Q_FOREACH(const QContactExtendedDetail &xDetail, xDetails) {
-            if (xDetail.name() == "IS-PRIMARY") {
-                isPrimary = xDetail.data().toBool();
-            }
-
-            if (xDetail.name() == "ACCOUNT-ID") {
-                accountId = xDetail.data().toUInt();
-            }
-        }
-
-        QDBusPendingCall pcall = m_iface->asyncCall("createSourceForAccount", contact, accountId, isPrimary);
-        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-        data->updateWatcher(watcher);
-        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
-                         [=](QDBusPendingCallWatcher *call) {
-                            this->createGroupDone(data, call);
-                         });
-
-    } else {
-        QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, syncSource);
-        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-        data->updateWatcher(watcher);
-        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
-                         [=](QDBusPendingCallWatcher *call) {
-                            this->createContactsDone(data, call);
-                         });
-    }
+    QDBusPendingCall pcall = m_iface->asyncCall("createContact", contact, syncSource);
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+    data->updateWatcher(watcher);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                     [=](QDBusPendingCallWatcher *call) {
+                        this->createContactsDone(data, call);
+                     });
 }
 
+/* 'createContact' will call this function when done,
+ * we need to check for errors and update the contact Id with the new Id, and
+ * call 'createContactsStart' to continue with the next contact.
+  */
 void GaleraContactsService::createContactsDone(QContactSaveRequestData *data,
                                                QDBusPendingCallWatcher *call)
 {
@@ -597,8 +602,11 @@ void GaleraContactsService::createContactsDone(QContactSaveRequestData *data,
     createContactsStart(data);
 }
 
-void GaleraContactsService::createGroupDone(QContactSaveRequestData *data,
-                                            QDBusPendingCallWatcher *call)
+/*
+ * Our server support update a list of groups, because of that we can handle all
+ * pending to update groups in one single call.
+ */
+void GaleraContactsService::updateGroups(QContactSaveRequestData *data)
 {
     if (!data->isLive()) {
         data->finish(QContactManager::UnspecifiedError);
@@ -606,16 +614,113 @@ void GaleraContactsService::createGroupDone(QContactSaveRequestData *data,
         return;
     }
 
-    QDBusPendingReply<Source> reply = *call;
-    if (reply.isError()) {
-        qWarning() << reply.error().name() << reply.error().message();
-        data->notifyUpdateError(QContactManager::UnspecifiedError);
-    } else {
-        data->updateCurrentContact(parseSource(reply.value(), m_managerUri));
+    SourceList pendingGroups = data->allPendingGroups();
+    if (pendingGroups.isEmpty()) {
+        // If there is no groups to update we can proceed to 'updateContacts'
+        updateContacts(data);
+        return;
     }
 
-    // go to next contact
-    createContactsStart(data);
+    QDBusPendingCall pcall = m_iface->asyncCall("updateSources", QVariant::fromValue<SourceList>(pendingGroups));
+    if (pcall.isError()) {
+        qWarning() <<  "Error" << pcall.error().name() << pcall.error().message();
+        data->finish(QtContacts::QContactManager::UnspecifiedError);
+        destroyRequest(data);
+    } else {
+        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+        data->updateWatcher(watcher);
+        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                         [=](QDBusPendingCallWatcher *call) {
+                            this->updateGroupsDone(data, call);
+                         });
+    }
+}
+
+/*
+ * Callback used to process server reply from 'updateSources', we need to check
+ * for errors and update the result with the new groups info.
+ */
+void GaleraContactsService::updateGroupsDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call)
+{
+    if (!data->isLive()) {
+        destroyRequest(data);
+        return;
+    }
+
+    QDBusPendingReply<SourceList> reply = *call;
+    QContactManager::Error opError = QContactManager::NoError;
+
+    if (reply.isError()) {
+        qWarning() << reply.error().name() << reply.error().message();
+        opError = QContactManager::UnspecifiedError;
+    } else {
+        const SourceList sources = reply.value();
+        data->updatePendingGroups(sources, m_managerUri);
+    }
+
+    // proceed to next step 'updateContacts'
+    updateContacts(data);
+}
+
+/*
+ * Last step
+ * We will update all pending contacts
+ */
+void GaleraContactsService::updateContacts(QContactSaveRequestData *data)
+{
+    if (!data->isLive()) {
+        destroyRequest(data);
+        return;
+    }
+
+    QStringList pendingContacts = data->allPendingContacts();
+    if (pendingContacts.isEmpty()) {
+        // Last step, notify query finish and destroy query data
+        data->finish(QContactManager::NoError);
+        destroyRequest(data);
+        return;
+    }
+
+    QDBusPendingCall pcall = m_iface->asyncCall("updateContacts", pendingContacts);
+    if (pcall.isError()) {
+        qWarning() <<  "Error" << pcall.error().name() << pcall.error().message();
+        data->finish(QtContacts::QContactManager::UnspecifiedError);
+        destroyRequest(data);
+    } else {
+        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+        data->updateWatcher(watcher);
+        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                         [=](QDBusPendingCallWatcher *call) {
+                            this->updateContactDone(data, call);
+                         });
+    }
+}
+
+/*
+ * Callback used to process server reply from 'updateContacts', we need to check
+ * for errors and update the result with the new contact info.
+ */
+void GaleraContactsService::updateContactDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call)
+{
+    if (!data->isLive()) {
+        destroyRequest(data);
+        return;
+    }
+
+    QDBusPendingReply<QStringList> reply = *call;
+    QContactManager::Error opError = QContactManager::NoError;
+
+    if (reply.isError()) {
+        qWarning() << reply.error().name() << reply.error().message();
+        opError = QContactManager::UnspecifiedError;
+    } else {
+        const QStringList vcards = reply.value();
+        data->updatePendingContacts(vcards);
+    }
+
+    data->finish(opError);
+    // Last step of 'saveContact', we can destroy the request data now.
+    destroyRequest(data);
 }
 
 void GaleraContactsService::removeContact(QContactRemoveRequest *request)
@@ -710,56 +815,6 @@ void GaleraContactsService::removeContactDone(QContactRemoveRequestData *data,
     destroyRequest(data);
 }
 
-void GaleraContactsService::updateContacts(QContactSaveRequestData *data)
-{
-    if (!isOnline()) {
-        destroyRequest(data);
-        return;
-    }
-
-    QStringList pendingContacts = data->allPendingContacts();
-    if (pendingContacts.isEmpty()) {
-        data->finish(QContactManager::NoError);
-        destroyRequest(data);
-        return;
-    }
-
-    QDBusPendingCall pcall = m_iface->asyncCall("updateContacts", pendingContacts);
-    if (pcall.isError()) {
-        qWarning() <<  "Error" << pcall.error().name() << pcall.error().message();
-        data->finish(QtContacts::QContactManager::UnspecifiedError);
-        destroyRequest(data);
-    } else {
-        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
-        data->updateWatcher(watcher);
-        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
-                         [=](QDBusPendingCallWatcher *call) {
-                            this->updateContactDone(data, call);
-                         });
-    }
-}
-
-void GaleraContactsService::updateContactDone(QContactSaveRequestData *data, QDBusPendingCallWatcher *call)
-{
-    if (!data->isLive()) {
-        destroyRequest(data);
-        return;
-    }
-
-    QDBusPendingReply<QStringList> reply = *call;
-    QContactManager::Error opError = QContactManager::NoError;
-
-    if (reply.isError()) {
-        qWarning() << reply.error().name() << reply.error().message();
-        opError = QContactManager::UnspecifiedError;
-    } else {
-        const QStringList vcards = reply.value();
-        data->updatePendingContacts(vcards);
-    }
-
-    data->finish(opError);
-    destroyRequest(data);
-}
 
 void GaleraContactsService::cancelRequest(QtContacts::QContactAbstractRequest *request)
 {

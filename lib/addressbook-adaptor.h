@@ -53,6 +53,7 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "    </signal>\n"
 "    <signal name=\"readyChanged\"/>\n"
 "    <signal name=\"safeModeChanged\"/>\n"
+"    <signal name=\"sourcesChanged\"/>\n"
 "    <method name=\"ping\">\n"
 "      <arg direction=\"out\" type=\"b\"/>\n"
 "    </method>\n"
@@ -76,6 +77,12 @@ class AddressBookAdaptor: public QDBusAbstractAdaptor
 "      <arg direction=\"in\" type=\"b\"/>\n"
 "      <arg direction=\"out\" type=\"(sb)\"/>\n"
 "      <annotation value=\"Source\" name=\"com.trolltech.QtDBus.QtTypeName.Out0\"/>\n"
+"    </method>\n"
+"    <method name=\"updateSources\">\n"
+"      <arg direction=\"in\" type=\"a(ssssubb)\" name=\"sourcesToUpdate\"/>\n"
+"      <arg direction=\"out\" type=\"a(ssssubb)\" name=\"result\"/>\n"
+"      <annotation value=\"SourceList\" name=\"sourcesToUpdate\"/>\n"
+"      <annotation value=\"SourceList\" name=\"result\"/>\n"
 "    </method>\n"
 "    <method name=\"removeSource\">\n"
 "      <arg direction=\"in\" type=\"s\"/>\n"
@@ -138,6 +145,7 @@ public Q_SLOTS:
                                   uint accountId,
                                   bool setAsPrimary,
                                   const QDBusMessage &message);
+    SourceList updateSources(const SourceList &sources, const QDBusMessage &message);
     bool removeSource(const QString &sourceId, const QDBusMessage &message);
     QStringList sortFields();
     QDBusObjectPath query(const QString &clause, const QString &sort, int maxCount, bool showInvisible, const QStringList &sources);
@@ -161,6 +169,7 @@ Q_SIGNALS:
     void readyChanged();
     void reloaded();
     void safeModeChanged();
+    void sourcesChanged();
 
 private:
     AddressBook *m_addressBook;

@@ -96,6 +96,17 @@ public:
     ESource *m_source;
 };
 
+class UpdateSourceData
+{
+public:
+    galera::SourceList m_toUpdate;
+    galera::SourceList m_result;
+    ESource *m_currentSource;
+    ESourceRegistry *m_registry;
+    galera::AddressBook *m_addressbook;
+    QDBusMessage m_message;
+};
+
 class RemoveSourceData
 {
 public:
@@ -159,7 +170,8 @@ AddressBook::AddressBook(QObject *parent)
       m_notifyIsQuiescentHandlerId(0),
       m_connection(QDBusConnection::sessionBus()),
       m_messagingMenu(0),
-      m_messagingMenuMessage(0)
+      m_messagingMenuMessage(0),
+      m_sourceRegistryListener(0)
 {
     if (qEnvironmentVariableIsSet(ALTERNATIVE_CPIM_SERVICE_NAME)) {
         m_serviceName = qgetenv(ALTERNATIVE_CPIM_SERVICE_NAME);
@@ -175,6 +187,11 @@ AddressBook::AddressBook(QObject *parent)
 
 AddressBook::~AddressBook()
 {
+    if (m_sourceRegistryListener) {
+        g_object_unref(m_sourceRegistryListener);
+        m_sourceRegistryListener = 0;
+    }
+
     if (m_messagingMenuMessage) {
         g_object_unref(m_messagingMenuMessage);
         m_messagingMenuMessage = 0;
@@ -421,6 +438,40 @@ void AddressBook::connectWithEDS()
         }
     }
 
+    // connect with source registry to get notifications about source change
+    GError *gError = NULL;
+    if (m_sourceRegistryListener) {
+        g_object_unref(m_sourceRegistryListener);
+        m_sourceRegistryListener = 0;
+    }
+    m_sourceRegistryListener = e_source_registry_new_sync(NULL, &gError);
+    if (gError) {
+        qWarning() << "Fail to connect with source registry" << gError->message;
+        g_error_free(gError);
+        m_sourceRegistryListener = 0;
+    } else {
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-added",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-changed",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-removed",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-enabled",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+        g_signal_connect(m_sourceRegistryListener,
+                         "source-disabled",
+                         G_CALLBACK(AddressBook::sourceEDSChanged),
+                         this);
+    }
+
     // check if service is already registered
     // We will try register a EDS service if its fails this mean that the service is already registered
     m_edsIsLive = !QDBusConnection::sessionBus().registerService(evolutionServiceName);
@@ -514,6 +565,113 @@ Source AddressBook::createSource(const QString &sourceName,
         QDBusConnection::sessionBus().send(reply);
     }
     return Source();
+}
+
+SourceList AddressBook::updateSources(const SourceList &sources, const QDBusMessage &message)
+{
+    FolksPersonaStore *store = folks_individual_aggregator_get_primary_store(m_individualAggregator);
+    QString personaStoreTypeId("dummy");
+
+    if (store) {
+        personaStoreTypeId = QString::fromUtf8(folks_persona_store_get_type_id(store));
+    }
+
+    if (personaStoreTypeId == "eds") {
+        UpdateSourceData *data = new UpdateSourceData;
+        data->m_toUpdate = sources;
+        data->m_registry = 0;
+        data->m_message = message;
+        data->m_addressbook = this;
+        data->m_result = SourceList();
+        updateSourcesEDS(data);
+    } else {
+        qWarning() << "Not supported, update sources on persona store with type id:" << personaStoreTypeId;
+        QDBusMessage reply = message.createReply(QVariant::fromValue<SourceList>(SourceList()));
+        QDBusConnection::sessionBus().send(reply);
+    }
+    return SourceList();
+}
+
+void AddressBook::updateSourcesEDS(void *data)
+{
+    Source source;
+    ESource *eSource = NULL;
+    UpdateSourceData *uData = static_cast<UpdateSourceData*>(data);
+
+    if (uData->m_toUpdate.isEmpty()) {
+         goto operation_done;
+    }
+
+    if (uData->m_registry == 0) {
+        GError *gError = 0;
+        uData->m_registry = e_source_registry_new_sync(NULL, &gError);
+        if (gError) {
+            qWarning() << "Fail to create source registry" << gError->message;
+            g_error_free(gError);
+            goto operation_done;
+        }
+    }
+
+    source = uData->m_toUpdate.takeFirst();
+    eSource = e_source_registry_ref_source(uData->m_registry, source.id().toUtf8().data());
+    if (eSource) {
+        // set as primary if necessary
+        if (source.isPrimary()) {
+            e_source_registry_set_default_address_book(uData->m_registry, eSource);
+        }
+
+        e_source_set_display_name(eSource, source.displayLabel().toUtf8().data());
+        if (source.accountId() > 0) {
+            ESourceUbuntu *ubuntu_ex = E_SOURCE_UBUNTU(e_source_get_extension(eSource, E_SOURCE_EXTENSION_UBUNTU));
+            e_source_ubuntu_set_account_id(ubuntu_ex, source.accountId());
+            e_source_ubuntu_set_application_id(ubuntu_ex, source.applicationId().toUtf8().data());
+        }
+
+        uData->m_currentSource = eSource;
+        e_source_registry_commit_source(uData->m_registry,
+                                        eSource,
+                                        NULL,
+                                        (GAsyncReadyCallback) AddressBook::updateSourceEDSDone,
+                                        data);
+    } else {
+        // next source
+        updateSourcesEDS(data);
+    }
+    return;
+
+operation_done:
+    SourceList result(uData->m_result);
+    QDBusMessage reply = uData->m_message.createReply(QVariant::fromValue<SourceList>(result));
+    QDBusConnection::sessionBus().send(reply);
+
+    if (uData->m_registry) {
+        g_object_unref (uData->m_registry);
+    }
+    delete uData;
+}
+
+void AddressBook::updateSourceEDSDone(GObject *registry,
+                                      GAsyncResult *res,
+                                      void *data)
+{
+    UpdateSourceData *uData = static_cast<UpdateSourceData*>(data);
+    GError *error = 0;
+
+    e_source_registry_commit_source_finish(E_SOURCE_REGISTRY(registry), res, &error);
+    if (error) {
+        qWarning() << "Failed to update source" << error->message;
+        g_error_free(error);
+    } else {
+        uData->m_result.append(parseEDSSource(uData->m_registry, uData->m_currentSource));
+    }
+
+    g_object_unref(uData->m_currentSource);
+    uData->m_addressbook->updateSourcesEDS(data);
+}
+
+void AddressBook::sourceEDSChanged(ESourceRegistry *registry, ESource *source, AddressBook *self)
+{
+    Q_EMIT self->sourcesChanged();
 }
 
 void AddressBook::removeSource(const QString &sourceId, const QDBusMessage &message)
@@ -650,6 +808,39 @@ void AddressBook::onSafeModeMessageActivated(MessagingMenuMessage *message,
     url_dispatch_send("application:///address-book-app.desktop", NULL, NULL);
 }
 
+Source AddressBook::parseEDSSource(ESourceRegistry *registry, ESource *eSource)
+{
+    if (eSource) {
+        guint accountId;
+        QString applicationId;
+        QString providerName;
+
+        // ubuntu extension info
+        if (e_source_has_extension(eSource, E_SOURCE_EXTENSION_UBUNTU)) {
+            ESourceUbuntu *ubuntu_ex = E_SOURCE_UBUNTU(e_source_get_extension(eSource, E_SOURCE_EXTENSION_UBUNTU));
+            accountId = e_source_ubuntu_get_account_id(ubuntu_ex);
+            applicationId = QString::fromUtf8(e_source_ubuntu_get_application_id(ubuntu_ex));
+            providerName = QString::fromUtf8(e_source_ubuntu_get_account_provider(ubuntu_ex));
+        }
+
+        // check primary
+        ESource *defaultAddressBook = e_source_registry_ref_default_address_book(registry);
+        bool isPrimary = e_source_equal(defaultAddressBook, eSource);
+        g_object_unref (defaultAddressBook);
+
+        return Source(QString::fromUtf8(e_source_get_uid(eSource)),
+                      QString::fromUtf8(e_source_get_display_name(eSource)),
+                      applicationId,
+                      providerName,
+                      accountId,
+                      !e_source_get_writable(eSource),
+                      isPrimary);
+    }
+
+    return Source();
+}
+
+
 bool AddressBook::isSafeMode()
 {
     QByteArray envSafeMode = qgetenv(ADDRESS_BOOK_SAFE_MODE);
@@ -769,7 +960,7 @@ void AddressBook::availableSourcesDoneListDefaultSource(FolksBackendStore *backe
     Source defaultSource;
     SourceList list = availableSourcesDoneImpl(backendStore, res);
     if (list.count() > 0) {
-        defaultSource = list[0];
+        defaultSource = list.first();
     }
     QDBusMessage reply = msg->createReply(QVariant::fromValue<Source>(defaultSource));
     QDBusConnection::sessionBus().send(reply);
@@ -811,8 +1002,7 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             FolksPersonaStore *store = FOLKS_PERSONA_STORE(gee_iterator_get(backendIter));
 
             QString id = QString::fromUtf8(folks_persona_store_get_id(store));
-            QString displayName = QString::fromUtf8(folks_persona_store_get_display_name(store));
-
+            QString displayName = folks_persona_store_get_display_name(store);
             bool canWrite = folks_persona_store_get_can_add_personas(store) &&
                             folks_persona_store_get_can_remove_personas(store);
             bool isPrimary = folks_persona_store_get_is_primary_store(store);
@@ -820,6 +1010,7 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
             uint accountId = 0;
             QString applicationId;
             QString providerName;
+
 
             // FIXME: Due a bug on Folks we can not rely on folks_persona_store_get_is_primary_store
             // see main.cpp:68
@@ -832,6 +1023,7 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                 } else {
                     ESource *defaultSource = e_source_registry_ref_default_address_book(r);
                     ESource *source = edsf_persona_store_get_source(EDSF_PERSONA_STORE(store));
+                    displayName = QString::fromUtf8(e_source_get_display_name(source));
                     isPrimary = e_source_equal(defaultSource, source);
                     g_object_unref(defaultSource);
                     g_object_unref(r);
@@ -845,7 +1037,7 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                         }
                     } else {
                         qDebug() << "SOURCE DOES NOT HAVE UBUNTU EXTENSION:"
-                                 << QString::fromUtf8(e_source_get_display_name(source));
+                                 << displayName;
                     }
                 }
             }
@@ -856,7 +1048,7 @@ SourceList AddressBook::availableSourcesDoneImpl(FolksBackendStore *backendStore
                 canWrite = false;
             }
 
-            result << Source(id, displayName, applicationId, providerName, accountId, !canWrite, isPrimary);
+            result.append(Source(id, displayName, applicationId, providerName, accountId, !canWrite, isPrimary));
             g_object_unref(store);
         }
 

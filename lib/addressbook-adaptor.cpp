@@ -31,6 +31,7 @@ AddressBookAdaptor::AddressBookAdaptor(const QDBusConnection &connection, Addres
     setAutoRelaySignals(true);
     connect(m_addressBook, SIGNAL(readyChanged()), SIGNAL(readyChanged()));
     connect(m_addressBook, SIGNAL(safeModeChanged()), SIGNAL(safeModeChanged()));
+    connect(m_addressBook, SIGNAL(sourcesChanged()), SIGNAL(sourcesChanged()));
 }
 
 AddressBookAdaptor::~AddressBookAdaptor()
@@ -83,6 +84,15 @@ Source AddressBookAdaptor::createSourceForAccount(const QString &sourceName,
     return Source();
 }
 
+SourceList AddressBookAdaptor::updateSources(const SourceList &sources, const QDBusMessage &message)
+{
+    message.setDelayedReply(true);
+    QMetaObject::invokeMethod(m_addressBook, "updateSources",
+                              Qt::QueuedConnection,
+                              Q_ARG(const SourceList&, sources),
+                              Q_ARG(const QDBusMessage&, message));
+    return SourceList();
+}
 
 bool AddressBookAdaptor::removeSource(const QString &sourceId, const QDBusMessage &message)
 {

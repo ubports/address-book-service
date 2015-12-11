@@ -20,6 +20,7 @@
 #define __GALERA_SOURCE_H__
 
 #include <QtCore/QString>
+#include <QtContacts/QContact>
 #include <QtDBus/QtDBus>
 
 namespace galera {
@@ -48,6 +49,9 @@ public:
     uint accountId() const;
     QString applicationId() const;
     QString providerName() const;
+
+    QtContacts::QContact toContact(const QtContacts::QContactId &id) const;
+    static Source fromQContact(const QtContacts::QContact &contact);
 
 private:
     QString m_id;

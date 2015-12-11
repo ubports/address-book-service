@@ -103,7 +103,7 @@ void DirtyContactsNotify::emitSignals()
     qWarning() << "Emit singals:"
                << "\n\tChanged:" << m_contactsChanged.size()
                << "\n\tRemoved:" << m_contactsRemoved.size()
-               << "\n\tAdded:" << m_contactsRemoved.size();
+               << "\n\tAdded:" << m_contactsAdded.size();
     if (!m_contactsChanged.isEmpty()) {
         // ignore the signal if the added signal was not fired yet
         m_contactsChanged.subtract(m_contactsAdded);

@@ -39,7 +39,6 @@ struct _EUbuntuSources {
     AgManager *ag_manager;
     /* AgAccountId -> ESource UID */
     GHashTable *uoa_to_eds;
-
 };
 
 struct _EUbuntuSourcesClass {
@@ -76,6 +75,7 @@ ubuntu_sources_remove_collection (EUbuntuSources *extension,
     GError *local_error = NULL;
     ESourceUbuntu *ubuntu_ext;
 
+    g_debug("ubuntu_sources_remove_collection: %s", e_source_get_display_name(source));
     ubuntu_ext = e_source_get_extension (source, E_SOURCE_EXTENSION_UBUNTU);
     if (e_source_ubuntu_get_autoremove (ubuntu_ext)) {
         /* This removes the entire subtree rooted at source.
@@ -86,6 +86,8 @@ ubuntu_sources_remove_collection (EUbuntuSources *extension,
             g_warning ("%s: %s", G_STRFUNC, local_error->message);
             g_error_free (local_error);
         }
+    } else {
+        g_debug("Source not marked to auto-remove");
     }
 }
 
@@ -121,10 +123,10 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
                                    AgAccountId ag_account_id,
                                    EUbuntuSources *extension)
 {
-    ESource *source = NULL;
     ESourceRegistryServer *server;
     GSList *eds_id_list;
     GSList *link;
+    GQueue trash = G_QUEUE_INIT;
 
     server = ubuntu_sources_get_server (extension);
 
@@ -136,16 +138,26 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
     for (link = eds_id_list; link != NULL; link = g_slist_next (link)) {
         const gchar *source_uid = link->data;
 
-        source = e_source_registry_server_ref_source (server, source_uid);
+        ESource *source = e_source_registry_server_ref_source (server, source_uid);
         if (source != NULL) {
-            ubuntu_sources_remove_collection (extension, source);
-            g_object_unref (source);
+            g_debug ("Source selected to remove: %s", e_source_get_display_name (source));
+            g_queue_push_tail (&trash, source);
         }
     }
 
-    g_slist_free_full (eds_id_list, g_free);
-    g_hash_table_remove (extension->uoa_to_eds,
-                         GUINT_TO_POINTER (ag_account_id));
+    // destroy source id list
+    if (eds_id_list) {
+        g_slist_free_full (eds_id_list, g_free);
+        g_hash_table_remove (extension->uoa_to_eds,
+                             GUINT_TO_POINTER (ag_account_id));
+    }
+
+    /* Empty the trash. */
+    while (!g_queue_is_empty (&trash)) {
+        ESource *source = g_queue_pop_head (&trash);
+        ubuntu_sources_remove_collection (extension, source);
+        g_object_unref (source);
+    }
 }
 
 static gboolean
@@ -242,7 +254,7 @@ ubuntu_source_source_added_cb (ESourceRegistryServer *server,
                                ESource *source,
                                EUbuntuSources *extension)
 {
-    ubuntu_sources_register_source (extension, source);
+    ubuntu_sources_register_source(extension, source);
 }
 
 static void
