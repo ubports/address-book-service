@@ -1,3 +1,9 @@
+address-book-service (0.1.1+16.04.20151211.1-0ubuntu1) xenial; urgency=medium
+
+  * Implement source update functionality. (LP: #1511471)
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Fri, 11 Dec 2015 18:02:38 +0000
+
 address-book-service (0.1.1+16.04.20151123-0ubuntu1) xenial; urgency=medium
 
   * Create contact on default EDS source if the sync target is empty.
