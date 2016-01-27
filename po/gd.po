@@ -8,30 +8,33 @@ msgstr ""
 "Project-Id-Version: address-book-service\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2015-09-21 12:10-0300\n"
-"PO-Revision-Date: 2015-11-19 20:48+0000\n"
-"Last-Translator: GunChleoc <Unknown>\n"
+"PO-Revision-Date: 2016-01-26 23:08+0000\n"
+"Last-Translator: Akerbeltz <fios@akerbeltz.org>\n"
 "Language-Team: Gaelic; Scottish <gd@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2015-12-20 06:35+0000\n"
-"X-Generator: Launchpad (build 17865)\n"
+"X-Launchpad-Export-Date: 2016-01-27 05:31+0000\n"
+"X-Generator: Launchpad (build 17902)\n"
 
 #: ../updater/ab-update.cpp:355
 #, qt-format
 msgid ""
 "%1 contact sync account needs upgrade. Please connect with the internet."
 msgstr ""
+"Tha cunntas sioncronachadh luchd-aithne %1 feumachd air àrdachadh. Nach "
+"ceangail thu ris an eadar-lìon?"
 
 #: ../updater/ab-update.cpp:107
 #, qt-format
 msgid "%1 contact sync account upgrade already in progress"
 msgstr ""
+"Tha àrdachadh cunntas sioncronachadh luchd-aithne %1 a’ dol mu thràth"
 
 #: ../updater/ab-update.cpp:344
 #, qt-format
 msgid "%1 contact sync account upgrade in progress"
-msgstr ""
+msgstr "Tha àrdachadh cunntas sioncronachadh luchd-aithne %1 a’ dol"
 
 #: ../updater/ab-update.cpp:288
 #, qt-format
@@ -39,51 +42,54 @@ msgid ""
 "%1.\n"
 "Do you want to retry now?"
 msgstr ""
+"%1.\n"
+"A bheil thu airson feuchainn ris a-rithist?"
 
 #: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
 #: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
 msgid "Account update"
-msgstr ""
+msgstr "Ùrachadh a’ chunntais"
 
 #: ../lib/addressbook.cpp:983
 msgid "Address book service"
-msgstr ""
+msgstr "Seirbheis leabhar nan seòladh"
 
 #: ../updater/ab-update.cpp:268
 msgid "Contact sync upgrade complete."
-msgstr ""
+msgstr "Chaidh sioncronachadh an luchd-aithne a choileanadh."
 
 #: ../updater/ab-update.cpp:216
 msgid "Contacts app is updated already!"
-msgstr ""
+msgstr "Chaidh aplacaid an luchd-aithne ùrachadh mu thràth!"
 
 #: ../updater/ab-update.cpp:224
 msgid "Fail to authenticate!"
-msgstr ""
+msgstr "Dh’fhàillig an dearbhadh!"
 
 #: ../updater/ab-update.cpp:220
 msgid "Fail to connect to contact sync service!"
 msgstr ""
+"Cha b’ urrainn dhuinn ceangal ri seirbheis sioncronachadh an luchd-aithne!"
 
 #: ../updater/ab-update.cpp:218
 msgid "Fail to connect to internet!"
-msgstr ""
+msgstr "Cha b’ urrainn dhuinn ceangal ris an eadar-lìon!"
 
 #: ../updater/ab-update.cpp:222
 msgid "Fail to create sync profile!"
-msgstr ""
+msgstr "Cha b’ urrainn dhuinn a’ phròifil sioncronachaidh a chruthachadh!"
 
 #: ../updater/ab-update.cpp:233
 msgid "Fail to sync contacts!"
-msgstr ""
+msgstr "Dh’fhàillig sioncronachadh an luchd-aithne!"
 
 #: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
 msgid "Fail to update"
-msgstr ""
+msgstr "Dh’fhàillig an t-ùrachadh"
 
 #: ../updater/ab-update.cpp:226
 msgid "Internal error during the sync!"
-msgstr ""
+msgstr "Thachair mearachd inntearnail rè an t-sioncronachaidh!"
 
 #: ../updater/ab-notify-message.cpp:93
 msgid "No"
@@ -91,34 +97,38 @@ msgstr "Chan eil"
 
 #: ../updater/ab-update.cpp:228
 msgid "Online account not found!"
-msgstr ""
+msgstr "Cha deach an cunntas air loidhne a lorg!"
 
 #: ../updater/ab-update.cpp:313
 msgid "To retry later open Contacts app and press the sync button."
 msgstr ""
+"Airson feuchainn ris a-rithist, fosgail aplacaid an luchd-aithne is brùth "
+"putan an t-sioncronachaidh."
 
 #: ../updater/ab-update.cpp:230
 msgid "Update already in progress!"
-msgstr ""
+msgstr "Tha ùrachadh a’ dol mu thràth!"
 
 #: ../lib/addressbook.cpp:1002
 msgid "Update complete"
-msgstr ""
+msgstr "Chaidh ùrachadh"
 
 #: ../lib/addressbook.cpp:995
 msgid "Update required"
-msgstr ""
+msgstr "Tha feum air ùrachadh"
 
 #: ../updater/ab-notify-message.cpp:88
 msgid "Yes"
-msgstr ""
+msgstr "Tha"
 
 #: ../lib/addressbook.cpp:997
 msgid ""
 "Your Contacts app needs to be upgraded. Only local contacts will be editable "
 "until upgrade is complete"
 msgstr ""
+"Tha aplacaid an luchd-aithne agad feumach air àrdachadh. Chan urrainn dhut "
+"ach luchd-aithne ionadail a dheasachadh gus am bi an t-àrdachadh deiseil."
 
 #: ../lib/addressbook.cpp:1004
 msgid "Your Contacts app upldate is complete."
-msgstr ""
+msgstr "Chaidh aplacaid an luchd-aithne agad a choileanadh."
