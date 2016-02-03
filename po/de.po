@@ -8,13 +8,13 @@ msgstr ""
 "Project-Id-Version: address-book-service\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: 2015-09-21 12:10-0300\n"
-"PO-Revision-Date: 2016-02-01 21:44+0000\n"
-"Last-Translator: Torsten Franz <Unknown>\n"
+"PO-Revision-Date: 2016-02-02 18:18+0000\n"
+"Last-Translator: Tobias Bannert <Unknown>\n"
 "Language-Team: German <de@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2016-02-02 05:44+0000\n"
+"X-Launchpad-Export-Date: 2016-02-03 05:57+0000\n"
 "X-Generator: Launchpad (build 17908)\n"
 
 #: ../updater/ab-update.cpp:355
@@ -22,16 +22,18 @@ msgstr ""
 msgid ""
 "%1 contact sync account needs upgrade. Please connect with the internet."
 msgstr ""
+"%1 Kontaktsynchronisierungskonto benötigt eine Aktualisierung. Bitte stellen "
+"Sie eine Internetverbindung her."
 
 #: ../updater/ab-update.cpp:107
 #, qt-format
 msgid "%1 contact sync account upgrade already in progress"
-msgstr ""
+msgstr "%1 Aktualisierung eines Kontaktsynchronisierungskontos läuft bereits"
 
 #: ../updater/ab-update.cpp:344
 #, qt-format
 msgid "%1 contact sync account upgrade in progress"
-msgstr ""
+msgstr "%1 Aktualisierung eines Kontaktsynchronisierungskontos läuft"
 
 #: ../updater/ab-update.cpp:288
 #, qt-format
@@ -45,27 +47,27 @@ msgstr ""
 #: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
 #: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
 msgid "Account update"
-msgstr "Konto-Aktualisierung"
+msgstr "Kontoaktualisierung"
 
 #: ../lib/addressbook.cpp:983
 msgid "Address book service"
-msgstr "Adressbuch-Service"
+msgstr "Adressbuchdienst"
 
 #: ../updater/ab-update.cpp:268
 msgid "Contact sync upgrade complete."
-msgstr ""
+msgstr "Kontaktsynchronisierung vollständig."
 
 #: ../updater/ab-update.cpp:216
 msgid "Contacts app is updated already!"
-msgstr ""
+msgstr "Kontakteanwendung wurde bereits aktualisiert!"
 
 #: ../updater/ab-update.cpp:224
 msgid "Fail to authenticate!"
-msgstr "Authentifizierung fehlgeschlagen!"
+msgstr "Legitimierung fehlgeschlagen!"
 
 #: ../updater/ab-update.cpp:220
 msgid "Fail to connect to contact sync service!"
-msgstr ""
+msgstr "Verbindung zum Synchronisierungsdienst ist fehlgeschlagen!"
 
 #: ../updater/ab-update.cpp:218
 msgid "Fail to connect to internet!"
@@ -93,11 +95,13 @@ msgstr "Nein"
 
 #: ../updater/ab-update.cpp:228
 msgid "Online account not found!"
-msgstr "Online-Konto nicht gefunden!"
+msgstr "Internetkonto nicht gefunden!"
 
 #: ../updater/ab-update.cpp:313
 msgid "To retry later open Contacts app and press the sync button."
 msgstr ""
+"Um es später noch einmal zu versuchen, bitte die Kontakteanwendung öffnen "
+"und auf den Synchronisierungsknopf drücken."
 
 #: ../updater/ab-update.cpp:230
 msgid "Update already in progress!"
@@ -120,7 +124,9 @@ msgid ""
 "Your Contacts app needs to be upgraded. Only local contacts will be editable "
 "until upgrade is complete"
 msgstr ""
+"Ihre Kontakteanwendung muss aktualisiert werden. Solange die Aktualisierung "
+"nicht beendet wurde, können nur lokale Kontakte bearbeitet werden."
 
 #: ../lib/addressbook.cpp:1004
 msgid "Your Contacts app upldate is complete."
-msgstr ""
+msgstr "Aktualisierung Ihrer Kontakteanwendung ist vollständig."
