@@ -1,0 +1,130 @@
+# Persian translation for address-book-service
+# Copyright (c) 2016 Rosetta Contributors and Canonical Ltd 2016
+# This file is distributed under the same license as the address-book-service package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2016.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: address-book-service\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2015-09-21 12:10-0300\n"
+"PO-Revision-Date: 2016-03-03 00:57+0000\n"
+"Last-Translator: Danial Behzadi <dani.behzi@gmail.com>\n"
+"Language-Team: Persian <fa@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Launchpad-Export-Date: 2016-03-03 06:11+0000\n"
+"X-Generator: Launchpad (build 17925)\n"
+
+#: ../updater/ab-update.cpp:355
+#, qt-format
+msgid ""
+"%1 contact sync account needs upgrade. Please connect with the internet."
+msgstr ""
+"حساب هم‌گام سازی آشنایان %1 نیاز به ارتقا دارد.لطفاً با اینترنت وصل شوید."
+
+#: ../updater/ab-update.cpp:107
+#, qt-format
+msgid "%1 contact sync account upgrade already in progress"
+msgstr "ارتقای حساب هم‌گام سازی آشنایان %1 هم‌اکنون در حال انجام است"
+
+#: ../updater/ab-update.cpp:344
+#, qt-format
+msgid "%1 contact sync account upgrade in progress"
+msgstr "ارتقای حساب هم‌گام سازی آشنایان %1 در حال انجام است"
+
+#: ../updater/ab-update.cpp:288
+#, qt-format
+msgid ""
+"%1.\n"
+"Do you want to retry now?"
+msgstr ""
+"%1.\n"
+"می‌خواهید کنون دوباره تلاش کنید؟"
+
+#: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
+#: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
+msgid "Account update"
+msgstr "به‌روز رسانی حساب"
+
+#: ../lib/addressbook.cpp:983
+msgid "Address book service"
+msgstr "خدمات دفترچه نشانی"
+
+#: ../updater/ab-update.cpp:268
+msgid "Contact sync upgrade complete."
+msgstr "ارتقای هم‌گام سازی آشنایان تمام شد."
+
+#: ../updater/ab-update.cpp:216
+msgid "Contacts app is updated already!"
+msgstr "کارهٔ آشنایان هم‌اکنون به‌روز است!"
+
+#: ../updater/ab-update.cpp:224
+msgid "Fail to authenticate!"
+msgstr "تأیید اعتبار شکست خورد!"
+
+#: ../updater/ab-update.cpp:220
+msgid "Fail to connect to contact sync service!"
+msgstr "اتّصال به خدمت هم‌گام سازی آشنایان شکست خورد!"
+
+#: ../updater/ab-update.cpp:218
+msgid "Fail to connect to internet!"
+msgstr "اتّصال به اینترنت شکست خورد!"
+
+#: ../updater/ab-update.cpp:222
+msgid "Fail to create sync profile!"
+msgstr "ایجاد نمایهٔ هم‌گام سازی شکست خورد!"
+
+#: ../updater/ab-update.cpp:233
+msgid "Fail to sync contacts!"
+msgstr "هم‌گام سازی آشنایان شکست خورد!"
+
+#: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
+msgid "Fail to update"
+msgstr "به‌روز رسانی شکست خورد"
+
+#: ../updater/ab-update.cpp:226
+msgid "Internal error during the sync!"
+msgstr "خطای داخلی هنگام هم‌گام سازی!"
+
+#: ../updater/ab-notify-message.cpp:93
+msgid "No"
+msgstr "نه"
+
+#: ../updater/ab-update.cpp:228
+msgid "Online account not found!"
+msgstr "حساب برخط پیدا نشد!"
+
+#: ../updater/ab-update.cpp:313
+msgid "To retry later open Contacts app and press the sync button."
+msgstr ""
+"برای تلاش دوباره، بعداً کارهٔ آشنایان را گشوده و دکمهٔ هم‌گام سازی را بزنید."
+
+#: ../updater/ab-update.cpp:230
+msgid "Update already in progress!"
+msgstr "به‌روز رسانی هم‌اکنون در حال انجام است!"
+
+#: ../lib/addressbook.cpp:1002
+msgid "Update complete"
+msgstr "به‌روز رسانی کامل شد"
+
+#: ../lib/addressbook.cpp:995
+msgid "Update required"
+msgstr "نیاز به به‌روز رسانی است"
+
+#: ../updater/ab-notify-message.cpp:88
+msgid "Yes"
+msgstr "بله"
+
+#: ../lib/addressbook.cpp:997
+msgid ""
+"Your Contacts app needs to be upgraded. Only local contacts will be editable "
+"until upgrade is complete"
+msgstr ""
+"کارهٔ آشنایانتان نیاز به ارتقا دارد. تا پایان ارتقا، فقط آشنایان محلّی قابل "
+"ویرایشند"
+
+#: ../lib/addressbook.cpp:1004
+msgid "Your Contacts app upldate is complete."
+msgstr "به‌روز رسانی کارهٔ آشنایانتان کامل شد."
