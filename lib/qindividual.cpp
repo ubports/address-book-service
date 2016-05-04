@@ -1705,8 +1705,24 @@ QString QIndividual::displayName(const QContact &contact)
     if (fallbackLabel.isEmpty()) {
         QContactName name = contact.detail<QContactName>();
         if (!name.isEmpty()) {
-            QString fullName = QString("%1 %2").arg(name.firstName()).arg(name.lastName());
-            fallbackLabel = fullName.trimmed();
+            QStringList names;
+            if (!name.prefix().isEmpty()) {
+                names << name.prefix();
+            }
+            if (!name.firstName().isEmpty()) {
+                names << name.firstName();
+            }
+            if (!name.middleName().isEmpty()) {
+                names << name.middleName();
+            }
+            if (!name.lastName().isEmpty()) {
+                names << name.lastName();
+            }
+            if (!name.suffix().isEmpty()) {
+                names << name.suffix();
+            }
+
+            fallbackLabel = names.join(" ").trimmed();
         }
     }
 
