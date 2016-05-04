@@ -366,8 +366,8 @@ private Q_SLOTS:
         QList<QContact> contacts = m_manager->contacts(ids);
 
         QCOMPARE(contacts[0].details<QContactTag>().size(), 1);
-        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("Fulano Tal"));
-        QCOMPARE(contacts[0].detail<QContactTag>().tag(), QStringLiteral("FULANO TAL"));
+        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("Fulano de Tal"));
+        QCOMPARE(contacts[0].detail<QContactTag>().tag(), QStringLiteral("FULANO DE TAL"));
 
         // Change contact name
         name = contact.detail<QContactName>();
@@ -377,8 +377,8 @@ private Q_SLOTS:
 
         contacts = m_manager->contacts(ids);
         QCOMPARE(contacts[0].details<QContactTag>().size(), 1);
-        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("xFulano Tal"));
-        QCOMPARE(contacts[0].detail<QContactTag>().tag(), QStringLiteral("XFULANO TAL"));
+        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("xFulano de Tal"));
+        QCOMPARE(contacts[0].detail<QContactTag>().tag(), QStringLiteral("XFULANO DE TAL"));
     }
 
     void testContactChangeOrder()
@@ -427,10 +427,10 @@ private Q_SLOTS:
         QContactFilter filter;
         QList<QContact> contacts = m_manager->contacts(filter);
 
-        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("A Tal"));
-        QCOMPARE(contacts[1].detail<QContactDisplayLabel>().label(), QStringLiteral("B Tal"));
-        QCOMPARE(contacts[2].detail<QContactDisplayLabel>().label(), QStringLiteral("C Tal"));
-        QCOMPARE(contacts[3].detail<QContactDisplayLabel>().label(), QStringLiteral("D Tal"));
+        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("A de Tal"));
+        QCOMPARE(contacts[1].detail<QContactDisplayLabel>().label(), QStringLiteral("B de Tal"));
+        QCOMPARE(contacts[2].detail<QContactDisplayLabel>().label(), QStringLiteral("C de Tal"));
+        QCOMPARE(contacts[3].detail<QContactDisplayLabel>().label(), QStringLiteral("D de Tal"));
 
         // Update contact B name
         contactB = contacts[1];
@@ -443,10 +443,10 @@ private Q_SLOTS:
         contacts = m_manager->contacts(filter);
 
         // check new order
-        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("A Tal"));
-        QCOMPARE(contacts[1].detail<QContactDisplayLabel>().label(), QStringLiteral("C Tal"));
-        QCOMPARE(contacts[2].detail<QContactDisplayLabel>().label(), QStringLiteral("D Tal"));
-        QCOMPARE(contacts[3].detail<QContactDisplayLabel>().label(), QStringLiteral("X Tal"));
+        QCOMPARE(contacts[0].detail<QContactDisplayLabel>().label(), QStringLiteral("A de Tal"));
+        QCOMPARE(contacts[1].detail<QContactDisplayLabel>().label(), QStringLiteral("C de Tal"));
+        QCOMPARE(contacts[2].detail<QContactDisplayLabel>().label(), QStringLiteral("D de Tal"));
+        QCOMPARE(contacts[3].detail<QContactDisplayLabel>().label(), QStringLiteral("X de Tal"));
     }
 
     /*
