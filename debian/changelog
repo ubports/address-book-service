@@ -1,3 +1,9 @@
+address-book-service (0.1.1+16.10.20160520-0ubuntu1) yakkety; urgency=medium
+
+  * Use middle name value on display name. (LP: #1375933, #1548783)
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Fri, 20 May 2016 14:23:25 +0000
+
 address-book-service (0.1.1+16.04.20151211.1-0ubuntu1) xenial; urgency=medium
 
   * Implement source update functionality. (LP: #1511471)
