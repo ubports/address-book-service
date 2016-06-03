@@ -1,0 +1,11 @@
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@/evolution-data-server-ubuntu/
+          
+Name: evolution-data-server-ubuntu
+Description: EDS extension used by Ubuntu apps
+Version: 1.0
+Libs: -L${libdir} -lubuntu-source-eds
+Cflags: -I${includedir}
+Requires: libedataserver-1.2
+
+

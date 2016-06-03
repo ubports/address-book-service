@@ -87,6 +87,10 @@ gboolean        e_source_ubuntu_get_autoremove      (ESourceUbuntu *extension);
 void            e_source_ubuntu_set_autoremove      (ESourceUbuntu *extension,
                                                      gboolean flag);
 
+gboolean        e_source_ubuntu_get_writable        (ESourceUbuntu *extension);
+void            e_source_ubuntu_set_writable        (ESourceUbuntu *extension,
+                                                     gboolean flag);
+
 const gchar *   e_source_ubuntu_get_account_provider(ESourceUbuntu *extension);
 gchar *         e_source_ubuntu_dup_account_provider(ESourceUbuntu *extension);
 

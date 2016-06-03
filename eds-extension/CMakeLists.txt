@@ -13,12 +13,17 @@ execute_process(
     OUTPUT_VARIABLE EDS_MODULES_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+set(UBUNTU_SOURCE_PC_FILE evolution-data-server-ubuntu.pc)
+configure_file(${UBUNTU_SOURCE_PC_FILE}.in ${CMAKE_CURRENT_BINARY_DIR}/${UBUNTU_SOURCE_PC_FILE} @ONLY)
 
 # Ubuntu Source
 set(UBUNTU_SOURCE_LIB ubuntu-source-eds)
+set(UBUNTU_SOURCE_LIB_HEADERS
+    e-source-ubuntu.h
+)
 set(UBUNTU_SOURCE_LIB_SRCS
     e-source-ubuntu.c
-    e-source-ubuntu.h
+    ${UBUNTU_SOURCE_LIB_HEADERS}
 )
 add_library(${UBUNTU_SOURCE_LIB} SHARED
     ${UBUNTU_SOURCE_LIB_SRCS}
@@ -31,6 +36,12 @@ target_link_libraries(${UBUNTU_SOURCE_LIB}
 )
 install(TARGETS ${UBUNTU_SOURCE_LIB}
     LIBRARY DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR}
+)
+install(FILES ${UBUNTU_SOURCE_LIB_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/evolution-data-server-ubuntu
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${UBUNTU_SOURCE_PC_FILE}
+    DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}/pkgconfig/
 )
 
 # Module Ubuntu Sources

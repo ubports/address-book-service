@@ -39,6 +39,7 @@ struct _ESourceUbuntuPrivate {
     guint account_id;
     gchar *application_id;
     gboolean auto_remove;
+    gboolean writable;
     gchar *provider;
     AgAccount *account;
 };
@@ -48,7 +49,8 @@ enum {
     PROP_ACCOUNT_ID,
     PROP_APPLICATION_ID,
     PROP_AUTOREMOVE,
-    PROP_ACCOUNT_PROVIDER
+    PROP_ACCOUNT_PROVIDER,
+    PROP_WRITABLE
 };
 
 G_DEFINE_TYPE (
@@ -76,6 +78,11 @@ source_ubuntu_set_property (GObject *object,
         case PROP_AUTOREMOVE:
             e_source_ubuntu_set_autoremove (E_SOURCE_UBUNTU (object),
                                             g_value_get_boolean (value));
+            return;
+        case PROP_WRITABLE:
+            e_source_ubuntu_set_writable (E_SOURCE_UBUNTU (object),
+                                          g_value_get_boolean (value));
+
             return;
     }
 
@@ -109,6 +116,10 @@ source_ubuntu_get_property (GObject *object,
                                  e_source_ubuntu_dup_account_provider (E_SOURCE_UBUNTU (object)));
             return;
 
+        case PROP_WRITABLE:
+            g_value_set_boolean (value,
+                                 e_source_ubuntu_get_writable (E_SOURCE_UBUNTU (object)));
+            return;
     }
 
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -198,6 +209,19 @@ e_source_ubuntu_class_init (ESourceUbuntuClass *klass)
             NULL,
             G_PARAM_READABLE |
             G_PARAM_STATIC_STRINGS));
+
+    g_object_class_install_property (
+        object_class,
+        PROP_WRITABLE,
+        g_param_spec_boolean (
+            "writable",
+            "Writable source",
+            "Writable source",
+            TRUE,
+            G_PARAM_READWRITE |
+            G_PARAM_CONSTRUCT |
+            G_PARAM_STATIC_STRINGS |
+            E_SOURCE_PARAM_SETTING));
 }
 
 static void
@@ -407,4 +431,52 @@ e_source_ubuntu_set_autoremove(ESourceUbuntu *extension,
     g_mutex_unlock (&extension->priv->property_lock);
 
     g_object_notify (G_OBJECT (extension), "auto-remove");
+}
+
+/**
+ * e_source_ubuntu_get_writable:
+ * @extension: an #ESourceUbuntu
+ *
+ * This can be used as extra flag.
+ * For example for sources that are created from read-only remote sources.
+ *
+ * Returns: True if the source is marked as writable or False if not.
+ *
+ **/
+gboolean
+e_source_ubuntu_get_writable(ESourceUbuntu *extension)
+{
+    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), FALSE);
+
+    return extension->priv->writable;
+}
+
+/**
+ * e_source_ubuntu_set_writable:
+ * @extension: an #ESourceUbuntu
+ *
+ * This can be used as extra flag.
+ * For example for sources that are created from read-only remote sources.
+ *
+ * Sets if the source should be considered writable or not.
+ *
+ **/
+void
+e_source_ubuntu_set_writable(ESourceUbuntu *extension,
+                               gboolean flag)
+{
+    g_return_if_fail (E_IS_SOURCE_UBUNTU (extension));
+
+    g_mutex_lock (&extension->priv->property_lock);
+
+    if (extension->priv->writable == flag) {
+        g_mutex_unlock (&extension->priv->property_lock);
+        return;
+    }
+
+    extension->priv->writable = flag;
+
+    g_mutex_unlock (&extension->priv->property_lock);
+
+    g_object_notify (G_OBJECT (extension), "writable");
 }
