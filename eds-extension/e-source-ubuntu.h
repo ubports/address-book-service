@@ -94,6 +94,11 @@ void            e_source_ubuntu_set_writable        (ESourceUbuntu *extension,
 const gchar *   e_source_ubuntu_get_account_provider(ESourceUbuntu *extension);
 gchar *         e_source_ubuntu_dup_account_provider(ESourceUbuntu *extension);
 
+const gchar *   e_source_ubuntu_get_metadata        (ESourceUbuntu *extension);
+gchar *         e_source_ubuntu_dup_metadata        (ESourceUbuntu *extension);
+void            e_source_ubuntu_set_metadata        (ESourceUbuntu *extension,
+                                                     const gchar *metadata);
+
 G_END_DECLS
 
 #endif /* E_SOURCE_UBUNTU_H */
