@@ -213,17 +213,6 @@ e_source_ubuntu_class_init (ESourceUbuntuClass *klass)
 
     g_object_class_install_property (
         object_class,
-        PROP_ACCOUNT_PROVIDER,
-        g_param_spec_string (
-            "account-provider",
-            "Provider name",
-            "Online Account Provider name",
-            NULL,
-            G_PARAM_READABLE |
-            G_PARAM_STATIC_STRINGS));
-
-    g_object_class_install_property (
-        object_class,
         PROP_WRITABLE,
         g_param_spec_boolean (
             "writable",
@@ -247,6 +236,17 @@ e_source_ubuntu_class_init (ESourceUbuntuClass *klass)
             G_PARAM_CONSTRUCT |
             G_PARAM_STATIC_STRINGS |
             E_SOURCE_PARAM_SETTING));
+
+    g_object_class_install_property (
+        object_class,
+        PROP_ACCOUNT_PROVIDER,
+        g_param_spec_string (
+            "account-provider",
+            "Provider name",
+            "Online Account Provider name",
+            NULL,
+            G_PARAM_READABLE |
+            G_PARAM_STATIC_STRINGS));
 }
 
 static void

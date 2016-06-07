@@ -166,19 +166,22 @@ ubuntu_sources_register_source (EUbuntuSources *extension,
 {
     ESourceUbuntu *ubuntu_ext;
     AgAccountId ag_account_id;
-    AgAccount *ag_account;
+    AgAccount *ag_account = NULL;
 
     g_debug("Register new source: %s/%s", e_source_get_display_name(source),
             e_source_get_uid(source));
 
     if (!e_source_has_extension (source, E_SOURCE_EXTENSION_UBUNTU)) {
+        g_debug("\tSource does not have ubuntu extension!");
         return FALSE;
     }
 
     ubuntu_ext = e_source_get_extension (source, E_SOURCE_EXTENSION_UBUNTU);
     ag_account_id = e_source_ubuntu_get_account_id (ubuntu_ext);
-    ag_account = ag_manager_get_account (extension->ag_manager,
-                                         ag_account_id);
+    if (ag_account_id > 0) {
+        ag_account = ag_manager_get_account (extension->ag_manager,
+                                             ag_account_id);
+    }
 
     if (ag_account) {
         GSList *eds_id_list;
