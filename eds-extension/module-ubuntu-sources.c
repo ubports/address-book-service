@@ -128,6 +128,10 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
     GSList *link;
     GQueue trash = G_QUEUE_INIT;
 
+    if (ag_account_id == 0) {
+        return;
+    }
+
     server = ubuntu_sources_get_server (extension);
 
     eds_id_list = g_hash_table_lookup (extension->uoa_to_eds,
@@ -181,6 +185,9 @@ ubuntu_sources_register_source (EUbuntuSources *extension,
     if (ag_account_id > 0) {
         ag_account = ag_manager_get_account (extension->ag_manager,
                                              ag_account_id);
+    } else {
+        // accept sources with empty account
+        return TRUE;
     }
 
     if (ag_account) {
