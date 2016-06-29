@@ -310,6 +310,9 @@ ubuntu_sources_bus_acquired_cb (EDBusServer *server,
 {
     g_debug("loading ubuntu sources");
 
+    if (extension->ag_manager != NULL)
+        return;
+
     extension->ag_manager = ag_manager_new ();
 
     /* This populates a hash table of UOA ID -> ESource UID strings by
@@ -420,6 +423,7 @@ e_ubuntu_sources_destroy_eds_id_slist (GSList *eds_id_list)
 static void
 e_ubuntu_sources_init (EUbuntuSources *extension)
 {
+    extension->ag_manager = NULL;
     extension->uoa_to_eds = g_hash_table_new_full (
         (GHashFunc) g_direct_hash,
         (GEqualFunc) g_direct_equal,

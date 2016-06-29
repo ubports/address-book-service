@@ -309,6 +309,7 @@ e_source_ubuntu_set_account_id (ESourceUbuntu *extension,
     if (account_id != 0) {
         AgManager *manager = ag_manager_new ();
         extension->priv->account = ag_manager_get_account (manager, account_id);
+        g_object_unref (manager);
     }
 
     g_mutex_unlock (&extension->priv->property_lock);
