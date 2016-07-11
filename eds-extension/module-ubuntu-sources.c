@@ -128,6 +128,10 @@ ubuntu_sources_account_deleted_cb (AgManager *ag_manager,
     GSList *link;
     GQueue trash = G_QUEUE_INIT;
 
+    if (ag_account_id == 0) {
+        return;
+    }
+
     server = ubuntu_sources_get_server (extension);
 
     eds_id_list = g_hash_table_lookup (extension->uoa_to_eds,
@@ -166,19 +170,25 @@ ubuntu_sources_register_source (EUbuntuSources *extension,
 {
     ESourceUbuntu *ubuntu_ext;
     AgAccountId ag_account_id;
-    AgAccount *ag_account;
+    AgAccount *ag_account = NULL;
 
     g_debug("Register new source: %s/%s", e_source_get_display_name(source),
             e_source_get_uid(source));
 
     if (!e_source_has_extension (source, E_SOURCE_EXTENSION_UBUNTU)) {
+        g_debug("\tSource does not have ubuntu extension!");
         return FALSE;
     }
 
     ubuntu_ext = e_source_get_extension (source, E_SOURCE_EXTENSION_UBUNTU);
     ag_account_id = e_source_ubuntu_get_account_id (ubuntu_ext);
-    ag_account = ag_manager_get_account (extension->ag_manager,
-                                         ag_account_id);
+    if (ag_account_id > 0) {
+        ag_account = ag_manager_get_account (extension->ag_manager,
+                                             ag_account_id);
+    } else {
+        // accept sources with empty account
+        return TRUE;
+    }
 
     if (ag_account) {
         GSList *eds_id_list;
@@ -300,6 +310,9 @@ ubuntu_sources_bus_acquired_cb (EDBusServer *server,
 {
     g_debug("loading ubuntu sources");
 
+    if (extension->ag_manager != NULL)
+        return;
+
     extension->ag_manager = ag_manager_new ();
 
     /* This populates a hash table of UOA ID -> ESource UID strings by
@@ -410,6 +423,7 @@ e_ubuntu_sources_destroy_eds_id_slist (GSList *eds_id_list)
 static void
 e_ubuntu_sources_init (EUbuntuSources *extension)
 {
+    extension->ag_manager = NULL;
     extension->uoa_to_eds = g_hash_table_new_full (
         (GHashFunc) g_direct_hash,
         (GEqualFunc) g_direct_equal,

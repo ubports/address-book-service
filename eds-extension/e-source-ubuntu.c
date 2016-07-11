@@ -39,7 +39,9 @@ struct _ESourceUbuntuPrivate {
     guint account_id;
     gchar *application_id;
     gboolean auto_remove;
+    gboolean writable;
     gchar *provider;
+    gchar *metadata;
     AgAccount *account;
 };
 
@@ -48,7 +50,9 @@ enum {
     PROP_ACCOUNT_ID,
     PROP_APPLICATION_ID,
     PROP_AUTOREMOVE,
-    PROP_ACCOUNT_PROVIDER
+    PROP_ACCOUNT_PROVIDER,
+    PROP_WRITABLE,
+    PROP_METADATA
 };
 
 G_DEFINE_TYPE (
@@ -76,6 +80,15 @@ source_ubuntu_set_property (GObject *object,
         case PROP_AUTOREMOVE:
             e_source_ubuntu_set_autoremove (E_SOURCE_UBUNTU (object),
                                             g_value_get_boolean (value));
+            return;
+        case PROP_WRITABLE:
+            e_source_ubuntu_set_writable (E_SOURCE_UBUNTU (object),
+                                          g_value_get_boolean (value));
+            return;
+
+        case PROP_METADATA:
+            e_source_ubuntu_set_metadata (E_SOURCE_UBUNTU (object),
+                                          g_value_get_string (value));
             return;
     }
 
@@ -109,6 +122,15 @@ source_ubuntu_get_property (GObject *object,
                                  e_source_ubuntu_dup_account_provider (E_SOURCE_UBUNTU (object)));
             return;
 
+        case PROP_WRITABLE:
+            g_value_set_boolean (value,
+                                 e_source_ubuntu_get_writable (E_SOURCE_UBUNTU (object)));
+            return;
+
+        case PROP_METADATA:
+            g_value_take_string (value,
+                                 e_source_ubuntu_dup_metadata(E_SOURCE_UBUNTU (object)));
+            return;
     }
 
     G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -128,6 +150,7 @@ source_ubuntu_finalize (GObject *object)
 
     g_free (priv->application_id);
     g_free (priv->provider);
+    g_free (priv->metadata);
 
     /* Chain up to parent's finalize() method. */
     G_OBJECT_CLASS (e_source_ubuntu_parent_class)->finalize (object);
@@ -183,6 +206,32 @@ e_source_ubuntu_class_init (ESourceUbuntuClass *klass)
             "Autoremove source",
             "Autoremove source",
             TRUE,
+            G_PARAM_READWRITE |
+            G_PARAM_CONSTRUCT |
+            G_PARAM_STATIC_STRINGS |
+            E_SOURCE_PARAM_SETTING));
+
+    g_object_class_install_property (
+        object_class,
+        PROP_WRITABLE,
+        g_param_spec_boolean (
+            "writable",
+            "Writable source",
+            "Writable source",
+            TRUE,
+            G_PARAM_READWRITE |
+            G_PARAM_CONSTRUCT |
+            G_PARAM_STATIC_STRINGS |
+            E_SOURCE_PARAM_SETTING));
+
+    g_object_class_install_property (
+        object_class,
+        PROP_METADATA,
+        g_param_spec_string (
+            "metadata",
+            "metadata",
+            "Source metadata",
+            NULL,
             G_PARAM_READWRITE |
             G_PARAM_CONSTRUCT |
             G_PARAM_STATIC_STRINGS |
@@ -260,6 +309,7 @@ e_source_ubuntu_set_account_id (ESourceUbuntu *extension,
     if (account_id != 0) {
         AgManager *manager = ag_manager_new ();
         extension->priv->account = ag_manager_get_account (manager, account_id);
+        g_object_unref (manager);
     }
 
     g_mutex_unlock (&extension->priv->property_lock);
@@ -407,4 +457,134 @@ e_source_ubuntu_set_autoremove(ESourceUbuntu *extension,
     g_mutex_unlock (&extension->priv->property_lock);
 
     g_object_notify (G_OBJECT (extension), "auto-remove");
+}
+
+/**
+ * e_source_ubuntu_get_writable:
+ * @extension: an #ESourceUbuntu
+ *
+ * This can be used as extra flag.
+ * For example for sources that are created from read-only remote sources.
+ *
+ * Returns: True if the source is marked as writable or False if not.
+ *
+ **/
+gboolean
+e_source_ubuntu_get_writable(ESourceUbuntu *extension)
+{
+    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), FALSE);
+
+    return extension->priv->writable;
+}
+
+/**
+ * e_source_ubuntu_set_writable:
+ * @extension: an #ESourceUbuntu
+ *
+ * This can be used as extra flag.
+ * For example for sources that are created from read-only remote sources.
+ *
+ * Sets if the source should be considered writable or not.
+ *
+ **/
+void
+e_source_ubuntu_set_writable(ESourceUbuntu *extension,
+                               gboolean flag)
+{
+    g_return_if_fail (E_IS_SOURCE_UBUNTU (extension));
+
+    g_mutex_lock (&extension->priv->property_lock);
+
+    if (extension->priv->writable == flag) {
+        g_mutex_unlock (&extension->priv->property_lock);
+        return;
+    }
+
+    extension->priv->writable = flag;
+
+    g_mutex_unlock (&extension->priv->property_lock);
+
+    g_object_notify (G_OBJECT (extension), "writable");
+}
+
+/**
+ * e_source_ubuntu_get_metadata:
+ * @extension: an #ESourceUbuntu
+ *
+ * Returns the metadata string of the application associated
+ * with the #ESource to which @extension belongs. Can be %NULL or an empty
+ * string.
+ *
+ * Returns: the associated metadata
+ *
+ **/
+const gchar *
+e_source_ubuntu_get_metadata (ESourceUbuntu *extension)
+{
+    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), NULL);
+
+    return extension->priv->metadata;
+}
+
+/**
+ * e_source_ubuntu_dup_metadata:
+ * @extension: an #ESourceUbuntu
+ *
+ * Thread-safe variation of e_source_ubuntu_get_metadata().
+ * Use this function when accessing @extension from multiple threads.
+ *
+ * The returned string should be freed with g_free() when no longer needed.
+ *
+ * Returns: a newly-allocated copy of #ESourceUbuntu:metadata
+ *
+ **/
+gchar *
+e_source_ubuntu_dup_metadata (ESourceUbuntu *extension)
+{
+    const gchar *metadata;
+    gchar *duplicate;
+
+    g_return_val_if_fail (E_IS_SOURCE_UBUNTU (extension), NULL);
+
+    g_mutex_lock (&extension->priv->property_lock);
+
+    metadata = e_source_ubuntu_get_metadata(extension);
+    duplicate = g_strdup (metadata);
+
+    g_mutex_unlock (&extension->priv->property_lock);
+
+    return duplicate;
+}
+
+/**
+ * e_source_ubuntu_set_metadata:
+ * @extension: an #ESourceUbuntu
+ * @metadata: (allow-none): the associated metadata, or %NULL
+ *
+ * Sets the metadata associated with the #ESource to which @extension belongs.
+ *
+ * The internal copy of @metadata is automatically stripped of leading
+ * and trailing whitespace.  If the resulting string is empty, %NULL is set
+ * instead.
+ *
+ **/
+void
+e_source_ubuntu_set_metadata (ESourceUbuntu *extension,
+                              const gchar *metadata)
+{
+    g_return_if_fail (E_IS_SOURCE_UBUNTU (extension));
+
+    g_mutex_lock (&extension->priv->property_lock);
+
+    if (g_strcmp0 (extension->priv->metadata, metadata) == 0) {
+        g_mutex_unlock (&extension->priv->property_lock);
+        return;
+    }
+
+    g_free (extension->priv->metadata);
+    extension->priv->metadata = e_util_strdup_strip (metadata);
+
+    g_mutex_unlock (&extension->priv->property_lock);
+
+    g_object_notify (G_OBJECT (extension), "metadata");
 }
