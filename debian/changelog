@@ -1,3 +1,10 @@
+address-book-service (0.1.1+16.10.20160711-0ubuntu1) yakkety; urgency=medium
+
+  * Created a debian package "evolution-data-server-ubuntu" to used by
+    others projects.
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Mon, 11 Jul 2016 15:02:10 +0000
+
 address-book-service (0.1.1+16.10.20160520-0ubuntu1) yakkety; urgency=medium
 
   * Use middle name value on display name. (LP: #1375933, #1548783)
