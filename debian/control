@@ -95,4 +95,9 @@ Depends: evolution-data-server-ubuntu (= ${binary:Version}),
          ${shlibs:Depends},
 Description: EDS extension used by Ubuntu apps
  An EDS extension used by Ubuntu apps to store metadata about the online account and sync infomation.
+ .
+ This package contains header files for evolution-data-server-ubuntu.
+
+
+
 
