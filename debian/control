@@ -94,6 +94,7 @@ Description: EDS extension used by Ubuntu Touch apps
 
 Package: evolution-data-server-utouch-dev
 Replaces: evolution-data-server-ubuntu-dev
+Breaks: evolution-data-server-ubuntu-dev
 Architecture: any
 Multi-Arch: same
 Depends: evolution-data-server-utouch (= ${binary:Version}),
