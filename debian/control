@@ -77,7 +77,8 @@ Depends: buteo-sync-plugins-contacts-google,
          ${misc:Depends},
          ${shlibs:Depends},
 Description: Ubuntu contact service updater
- A helper program to update address book service and address book app configuration and sync files.
+ A helper program to update address book service and address book app
+ configuration and sync files.
 
 Package: evolution-data-server-utouch
 Replaces: evolution-data-server-ubuntu
@@ -87,7 +88,8 @@ Multi-Arch: same
 Depends: ${misc:Depends},
          ${shlibs:Depends},
 Description: EDS extension used by Ubuntu Touch apps
- An EDS extension used by Ubuntu Touch apps to store extra metadata into EDS sources, used by address-book-service and qtorganizer5-eds.
+ An EDS extension used by Ubuntu Touch apps to store extra metadata into EDS
+ sources, used by address-book-service and qtorganizer5-eds.
 
 Package: evolution-data-server-ubuntu-dev
 Architecture: any
