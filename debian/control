@@ -35,7 +35,6 @@ Architecture: any
 Multi-Arch: same
 Depends: address-book-updater (= ${binary:Version}),
          evolution-data-server-utouch (= ${binary:Version}),
-         evolution-data-server-ubuntu (= ${binary:Version}),
          evolution-data-server(>= 3.12.11),
          libfolks-eds25,
          ${misc:Depends},
