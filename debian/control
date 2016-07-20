@@ -83,6 +83,7 @@ Description: Ubuntu contact service updater
 Package: evolution-data-server-utouch
 Replaces: evolution-data-server-ubuntu
 Conflicts: address-book-service (<< 0.1.1+16.10.20160520)
+Breaks: address-book-service (<< 0.1.1+16.10.20160520)
 Architecture: any
 Multi-Arch: same
 Depends: ${misc:Depends},
