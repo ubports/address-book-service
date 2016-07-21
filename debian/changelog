@@ -1,8 +1,8 @@
-address-book-service (0.1.2-0ubuntu1) UNRELEASED; urgency=medium
+address-book-service (0.1.2+16.10.20160721.1-0ubuntu1) yakkety; urgency=medium
 
   * Create a new package evolution-data-server-utouch.
 
- -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Wed, 20 Jul 2016 11:26:02 -0300
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Thu, 21 Jul 2016 14:38:28 +0000
 
 address-book-service (0.1.1+16.10.20160711-0ubuntu1) yakkety; urgency=medium
 
