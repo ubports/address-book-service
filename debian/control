@@ -34,7 +34,7 @@ Package: address-book-service
 Architecture: any
 Multi-Arch: same
 Depends: address-book-updater (= ${binary:Version}),
-         evolution-data-server-ubuntu (= ${binary:Version}),
+         evolution-data-server-utouch (= ${binary:Version}),
          evolution-data-server(>= 3.12.11),
          libfolks-eds25,
          ${misc:Depends},
@@ -77,24 +77,32 @@ Depends: buteo-sync-plugins-contacts-google,
          ${misc:Depends},
          ${shlibs:Depends},
 Description: Ubuntu contact service updater
- A helper program to update address book service and address book app configuration and sync files.
+ A helper program to update address book service and address book app
+ configuration and sync files.
 
-Package: evolution-data-server-ubuntu
+Package: evolution-data-server-utouch
+Replaces: evolution-data-server-ubuntu,
+          address-book-service (<< 0.1.2)
+Breaks: address-book-service (<< 0.1.2)
 Architecture: any
 Multi-Arch: same
 Depends: ${misc:Depends},
          ${shlibs:Depends},
-Description: EDS extension used by Ubuntu apps
- An EDS extension used by Ubuntu apps to store metadata about the online account and sync infomation.
+Description: EDS extension used by Ubuntu Touch apps
+ An EDS extension used by Ubuntu Touch apps to store extra metadata into EDS
+ sources, used by address-book-service and qtorganizer5-eds.
 
-Package: evolution-data-server-ubuntu-dev
+Package: evolution-data-server-utouch-dev
+Replaces: evolution-data-server-ubuntu-dev
+Breaks: evolution-data-server-ubuntu-dev
 Architecture: any
 Multi-Arch: same
-Depends: evolution-data-server-ubuntu (= ${binary:Version}),
+Depends: evolution-data-server-utouch (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends},
-Description: EDS extension used by Ubuntu apps
- An EDS extension used by Ubuntu apps to store metadata about the online account and sync infomation.
+Description: EDS extension used by Ubuntu Touch apps
+ An EDS extension used by Ubuntu Touch apps to store extra metadata into EDS
+ sources, used by address-book-service and qtorganizer5-eds.
  .
  This package contains header files for evolution-data-server-ubuntu.
 
