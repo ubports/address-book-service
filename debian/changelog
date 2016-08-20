@@ -1,8 +1,8 @@
-address-book-service (0.1.2+16.10.20160721.1-0ubuntu2) yakkety; urgency=medium
+address-book-service (0.1.2+16.10.20160820-0ubuntu1) yakkety; urgency=medium
 
   * No-change rebuild against latest evolution-data-server
 
- -- Jeremy Bicha <jbicha@ubuntu.com>  Fri, 19 Aug 2016 22:29:51 -0400
+ -- Jeremy Bicha <jbicha@ubuntu.com>  Sat, 20 Aug 2016 02:35:59 +0000
 
 address-book-service (0.1.2+16.10.20160721.1-0ubuntu1) yakkety; urgency=medium
 
