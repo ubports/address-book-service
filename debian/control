@@ -38,7 +38,7 @@ Depends: evolution-data-server-utouch (= ${binary:Version}),
          libfolks-eds25,
          ${misc:Depends},
          ${shlibs:Depends},
-Recommends: address-book-updater (= ${binary:Version}),
+Suggests: address-book-updater (= ${binary:Version}),
 Description: Ubuntu contact service
  A contact aggregator service, that exports all contact information through dbus.
 
