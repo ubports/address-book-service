@@ -1104,7 +1104,7 @@ FolksPersonaStore * AddressBook::getFolksStore(const QString &source)
         GError *gError = NULL;
         ESourceRegistry *registry = e_source_registry_new_sync (NULL, &gError);
         if (gError) {
-            qWarning() << "Fail to find EDS default souce";
+            qWarning() << "Fail to find EDS default source";
         } else {
             ESource *defaultAB = e_source_registry_ref_default_address_book(registry);
             if (defaultAB) {

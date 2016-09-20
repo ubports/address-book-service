@@ -40,15 +40,15 @@ class ViewAdaptor: public QDBusAbstractAdaptor
 "    <property name=\"count\" type=\"i\" access=\"read\"/>\n"
 "    <signal name=\"contactsUpdated\">\n"
 "      <arg direction=\"out\" type=\"i\" name=\"pos\"/>\n"
-"      <arg direction=\"out\" type=\"i\" name=\"lenght\"/>\n"
+"      <arg direction=\"out\" type=\"i\" name=\"length\"/>\n"
 "    </signal>\n"
 "    <signal name=\"contactsRemoved\">\n"
 "      <arg direction=\"out\" type=\"i\" name=\"pos\"/>\n"
-"      <arg direction=\"out\" type=\"i\" name=\"lenght\"/>\n"
+"      <arg direction=\"out\" type=\"i\" name=\"length\"/>\n"
 "    </signal>\n"
 "    <signal name=\"contactsAdded\">\n"
 "      <arg direction=\"out\" type=\"i\" name=\"pos\"/>\n"
-"      <arg direction=\"out\" type=\"i\" name=\"lenght\"/>\n"
+"      <arg direction=\"out\" type=\"i\" name=\"length\"/>\n"
 "    </signal>\n"
 "    <method name=\"sort\">\n"
 "      <arg direction=\"in\" type=\"s\" name=\"field\"/>\n"
@@ -81,9 +81,9 @@ public Q_SLOTS:
     void close();
 
 Q_SIGNALS:
-    void contactsAdded(int pos, int lenght);
-    void contactsRemoved(int pos, int lenght);
-    void contactsUpdated(int pos, int lenght);
+    void contactsAdded(int pos, int length);
+    void contactsRemoved(int pos, int length);
+    void contactsUpdated(int pos, int length);
     void countChanged(int count);
 
 private:
