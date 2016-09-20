@@ -1,3 +1,10 @@
+address-book-service (0.1.2+16.10.20160920-0ubuntu1) yakkety; urgency=medium
+
+  * Remove 'address-book-updater' as install dep. (LP: #1625172,
+    #1625642)
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Tue, 20 Sep 2016 21:41:36 +0000
+
 address-book-service (0.1.2+16.10.20160908-0ubuntu1) yakkety; urgency=medium
 
   * no change rebuild for libphonenumber7
