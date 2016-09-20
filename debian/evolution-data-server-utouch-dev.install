@@ -1,2 +1,2 @@
 usr/include/evolution-data-server-ubuntu/e-source-ubuntu.h
-usr/share/pkgconfig/evolution-data-server-ubuntu.pc
+usr/lib/*/pkgconfig/evolution-data-server-ubuntu.pc
