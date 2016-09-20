@@ -33,14 +33,14 @@ Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/address-book-service/trun
 Package: address-book-service
 Architecture: any
 Multi-Arch: same
-Depends: address-book-updater (= ${binary:Version}),
-         evolution-data-server-utouch (= ${binary:Version}),
+Depends: evolution-data-server-utouch (= ${binary:Version}),
          evolution-data-server(>= 3.12.11),
          libfolks-eds25,
          ${misc:Depends},
          ${shlibs:Depends},
+Suggests: address-book-updater (= ${binary:Version}),
 Description: Ubuntu contact service
- A contact aggregator service, that exports all contact information through dbus.
+ A contact aggregator service, that exports all contact information through D-Bus.
 
 Package: address-book-service-dummy
 Architecture: any
@@ -85,7 +85,6 @@ Replaces: evolution-data-server-ubuntu,
           address-book-service (<< 0.1.2)
 Breaks: address-book-service (<< 0.1.2)
 Architecture: any
-Multi-Arch: same
 Depends: ${misc:Depends},
          ${shlibs:Depends},
 Description: EDS extension used by Ubuntu Touch apps
@@ -96,7 +95,6 @@ Package: evolution-data-server-utouch-dev
 Replaces: evolution-data-server-ubuntu-dev
 Breaks: evolution-data-server-ubuntu-dev
 Architecture: any
-Multi-Arch: same
 Depends: evolution-data-server-utouch (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends},
@@ -105,7 +103,4 @@ Description: EDS extension used by Ubuntu Touch apps
  sources, used by address-book-service and qtorganizer5-eds.
  .
  This package contains header files for evolution-data-server-ubuntu.
-
-
-
 
