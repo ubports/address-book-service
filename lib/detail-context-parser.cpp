@@ -223,7 +223,7 @@ QStringList DetailContextParser::listParameters(FolksAbstractFieldDetails *detai
             continue;
         } else if (QString::fromUtf8(parameter) != "type") {
             if (!whiteList.contains(QString::fromUtf8(parameter))) {
-                qDebug() << "not suported field details" << parameter;
+                qDebug() << "not supported field details" << parameter;
                 // FIXME: check what to do with other parameters
             }
             continue;
