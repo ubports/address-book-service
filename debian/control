@@ -40,7 +40,7 @@ Depends: address-book-updater (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends},
 Description: Ubuntu contact service
- A contact aggregator service, that exports all contact information through dbus.
+ A contact aggregator service, that exports all contact information through D-Bus.
 
 Package: address-book-service-dummy
 Architecture: any
