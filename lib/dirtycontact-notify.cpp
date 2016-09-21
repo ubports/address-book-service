@@ -36,7 +36,7 @@ DirtyContactsNotify::DirtyContactsNotify(AddressBookAdaptor *adaptor, QObject *p
 
 void DirtyContactsNotify::insertAddedContacts(QSet<QString> ids)
 {
-    if (!m_adaptor->isReady()) {
+    if (!m_adaptor || !m_adaptor->isReady()) {
         return;
     }
 
@@ -71,7 +71,7 @@ void DirtyContactsNotify::clear()
 
 void DirtyContactsNotify::insertRemovedContacts(QSet<QString> ids)
 {
-    if (!m_adaptor->isReady()) {
+    if (!m_adaptor || !m_adaptor->isReady()) {
         return;
     }
 
@@ -90,7 +90,7 @@ void DirtyContactsNotify::insertRemovedContacts(QSet<QString> ids)
 
 void DirtyContactsNotify::insertChangedContacts(QSet<QString> ids)
 {
-    if (!m_adaptor->isReady()) {
+    if (!m_adaptor || !m_adaptor->isReady()) {
         return;
     }
 
