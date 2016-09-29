@@ -4,8 +4,6 @@ author "Bill Filler <bill.filler@canonical.com>"
 start on started dbus and xsession SESSION=ubuntu-touch
 stop on runlevel [06]
 
-respawn
-
 pre-start script
     echo "START `date`"
 end script
