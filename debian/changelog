@@ -1,3 +1,9 @@
+address-book-service (0.1.2+16.10.20161007-0ubuntu1) yakkety; urgency=medium
+
+  * Check if adaptor was destroyed before use it. (LP: #1518486)
+
+ -- Renato Araujo Oliveira Filho <renato.filho@canonical.com>  Fri, 07 Oct 2016 13:35:37 +0000
+
 address-book-service (0.1.2+16.10.20160920-0ubuntu1) yakkety; urgency=medium
 
   * Remove 'address-book-updater' as install dep. (LP: #1625172,
