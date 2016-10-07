@@ -23,6 +23,7 @@
 #include <QtCore/QTimer>
 #include <QtCore/QSet>
 #include <QtCore/QString>
+#include <QtCore/QPointer>
 
 namespace galera {
 
@@ -48,7 +49,7 @@ private Q_SLOTS:
     void emitSignals();
 
 private:
-    AddressBookAdaptor *m_adaptor;
+    QPointer<AddressBookAdaptor> m_adaptor;
     QTimer m_timer;
     QSet<QString> m_contactsChanged;
     QSet<QString> m_contactsAdded;
