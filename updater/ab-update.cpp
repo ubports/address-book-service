@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2015 Canonical Ltd.
  *
  * This file is part of address-book-service.
@@ -28,9 +28,9 @@
 #include <QtCore/QDir>
 #include <QtNetwork/QNetworkConfiguration>
 
-#define TRANSFER_ICON           "/usr/share/icons/suru/status/scalable/transfer-progress.svg"
-#define TRANSFER_ICON_PAUSED    "/usr/share/icons/suru/status/scalable/transfer-paused.svg"
-#define TRANSFER_ICON_ERROR     "/usr/share/icons/suru/status/scalable/transfer-error.svg"
+#define TRANSFER_ICON           "transfer-progress"
+#define TRANSFER_ICON_PAUSED    "transfer-paused"
+#define TRANSFER_ICON_ERROR     "transfer-error"
 
 
 ABUpdate::ABUpdate(QObject *parent)

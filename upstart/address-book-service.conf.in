@@ -14,4 +14,4 @@ post-stop script
     echo "STOP `date`"
 end script
 
-exec @CMAKE_INSTALL_FULL_LIBEXECDIR@/address-book-service
+exec $SNAP@CMAKE_INSTALL_FULL_LIBEXECDIR@/address-book-service

@@ -59,7 +59,7 @@
 #define SYNCMONITOR_DBUS_OBJECT_PATH     "/com/canonical/SyncMonitor"
 #define SYNCMONITOR_DBUS_INTERFACE       "com.canonical.SyncMonitor"
 
-#define TRANSFER_ICON           "/usr/share/icons/suru/status/scalable/transfer-progress.svg"
+#define TRANSFER_ICON           "transfer-progress"
 
 using namespace QtContacts;
 
