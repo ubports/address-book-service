@@ -1,0 +1,135 @@
+# Catalan translation for address-book-service
+# Copyright (c) 2016 Rosetta Contributors and Canonical Ltd 2016
+# This file is distributed under the same license as the address-book-service package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2016.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: address-book-service\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2015-09-21 12:10-0300\n"
+"PO-Revision-Date: 2016-12-07 15:50+0000\n"
+"Last-Translator: Walter Garcia-Fontes <walter.garcia@upf.edu>\n"
+"Language-Team: Catalan <ca@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Launchpad-Export-Date: 2016-12-08 04:57+0000\n"
+"X-Generator: Launchpad (build 18292)\n"
+
+#: ../updater/ab-update.cpp:355
+#, qt-format
+msgid ""
+"%1 contact sync account needs upgrade. Please connect with the internet."
+msgstr ""
+"Al compte de sincronització de contactes %1 li cal actualitzar-se. Si us "
+"plau connecteu-vos a Internet."
+
+#: ../updater/ab-update.cpp:107
+#, qt-format
+msgid "%1 contact sync account upgrade already in progress"
+msgstr ""
+"L'actualització de compte de sincronització de contactes %1 ja s'està "
+"actualitzant"
+
+#: ../updater/ab-update.cpp:344
+#, qt-format
+msgid "%1 contact sync account upgrade in progress"
+msgstr ""
+"L'actualització de compte de sincronització de contactes %1 està en marxa"
+
+#: ../updater/ab-update.cpp:288
+#, qt-format
+msgid ""
+"%1.\n"
+"Do you want to retry now?"
+msgstr ""
+"%1.\n"
+"Voleu tornar a provar ara?"
+
+#: ../updater/ab-update.cpp:106 ../updater/ab-update.cpp:267
+#: ../updater/ab-update.cpp:343 ../updater/ab-update.cpp:354
+msgid "Account update"
+msgstr "Actualització del compte"
+
+#: ../lib/addressbook.cpp:983
+msgid "Address book service"
+msgstr "Servei de llibreta d'adreces"
+
+#: ../updater/ab-update.cpp:268
+msgid "Contact sync upgrade complete."
+msgstr "S'ha completat l'actuatlització de la sincronització de contactes."
+
+#: ../updater/ab-update.cpp:216
+msgid "Contacts app is updated already!"
+msgstr "L'aplicació de contactes ja està actualitzada!"
+
+#: ../updater/ab-update.cpp:224
+msgid "Fail to authenticate!"
+msgstr "No s'ha pogut autenticar!"
+
+#: ../updater/ab-update.cpp:220
+msgid "Fail to connect to contact sync service!"
+msgstr "Ha fallat la connexió al servei de sincronització de contactes!"
+
+#: ../updater/ab-update.cpp:218
+msgid "Fail to connect to internet!"
+msgstr "No s'ha pogut connectar a Internet!"
+
+#: ../updater/ab-update.cpp:222
+msgid "Fail to create sync profile!"
+msgstr "No s'ha pogut crear el perfil de sincronització!"
+
+#: ../updater/ab-update.cpp:233
+msgid "Fail to sync contacts!"
+msgstr "No s'han pogut sincronitzar els contactes!"
+
+#: ../updater/ab-update.cpp:287 ../updater/ab-update.cpp:312
+msgid "Fail to update"
+msgstr "No s'ha pogut actualitzar"
+
+#: ../updater/ab-update.cpp:226
+msgid "Internal error during the sync!"
+msgstr "Error intern durant la sincronització!"
+
+#: ../updater/ab-notify-message.cpp:93
+msgid "No"
+msgstr "No"
+
+#: ../updater/ab-update.cpp:228
+msgid "Online account not found!"
+msgstr "No s'ha trobat el compte en línia!"
+
+#: ../updater/ab-update.cpp:313
+msgid "To retry later open Contacts app and press the sync button."
+msgstr ""
+"Per tornar a provar més tard obriu l'aplicació Contactes i premeu el botó de "
+"sincronització."
+
+#: ../updater/ab-update.cpp:230
+msgid "Update already in progress!"
+msgstr "L'actualització ja està en marxa!"
+
+#: ../lib/addressbook.cpp:1002
+msgid "Update complete"
+msgstr "Actualització completada"
+
+#: ../lib/addressbook.cpp:995
+msgid "Update required"
+msgstr "Es requereix una actualització"
+
+#: ../updater/ab-notify-message.cpp:88
+msgid "Yes"
+msgstr "Sí"
+
+#: ../lib/addressbook.cpp:997
+msgid ""
+"Your Contacts app needs to be upgraded. Only local contacts will be editable "
+"until upgrade is complete"
+msgstr ""
+"A la vostra aplicació Contactes li cal ser actualitzada. Sols es podran "
+"editar els contactes locals fins que es completi l'actualització"
+
+#: ../lib/addressbook.cpp:1004
+msgid "Your Contacts app upldate is complete."
+msgstr "L'actualització de la vostra aplicació Contactes s'ha completat."
