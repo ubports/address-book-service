@@ -425,6 +425,40 @@ private Q_SLOTS:
          QString vcard = VCardParser::contactToVcard(c);
          QVERIFY(vcard.contains("UID:11"));
      }
+
+     /*
+      * Test parse a vcard with irc
+      */
+     void testVCardWithIrc()
+     {
+         QString vcard = QStringLiteral("BEGIN:VCARD\r\n"
+                                        "VERSION:3.0\r\n"
+                                        "N:Sauro;Dino;da Silva;;\r\n"
+                                        "X-IRC:myIRC\r\n"
+                                        "REV:2015-04-14T21:56:56Z(2300)\r\n"
+                                        "END:VCARD\r\n");
+         QContact contact = VCardParser::vcardToContact(vcard);
+         QList<QContactOnlineAccount> accs = contact.details<QContactOnlineAccount>();
+         QCOMPARE(accs.size(), 1);
+
+         QContactOnlineAccount acc = accs.at(0);
+         QCOMPARE(acc.protocol(), QContactOnlineAccount::ProtocolIrc);
+         QCOMPARE(acc.accountUri(), QStringLiteral("myIRC"));
+     }
+
+     void testContactWithIrc()
+     {
+         QContact c = m_contacts[0];
+
+         QContactOnlineAccount acc;
+         acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
+         acc.setAccountUri(QStringLiteral("myIRC"));
+         c.saveDetail(&acc);
+
+         QString vcard = VCardParser::contactToVcard(c);
+         qDebug() << "VCARD:" << vcard;
+         QVERIFY(vcard.contains("X-IRC:myIRC"));
+     }
 };
 
 QTEST_MAIN(VCardParseTest)

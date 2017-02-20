@@ -73,6 +73,17 @@ namespace
                 *toBeAdded << prop;
             }
 
+            // export IRC online account
+            if (detail.type() == QContactDetail::TypeOnlineAccount) {
+                QContactOnlineAccount acc = static_cast<QContactOnlineAccount>(detail);
+                if (acc.protocol() == QContactOnlineAccount::ProtocolIrc) {
+                    QVersitProperty prop;
+                    prop.setName(QStringLiteral("X-IRC"));
+                    prop.setValue(acc.accountUri());
+                    *toBeAdded << prop;
+                }
+            }
+
             if (toBeAdded->size() == 0) {
                 return;
             }
@@ -167,6 +178,21 @@ namespace
                 }
                 *updatedDetails  << target;
                 *alreadyProcessed = true;
+            }
+
+            // IRC FIELDS
+            if (!*alreadyProcessed && (property.name().startsWith("X-IRC"))) {
+                QContactOnlineAccount acc;
+                acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
+                acc.setAccountUri(property.value());
+                *updatedDetails << acc;
+                // this will be a virtual field, the IRC filed will be stored as extended detail
+                // because EDS dos not support it
+                QContactExtendedDetail xDet;
+                xDet.setName(property.name());
+                xDet.setData(property.value<QString>());
+                *updatedDetails  << xDet;
+
             }
 
             if (!*alreadyProcessed && (property.name().startsWith("X-"))) {
