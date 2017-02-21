@@ -29,9 +29,6 @@ using namespace QtContacts;
 
 namespace galera {
 
-// these protocols are not supported by EDS, need to be saved as X-* fields;
-static QList<QContactOnlineAccount::Protocol> onlineAccountsProtocolBlackList;
-
 template<>
 bool sortDetails<QContactDetail::TypePhoneNumber>(const QContactDetail &d1, const QContactDetail &d2)
 {
@@ -56,9 +53,6 @@ UpdateContactRequest::UpdateContactRequest(QtContacts::QContact newContact, QInd
       m_newContact(newContact),
       m_currentPersonaIndex(0)
 {
-    if (onlineAccountsProtocolBlackList.isEmpty()) {
-        onlineAccountsProtocolBlackList << QContactOnlineAccount::ProtocolIrc;
-    }
     int slotIndex = listener->metaObject()->indexOfSlot(++slot);
     if (slotIndex == -1) {
         qWarning() << "Invalid slot:" << slot << "for object" << listener;
@@ -163,30 +157,6 @@ bool UpdateContactRequest::isEqual(QList<QtContacts::QContactDetail> listA,
         qSort(listA.begin(), listA.end(), sortDetails<QContactDetail::TypeEmailAddress>);
         qSort(listB.begin(), listB.end(), sortDetails<QContactDetail::TypeEmailAddress>);
         break;
-    case QContactDetail::TypeOnlineAccount:
-    {
-        // remove blacklisted protocols to avoid try to save it
-        QList<QtContacts::QContactDetail>::iterator i = listA.begin();
-        while (i != listA.end())
-        {
-            if (onlineAccountsProtocolBlackList.contains(static_cast<QtContacts::QContactOnlineAccount>(*i).protocol())) {
-                listA.erase(i++);
-            } else {
-                ++i;
-            }
-        }
-
-        i = listB.begin();
-        while (i != listB.end())
-        {
-            if (onlineAccountsProtocolBlackList.contains(static_cast<QtContacts::QContactOnlineAccount>(*i).protocol())) {
-                listB.erase(i++);
-            } else {
-                ++i;
-            }
-        }
-        // go to default sort
-    }
     default:
         qSort(listA.begin(), listA.end(), sortDetails<0>);
         qSort(listB.begin(), listB.end(), sortDetails<0>);
@@ -600,6 +570,27 @@ void UpdateContactRequest::updateOnlineAccount()
     QList<QContactDetail> newDetails = detailsFromPersona(QContactDetail::TypeOnlineAccount,
                                                           m_currentPersonaIndex,
                                                           &prefDetail);
+
+    // remove blacklisted protocols to avoid try to save it
+    QList<QtContacts::QContactDetail>::iterator i = originalDetails.begin();
+    while (i != originalDetails.end())
+    {
+        if (QIndividual::protocolBlackList().contains(static_cast<QtContacts::QContactOnlineAccount>(*i).protocol())) {
+            originalDetails.erase(i++);
+        } else {
+            ++i;
+        }
+    }
+
+    i = newDetails.begin();
+    while (i != newDetails.end())
+    {
+        if (QIndividual::protocolBlackList().contains(static_cast<QtContacts::QContactOnlineAccount>(*i).protocol())) {
+            newDetails.erase(i++);
+        } else {
+            ++i;
+        }
+    }
 
     if (m_currentPersona &&
         FOLKS_IS_IM_DETAILS(m_currentPersona) &&

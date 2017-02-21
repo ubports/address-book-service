@@ -40,7 +40,7 @@ if(EDATASERVER_VERSION VERSION_LESS "3.16")
 else()
     set(EVOLUTION_API_3_17 "1")
     set(EVOLUTION_ADDRESSBOOK_SERVICE_NAME "org.gnome.evolution.dataserver.AddressBook9")
-    set(EVOLUTION_SOURCE_SERVICE_NAME "org.gnome.evolution.dataserver.Sources4")
+    set(EVOLUTION_SOURCE_SERVICE_NAME "org.gnome.evolution.dataserver.Sources5")
 endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

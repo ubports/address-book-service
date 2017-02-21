@@ -67,10 +67,13 @@ namespace
             }
 
             if (detail.type() == QContactDetail::TypeExtendedDetail) {
-                QVersitProperty prop;
-                prop.setName(detail.value(QContactExtendedDetail::FieldName).toString());
-                prop.setValue(detail.value(QContactExtendedDetail::FieldData).toString());
-                *toBeAdded << prop;
+                // Do not translate X-IRC extended details
+                if (detail.value(QContactExtendedDetail::FieldName).toString() != "X-IRC") {
+                    QVersitProperty prop;
+                    prop.setName(detail.value(QContactExtendedDetail::FieldName).toString());
+                    prop.setValue(detail.value(QContactExtendedDetail::FieldData).toString());
+                    *toBeAdded << prop;
+                }
             }
 
             // export IRC online account
@@ -180,22 +183,14 @@ namespace
                 *alreadyProcessed = true;
             }
 
-            // IRC FIELDS
-            if (!*alreadyProcessed && (property.name().startsWith("X-IRC"))) {
-                QContactOnlineAccount acc;
-                acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
-                acc.setAccountUri(property.value());
-                *updatedDetails << acc;
-                // this will be a virtual field, the IRC filed will be stored as extended detail
-                // because EDS dos not support it
-                QContactExtendedDetail xDet;
-                xDet.setName(property.name());
-                xDet.setData(property.value<QString>());
-                *updatedDetails  << xDet;
-
-            }
-
             if (!*alreadyProcessed && (property.name().startsWith("X-"))) {
+                // IRC FIELDS
+                if (!*alreadyProcessed && (property.name() == "X-IRC")) {
+                    QContactOnlineAccount acc;
+                    acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
+                    acc.setAccountUri(property.value());
+                    *updatedDetails << acc;
+                 }
                 QContactExtendedDetail xDet;
                 xDet.setName(property.name());
                 xDet.setData(property.value<QString>());

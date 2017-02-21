@@ -64,6 +64,7 @@ using namespace QtContacts;
 #define X_GROUP_ID                "X-GROUP-ID"
 #define X_DELETED_AT              "X-DELETED-AT"
 #define X_AVATAR_REV              "X-AVATAR-REV"
+#define X_IRC_ACCOUNT             "X-IRC"
 
 namespace
 {
@@ -100,12 +101,15 @@ static void gValueGeeSetAddStringFieldDetails(GValue *value,
     } else if(g_type == FOLKS_TYPE_WEB_SERVICE_FIELD_DETAILS) {
         fieldDetails = FOLKS_ABSTRACT_FIELD_DETAILS (
                 folks_web_service_field_details_new(v_string, NULL));
+    } else if(g_type == FOLKS_TYPE_EXTENDED_FIELD_DETAILS) {
+        fieldDetails = FOLKS_ABSTRACT_FIELD_DETAILS (
+                 folks_extended_field_details_new(v_string, NULL));
     }
 
     if (fieldDetails == NULL) {
         qWarning() << "Invalid fieldDetails type" << g_type;
     } else {
-        galera::DetailContextParser::parseContext(fieldDetails, detail, ispreferred);
+        galera::DetailContextParser::parseContext(fieldDetails, detail, ispreferred);               
         gee_collection_add(collection, fieldDetails);
 
         g_object_unref(fieldDetails);
@@ -151,6 +155,7 @@ namespace galera
 {
 bool QIndividual::m_autoLink = false;
 QStringList QIndividual::m_supportedExtendedDetails;
+QList<QContactOnlineAccount::Protocol> QIndividual::m_protocolBlackList;
 
 QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator *aggregator)
     : m_individual(0),
@@ -164,7 +169,8 @@ QIndividual::QIndividual(FolksIndividual *individual, FolksIndividualAggregator 
                                    << X_REMOTE_ID
                                    << X_GOOGLE_ETAG
                                    << X_GROUP_ID
-                                   << X_AVATAR_REV;
+                                   << X_AVATAR_REV
+                                   << X_IRC_ACCOUNT;
     }
     setIndividual(individual);
 }
@@ -765,12 +771,20 @@ QList<QContactDetail> QIndividual::getPersonaExtendedDetails(FolksPersona *perso
         EVCardAttribute *attr = e_vcard_get_attribute(E_VCARD(c), xDetName.toUtf8().constData());
         if (attr) {
             GString *attrValue = e_vcard_attribute_get_value_decoded(attr);
-            QContactExtendedDetail xDet;
-            xDet.setName(xDetName);
-            xDet.setData(QString::fromUtf8(attrValue->str));
-            xDet.setDetailUri(QString("%1.1").arg(index));
-            g_string_free(attrValue, true);
-            result << xDet;
+
+            if (xDetName == X_IRC_ACCOUNT) {
+                QContactOnlineAccount acc;
+                acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
+                acc.setAccountUri(QString::fromUtf8(attrValue->str));
+                result << acc;
+            } else {
+                QContactExtendedDetail xDet;
+                xDet.setName(xDetName);
+                xDet.setData(QString::fromUtf8(attrValue->str));
+                xDet.setDetailUri(QString("%1.1").arg(index));
+                g_string_free(attrValue, true);
+                result << xDet;
+            }
         }
     }
 
@@ -1559,9 +1573,17 @@ GHashTable *QIndividual::parseImDetails(GHashTable *details,
         return details;
     }
 
+    if (m_protocolBlackList.isEmpty()) {
+        m_protocolBlackList << QContactOnlineAccount::ProtocolIrc;
+    }
+
     QMultiMap<QString, QString> providerUidMap;
     Q_FOREACH(const QContactDetail &detail, cDetails) {
         QContactOnlineAccount account = static_cast<QContactOnlineAccount>(detail);
+        if (m_protocolBlackList.contains(account.protocol())) {
+            continue;
+        }
+
         if (!account.isEmpty()) {
             providerUidMap.insert(DetailContextParser::accountProtocolName(account.protocol()), account.accountUri());
         }
@@ -1647,6 +1669,34 @@ GHashTable *QIndividual::parseUrlDetails(GHashTable *details,
     return details;
 }
 
+GHashTable *QIndividual::parseExtendedDetails(GHashTable *details,
+                                              const QList<QContactDetail> &cDetails,
+                                              const QContactDetail &prefDetail)
+{
+    QList<QContactDetail> newDetails;
+    Q_FOREACH(const QContactExtendedDetail &d, cDetails) {
+        if (d.name() == X_IRC_ACCOUNT)
+            newDetails << d;
+    }
+
+    if (newDetails.size() == 0) {
+        return details;
+    }
+
+    GValue *value;
+    value = GeeUtils::gValueSliceNew(G_TYPE_OBJECT);
+    Q_FOREACH(const QContactExtendedDetail& detail, newDetails) {
+        if(!detail.isEmpty()) {
+            gValueGeeSetAddStringFieldDetails(value, FOLKS_TYPE_EXTENDED_FIELD_DETAILS,
+                    detail.data().toString().toUtf8().constData(),
+                    detail,
+                    detail == prefDetail);
+        }
+    }
+    GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_EXTENDED_INFO, value);
+    return details;
+}
+
 GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
 {
     GHashTable *details = g_hash_table_new_full(g_str_hash,
@@ -1683,6 +1733,9 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
     parseUrlDetails(details,
                     contact.details(QContactUrl::Type),
                     contact.preferredDetail(VCardParser::PreferredActionNames[QContactUrl::Type]));
+    parseExtendedDetails(details,
+                         contact.details(QContactExtendedDetail::Type),
+                         contact.preferredDetail(VCardParser::PreferredActionNames[QContactExtendedDetail::Type]));
 
     QContactDisplayLabel label = contact.detail<QContactDisplayLabel>();
     if (label.label().isEmpty()) {
@@ -1822,6 +1875,11 @@ void QIndividual::enableAutoLink(bool flag)
 bool QIndividual::autoLinkEnabled()
 {
     return m_autoLink;
+}
+
+QList<QContactOnlineAccount::Protocol> QIndividual::protocolBlackList()
+{
+    return m_protocolBlackList;
 }
 
 FolksPersona* QIndividual::primaryPersona()

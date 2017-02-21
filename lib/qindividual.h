@@ -29,6 +29,7 @@
 
 #include <QtContacts/QContact>
 #include <QtContacts/QContactDetail>
+#include <QtContacts/QContactOnlineAccount>
 
 #include <folks/folks.h>
 
@@ -70,6 +71,7 @@ public:
     // enable or disable auto-link
     static void enableAutoLink(bool flag);
     static bool autoLinkEnabled();
+    static QList<QtContacts::QContactOnlineAccount::Protocol> protocolBlackList();
 
 private:
     FolksIndividual *m_individual;
@@ -86,6 +88,7 @@ private:
     bool m_visible;
     static bool m_autoLink;
     static QStringList m_supportedExtendedDetails;
+    static QList<QtContacts::QContactOnlineAccount::Protocol> m_protocolBlackList;
 
     QIndividual();
     QIndividual(const QIndividual &);
@@ -177,6 +180,9 @@ private:
                                                  const QList<QtContacts::QContactDetail> &cDetails,
                                                  const QtContacts::QContactDetail &prefDetail);
     static GHashTable *parseUrlDetails          (GHashTable *details,
+                                                 const QList<QtContacts::QContactDetail> &cDetails,
+                                                 const QtContacts::QContactDetail &prefDetail);
+    static GHashTable *parseExtendedDetails     (GHashTable *details,
                                                  const QList<QtContacts::QContactDetail> &cDetails,
                                                  const QtContacts::QContactDetail &prefDetail);
     // property changed
