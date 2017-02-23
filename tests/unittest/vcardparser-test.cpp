@@ -434,7 +434,7 @@ private Q_SLOTS:
          QString vcard = QStringLiteral("BEGIN:VCARD\r\n"
                                         "VERSION:3.0\r\n"
                                         "N:Sauro;Dino;da Silva;;\r\n"
-                                        "X-IRC:myIRC\r\n"
+                                        "X-IRC;PROVIDER=irc.freenode.net:myIRC\r\n"
                                         "REV:2015-04-14T21:56:56Z(2300)\r\n"
                                         "END:VCARD\r\n");
          QContact contact = VCardParser::vcardToContact(vcard);
@@ -444,6 +444,15 @@ private Q_SLOTS:
          QContactOnlineAccount acc = accs.at(0);
          QCOMPARE(acc.protocol(), QContactOnlineAccount::ProtocolIrc);
          QCOMPARE(acc.accountUri(), QStringLiteral("myIRC"));
+         QCOMPARE(acc.serviceProvider(), QStringLiteral("irc.freenode.net"));
+
+         QList<QContactExtendedDetail> exs = contact.details<QContactExtendedDetail>();
+         QCOMPARE(exs.size(), 1);
+
+         QContactExtendedDetail ex = exs.at(0);
+         QCOMPARE(ex.name(), QStringLiteral("X-IRC"));
+         QCOMPARE(ex.data().toString(), QStringLiteral("myIRC"));
+         QCOMPARE(ex.value(QContactExtendedDetail::FieldData+1).toString(), QStringLiteral("irc.freenode.net"));
      }
 
      void testContactWithIrc()
@@ -453,11 +462,11 @@ private Q_SLOTS:
          QContactOnlineAccount acc;
          acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
          acc.setAccountUri(QStringLiteral("myIRC"));
+         acc.setServiceProvider(QStringLiteral("irc.freenode.net"));
          c.saveDetail(&acc);
 
          QString vcard = VCardParser::contactToVcard(c);
-         qDebug() << "VCARD:" << vcard;
-         QVERIFY(vcard.contains("X-IRC:myIRC"));
+         QVERIFY(vcard.contains("X-IRC;PROVIDER=irc.freenode.net:myIRC"));
      }
 };
 

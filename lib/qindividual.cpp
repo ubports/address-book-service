@@ -109,7 +109,8 @@ static void gValueGeeSetAddStringFieldDetails(GValue *value,
     if (fieldDetails == NULL) {
         qWarning() << "Invalid fieldDetails type" << g_type;
     } else {
-        galera::DetailContextParser::parseContext(fieldDetails, detail, ispreferred);               
+        galera::DetailContextParser::parseContext(fieldDetails, detail, ispreferred);
+
         gee_collection_add(collection, fieldDetails);
 
         g_object_unref(fieldDetails);
@@ -776,6 +777,10 @@ QList<QContactDetail> QIndividual::getPersonaExtendedDetails(FolksPersona *perso
                 QContactOnlineAccount acc;
                 acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
                 acc.setAccountUri(QString::fromUtf8(attrValue->str));
+                GList *param = e_vcard_attribute_get_param(attr, "PROVIDER");
+                if (param)
+                    acc.setServiceProvider(QString::fromUtf8(static_cast<gchar*>(param->data)));
+
                 result << acc;
             } else {
                 QContactExtendedDetail xDet;
@@ -1669,34 +1674,6 @@ GHashTable *QIndividual::parseUrlDetails(GHashTable *details,
     return details;
 }
 
-GHashTable *QIndividual::parseExtendedDetails(GHashTable *details,
-                                              const QList<QContactDetail> &cDetails,
-                                              const QContactDetail &prefDetail)
-{
-    QList<QContactDetail> newDetails;
-    Q_FOREACH(const QContactExtendedDetail &d, cDetails) {
-        if (d.name() == X_IRC_ACCOUNT)
-            newDetails << d;
-    }
-
-    if (newDetails.size() == 0) {
-        return details;
-    }
-
-    GValue *value;
-    value = GeeUtils::gValueSliceNew(G_TYPE_OBJECT);
-    Q_FOREACH(const QContactExtendedDetail& detail, newDetails) {
-        if(!detail.isEmpty()) {
-            gValueGeeSetAddStringFieldDetails(value, FOLKS_TYPE_EXTENDED_FIELD_DETAILS,
-                    detail.data().toString().toUtf8().constData(),
-                    detail,
-                    detail == prefDetail);
-        }
-    }
-    GeeUtils::personaDetailsInsert(details, FOLKS_PERSONA_DETAIL_EXTENDED_INFO, value);
-    return details;
-}
-
 GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
 {
     GHashTable *details = g_hash_table_new_full(g_str_hash,
@@ -1733,9 +1710,6 @@ GHashTable *QIndividual::parseDetails(const QtContacts::QContact &contact)
     parseUrlDetails(details,
                     contact.details(QContactUrl::Type),
                     contact.preferredDetail(VCardParser::PreferredActionNames[QContactUrl::Type]));
-    parseExtendedDetails(details,
-                         contact.details(QContactExtendedDetail::Type),
-                         contact.preferredDetail(VCardParser::PreferredActionNames[QContactExtendedDetail::Type]));
 
     QContactDisplayLabel label = contact.detail<QContactDisplayLabel>();
     if (label.label().isEmpty()) {
@@ -1842,6 +1816,17 @@ void QIndividual::setExtendedDetails(FolksPersona *persona,
                     }
 
                     attr = e_vcard_attribute_new("", xd.name().toUtf8().constData());
+
+                    // Special cases
+                    if (xd.name() == X_IRC_ACCOUNT) {
+                        // IRC - save provider
+                        QString provider = xd.value(QContactExtendedDetail::FieldData + 1).toString();
+                        if (!provider.isEmpty()) {
+                            EVCardAttributeParam * param  = e_vcard_attribute_param_new("PROVIDER");
+                            e_vcard_attribute_add_param_with_value(attr, param, provider.toUtf8().constData());
+                        }
+                    }
+
                     e_vcard_add_attribute_with_value(E_VCARD(c),
                                                      attr,
                                                      xd.data().toString().toUtf8().constData());

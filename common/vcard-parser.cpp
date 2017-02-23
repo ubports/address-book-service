@@ -34,6 +34,20 @@
 using namespace QtVersit;
 using namespace QtContacts;
 
+namespace galera
+{
+
+const QString VCardParser::PidMapFieldName = QStringLiteral("CLIENTPIDMAP");
+const QString VCardParser::PidFieldName = QStringLiteral("PID");
+const QString VCardParser::PrefParamName = QStringLiteral("PREF");
+const QString VCardParser::IrremovableFieldName = QStringLiteral("IRREMOVABLE");
+const QString VCardParser::ReadOnlyFieldName = QStringLiteral("READ-ONLY");
+const QString VCardParser::TagFieldName = QStringLiteral("TAG");
+const QString VCardParser::IrcFieldName = QStringLiteral("X-IRC");
+const QString VCardParser::OnlineAccountProviderParamName = QStringLiteral("PROVIDER");
+
+}
+
 namespace
 {
     class ContactExporterDetailHandler : public QVersitContactExporterDetailHandlerV2
@@ -68,7 +82,7 @@ namespace
 
             if (detail.type() == QContactDetail::TypeExtendedDetail) {
                 // Do not translate X-IRC extended details
-                if (detail.value(QContactExtendedDetail::FieldName).toString() != "X-IRC") {
+                if (detail.value(QContactExtendedDetail::FieldName).toString() != galera::VCardParser::IrcFieldName) {
                     QVersitProperty prop;
                     prop.setName(detail.value(QContactExtendedDetail::FieldName).toString());
                     prop.setValue(detail.value(QContactExtendedDetail::FieldData).toString());
@@ -76,13 +90,14 @@ namespace
                 }
             }
 
-            // export IRC online account
+            // export IRC online account (This is not exported by QtVersit)
             if (detail.type() == QContactDetail::TypeOnlineAccount) {
                 QContactOnlineAccount acc = static_cast<QContactOnlineAccount>(detail);
                 if (acc.protocol() == QContactOnlineAccount::ProtocolIrc) {
                     QVersitProperty prop;
-                    prop.setName(QStringLiteral("X-IRC"));
+                    prop.setName(galera::VCardParser::IrcFieldName);
                     prop.setValue(acc.accountUri());
+                    prop.insertParameter(galera::VCardParser::OnlineAccountProviderParamName, acc.serviceProvider());
                     *toBeAdded << prop;
                 }
             }
@@ -185,15 +200,18 @@ namespace
 
             if (!*alreadyProcessed && (property.name().startsWith("X-"))) {
                 // IRC FIELDS
-                if (!*alreadyProcessed && (property.name() == "X-IRC")) {
+                if (!*alreadyProcessed && (property.name() == galera::VCardParser::IrcFieldName)) {
                     QContactOnlineAccount acc;
                     acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
                     acc.setAccountUri(property.value());
+                    acc.setServiceProvider(property.parameters().value(galera::VCardParser::OnlineAccountProviderParamName));
                     *updatedDetails << acc;
                  }
                 QContactExtendedDetail xDet;
                 xDet.setName(property.name());
                 xDet.setData(property.value<QString>());
+                xDet.setValue(QContactExtendedDetail::FieldData + 1, property.parameters().value(galera::VCardParser::OnlineAccountProviderParamName));
+
                 *updatedDetails  << xDet;
                 *alreadyProcessed = true;
             }
@@ -290,13 +308,6 @@ namespace
 
 namespace galera
 {
-
-const QString VCardParser::PidMapFieldName = QStringLiteral("CLIENTPIDMAP");
-const QString VCardParser::PidFieldName = QStringLiteral("PID");
-const QString VCardParser::PrefParamName = QStringLiteral("PREF");
-const QString VCardParser::IrremovableFieldName = QStringLiteral("IRREMOVABLE");
-const QString VCardParser::ReadOnlyFieldName = QStringLiteral("READ-ONLY");
-const QString VCardParser::TagFieldName = QStringLiteral("TAG");
 
 static QMap<QtContacts::QContactDetail::DetailType, QString> prefferedActions()
 {

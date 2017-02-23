@@ -64,7 +64,7 @@ private Q_SLOTS:
                                                                        "N:;Fulano;;;\r\n"
                                                                        "EMAIL:fulano@gmail.com\r\n"
                                                                        "TEL:123456\r\n"
-                                                                       "X-IRC:myIRC\r\n"
+                                                                       "X-IRC;PROVIDER=irc.freenode.net:myIRC\r\n"
                                                                        "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
                                                                        "END:VCARD\r\n").arg(TEST_DATA_DIR));
 
@@ -88,6 +88,7 @@ private Q_SLOTS:
         QContactOnlineAccount acc = accs[0];
         QCOMPARE(acc.protocol(), QContactOnlineAccount::ProtocolIrc);
         QCOMPARE(acc.accountUri(), QStringLiteral("myIRC"));
+        QCOMPARE(acc.serviceProvider(), QStringLiteral("irc.freenode.net"));
     }
 
     void testModifyIrcAccount()
@@ -98,7 +99,7 @@ private Q_SLOTS:
                                                                        "N:;Fulano;;;\r\n"
                                                                        "EMAIL:fulano@gmail.com\r\n"
                                                                        "TEL:123456\r\n"
-                                                                       "X-IRC:myIRC\r\n"
+                                                                       "X-IRC;PROVIDER=irc.freenode.net:myIRC\r\n"
                                                                        "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
                                                                        "END:VCARD\r\n").arg(TEST_DATA_DIR));
 
@@ -134,6 +135,7 @@ private Q_SLOTS:
         acc = accs[0];
         QCOMPARE(acc.protocol(), QContactOnlineAccount::ProtocolIrc);
         QCOMPARE(acc.accountUri(), QStringLiteral("otherIRC"));
+        QCOMPARE(acc.serviceProvider(), QStringLiteral("irc.freenode.net"));
     }
 };
 

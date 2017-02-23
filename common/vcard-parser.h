@@ -57,6 +57,8 @@ public:
     static const QString IrremovableFieldName;
     static const QString ReadOnlyFieldName;
     static const QString TagFieldName;
+    static const QString IrcFieldName;
+    static const QString OnlineAccountProviderParamName;
     static const QMap<QtContacts::QContactDetail::DetailType, QString> PreferredActionNames;
 
     static QtContacts::QContact vcardToContact(const QString &vcard);

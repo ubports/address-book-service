@@ -147,10 +147,6 @@ private:
 
     static void avatarCacheStoreDone(GObject *source, GAsyncResult *result, gpointer data);
 
-    // create
-    void createPersonaFromDetails(QList<QtContacts::QContactDetail> detail, ParseDetailsFunc parseFunc, void *data) const;
-    static void createPersonaForDetailDone(GObject *detail, GAsyncResult *result, gpointer userdata);
-
     // translate details
     static GHashTable *parseFullNameDetails     (GHashTable *details,
                                                  const QList<QtContacts::QContactDetail> &cDetails,
@@ -180,9 +176,6 @@ private:
                                                  const QList<QtContacts::QContactDetail> &cDetails,
                                                  const QtContacts::QContactDetail &prefDetail);
     static GHashTable *parseUrlDetails          (GHashTable *details,
-                                                 const QList<QtContacts::QContactDetail> &cDetails,
-                                                 const QtContacts::QContactDetail &prefDetail);
-    static GHashTable *parseExtendedDetails     (GHashTable *details,
                                                  const QList<QtContacts::QContactDetail> &cDetails,
                                                  const QtContacts::QContactDetail &prefDetail);
     // property changed
