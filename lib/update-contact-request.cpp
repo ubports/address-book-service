@@ -607,6 +607,10 @@ void UpdateContactRequest::updateOnlineAccount()
                 field = folks_im_field_details_new(accountUri.constData(), NULL);
                 DetailContextParser::parseContext(FOLKS_ABSTRACT_FIELD_DETAILS(field), account, account == prefDetail);
 
+                if (!account.serviceProvider().isEmpty()) {
+                    folks_abstract_field_details_add_parameter(FOLKS_ABSTRACT_FIELD_DETAILS(field),
+                                                               "PROVIDER", account.serviceProvider().toUtf8().data());
+                }
                 QString protocolName(DetailContextParser::accountProtocolName(account.protocol()));
                 QByteArray protocolNameUtf8 = protocolName.toUtf8();
                 gee_multi_map_set(imMap, protocolNameUtf8.constData(), field);

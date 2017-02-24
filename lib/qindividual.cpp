@@ -28,6 +28,7 @@
 #include <libebook/libebook.h>
 
 #include <QtCore/QMutexLocker>
+#include <QtCore/QPair>
 
 #include <QtVersit/QVersitDocument>
 #include <QtVersit/QVersitProperty>
@@ -695,6 +696,20 @@ QList<QtContacts::QContactDetail> QIndividual::getPersonaIms(FolksPersona *perso
             account.setAccountUri(qStringFromGChar(uri));
             int protocolId = DetailContextParser::accountProtocolFromString(qStringFromGChar(key));
             account.setProtocol(static_cast<QContactOnlineAccount::Protocol>(protocolId));
+
+            // provider
+            GeeCollection *providers = folks_abstract_field_details_get_parameter_values(fd, "PROVIDER");
+            if (providers) {
+                GeeIterator *iter = gee_iterable_iterator(GEE_ITERABLE (providers));
+                if (iter) {
+                    char *provider = (char*) gee_iterator_get(iter);
+                    if (strlen(provider) > 0) {
+                        account.setServiceProvider(QString::fromUtf8(provider));
+                    }
+                    g_free(provider);
+                    g_object_unref(iter);
+                }
+            }
 
             bool isPref = false;
             DetailContextParser::parseParameters(account, fd, &isPref);
@@ -1582,7 +1597,7 @@ GHashTable *QIndividual::parseImDetails(GHashTable *details,
         m_protocolBlackList << QContactOnlineAccount::ProtocolIrc;
     }
 
-    QMultiMap<QString, QString> providerUidMap;
+    QMultiMap<QString, QPair<QString,QString> > providerUidMap;
     Q_FOREACH(const QContactDetail &detail, cDetails) {
         QContactOnlineAccount account = static_cast<QContactOnlineAccount>(detail);
         if (m_protocolBlackList.contains(account.protocol())) {
@@ -1590,7 +1605,8 @@ GHashTable *QIndividual::parseImDetails(GHashTable *details,
         }
 
         if (!account.isEmpty()) {
-            providerUidMap.insert(DetailContextParser::accountProtocolName(account.protocol()), account.accountUri());
+            providerUidMap.insert(DetailContextParser::accountProtocolName(account.protocol()),
+                                  qMakePair(account.accountUri(), account.serviceProvider()));
         }
     }
 

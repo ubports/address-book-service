@@ -19,6 +19,7 @@
 #include "gee-utils.h"
 
 #include <QDebug>
+#include <QPair>
 
 GValue* GeeUtils::gValueSliceNew(GType type)
 {
@@ -39,7 +40,7 @@ void GeeUtils::personaDetailsInsert(GHashTable *details, FolksPersonaDetail key,
     g_hash_table_insert(details, (gpointer) folks_persona_store_detail_key(key), value);
 }
 
-GValue* GeeUtils::asvSetStrNew(QMultiMap<QString, QString> providerUidMap)
+GValue* GeeUtils::asvSetStrNew(QMultiMap<QString, QPair<QString, QString> > providerUidMap)
 {
     GeeMultiMap *hashSet = GEE_MULTI_MAP_AFD_NEW(FOLKS_TYPE_IM_FIELD_DETAILS);
     GValue *retval = gValueSliceNew (G_TYPE_OBJECT);
@@ -47,11 +48,16 @@ GValue* GeeUtils::asvSetStrNew(QMultiMap<QString, QString> providerUidMap)
 
     QList<QString> keys = providerUidMap.keys();
     Q_FOREACH(const QString& key, keys) {
-        QList<QString> values = providerUidMap.values(key);
-        Q_FOREACH(const QString& value, values) {
+        Q_FOREACH(const auto &value, providerUidMap.values(key)) {
             FolksImFieldDetails *imfd;
+            const QString &accountUri = value.first;
+            const QString &accountProvider = value.second;
 
-            imfd = folks_im_field_details_new (value.toUtf8().data(), NULL);
+            imfd = folks_im_field_details_new (accountUri.toUtf8().data(), NULL);
+            if (!accountProvider.isEmpty()) {
+                folks_abstract_field_details_add_parameter(FOLKS_ABSTRACT_FIELD_DETAILS(imfd),
+                                                           "PROVIDER", accountProvider.toUtf8().data());
+            }
 
             gee_multi_map_set(hashSet,
                               key.toUtf8().data(),

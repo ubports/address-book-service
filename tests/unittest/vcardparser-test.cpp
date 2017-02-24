@@ -468,6 +468,44 @@ private Q_SLOTS:
          QString vcard = VCardParser::contactToVcard(c);
          QVERIFY(vcard.contains("X-IRC;PROVIDER=irc.freenode.net:myIRC"));
      }
+
+     /*
+      * Test parse a vcard with an online account
+      */
+     void testVCardWithSkype()
+     {
+         QString vcard = QStringLiteral("BEGIN:VCARD\r\n"
+                                        "VERSION:3.0\r\n"
+                                        "N:Sauro;Dino;da Silva;;\r\n"
+                                        "X-SKYPE;PROVIDER=microsoft.com:mySkype\r\n"
+                                        "REV:2015-04-14T21:56:56Z(2300)\r\n"
+                                        "END:VCARD\r\n");
+         QContact contact = VCardParser::vcardToContact(vcard);
+         QList<QContactOnlineAccount> accs = contact.details<QContactOnlineAccount>();
+         QCOMPARE(accs.size(), 1);
+
+         QContactOnlineAccount acc = accs.at(0);
+         QCOMPARE(acc.protocol(), QContactOnlineAccount::ProtocolSkype);
+         QCOMPARE(acc.accountUri(), QStringLiteral("mySkype"));
+         QCOMPARE(acc.serviceProvider(), QStringLiteral("microsoft.com"));
+
+         QList<QContactExtendedDetail> exs = contact.details<QContactExtendedDetail>();
+         QCOMPARE(exs.size(), 0);
+     }
+
+     void testContactWithSkype()
+     {
+         QContact c = m_contacts[0];
+
+         QContactOnlineAccount acc;
+         acc.setProtocol(QContactOnlineAccount::ProtocolSkype);
+         acc.setAccountUri(QStringLiteral("mySkype"));
+         acc.setServiceProvider(QStringLiteral("microsoft.com"));
+         c.saveDetail(&acc);
+
+         QString vcard = VCardParser::contactToVcard(c);
+         QVERIFY(vcard.contains("X-SKYPE;PROVIDER=microsoft.com:mySkype"));
+     }
 };
 
 QTEST_MAIN(VCardParseTest)

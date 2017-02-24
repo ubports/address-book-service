@@ -66,7 +66,7 @@ private Q_SLOTS:
                                                                        "TEL:123456\r\n"
                                                                        "X-IRC;PROVIDER=irc.freenode.net:myIRC\r\n"
                                                                        "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
-                                                                       "END:VCARD\r\n").arg(TEST_DATA_DIR));
+                                                                       "END:VCARD\r\n"));
 
         QCOMPARE(contact.details<QContactOnlineAccount>().size(), 1);
 
@@ -91,6 +91,44 @@ private Q_SLOTS:
         QCOMPARE(acc.serviceProvider(), QStringLiteral("irc.freenode.net"));
     }
 
+    //TODO: implement support for provider in well-know accounts
+    /*
+    void testCreateSkypeAccount()
+    {
+        QContact contact = galera::VCardParser::vcardToContact(QString("BEGIN:VCARD\r\n"
+                                                                       "VERSION:3.0\r\n"
+                                                                       "X-REMOTE-ID:1dd7d51a1518626a\r\n"
+                                                                       "N:;Fulano;;;\r\n"
+                                                                       "EMAIL:fulano@gmail.com\r\n"
+                                                                       "TEL:123456\r\n"
+                                                                       "X-SKYPE;PROVIDER=skype.net:mySkype\r\n"
+                                                                       "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
+                                                                       "END:VCARD\r\n"));
+
+        QCOMPARE(contact.details<QContactOnlineAccount>().size(), 1);
+
+        // create a contact
+        QSignalSpy spyContactAdded(m_manager, SIGNAL(contactsAdded(QList<QContactId>)));
+        bool result = m_manager->saveContact(&contact);
+        QCOMPARE(contact.details<QContactOnlineAccount>().size(), 1);
+        QCOMPARE(result, true);
+        QTRY_COMPARE(spyContactAdded.count(), 1);
+
+        // query contacts;
+        QContactFilter filter;
+        QList<QContact> contacts = m_manager->contacts(filter);
+        QCOMPARE(contacts.size(), 1);
+
+        QList<QContactOnlineAccount> accs = contacts[0].details<QContactOnlineAccount>();
+        QCOMPARE(accs.size(), 1);
+
+        QContactOnlineAccount acc = accs[0];
+        QCOMPARE(acc.protocol(), QContactOnlineAccount::ProtocolSkype);
+        QCOMPARE(acc.accountUri(), QStringLiteral("mySkype"));
+        QCOMPARE(acc.serviceProvider(), QStringLiteral("skype.net"));
+    }
+    */
+
     void testModifyIrcAccount()
     {
         QContact contact = galera::VCardParser::vcardToContact(QString("BEGIN:VCARD\r\n"
@@ -101,7 +139,7 @@ private Q_SLOTS:
                                                                        "TEL:123456\r\n"
                                                                        "X-IRC;PROVIDER=irc.freenode.net:myIRC\r\n"
                                                                        "CLIENTPIDMAP:56183a5b-5da7-49fe-8cf6-9bfd3633bf6d\r\n"
-                                                                       "END:VCARD\r\n").arg(TEST_DATA_DIR));
+                                                                       "END:VCARD\r\n"));
 
         QCOMPARE(contact.details<QContactOnlineAccount>().size(), 1);
 

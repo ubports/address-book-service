@@ -97,7 +97,7 @@ namespace
                     QVersitProperty prop;
                     prop.setName(galera::VCardParser::IrcFieldName);
                     prop.setValue(acc.accountUri());
-                    prop.insertParameter(galera::VCardParser::OnlineAccountProviderParamName, acc.serviceProvider());
+                    // provider will be added by later accout parse
                     *toBeAdded << prop;
                 }
             }
@@ -149,6 +149,15 @@ namespace
                         params.insert(galera::VCardParser::PrefParamName, "1");
                         prop.setParameters(params);
                     }
+                    break;
+                }
+                case QContactDetail::TypeOnlineAccount:
+                {
+                    QContactOnlineAccount account = static_cast<QContactOnlineAccount>(detail);
+                    QVersitProperty &prop = toBeAdded->last();
+                    QMultiHash<QString, QString> params = prop.parameters();
+                    params.insert(galera::VCardParser::OnlineAccountProviderParamName, account.serviceProvider());
+                    prop.setParameters(params);
                     break;
                 }
                 default:
@@ -220,6 +229,7 @@ namespace
                 return;
             }
 
+
             QString pid = property.parameters().value(galera::VCardParser::PidFieldName);
             if (!pid.isEmpty()) {
                 QContactDetail &det = updatedDetails->last();
@@ -267,6 +277,14 @@ namespace
                     if (value == "URL") {
                         det.setValue(QContactAvatar::FieldImageUrl, QUrl(property.value()));
                     }
+                    break;
+                }
+                case QContactDetail::TypeOnlineAccount:
+                {
+                    // Fill provider for online accounts
+                    QString provider = property.parameters().value(galera::VCardParser::OnlineAccountProviderParamName);
+                    if (!provider.isEmpty())
+                        det.setValue(QContactOnlineAccount::FieldServiceProvider, provider);
                     break;
                 }
                 default:

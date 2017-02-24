@@ -218,10 +218,13 @@ QStringList DetailContextParser::listParameters(FolksAbstractFieldDetails *detai
 
     while (gee_iterator_next (siter)) {
         char *parameter = (char*) gee_iterator_get(siter);
-        if (QString::fromUtf8(parameter).toUpper() == VCardParser::PrefParamName) {
+        const QString parameterName = QString::fromUtf8(parameter).toUpper();
+        if (parameterName == VCardParser::PrefParamName) {
             params << "pref";
             continue;
-        } else if (QString::fromUtf8(parameter) != "type") {
+        } else if (parameterName == VCardParser::OnlineAccountProviderParamName) {
+
+        } else if (parameterName != "TYPE") {
             if (!whiteList.contains(QString::fromUtf8(parameter))) {
                 qDebug() << "not supported field details" << parameter;
                 // FIXME: check what to do with other parameters
@@ -389,7 +392,7 @@ void DetailContextParser::parseOnlineAccountParameters(QtContacts::QContactDetai
     Q_FOREACH(const QString &param, parameters) {
         if (map.contains(param.toLower())) {
             values << map[param.toLower()];
-        } else {
+        } else  {
             qWarning() << "invalid IM subtype" << param;
         }
     }

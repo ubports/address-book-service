@@ -84,7 +84,7 @@ public:
     static GValue* gValueSliceNew(GType type);
     static void gValueSliceFree(GValue *value);
     static void personaDetailsInsert(GHashTable *details, FolksPersonaDetail key, gpointer value);
-    static GValue* asvSetStrNew(QMultiMap<QString, QString> providerUidMap);
+    static GValue* asvSetStrNew(QMultiMap<QString, QPair<QString, QString> > providerUidMap);
 }; // class
 
 #endif
