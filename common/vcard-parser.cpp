@@ -209,7 +209,7 @@ namespace
 
             if (!*alreadyProcessed && (property.name().startsWith("X-"))) {
                 // IRC FIELDS
-                if (!*alreadyProcessed && (property.name() == galera::VCardParser::IrcFieldName)) {
+                if (property.name() == galera::VCardParser::IrcFieldName) {
                     QContactOnlineAccount acc;
                     acc.setProtocol(QContactOnlineAccount::ProtocolIrc);
                     acc.setAccountUri(property.value());
