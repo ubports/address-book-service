@@ -1,3 +1,14 @@
+address-book-service (0.1.2+17.04.20161124.2-0ubuntu1) UNRELEASED; urgency=medium
+
+  [ Rico Tzschichholz ]
+  * Fix build with vala 0.36
+
+  [ Jeremy Bicha ]
+  * Don't build-depend on evolution-data-server-online-accounts
+  * Update evolution D-Bus address for evolution-data-server 3.24
+
+ -- Rico Tzschichholz <ricotz@ubuntu.com>  Wed, 14 Jun 2017 12:35:13 -0400
+
 address-book-service (0.1.2+17.04.20161124.1-0ubuntu1) zesty; urgency=medium
 
   [ Michael Terry ]

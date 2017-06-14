@@ -65,7 +65,7 @@ public void module_init (BackendStore backend_store)
   dummy_persona_store.persona_type = typeof (FolksDummy.FullPersona);
 
   /* Register it with the backend. */
-  var persona_stores = new HashSet<PersonaStore> ();
+  var persona_stores = new HashSet<FolksDummy.PersonaStore> ();
   persona_stores.add (dummy_persona_store);
 
   var backend = new FolksDummy.Backend ();

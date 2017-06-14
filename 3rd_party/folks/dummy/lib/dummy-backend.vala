@@ -138,7 +138,7 @@ public class FolksDummy.Backend : Folks.Backend
    *
    * @since UNRELEASED
    */
-  public override Map<string, PersonaStore> persona_stores
+  public override Map<string, Folks.PersonaStore> persona_stores
     {
       get { return this._enabled_persona_stores_ro; }
     }
