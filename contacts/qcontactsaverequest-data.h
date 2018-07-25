@@ -30,7 +30,6 @@
 
 namespace galera
 {
-class GaleraEngineId;
 
 class QContactSaveRequestData : public QContactRequestData
 {
@@ -45,7 +44,6 @@ public:
     QString nextContact(QString *syncTargetName);
     QtContacts::QContact currentContact() const;
     QStringList allPendingContacts() const;
-    void updateCurrentContactId(GaleraEngineId *engineId);
     void updateCurrentContact(const QtContacts::QContact &contact);
     void updatePendingContacts(QStringList vcards);
 
@@ -62,9 +60,9 @@ public:
                             QtContacts::QContactManager::Error error = QtContacts::QContactManager::NotSupportedError);
 
 protected:
-    virtual void updateRequest(QtContacts::QContactAbstractRequest::State state,
-                               QtContacts::QContactManager::Error error,
-                               QMap<int, QtContacts::QContactManager::Error> errorMap);
+    void updateRequest(QtContacts::QContactAbstractRequest::State state,
+                       QtContacts::QContactManager::Error error,
+                       QMap<int, QtContacts::QContactManager::Error> errorMap) override;
 
 private:
     QMap<int, QtContacts::QContact> m_contactsToUpdate;

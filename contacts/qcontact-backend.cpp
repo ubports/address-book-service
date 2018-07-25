@@ -34,7 +34,6 @@
 #include <QVersitProperty>
 
 #include "contacts-service.h"
-#include "qcontact-engineid.h"
 #include "config.h"
 
 using namespace QtContacts;
@@ -48,12 +47,6 @@ QtContacts::QContactManagerEngine* GaleraEngineFactory::engine(const QMap<QStrin
 
     GaleraManagerEngine *engine = GaleraManagerEngine::createEngine(parameters);
     return engine;
-}
-
-QtContacts::QContactEngineId* GaleraEngineFactory::createContactEngineId(const QMap<QString, QString> &parameters,
-                                                                         const QString &engineIdString) const
-{
-    return new GaleraEngineId(parameters, engineIdString);
 }
 
 QString GaleraEngineFactory::managerName() const
@@ -75,10 +68,10 @@ GaleraManagerEngine* GaleraManagerEngine::createEngine(const QMap<QString, QStri
 GaleraManagerEngine::GaleraManagerEngine()
     : m_service(new GaleraContactsService(managerUri()))
 {
-    connect(m_service, SIGNAL(contactsAdded(QList<QContactId>)), this, SIGNAL(contactsAdded(QList<QContactId>)));
-    connect(m_service, SIGNAL(contactsRemoved(QList<QContactId>)), this, SIGNAL(contactsRemoved(QList<QContactId>)));
-    connect(m_service, SIGNAL(contactsUpdated(QList<QContactId>)), this, SIGNAL(contactsChanged(QList<QContactId>)));
-    connect(m_service, SIGNAL(serviceChanged()), this, SIGNAL(dataChanged()), Qt::QueuedConnection);
+    connect(m_service, &GaleraContactsService::contactsAdded, this, &QContactManagerEngine::contactsAdded);
+    connect(m_service, &GaleraContactsService::contactsRemoved, this, &QContactManagerEngine::contactsRemoved);
+    connect(m_service, &GaleraContactsService::contactsUpdated, this, &QContactManagerEngine::contactsChanged);
+    connect(m_service, &GaleraContactsService::serviceChanged, this, &QContactManagerEngine::dataChanged, Qt::QueuedConnection);
 }
 
 /*! Frees any memory used by this engine */
@@ -285,7 +278,7 @@ QtContacts::QContactId GaleraManagerEngine::selfContactId(QtContacts::QContactMa
 }
 
 /* Relationships between contacts */
-QList<QtContacts::QContactRelationship> GaleraManagerEngine::relationships(const QString &relationshipType, const QContact& participant, QContactRelationship::Role role, QtContacts::QContactManager::Error *error) const
+QList<QtContacts::QContactRelationship> GaleraManagerEngine::relationships(const QString &relationshipType, const QContactId &participantId, QContactRelationship::Role role, QtContacts::QContactManager::Error *error) const
 {
     qWarning() << "Function not implemented" << Q_FUNC_INFO;
 

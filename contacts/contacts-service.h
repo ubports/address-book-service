@@ -71,7 +71,8 @@ public:
 Q_SIGNALS:
     void contactsAdded(QList<QContactId> ids);
     void contactsRemoved(QList<QContactId> ids);
-    void contactsUpdated(QList<QContactId> ids);
+    void contactsUpdated(QList<QContactId> ids,
+                         const QList<QContactDetail::DetailType> &typesChanged);
     void serviceChanged();
 
 private Q_SLOTS:

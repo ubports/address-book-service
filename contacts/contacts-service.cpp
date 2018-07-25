@@ -17,7 +17,6 @@
  */
 
 #include "contacts-service.h"
-#include "qcontact-engineid.h"
 #include "qcontactrequest-data.h"
 #include "qcontactfetchrequest-data.h"
 #include "qcontactfetchbyidrequest-data.h"
@@ -393,8 +392,7 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
     for (contact = contacts.begin(); contact != contacts.end(); ++contact) {
         if (!contact->isEmpty()) {
             QContactGuid detailId = contact->detail<QContactGuid>();
-            GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
-            QContactId newId = QContactId(engineId);
+            QContactId newId(m_managerUri, detailId.guid().toUtf8());
             contact->setId(newId);
         }
     }
@@ -429,9 +427,7 @@ void GaleraContactsService::fetchContactsGroupsContinue(QContactFetchRequestData
         opError = QContactManager::UnspecifiedError;
     } else {
         Q_FOREACH(const Source &source, reply.value()) {
-            galera::GaleraEngineId *engineId = new galera::GaleraEngineId(QString("source@%1").arg(source.id()),
-                                                                          m_managerUri);
-            QContactId id = QContactId(engineId);
+            QContactId id(m_managerUri, QByteArray("source@") + source.id().toUtf8());
             QContact c = source.toContact(id);
             if (source.isPrimary()) {
                 contacts.prepend(c);
@@ -589,8 +585,7 @@ void GaleraContactsService::createContactsDone(QContactSaveRequestData *data,
         if (!vcard.isEmpty()) {
             QContact contact = VCardParser::vcardToContact(vcard);
             QContactGuid detailId = contact.detail<QContactGuid>();
-            GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
-            QContactId newId = QContactId(engineId);
+            QContactId newId(m_managerUri, detailId.guid().toUtf8());
             contact.setId(newId);
             data->updateCurrentContact(contact);
         } else {
@@ -920,8 +915,7 @@ QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const
 {
     QList<QContactId> contactIds;
     Q_FOREACH(QString id, ids) {
-        GaleraEngineId *engineId = new GaleraEngineId(id, m_managerUri);
-        contactIds << QContactId(engineId);
+        contactIds << QContactId(m_managerUri, id.toUtf8());
     }
     return contactIds;
 }
@@ -938,7 +932,7 @@ void GaleraContactsService::onContactsRemoved(const QStringList &ids)
 
 void GaleraContactsService::onContactsUpdated(const QStringList &ids)
 {
-    Q_EMIT contactsUpdated(parseIds(ids));
+    Q_EMIT contactsUpdated(parseIds(ids), {});
 }
 
 } //namespace
