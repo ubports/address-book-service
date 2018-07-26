@@ -3,10 +3,10 @@ Section: utils
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake (>= 2.8.9),
-               dbus-test-runner,
+               dbus-test-runner <!cross>,
                debhelper (>= 9),
                dh-translations,
-               gobject-introspection (>= 1.31.0-2~),
+               gobject-introspection (>= 1.31.0-2~) <!cross>,
                libaccounts-glib-dev,
                libaccounts-qt5-dev,
                libfolks-dev,
@@ -16,14 +16,14 @@ Build-Depends: cmake (>= 2.8.9),
                libmessaging-menu-dev,
                libphonenumber-dev,
                liburl-dispatcher1-dev,
-               python3,
-               python3-dbus,
-               python3-gi,
+               python3 <!cross>,
+               python3-dbus <!cross>,
+               python3-gi <!cross>,
                qt5-default,
                qt5-qmake,
                qtbase5-dev,
                qtpim5-dev (>= 5.0~git20171109~0bd985b),
-               valac (>= 0.20),
+               valac (>= 0.20) <!cross>,
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/address-book-service
 Vcs-Bzr: https://code.launchpad.net/~phablet-team/address-book-service/trunk
@@ -44,6 +44,7 @@ Description: Ubuntu contact service
 Package: address-book-service-dummy
 Architecture: any
 Multi-Arch: same
+Build-Profiles: <!cross>
 Depends: ${misc:Depends},
          ${shlibs:Depends},
 Description: A fork of folks dummy backend
@@ -52,6 +53,7 @@ Description: A fork of folks dummy backend
 
 Package: address-book-service-testability
 Architecture: all
+Build-Profiles: <!cross>
 Depends: ${misc:Depends},
          ${shlibs:Depends},
          address-book-service-dummy,

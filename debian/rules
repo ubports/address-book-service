@@ -13,13 +13,19 @@ endif
 
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
+ifneq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+	export DEB_BUILD_PROFILES := cross
+	CONFIGURE_OPTS += "-DENABLE_TESTS=OFF"
+endif
+
 export DPKG_GENSYMBOLS_CHECK_LEVEL=4
 
 %:
 	dh $@ --parallel --with translations
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DCMAKE_INSTALL_LIBEXECDIR=/usr/lib/$(DEB_HOST_MULTIARCH)/address-book-service
+	dh_auto_configure -- -DCMAKE_INSTALL_LIBEXECDIR=/usr/lib/$(DEB_HOST_MULTIARCH)/address-book-service \
+		$(CONFIGURE_OPTS)
 
 override_dh_install:
 	dh_install --fail-missing
