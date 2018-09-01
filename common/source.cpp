@@ -253,23 +253,6 @@ Source Source::fromQContact(const QtContacts::QContact &contact)
     return Source(guid.guid(), displayLabel.label(), applicationId, providerName, accountId, isReadOnly, isPrimary);
 }
 
-QContactCollection Source::toCollection() const
-{
-    QContactCollection collection;
-
-    collection.setMetaData(QContactCollection::KeyName, m_displayName);
-
-    QVariantMap extended {
-        { "READ-ONLY", m_isReadOnly },
-        { "IS-PRIMARY", m_isPrimary },
-        { "ACCOUNT-ID", m_accountId },
-        { "APPLICATION-ID", m_applicationId },
-        { "PROVIDER", m_providerName },
-    };
-    collection.setMetaData(QContactCollection::KeyExtended, extended);
-
-    return collection;
-}
 
 } // namespace Galera
 

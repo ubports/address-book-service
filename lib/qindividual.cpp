@@ -884,7 +884,6 @@ QtContacts::QContact &QIndividual::contact()
         updatePersonas();
         // avoid change on m_contact pointer until the contact is fully loaded
         QContact contact;
-        contact.setId(QContactId("qtcontacts:galera:", m_id.toUtf8()));
         updateContact(&contact);
         m_contact = new QContact(contact);
     }

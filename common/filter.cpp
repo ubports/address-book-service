@@ -363,7 +363,7 @@ QStringList Filter::idsToFilter(const QtContacts::QContactFilter &filter)
 
         const QContactIdFilter idf(filter);
         Q_FOREACH(const QContactId &id, idf.ids()) {
-            result << QString::fromUtf8(id.localId());
+            result << id.toString();
         }
         break;
     }
@@ -437,6 +437,9 @@ QtContacts::QContactFilter Filter::parseFilter(const QtContacts::QContactFilter 
 {
     QContactFilter newFilter;
     switch (filter.type()) {
+    case QContactFilter::IdFilter:
+        newFilter = parseIdFilter(filter);
+        break;
     case QContactFilter::UnionFilter:
         newFilter = parseUnionFilter(filter);
         break;
@@ -468,5 +471,29 @@ QtContacts::QContactFilter Filter::parseIntersectionFilter(const QtContacts::QCo
     }
     return newFilter;
 }
+
+QtContacts::QContactFilter Filter::parseIdFilter(const QContactFilter &filter)
+{
+    // ContactId to be serialized between process is necessary to instantiate the manager in both sides.
+    // Since the dbus service does not instantiate the manager we translate it to QContactDetailFilter
+    // using Guid values. This is possible because our server use the Guid to build the contactId.
+    const QContactIdFilter *idFilter = static_cast<const QContactIdFilter*>(&filter);
+    if (idFilter->ids().isEmpty()) {
+        return filter;
+    }
+
+    QContactUnionFilter newFilter;
+
+    Q_FOREACH(const QContactId &id, idFilter->ids()) {
+        QContactDetailFilter detailFilter;
+        detailFilter.setMatchFlags(QContactFilter::MatchExactly);
+        detailFilter.setDetailType(QContactDetail::TypeGuid, QContactGuid::FieldGuid);
+
+        detailFilter.setValue(id.toString().split(":").last());
+        newFilter << detailFilter;
+    }
+    return newFilter;
+}
+
 
 }

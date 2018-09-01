@@ -43,7 +43,6 @@ using namespace QtContacts; // necessary for signal signatures
 
 namespace galera {
 
-class QContactCollectionFetchRequestData;
 class QContactRequestData;
 class QContactSaveRequestData;
 class QContactFetchRequestData;
@@ -100,9 +99,6 @@ private:
 
     bool isOnline() const;
 
-    void fetchCollections(QtContacts::QContactCollectionFetchRequest *request);
-    void fetchCollectionsContinue(QContactCollectionFetchRequestData *data,
-                                  QDBusPendingCallWatcher *call);
     void fetchContacts(QtContacts::QContactFetchRequest *request);
     void fetchContactsContinue(QContactFetchRequestData *data,
                                QDBusPendingCallWatcher *call);
