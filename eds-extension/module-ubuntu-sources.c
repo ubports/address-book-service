@@ -97,13 +97,19 @@ ubuntu_sources_config_source (EUbuntuSources *extension,
                               AgAccount *ag_account)
 {
     ESourceExtension *source_extension;
+    const gchar *account_name, *source_name;
+
     g_debug("CONFIGURE SOURCE: %s,%s", e_source_get_display_name(source),
             e_source_get_uid(source));
 
-    g_object_bind_property (
-        ag_account, "display-name",
-        source, "display-name",
-        G_BINDING_SYNC_CREATE);
+    account_name = ag_account_get_display_name (ag_account);
+    source_name = e_source_get_display_name (source);
+    if (g_strcmp0 (account_name, source_name) == 0) {
+        g_object_bind_property (
+            ag_account, "display-name",
+            source, "display-name",
+            G_BINDING_DEFAULT);
+    }
 
     g_object_bind_property (
         ag_account, "enabled",
