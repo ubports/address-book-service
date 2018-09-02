@@ -18,7 +18,6 @@
 
 #include "qcontactsaverequest-data.h"
 #include "common/vcard-parser.h"
-#include "qcontact-engineid.h"
 
 #include <QtCore/QDebug>
 
@@ -101,15 +100,6 @@ Source QContactSaveRequestData::nextGroup()
     return *m_currentGroup;
 }
 
-void QContactSaveRequestData::updateCurrentContactId(GaleraEngineId *engineId)
-{
-    QContactId contactId(engineId);
-    QContact &contact = m_contactsToCreate[m_currentContact.key()];
-    contact.setId(contactId);
-    m_pendingContacts.remove(m_currentContact.key());
-    m_pendingContactsSyncTarget.remove(m_currentContact.key());
-}
-
 void QContactSaveRequestData::updateCurrentContact(const QContact &contact)
 {
     m_contactsToCreate[m_currentContact.key()] = contact;
@@ -119,9 +109,7 @@ void QContactSaveRequestData::updateCurrentContact(const QContact &contact)
 
 void QContactSaveRequestData::updateCurrentGroup(const Source &group, const QString &managerUri)
 {
-    galera::GaleraEngineId *engineId = new galera::GaleraEngineId(QString("source@%1").arg(group.id()),
-                                                                  managerUri);
-    QContactId id = QContactId(engineId);
+    QContactId id(managerUri, QByteArray("source@") + group.id().toUtf8());
     m_contactsToCreate[m_currentGroup.key()] = group.toContact(id);
     m_pendingGroups.remove(m_currentGroup.key());
 }
@@ -136,9 +124,7 @@ void QContactSaveRequestData::updatePendingGroups(const SourceList &groups, cons
     int index = 0;
     Q_FOREACH(int key, m_pendingGroups.keys()) {
         const Source &group = groups.at(index);
-        galera::GaleraEngineId *engineId = new galera::GaleraEngineId(QString("source@%1").arg(group.id()),
-                                                                      managerUri);
-        QContactId id = QContactId(engineId);
+        QContactId id(managerUri, QByteArray("source@") + group.id().toUtf8());
         m_contactsToUpdate.insert(key, group.toContact(id));
         index++;
     }
