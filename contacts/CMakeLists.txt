@@ -4,6 +4,7 @@ set(QCONTACTS_BACKEND qtcontacts_galera)
 
 set(QCONTACTS_BACKEND_SRCS
     qcontact-backend.cpp
+    qcontactcollectionfetchrequest-data.cpp
     qcontactfetchrequest-data.cpp
     qcontactfetchbyidrequest-data.cpp
     qcontactremoverequest-data.cpp
@@ -14,6 +15,7 @@ set(QCONTACTS_BACKEND_SRCS
 
 set(QCONTACTS_BACKEND_HDRS
     qcontact-backend.h
+    qcontactcollectionfetchrequest-data.h
     qcontactfetchrequest-data.h
     qcontactfetchbyidrequest-data.h
     qcontactremoverequest-data.h

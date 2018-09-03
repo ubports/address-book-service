@@ -63,7 +63,6 @@ private:
     static QString detailFilterToString(const QtContacts::QContactFilter &filter);
     static QString unionFilterToString(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseFilter(const QtContacts::QContactFilter &filter);
-    static QtContacts::QContactFilter parseIdFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseUnionFilter(const QtContacts::QContactFilter &filter);
     static QtContacts::QContactFilter parseIntersectionFilter(const QtContacts::QContactFilter &filter);
     static bool testFilter(const QtContacts::QContactFilter& filter, const QtContacts::QContact &contact, const QDateTime &deletedDate);

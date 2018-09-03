@@ -17,6 +17,7 @@
  */
 
 #include "contacts-service.h"
+#include "qcontactcollectionfetchrequest-data.h"
 #include "qcontactrequest-data.h"
 #include "qcontactfetchrequest-data.h"
 #include "qcontactfetchbyidrequest-data.h"
@@ -40,6 +41,7 @@
 
 #include <QtContacts/QContact>
 #include <QtContacts/QContactChangeSet>
+#include <QtContacts/QContactCollectionFetchRequest>
 #include <QtContacts/QContactName>
 #include <QtContacts/QContactPhoneNumber>
 #include <QtContacts/QContactFilter>
@@ -175,6 +177,60 @@ void GaleraContactsService::deinitialize()
 bool GaleraContactsService::isOnline() const
 {
     return !m_iface.isNull() && m_serviceIsReady;
+}
+
+void GaleraContactsService::fetchCollections(QContactCollectionFetchRequest *request)
+{
+    if (!isOnline()) {
+        qWarning() << "Server is not online";
+        QContactCollectionFetchRequestData::notifyError(request);
+        return;
+    }
+
+    QDBusPendingCall pcall = m_iface->asyncCall("availableSources");
+    if (pcall.isError()) {
+        qWarning() << pcall.error().name() << pcall.error().message();
+        QContactCollectionFetchRequestData::notifyError(request);
+        return;
+    }
+
+    QContactCollectionFetchRequestData *data =
+        new QContactCollectionFetchRequestData(request);
+    m_runningRequests << data;
+
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+    data->updateWatcher(watcher);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                     [=](QDBusPendingCallWatcher *call) {
+        this->fetchCollectionsContinue(data, call);
+    });
+}
+
+void GaleraContactsService::fetchCollectionsContinue(QContactCollectionFetchRequestData *data,
+                                                     QDBusPendingCallWatcher *call)
+{
+    if (!data->isLive()) {
+        destroyRequest(data);
+        return;
+    }
+
+    QDBusPendingReply<SourceList> reply = *call;
+
+    if (reply.isError()) {
+        qWarning() << reply.error().name() << reply.error().message();
+        destroyRequest(data);
+    } else {
+        QList<QContactCollection> collections;
+        Q_FOREACH(const Source &source, reply.value()) {
+            QContactCollection collection = source.toCollection();
+            collection.setId(QContactCollectionId(m_managerUri,
+                                                  source.id().toUtf8()));
+            collections.append(collection);
+        }
+        data->update(collections,
+                     QContactAbstractRequest::FinishedState,
+                     QContactManager::NoError);
+    }
 }
 
 void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdRequest *request)
@@ -874,6 +930,9 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
         case QContactAbstractRequest::ContactFetchRequest:
             fetchContacts(static_cast<QContactFetchRequest*>(request));
             break;
+        case QContactAbstractRequest::CollectionFetchRequest:
+            fetchCollections(static_cast<QContactCollectionFetchRequest*>(request));
+            break;
         case QContactAbstractRequest::ContactFetchByIdRequest:
             fetchContactsById(static_cast<QContactFetchByIdRequest*>(request));
             break;
@@ -895,7 +954,6 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
         case QContactAbstractRequest::RelationshipSaveRequest:
             qDebug() << "Not implemented: RelationshipSaveRequest";
             break;
-        break;
 
         default: // unknown request type.
         break;
