@@ -1,3 +1,10 @@
+address-book-service (0.1.5+0ubports1) xenial; urgency=medium
+
+  * Fix deletion of contacts
+    (https://github.com/ubports/ubuntu-touch/issues/864)
+
+ -- Alberto Mardegan <mardy@users.sourceforge.net>  Sat, 08 Sep 2018 00:22:51 +0300
+
 address-book-service (0.1.4+ubports1) xenial; urgency=medium
 
   * No change rebuild
