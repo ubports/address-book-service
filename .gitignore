@@ -1,0 +1,16 @@
+CMakeLists.txt.user
+build/
+debian/*.debhelper
+debian/*.log
+debian/*.substvars
+debian/*-stamp
+debian/files
+debian/address-book-service/
+debian/address-book-service-dummy/
+debian/address-book-service-testability/
+debian/address-book-updater/
+debian/evolution-data-server-utouch-dev/
+debian/evolution-data-server-utouch/
+debian/qtcontact5-galera/
+debian/tmp/
+obj-*/
