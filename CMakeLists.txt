@@ -94,7 +94,6 @@ add_custom_command(TARGET check
 		   COMMAND ctest -V
 		   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_subdirectory(3rd_party)
 add_subdirectory(common)
 add_subdirectory(eds-extension)
 add_subdirectory(lib)
@@ -106,10 +105,9 @@ add_subdirectory(dbus)
 add_subdirectory(po)
 #add_subdirectory(eds-test)
 
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ppc")
-    # Some tests fail when running on PPPC check bug #1294229
-    message(STATUS "Tests disable for ppc")
-else()
+OPTION(ENABLE_TESTS "Build tests" ON)
+if(ENABLE_TESTS)
+    add_subdirectory(3rd_party)
     add_subdirectory(tests)
 endif()
 set(TEST_DATA_DIR "${CMAKE_SOURCE_DIR}/tests/data")

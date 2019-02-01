@@ -21,6 +21,7 @@
 
 #include <QtCore/QString>
 #include <QtContacts/QContact>
+#include <QtContacts/QContactCollection>
 #include <QtDBus/QtDBus>
 
 namespace galera {
@@ -52,6 +53,8 @@ public:
 
     QtContacts::QContact toContact(const QtContacts::QContactId &id) const;
     static Source fromQContact(const QtContacts::QContact &contact);
+
+    QtContacts::QContactCollection toCollection() const;
 
 private:
     QString m_id;

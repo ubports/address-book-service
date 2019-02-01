@@ -17,7 +17,7 @@
  */
 
 #include "contacts-service.h"
-#include "qcontact-engineid.h"
+#include "qcontactcollectionfetchrequest-data.h"
 #include "qcontactrequest-data.h"
 #include "qcontactfetchrequest-data.h"
 #include "qcontactfetchbyidrequest-data.h"
@@ -41,6 +41,7 @@
 
 #include <QtContacts/QContact>
 #include <QtContacts/QContactChangeSet>
+#include <QtContacts/QContactCollectionFetchRequest>
 #include <QtContacts/QContactName>
 #include <QtContacts/QContactPhoneNumber>
 #include <QtContacts/QContactFilter>
@@ -176,6 +177,60 @@ void GaleraContactsService::deinitialize()
 bool GaleraContactsService::isOnline() const
 {
     return !m_iface.isNull() && m_serviceIsReady;
+}
+
+void GaleraContactsService::fetchCollections(QContactCollectionFetchRequest *request)
+{
+    if (!isOnline()) {
+        qWarning() << "Server is not online";
+        QContactCollectionFetchRequestData::notifyError(request);
+        return;
+    }
+
+    QDBusPendingCall pcall = m_iface->asyncCall("availableSources");
+    if (pcall.isError()) {
+        qWarning() << pcall.error().name() << pcall.error().message();
+        QContactCollectionFetchRequestData::notifyError(request);
+        return;
+    }
+
+    QContactCollectionFetchRequestData *data =
+        new QContactCollectionFetchRequestData(request);
+    m_runningRequests << data;
+
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pcall, 0);
+    data->updateWatcher(watcher);
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                     [=](QDBusPendingCallWatcher *call) {
+        this->fetchCollectionsContinue(data, call);
+    });
+}
+
+void GaleraContactsService::fetchCollectionsContinue(QContactCollectionFetchRequestData *data,
+                                                     QDBusPendingCallWatcher *call)
+{
+    if (!data->isLive()) {
+        destroyRequest(data);
+        return;
+    }
+
+    QDBusPendingReply<SourceList> reply = *call;
+
+    if (reply.isError()) {
+        qWarning() << reply.error().name() << reply.error().message();
+        destroyRequest(data);
+    } else {
+        QList<QContactCollection> collections;
+        Q_FOREACH(const Source &source, reply.value()) {
+            QContactCollection collection = source.toCollection();
+            collection.setId(QContactCollectionId(m_managerUri,
+                                                  source.id().toUtf8()));
+            collections.append(collection);
+        }
+        data->update(collections,
+                     QContactAbstractRequest::FinishedState,
+                     QContactManager::NoError);
+    }
 }
 
 void GaleraContactsService::fetchContactsById(QtContacts::QContactFetchByIdRequest *request)
@@ -393,8 +448,7 @@ void GaleraContactsService::onVCardsParsed(QList<QContact> contacts)
     for (contact = contacts.begin(); contact != contacts.end(); ++contact) {
         if (!contact->isEmpty()) {
             QContactGuid detailId = contact->detail<QContactGuid>();
-            GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
-            QContactId newId = QContactId(engineId);
+            QContactId newId(m_managerUri, detailId.guid().toUtf8());
             contact->setId(newId);
         }
     }
@@ -429,9 +483,7 @@ void GaleraContactsService::fetchContactsGroupsContinue(QContactFetchRequestData
         opError = QContactManager::UnspecifiedError;
     } else {
         Q_FOREACH(const Source &source, reply.value()) {
-            galera::GaleraEngineId *engineId = new galera::GaleraEngineId(QString("source@%1").arg(source.id()),
-                                                                          m_managerUri);
-            QContactId id = QContactId(engineId);
+            QContactId id(m_managerUri, QByteArray("source@") + source.id().toUtf8());
             QContact c = source.toContact(id);
             if (source.isPrimary()) {
                 contacts.prepend(c);
@@ -589,8 +641,7 @@ void GaleraContactsService::createContactsDone(QContactSaveRequestData *data,
         if (!vcard.isEmpty()) {
             QContact contact = VCardParser::vcardToContact(vcard);
             QContactGuid detailId = contact.detail<QContactGuid>();
-            GaleraEngineId *engineId = new GaleraEngineId(detailId.guid(), m_managerUri);
-            QContactId newId = QContactId(engineId);
+            QContactId newId(m_managerUri, detailId.guid().toUtf8());
             contact.setId(newId);
             data->updateCurrentContact(contact);
         } else {
@@ -879,6 +930,9 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
         case QContactAbstractRequest::ContactFetchRequest:
             fetchContacts(static_cast<QContactFetchRequest*>(request));
             break;
+        case QContactAbstractRequest::CollectionFetchRequest:
+            fetchCollections(static_cast<QContactCollectionFetchRequest*>(request));
+            break;
         case QContactAbstractRequest::ContactFetchByIdRequest:
             fetchContactsById(static_cast<QContactFetchByIdRequest*>(request));
             break;
@@ -900,7 +954,6 @@ void GaleraContactsService::addRequest(QtContacts::QContactAbstractRequest *requ
         case QContactAbstractRequest::RelationshipSaveRequest:
             qDebug() << "Not implemented: RelationshipSaveRequest";
             break;
-        break;
 
         default: // unknown request type.
         break;
@@ -920,8 +973,7 @@ QList<QContactId> GaleraContactsService::parseIds(const QStringList &ids) const
 {
     QList<QContactId> contactIds;
     Q_FOREACH(QString id, ids) {
-        GaleraEngineId *engineId = new GaleraEngineId(id, m_managerUri);
-        contactIds << QContactId(engineId);
+        contactIds << QContactId(m_managerUri, id.toUtf8());
     }
     return contactIds;
 }
@@ -938,7 +990,7 @@ void GaleraContactsService::onContactsRemoved(const QStringList &ids)
 
 void GaleraContactsService::onContactsUpdated(const QStringList &ids)
 {
-    Q_EMIT contactsUpdated(parseIds(ids));
+    Q_EMIT contactsUpdated(parseIds(ids), {});
 }
 
 } //namespace

@@ -41,7 +41,7 @@ QContactRemoveRequestData::QContactRemoveRequestData(QContactRemoveRequest *requ
         if (id.startsWith(sourcePrefix)) {
             m_sourcesIds << id.mid(sourcePrefix.size());
         } else {
-            m_contactsIds << id;
+            m_contactsIds << QString::fromUtf8(contactId.localId());
         }
     }
 }
