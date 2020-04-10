@@ -40,7 +40,6 @@ void QContactCollectionFetchRequestData::update(QList<QContactCollection> result
                                                 QContactManager::Error error)
 {
     m_result = result;
-    qDebug() << "Setting result" << m_result;
     QContactRequestData::update(state, error);
 }
 
@@ -54,7 +53,6 @@ void QContactCollectionFetchRequestData::notifyError(QContactCollectionFetchRequ
 
 void QContactCollectionFetchRequestData::updateRequest(QContactAbstractRequest::State state, QContactManager::Error error, QMap<int, QContactManager::Error> errorMap)
 {
-    qDebug() << "Returning result" << m_result;
     QContactManagerEngine::updateCollectionFetchRequest(static_cast<QContactCollectionFetchRequest*>(m_request.data()),
                                                         m_result,
                                                         error,
