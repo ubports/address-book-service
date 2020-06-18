@@ -379,9 +379,9 @@ QtContacts::QContactDetail QIndividual::getPersonaBirthday(FolksPersona *persona
     QContactBirthday detail;
     GDateTime* datetime = folks_birthday_details_get_birthday(FOLKS_BIRTHDAY_DETAILS(persona));
     if (datetime) {
-        QDate date(g_date_time_get_year(datetime), g_date_time_get_month(datetime), g_date_time_get_day_of_month(datetime));
-        QTime time(g_date_time_get_hour(datetime), g_date_time_get_minute(datetime), g_date_time_get_second(datetime));
-        detail.setDateTime(QDateTime(date, time));
+        qint64 unixUtc = g_date_time_to_unix(datetime);
+        QDateTime dt = QDateTime::fromMSecsSinceEpoch(unixUtc * 1000);
+        detail.setDateTime(dt);
         detail.setDetailUri(QString("%1.1").arg(index));
     }
     return detail;
